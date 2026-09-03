@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "totalLevels": 30,
+  "starsPerLevel": 3,
+  "levels": [
+    { "id": 1,  "title": "El Código",           "type": "observacion-codigo",   "difficulty": 1, "timeThreshold": 60,  "timeLimit": null, "implemented": true },
+    { "id": 2,  "title": "Secuencia",           "type": "matematica",           "difficulty": 1, "timeThreshold": 75,  "timeLimit": null, "implemented": false },
+    { "id": 3,  "title": "El Diferente",        "type": "observacion",          "difficulty": 1, "timeThreshold": 70,  "timeLimit": null, "implemented": false },
+    { "id": 4,  "title": "Colores",             "type": "logica-secuencia",     "difficulty": 2, "timeThreshold": 90,  "timeLimit": null, "implemented": false },
+    { "id": 5,  "title": "El Espejo",           "type": "espacial",             "difficulty": 2, "timeThreshold": 120, "timeLimit": null, "implemented": false },
+    { "id": 6,  "title": "Las Cajas",           "type": "logica",               "difficulty": 2, "timeThreshold": 100, "timeLimit": null, "implemented": false },
+    { "id": 7,  "title": "Interruptores",       "type": "logica-clasica",       "difficulty": 3, "timeThreshold": 150, "timeLimit": null, "implemented": false },
+    { "id": 8,  "title": "Relojes",             "type": "patron-codigo",        "difficulty": 3, "timeThreshold": 130, "timeLimit": null, "implemented": false },
+    { "id": 9,  "title": "Orden",               "type": "logica-ordenamiento",  "difficulty": 3, "timeThreshold": 120, "timeLimit": null, "implemented": false },
+    { "id": 10, "title": "Código Oculto",       "type": "observacion-codigo",   "difficulty": 3, "timeThreshold": 150, "timeLimit": null, "implemented": false },
+
+    { "id": 11, "title": "Binario",             "type": "codigo-matematica",    "difficulty": 4, "timeThreshold": 160, "timeLimit": null, "implemented": false },
+    { "id": 12, "title": "Las 8 Pelotas",       "type": "fisica-logica",        "difficulty": 5, "timeThreshold": 180, "timeLimit": null, "implemented": false },
+    { "id": 13, "title": "Conexiones",          "type": "espacial-logica",      "difficulty": 4, "timeThreshold": 200, "timeLimit": null, "implemented": false },
+    { "id": 14, "title": "Mueve una Pieza",     "type": "espacial",             "difficulty": 4, "timeThreshold": 170, "timeLimit": null, "implemented": false },
+    { "id": 15, "title": "Sudoku 4×4",          "type": "matematica-logica",    "difficulty": 4, "timeThreshold": 180, "timeLimit": null, "implemented": false },
+    { "id": 16, "title": "Cables",              "type": "interaccion-memoria",  "difficulty": 4, "timeThreshold": 190, "timeLimit": null, "implemented": false },
+    { "id": 17, "title": "Criptografía",        "type": "codigo",               "difficulty": 4, "timeThreshold": 170, "timeLimit": null, "implemented": false },
+    { "id": 18, "title": "Habitación Oscura",   "type": "observacion",          "difficulty": 5, "timeThreshold": 200, "timeLimit": null, "implemented": false },
+    { "id": 19, "title": "Pesos",               "type": "logica-matematica",    "difficulty": 4, "timeThreshold": 170, "timeLimit": null, "implemented": false },
+    { "id": 20, "title": "Cinco Puertas",       "type": "logica-pura",          "difficulty": 5, "timeThreshold": 180, "timeLimit": null, "implemented": false },
+
+    { "id": 21, "title": "Secuencia Compleja",  "type": "patron-multivariable", "difficulty": 6, "timeThreshold": 220, "timeLimit": null, "implemented": false },
+    { "id": 22, "title": "Las Monedas",         "type": "interaccion-observacion", "difficulty": 6, "timeThreshold": 200, "timeLimit": null, "implemented": false },
+    { "id": 23, "title": "El Mensaje Escondido","type": "codigo-lateral",       "difficulty": 6, "timeThreshold": 230, "timeLimit": null, "implemented": false },
+    { "id": 24, "title": "Laberinto Lógico",    "type": "logica-navegacion",    "difficulty": 6, "timeThreshold": 240, "timeLimit": null, "implemented": false },
+    { "id": 25, "title": "Rotación",            "type": "espacial-interaccion", "difficulty": 6, "timeThreshold": 260, "timeLimit": null, "implemented": false },
+    { "id": 26, "title": "Memoria",             "type": "memoria",              "difficulty": 5, "timeThreshold": 150, "timeLimit": 90,   "implemented": false },
+    { "id": 27, "title": "Meta Puzzle",         "type": "meta-codigo",          "difficulty": 7, "timeThreshold": 240, "timeLimit": null, "implemented": false },
+    { "id": 28, "title": "La Pantalla Miente",  "type": "pensamiento-lateral",  "difficulty": 7, "timeThreshold": 240, "timeLimit": null, "implemented": false },
+    { "id": 29, "title": "Los Cuatro Códigos",  "type": "combinacion",          "difficulty": 7, "timeThreshold": 280, "timeLimit": null, "implemented": false },
+    { "id": 30, "title": "La Salida",           "type": "final",                "difficulty": 8, "timeThreshold": 360, "timeLimit": null, "implemented": false }
+  ]
+}

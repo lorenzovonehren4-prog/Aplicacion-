@@ -1,0 +1,152 @@
+/* ==========================================================================
+   Pantalla: Nivel
+   Estructura fija (header · stats · puzzle · input · pistas). El contenido
+   del área de puzzle lo controla íntegramente el módulo del nivel.
+   ========================================================================== */
+
+.level-screen {
+  gap: var(--sp-4);
+}
+
+/* --- Barra de estadísticas --- */
+
+.level-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+}
+
+.level-stats__group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+
+.level-stats__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.level-stats__label {
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.level-stats__value {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Área de puzzle --- */
+
+.puzzle-area {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: min(60vh, 460px);
+  padding: var(--sp-5);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--glass-border);
+  background:
+    radial-gradient(600px 400px at 50% 0%, rgba(124, 58, 237, 0.07), transparent 70%),
+    rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  animation: rise-in var(--t-slow) var(--ease) both;
+}
+
+/* Instrucción breve que puede renderizar cualquier nivel */
+.puzzle-prompt {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  text-align: center;
+  max-width: 60ch;
+  margin: 0 auto var(--sp-5);
+  line-height: 1.6;
+}
+
+/* --- Barra de respuesta --- */
+
+.answer-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+}
+
+.answer-bar__label {
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  flex: none;
+}
+
+.answer-bar__form {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+/* --- Feedback --- */
+
+.level-feedback {
+  min-height: 1.4em;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  color: var(--text-faint);
+  transition: color var(--t-base) var(--ease);
+}
+
+.level-feedback--error { color: var(--error); }
+.level-feedback--success { color: var(--success); }
+
+/* --- Estado: nivel aún no implementado --- */
+
+.level-pending {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+  max-width: 44ch;
+  color: var(--text-dim);
+}
+
+.level-pending__badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mystery);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  background: var(--mystery-soft);
+}
+
+@media (max-width: 560px) {
+  .level-stats { padding: var(--sp-3); }
+  .level-stats__group { gap: var(--sp-4); }
+  .puzzle-area { padding: var(--sp-4); min-height: 52vh; }
+  .answer-bar__label { flex: 1 0 100%; }
+}

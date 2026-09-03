@@ -1,0 +1,137 @@
+/* ==========================================================================
+   Componente: hint-panel
+   Acordeón de 3 pistas progresivas. La pista N+1 se bloquea hasta usar la N.
+   ========================================================================== */
+
+.hints {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.hints__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-4) var(--sp-5);
+  text-align: left;
+  transition: background var(--t-base) var(--ease);
+}
+
+.hints__header:hover { background: var(--glass-bg-hover); }
+
+.hints__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.hints__count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  text-transform: none;
+}
+
+.hints__chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-faint);
+  transition: transform var(--t-base) var(--ease);
+}
+
+.hints[data-open='true'] .hints__chevron { transform: rotate(180deg); }
+
+.hints__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--t-slow) var(--ease);
+}
+
+.hints[data-open='true'] .hints__body { grid-template-rows: 1fr; }
+
+.hints__body-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.hints__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-5) var(--sp-5);
+  border-top: 1px solid var(--glass-border);
+  padding-top: var(--sp-4);
+}
+
+/* --- Una pista --- */
+
+.hint {
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.hint__reveal {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  transition: background var(--t-base) var(--ease), color var(--t-base) var(--ease);
+}
+
+.hint__reveal:hover:not(:disabled) {
+  background: var(--mystery-soft);
+  color: var(--text);
+}
+
+.hint__reveal:disabled { color: var(--text-faint); }
+
+.hint__index {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--mystery);
+  flex: none;
+}
+
+.hint__icon { width: 15px; height: 15px; flex: none; margin-left: auto; }
+
+.hint__text {
+  padding: var(--sp-4);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  border-left: 2px solid var(--mystery);
+  background: var(--mystery-soft);
+  animation: rise-in var(--t-base) var(--ease);
+}
+
+.hint--revealed { border-color: rgba(124, 58, 237, 0.35); }
+
+.hints__warning {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  padding: 0 var(--sp-5) var(--sp-5);
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .hints__header { padding: var(--sp-3) var(--sp-4); }
+  .hints__list { padding: var(--sp-4) var(--sp-4); }
+  .hints__warning { padding: 0 var(--sp-4) var(--sp-4); }
+}

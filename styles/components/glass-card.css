@@ -1,0 +1,56 @@
+/* ==========================================================================
+   Componente: glass-card
+   Superficie base de todo el juego. Glassmorphism sobrio, nunca recargado.
+   ========================================================================== */
+
+.glass {
+  position: relative;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-soft);
+}
+
+/* Brillo sutil en el borde superior — da sensación de cristal real */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18) 30%,
+    rgba(255, 255, 255, 0.18) 70%,
+    transparent
+  );
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  pointer-events: none;
+}
+
+.glass--pad { padding: var(--sp-5); }
+.glass--pad-sm { padding: var(--sp-4); }
+
+.glass--interactive {
+  transition: transform var(--t-base) var(--ease),
+              border-color var(--t-base) var(--ease),
+              box-shadow var(--t-base) var(--ease),
+              background var(--t-base) var(--ease);
+}
+
+.glass--interactive:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-soft), var(--shadow-glow);
+}
+
+/* Acentos de estado reutilizables */
+.glass--accent { border-color: var(--accent-line); }
+.glass--success { border-color: rgba(34, 197, 94, 0.4); }
+.glass--error { border-color: rgba(239, 68, 68, 0.4); }
+
+@media (max-width: 480px) {
+  .glass--pad { padding: var(--sp-4); }
+}

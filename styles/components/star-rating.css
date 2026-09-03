@@ -1,0 +1,44 @@
+/* ==========================================================================
+   Componente: star-rating
+   Tres estrellas. Doradas cuando se ganan, apagadas cuando no.
+   ========================================================================== */
+
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  line-height: 1;
+}
+
+.stars__item {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  color: var(--text-faint);
+  opacity: 0.45;
+  transition: color var(--t-base) var(--ease), opacity var(--t-base) var(--ease);
+}
+
+.stars__item--filled {
+  color: var(--gold);
+  opacity: 1;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.35));
+}
+
+/* Tamaños */
+.stars--sm { font-size: 0.85rem; }
+.stars--md { font-size: 1.1rem; }
+.stars--lg { font-size: 2rem; gap: 0.28em; }
+
+/* Aparición secuencial en el modal de completado */
+.stars--animated .stars__item {
+  opacity: 0;
+  animation: star-bounce 0.45s var(--ease) forwards;
+}
+.stars--animated .stars__item:nth-child(1) { animation-delay: 0.15s; }
+.stars--animated .stars__item:nth-child(2) { animation-delay: 0.32s; }
+.stars--animated .stars__item:nth-child(3) { animation-delay: 0.49s; }
+
+.stars--animated .stars__item:not(.stars__item--filled) {
+  animation-name: fade-in;
+}

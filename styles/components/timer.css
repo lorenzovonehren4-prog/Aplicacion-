@@ -1,0 +1,44 @@
+/* ==========================================================================
+   Componente: timer
+   Cronómetro visible en todos los niveles. Sólo alarma cuando hay límite.
+   ========================================================================== */
+
+.timer {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--t-base) var(--ease);
+}
+
+.timer__label {
+  font-family: var(--font-sans);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Umbral del nivel superado: el jugador ya no opta a 3 estrellas */
+.timer--over-threshold { color: var(--gold); }
+
+/* Sólo en niveles con límite de tiempo real */
+.timer--warning { color: var(--gold); }
+
+.timer--critical {
+  color: var(--error);
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.timer--expired { color: var(--error); }

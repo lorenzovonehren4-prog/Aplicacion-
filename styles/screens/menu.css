@@ -1,0 +1,102 @@
+/* ==========================================================================
+   Pantalla: Menú principal
+   ========================================================================== */
+
+.menu {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-7);
+  padding-top: var(--sp-8);
+  padding-bottom: var(--sp-8);
+}
+
+.menu__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  animation: rise-in 0.7s var(--ease) both;
+}
+
+.menu__title {
+  font-size: clamp(2.6rem, 11vw, 5.2rem);
+  font-weight: 200;
+  letter-spacing: 0.22em;
+  line-height: 1;
+  margin-right: -0.22em; /* compensa el tracking del último carácter */
+  color: #fff;
+  text-shadow:
+    0 0 28px rgba(0, 212, 255, 0.28),
+    0 0 70px rgba(124, 58, 237, 0.22);
+}
+
+.menu__title span { display: inline-block; }
+
+.menu__tagline {
+  font-size: clamp(0.66rem, 2.6vw, 0.8rem);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-right: -0.42em;
+}
+
+.menu__rule {
+  width: min(240px, 60vw);
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--accent-line), transparent);
+}
+
+.menu__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  width: min(360px, 100%);
+  animation: rise-in 0.7s var(--ease) 0.15s both;
+}
+
+.menu__actions .btn { min-height: 56px; }
+
+.menu__progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  animation: fade-in 0.9s var(--ease) 0.35s both;
+}
+
+.menu__progress-line {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.menu__progress-bar {
+  width: min(300px, 70vw);
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.menu__progress-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--mystery), var(--accent));
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.45);
+  transition: width var(--t-slow) var(--ease);
+}
+
+.menu__footer {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
+@media (max-height: 640px) {
+  .menu { gap: var(--sp-5); padding-top: var(--sp-5); }
+}
