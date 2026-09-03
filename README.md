@@ -49,7 +49,8 @@ mind-escape/
 │   │   ├── registry.js     Catálogo + carga perezosa de módulos
 │   │   ├── shared/         Widgets de puzzle reutilizables (keypad, sortable)
 │   │   └── level-01.js …   Un archivo por nivel
-│   ├── ui/                 Pantallas
+│   ├── ui/                 menu · level-select · level-screen · settings ·
+│   │                       completion-modal · ending
 │   └── utils/              dom · animations · math
 └── data/
     └── levels-meta.json    Título, tipo, dificultad y umbral de cada nivel
@@ -101,6 +102,14 @@ router  ──#/level/7──▶  level-screen.js
 | **Pistas** | 3 por nivel, en orden estricto: la #2 se desbloquea al usar la #1. Bajan el techo de estrellas, nunca bloquean el nivel. |
 | **Tiempo** | Cronómetro en todos los niveles. El límite (cuando existe) topa las estrellas en ★★; **nunca** hace fallar el nivel. |
 | **Reintentos** | Ilimitados. Se cuentan para estadísticas y no reinician nada. Al repetir sólo se puede subir: ni las estrellas ni el mejor tiempo empeoran. |
+
+### La pantalla final
+
+Completar el nivel 30 no lleva a otro modal: lleva a `#/final`, una pantalla
+propia con la puerta abierta, los totales y una lluvia breve de partículas. Al
+ser una ruta y no un modal, se puede volver a ella desde el menú en vez de
+perderse al cerrar una ventana. La tercera estrella grande se reserva para el
+90 de 90.
 
 ### Persistencia
 
@@ -189,6 +198,8 @@ monta como `<style>` (ver `level-01.js`). Así un nivel nuevo no obliga a tocar
   respaldo de `main.css` mantienen el juego perfectamente legible y jugable
   offline.
 - **`prefers-reduced-motion`** desactiva las partículas y reduce toda animación.
+- **Objetivos táctiles de 44 px como mínimo** en todo lo que se pulsa. Varios
+  niveles tenían botones de 30-38 px que en un móvil eran una lotería.
 
 ---
 
@@ -263,6 +274,11 @@ Están anotados también en la cabecera de cada archivo:
 | 21–30 | Jugables — bloque "Los memorables" |
 
 Los 30 niveles están implementados y se han jugado de principio a fin en
-Chromium: 197 comprobaciones automatizadas cubren cada puzzle resuelto como lo
+Chromium: 215 comprobaciones automatizadas cubren cada puzzle resuelto como lo
 haría una persona, el desbloqueo en cadena, el cálculo y la persistencia de
-estrellas, y la ausencia de errores en consola.
+estrellas, la pantalla final, el sonido con Web Audio y la ausencia de errores
+en consola.
+
+A eso se suma una auditoría que recorre las 33 pantallas a 320, 375 y 768 px
+buscando desbordamiento horizontal, elementos fuera del área visible y
+objetivos táctiles por debajo de 40 px. Actualmente pasa con **0 incidencias**.

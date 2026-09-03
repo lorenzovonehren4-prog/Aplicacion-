@@ -21,6 +21,7 @@ import { menuScreen } from '../ui/menu.js';
 import { levelSelectScreen } from '../ui/level-select.js';
 import { levelScreen } from '../ui/level-screen.js';
 import { settingsScreen } from '../ui/settings.js';
+import { endingScreen } from '../ui/ending.js';
 import { closeAllOverlays } from '../ui/completion-modal.js';
 
 const APP_SELECTOR = '#app';
@@ -44,6 +45,7 @@ async function boot() {
   router.register('/levels', levelSelectScreen);
   router.register('/level/:id', levelScreen);
   router.register('/settings', settingsScreen);
+  router.register('/final', endingScreen);
   router.setNotFound('/menu');
 
   router.start(app);

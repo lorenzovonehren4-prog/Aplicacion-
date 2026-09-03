@@ -21,7 +21,6 @@ const MASTER_VOLUME = 0.32;
 /** Recetas de cada efecto: lista de tonos { freq, start, dur, type, gain }. */
 const SOUNDS = {
   click:    { tones: [{ freq: 320, start: 0,     dur: 0.05, type: 'triangle', gain: 0.35 }] },
-  hover:    { tones: [{ freq: 520, start: 0,     dur: 0.03, type: 'sine',     gain: 0.12 }] },
   correct:  { tones: [
                 { freq: 880,  start: 0,    dur: 0.16, type: 'sine', gain: 0.4 },
                 { freq: 1320, start: 0.07, dur: 0.22, type: 'sine', gain: 0.28 },

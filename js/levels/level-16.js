@@ -136,6 +136,16 @@ const STYLES = `
 
 .lv16__port { justify-content: flex-end; }
 
+/* A 320px el hueco central de 90px y la palabra "Conector" no caben: se
+   estrecha el canal de los cables y el número basta para identificar el puerto
+   (el aria-label sigue diciéndolo entero). */
+@media (max-width: 420px) {
+  .lv16__panel { grid-template-columns: 1fr 40px 1fr; }
+  .lv16__port-name { display: none; }
+  .lv16__cable, .lv16__port { padding: var(--sp-2); gap: var(--sp-2); }
+  .lv16__cable-name { font-size: 0.74rem; }
+}
+
 .lv16__port-number {
   display: grid;
   place-items: center;

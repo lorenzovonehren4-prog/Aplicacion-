@@ -34,8 +34,8 @@ export const menuScreen = {
 
         summary.isFinished && el('button.btn.btn--primary', {
           type: 'button',
-          on: { click: () => navigate('/levels') },
-        }, ['Has escapado · Revisitar']),
+          on: { click: () => navigate('/final') },
+        }, ['Has escapado · Ver la salida']),
 
         el('button.btn', {
           type: 'button',

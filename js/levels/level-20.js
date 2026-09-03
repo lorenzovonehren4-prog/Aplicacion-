@@ -96,6 +96,9 @@ const STYLES = `
 }
 
 .lv20__statement {
+  /* min-width:0 es lo que permite que el párrafo encoja dentro del flex:
+     sin él, la frase larga desborda la puerta en pantallas estrechas. */
+  min-width: 0;
   font-size: 0.84rem;
   line-height: 1.45;
   color: var(--text);
@@ -117,6 +120,11 @@ const STYLES = `
   .lv20__door { width: calc(50% - var(--sp-3)); flex-direction: row; text-align: left; }
   .lv20__statement { text-align: left; }
   .lv20__icon { width: 26px; height: 40px; }
+}
+
+@media (max-width: 480px) {
+  /* Media puerta por fila deja demasiado poco sitio a la frase. */
+  .lv20__door { width: 100%; }
 }
 `;
 

@@ -72,12 +72,13 @@ const STYLES = `
 .lv28__grid {
   display: grid;
   grid-template-columns: repeat(${COLS}, 1fr);
-  gap: clamp(8px, 2.4vw, 16px);
+  gap: clamp(6px, 2vw, 16px);
 }
 
 /* Los treinta son exactamente iguales. No hay ninguno rojo. */
 .lv28__circle {
-  width: clamp(30px, 8vw, 42px);
+  /* Seis columnas caben de sobra a 320px: no hay motivo para bajar de 38px. */
+  width: clamp(40px, 9vw, 46px);
   aspect-ratio: 1;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.12);

@@ -446,6 +446,7 @@ class LevelSession {
         nextLevel: result.nextLevel,
         isFinalLevel,
         onNext: () => router.go(`/level/${result.nextLevel}`),
+        onFinish: () => router.go('/final'),
         onSelect: () => router.go('/levels'),
         onReplay: () => this.replay(),
       });

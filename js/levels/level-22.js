@@ -128,8 +128,8 @@ const STYLES = `
 }
 
 .lv22__pick {
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--r-sm);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);

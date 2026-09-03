@@ -37,7 +37,13 @@ const STYLES = `
 .lv01__number {
   position: absolute;
   transform: translate(-50%, -50%);
-  padding: 0.35em 0.5em;
+  /* Área táctil cómoda: el número más pequeño medía 52×32 y quedaba por debajo
+     del mínimo recomendado para el dedo. El glifo no cambia de tamaño. */
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  min-height: 46px;
+  padding: 0.4em 0.55em;
   border-radius: 12px;
   font-family: var(--font-mono);
   font-weight: 600;
@@ -130,7 +136,10 @@ export class Level01 extends LevelBase {
         style: {
           left: `${item.x}%`,
           top: `${item.y}%`,
-          fontSize: `${item.size}rem`,
+          // El tamaño de cada número es un multiplicador sobre una base que
+          // encoge con la pantalla: con un rem fijo, a 320px los números eran
+          // más anchos que el paso de la rejilla y se solapaban.
+          fontSize: `calc(${item.size} * clamp(0.62rem, 2.6vw, 1rem))`,
         },
       }, [
         el('span.lv01__glyph', {
@@ -204,11 +213,11 @@ function buildLayout(rng, count) {
   const cells = [];
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      // El jitter se mantiene por debajo de la mitad del paso de la rejilla,
-      // así dos vecinos nunca pueden llegar a tocarse.
+      // El jitter horizontal es corto a propósito: con la separación justa,
+      // dos vecinos no llegan a tocarse ni en la pantalla más estrecha.
       cells.push({
-        x: ((col + 0.5) / cols) * 100 + (rng() - 0.5) * (100 / cols) * 0.42,
-        y: ((row + 0.5) / rows) * 100 + (rng() - 0.5) * (100 / rows) * 0.42,
+        x: ((col + 0.5) / cols) * 100 + (rng() - 0.5) * (100 / cols) * 0.24,
+        y: ((row + 0.5) / rows) * 100 + (rng() - 0.5) * (100 / rows) * 0.34,
       });
     }
   }

@@ -106,8 +106,8 @@ const STYLES = `
 .lv12__ball {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--glass-border);
   background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.16), rgba(255,255,255,0.03));
@@ -172,8 +172,8 @@ const STYLES = `
 }
 
 .lv12__pick {
-  min-width: 38px;
-  min-height: 38px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0 var(--sp-2);
   border-radius: var(--r-sm);
   border: 1px solid var(--glass-border);
@@ -193,8 +193,10 @@ const STYLES = `
 }
 
 @media (max-width: 520px) {
-  .lv12__ball { width: 34px; height: 34px; font-size: 0.78rem; }
-  .lv12__zone { min-width: 100px; flex-basis: 100px; }
+  /* En columna cada zona ocupa el ancho entero, así que las pelotas pueden
+     mantener su tamaño en vez de encogerse por debajo del mínimo táctil. */
+  .lv12__zones { flex-direction: column; }
+  .lv12__zone { min-width: 0; flex-basis: auto; min-height: 76px; }
 }
 `;
 

@@ -20,7 +20,10 @@
 }
 
 .menu__title {
-  font-size: clamp(2.6rem, 11vw, 5.2rem);
+  /* 11vw hacía que el título rozara el borde en tablets: con el tracking de
+     0.22em, once caracteres ocupaban más que el ancho disponible. */
+  max-width: 100%;
+  font-size: clamp(2.1rem, 9.4vw, 5.2rem);
   font-weight: 200;
   letter-spacing: 0.22em;
   line-height: 1;

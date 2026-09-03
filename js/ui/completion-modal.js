@@ -69,6 +69,12 @@ export function showCompletionModal(result) {
         on: { click: () => { audio.play('click'); close(); result.onNext(); } },
       }, ['Siguiente nivel', icon('arrowRight', { size: 15 })]),
 
+      // El último nivel no lleva a otro nivel: lleva a la salida.
+      result.isFinalLevel && el('button.btn.btn--primary', {
+        type: 'button',
+        on: { click: () => { audio.play('click'); close(); result.onFinish(); } },
+      }, ['Salir', icon('arrowRight', { size: 15 })]),
+
       result.stars < MAX_STARS && el('button.btn', {
         type: 'button',
         on: { click: () => { audio.play('click'); close(); result.onReplay(); } },

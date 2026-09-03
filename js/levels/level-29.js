@@ -134,8 +134,8 @@ const STYLES = `
 .lv29__options { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-top: auto; }
 
 .lv29__option {
-  min-width: 34px;
-  min-height: 34px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0 var(--sp-2);
   border-radius: var(--r-sm);
   border: 1px solid var(--glass-border);
