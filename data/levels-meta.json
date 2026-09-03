@@ -14,8 +14,8 @@
     { "id": 9,  "title": "Orden",               "type": "logica-ordenamiento",  "difficulty": 3, "timeThreshold": 120, "timeLimit": null, "implemented": true },
     { "id": 10, "title": "Código Oculto",       "type": "observacion-codigo",   "difficulty": 3, "timeThreshold": 150, "timeLimit": null, "implemented": true },
 
-    { "id": 11, "title": "Binario",             "type": "codigo-matematica",    "difficulty": 4, "timeThreshold": 160, "timeLimit": null, "implemented": false },
-    { "id": 12, "title": "Las 8 Pelotas",       "type": "fisica-logica",        "difficulty": 5, "timeThreshold": 180, "timeLimit": null, "implemented": false },
+    { "id": 11, "title": "Binario",             "type": "codigo-matematica",    "difficulty": 4, "timeThreshold": 160, "timeLimit": null, "implemented": true },
+    { "id": 12, "title": "Las 8 Pelotas",       "type": "fisica-logica",        "difficulty": 5, "timeThreshold": 180, "timeLimit": null, "implemented": true },
     { "id": 13, "title": "Conexiones",          "type": "espacial-logica",      "difficulty": 4, "timeThreshold": 200, "timeLimit": null, "implemented": false },
     { "id": 14, "title": "Mueve una Pieza",     "type": "espacial",             "difficulty": 4, "timeThreshold": 170, "timeLimit": null, "implemented": false },
     { "id": 15, "title": "Sudoku 4×4",          "type": "matematica-logica",    "difficulty": 4, "timeThreshold": 180, "timeLimit": null, "implemented": false },
