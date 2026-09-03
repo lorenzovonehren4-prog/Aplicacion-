@@ -3,7 +3,7 @@
 Juego web de puzzles y acertijos: **30 desafíos, 1 salida**.
 HTML + CSS + JavaScript vanilla (ES modules). Sin frameworks, sin backend, sin build.
 
-Estado actual: **fundación completa + niveles 1–10 jugables**. Los niveles 11–30
+Estado actual: **fundación completa + niveles 1–20 jugables**. Los niveles 21–30
 están reservados en el catálogo y muestran un estado "en construcción" hasta que
 se implementen, uno por uno.
 
@@ -152,7 +152,7 @@ export default class Level31 extends LevelBase {
 ```
 
 Con `"implemented": false` el nivel aparece en el selector pero muestra el estado
-"en construcción" — es como están hoy los niveles 2–30.
+"en construcción" — es como están hoy los niveles 21–30.
 
 ### El contrato de `LevelBase`
 
@@ -199,10 +199,10 @@ del juego lo ignora por completo. Hoy contiene dos piezas que varios niveles
 reutilizan en lugar de reimplementar:
 
 - **`keypad.js`** — teclado numérico en pantalla, con soporte de teclado físico.
-  Lo usan los niveles 2 y 8 (y lo pedirán el 11, 15, 27, 29 y 30).
+  Lo usan los niveles 2, 8, 15 y 18 (y lo pedirán el 27, 29 y 30).
 - **`sortable.js`** — lista reordenable por arrastre, con Pointer Events (ratón y
-  dedo con el mismo código) y movimiento con las flechas del teclado. Lo usa el
-  nivel 9 y lo pedirá el 19.
+  dedo con el mismo código) y movimiento con las flechas del teclado. Lo usan los
+  niveles 9 y 19.
 
 ## Decisiones tomadas al implementar los niveles
 
@@ -219,10 +219,20 @@ Están anotados también en la cabecera de cada archivo:
 - **Nivel 5** — la primera versión, fiel al documento (tres arcos sueltos junto
   a la figura), resultó imposible de resolver mirando. Se rehízo: la silueta
   tiene relieve y apuntar a una pieza la encaja en el hueco.
+- **Nivel 13** — el documento sólo pide que los caminos "no se crucen". Con esa
+  única regla sobra tanto espacio que el nivel se resuelve solo, así que se
+  añade la regla del Flow clásico: no pueden quedar celdas vacías. Se anuncia en
+  el enunciado, nunca es una trampa.
+- **Nivel 19** — C y D pesan lo mismo, así que las dos últimas posiciones son
+  intercambiables: se aceptan A-B-E-C-D y A-B-E-D-C. Exigir un orden entre dos
+  objetos que el enunciado declara iguales sería incoherente.
+- **Nivel 11** — se usa el alfabeto latino de 26 letras, sin Ñ, para que
+  A=1…Z=26 coincida con la convención habitual de este cifrado.
 
 ## Estado de los niveles
 
 | Niveles | Estado |
 |---|---|
 | 01–10 | Jugables — bloque "Introducción gradual" completo |
-| 11–30 | Catalogados (título, tipo, umbral) · pendientes de implementar |
+| 11–20 | Jugables — bloque "El Núcleo" completo |
+| 21–30 | Catalogados (título, tipo, umbral) · pendientes de implementar |
