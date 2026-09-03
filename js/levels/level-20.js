@@ -34,6 +34,9 @@ const DOORS = [
 
 const SOLUTION = 4;
 
+/** Puerta que lleva fuera. La usan los meta-puzzles 27 y 30. */
+export const ANSWER_DOOR = SOLUTION;
+
 const STYLES = `
 .lv20 {
   flex: 1;

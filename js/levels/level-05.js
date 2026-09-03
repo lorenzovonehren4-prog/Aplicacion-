@@ -41,6 +41,9 @@ const MIRROR = 'M50 8 C70 10 82 20 82 34 L66 34 L66 52 L86 52 L86 74 L68 74 L68 
 
 const CORRECT_INDEX = 1;
 
+/** Pieza correcta en numeración humana. La usan los meta-puzzles 27 y 30. */
+export const ANSWER_PIECE = CORRECT_INDEX + 1;
+
 const PIECES = [
   // Hombro caído: la curva sale hacia abajo antes de abrirse.
   { d: 'M50 8 C62 18 82 24 82 34 L66 34 L66 52 L86 52 L86 74 L68 74 L68 92 L50 92', label: 'Pieza 1' },

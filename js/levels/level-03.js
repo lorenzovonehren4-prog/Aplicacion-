@@ -23,6 +23,9 @@ const BASE_ANGLE = 45;
 const ODD_ANGLE = 52;
 const TARGET_ROW = 2; // 0-based → tercera fila
 
+/** Columna del símbolo distinto, 1-based. La usa el meta-puzzle del nivel 30. */
+export const ANSWER_COLUMN = randInt(createRng(SEED), 0, SIZE - 1) + 1;
+
 const STYLES = `
 .lv03 {
   flex: 1;
@@ -75,8 +78,7 @@ export class Level03 extends LevelBase {
 
     // La columna se sortea con semilla fija: la pista habla de la tercera fila
     // y debe seguir siendo cierta después de recargar.
-    const rng = createRng(SEED);
-    this.targetIndex = TARGET_ROW * SIZE + randInt(rng, 0, SIZE - 1);
+    this.targetIndex = TARGET_ROW * SIZE + (ANSWER_COLUMN - 1);
   }
 
   init() {

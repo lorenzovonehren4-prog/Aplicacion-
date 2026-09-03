@@ -39,6 +39,9 @@ const HEAVY_WEIGHT = 11;
 /** Zonas por las que rota una pelota al pulsarla. */
 const ZONES = ['pool', 'left', 'right'];
 
+/** Pelota que pesa de más. La usan los meta-puzzles de los niveles 27 y 30. */
+export const ANSWER_BALL = randInt(createRng(SEED), 1, BALL_COUNT);
+
 const STYLES = `
 .lv12 {
   flex: 1;
@@ -199,8 +202,7 @@ export class Level12 extends LevelBase {
   constructor(levelId, container, context) {
     super(levelId, container, context);
 
-    const rng = createRng(SEED);
-    this.heavyBall = randInt(rng, 1, BALL_COUNT);
+    this.heavyBall = ANSWER_BALL;
 
     /** Zona actual de cada pelota (1..8). */
     this.placement = new Map(

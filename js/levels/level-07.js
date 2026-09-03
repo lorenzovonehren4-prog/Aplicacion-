@@ -39,6 +39,9 @@ const COOL_RATE = 0.3;
 
 const TICK_MS = 250;
 
+/** Interruptor que controla la bombilla, 1-based. La usan los niveles 27 y 30. */
+export const ANSWER_SWITCH = randInt(createRng(SEED), 0, 2) + 1;
+
 const STYLES = `
 .lv07 {
   flex: 1;
@@ -166,8 +169,7 @@ export class Level07 extends LevelBase {
   constructor(levelId, container, context) {
     super(levelId, container, context);
 
-    const rng = createRng(SEED);
-    this.correctSwitch = randInt(rng, 0, 2);
+    this.correctSwitch = ANSWER_SWITCH - 1;
 
     this.switches = [false, false, false];
     this.heat = 0;          // segundos de calor acumulados en la bombilla

@@ -3,9 +3,8 @@
 Juego web de puzzles y acertijos: **30 desafíos, 1 salida**.
 HTML + CSS + JavaScript vanilla (ES modules). Sin frameworks, sin backend, sin build.
 
-Estado actual: **fundación completa + niveles 1–20 jugables**. Los niveles 21–30
-están reservados en el catálogo y muestran un estado "en construcción" hasta que
-se implementen, uno por uno.
+Estado actual: **los 30 niveles jugables**. El juego se completa de principio a
+fin: menú → 30 niveles encadenados → pantalla final.
 
 ---
 
@@ -151,8 +150,9 @@ export default class Level31 extends LevelBase {
   "difficulty": 4, "timeThreshold": 150, "timeLimit": null, "implemented": true }
 ```
 
-Con `"implemented": false` el nivel aparece en el selector pero muestra el estado
-"en construcción" — es como están hoy los niveles 21–30.
+Con `"implemented": false` el nivel aparece en el selector pero muestra un estado
+"en construcción" en vez del puzzle. Hoy los treinta están implementados, así que
+esa bandera sólo sirve para añadir un nivel 31 por partes.
 
 ### El contrato de `LevelBase`
 
@@ -199,10 +199,22 @@ del juego lo ignora por completo. Hoy contiene dos piezas que varios niveles
 reutilizan en lugar de reimplementar:
 
 - **`keypad.js`** — teclado numérico en pantalla, con soporte de teclado físico.
-  Lo usan los niveles 2, 8, 15 y 18 (y lo pedirán el 27, 29 y 30).
+  Lo usan los niveles 2, 8, 15, 18, 27 y 30.
 - **`sortable.js`** — lista reordenable por arrastre, con Pointer Events (ratón y
   dedo con el mismo código) y movimiento con las flechas del teclado. Lo usan los
   niveles 9 y 19.
+
+## Los meta-puzzles y las respuestas exportadas
+
+Los niveles 27 y 30 piden códigos formados por respuestas de niveles anteriores.
+Para que no puedan desincronizarse, esos niveles **importan** la respuesta en vez
+de copiarla: `level-03.js`, `level-05.js`, `level-07.js`, `level-12.js`,
+`level-20.js` y `level-22.js` exportan una constante `ANSWER_*` con su solución,
+y los meta-puzzles construyen el código a partir de ellas.
+
+Es la única dependencia entre niveles de todo el juego, y es deliberada: un
+meta-puzzle que no dependa de los demás no es un meta-puzzle. Si alguien cambia
+la semilla del nivel 12, el código del 27 cambia con él y sigue siendo cierto.
 
 ## Decisiones tomadas al implementar los niveles
 
@@ -228,11 +240,29 @@ Están anotados también en la cabecera de cada archivo:
   objetos que el enunciado declara iguales sería incoherente.
 - **Nivel 11** — se usa el alfabeto latino de 26 letras, sin Ñ, para que
   A=1…Z=26 coincida con la convención habitual de este cifrado.
+- **Nivel 26** — se puede volver a ver la secuencia las veces que haga falta,
+  pero cada repetición borra lo introducido. Sin esa condición el nivel se
+  resuelve mirando y pulsando de uno en uno, y deja de ser de memoria.
+- **Nivel 28** — es el único que el documento deja sin resolver: enumera engaños
+  posibles pero no elige ninguno. El elegido: la pantalla ordena pulsar un
+  círculo rojo que no existe, insiste al fallar, y la respuesta es el círculo
+  número 28 — el número del nivel, que lleva en la cabecera desde el principio.
+  Se descartó esconderla en el título o en los colores porque dependería de
+  detalles de estilo que un rediseño rompería sin avisar.
+- **Niveles 27 y 30** — el documento propone unos niveles fuente concretos para
+  sus códigos. Se usan los seis cuya respuesta es un número suelto (3, 5, 7, 12,
+  20 y 22): la del 17 es una frase, la del 21 una tarjeta y la del 27 ya es un
+  código de cuatro cifras.
 
 ## Estado de los niveles
 
 | Niveles | Estado |
 |---|---|
-| 01–10 | Jugables — bloque "Introducción gradual" completo |
-| 11–20 | Jugables — bloque "El Núcleo" completo |
-| 21–30 | Catalogados (título, tipo, umbral) · pendientes de implementar |
+| 01–10 | Jugables — bloque "Introducción gradual" |
+| 11–20 | Jugables — bloque "El Núcleo" |
+| 21–30 | Jugables — bloque "Los memorables" |
+
+Los 30 niveles están implementados y se han jugado de principio a fin en
+Chromium: 197 comprobaciones automatizadas cubren cada puzzle resuelto como lo
+haría una persona, el desbloqueo en cadena, el cálculo y la persistencia de
+estrellas, y la ausencia de errores en consola.
