@@ -3,7 +3,7 @@
 Juego web de puzzles y acertijos: **30 desafíos, 1 salida**.
 HTML + CSS + JavaScript vanilla (ES modules). Sin frameworks, sin backend, sin build.
 
-Estado actual: **fundación completa + nivel 1 como plantilla**. Los niveles 2–30
+Estado actual: **fundación completa + niveles 1–10 jugables**. Los niveles 11–30
 están reservados en el catálogo y muestran un estado "en construcción" hasta que
 se implementen, uno por uno.
 
@@ -48,6 +48,7 @@ mind-escape/
 │   ├── levels/
 │   │   ├── level-base.js   Clase base abstracta (el contrato)
 │   │   ├── registry.js     Catálogo + carga perezosa de módulos
+│   │   ├── shared/         Widgets de puzzle reutilizables (keypad, sortable)
 │   │   └── level-01.js …   Un archivo por nivel
 │   ├── ui/                 Pantallas
 │   └── utils/              dom · animations · math
@@ -191,9 +192,37 @@ monta como `<style>` (ver `level-01.js`). Así un nivel nuevo no obliga a tocar
 
 ---
 
+## Widgets compartidos
+
+`js/levels/shared/` guarda vocabulario de puzzles, no infraestructura: el núcleo
+del juego lo ignora por completo. Hoy contiene dos piezas que varios niveles
+reutilizan en lugar de reimplementar:
+
+- **`keypad.js`** — teclado numérico en pantalla, con soporte de teclado físico.
+  Lo usan los niveles 2 y 8 (y lo pedirán el 11, 15, 27, 29 y 30).
+- **`sortable.js`** — lista reordenable por arrastre, con Pointer Events (ratón y
+  dedo con el mismo código) y movimiento con las flechas del teclado. Lo usa el
+  nivel 9 y lo pedirá el 19.
+
+## Decisiones tomadas al implementar los niveles
+
+Tres puntos del documento maestro no se pudieron seguir al pie de la letra.
+Están anotados también en la cabecera de cada archivo:
+
+- **Nivel 6** — las tres afirmaciones del documento no tienen solución bajo la
+  regla "sólo una es verdadera" (ninguna caja deja exactamente una verdad). Se
+  sustituyeron por un conjunto que sí funciona, mantiene la respuesta pedida
+  (caja B) y deja las tres pistas originales siendo correctas.
+- **Nivel 9** — las cuatro restricciones admiten cuatro órdenes válidos, no uno.
+  El documento ya lo contempla ("o variante válida"), así que se valida contra
+  las restricciones y no contra una secuencia concreta.
+- **Nivel 5** — la primera versión, fiel al documento (tres arcos sueltos junto
+  a la figura), resultó imposible de resolver mirando. Se rehízo: la silueta
+  tiene relieve y apuntar a una pieza la encaja en el hueco.
+
 ## Estado de los niveles
 
 | Niveles | Estado |
 |---|---|
-| 01 | Implementado — plantilla de referencia |
-| 02–30 | Catalogados (título, tipo, umbral) · pendientes de implementar |
+| 01–10 | Jugables — bloque "Introducción gradual" completo |
+| 11–30 | Catalogados (título, tipo, umbral) · pendientes de implementar |
