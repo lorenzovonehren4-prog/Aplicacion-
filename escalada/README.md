@@ -119,6 +119,46 @@ salto: si son alcanzables depende de la fase del vaivén, y eso no está
 verificado. Encenderlos sin comprobar la fase es volver a poder dejar el juego
 imposible.
 
+### El menú principal, rehecho
+
+El problema no era estético: con 18 colores y 16 accesorios en **dos rejillas
+apiladas**, el menú medía casi el doble que la pantalla y el botón de empezar
+quedaba fuera. Ahora las dos van en **pestañas** —sólo una a la vista—, los
+controles bajan a la columna del personaje, que estaba medio vacía, y en la
+tercera columna, bajo la ruta, hay una guía de **lo que te vas a encontrar**:
+las ocho mecánicas con el mismo código de color que usa el mapa.
+
+Debajo de las tarjetas, una línea dice qué llevas puesto («Llevas Abeja con
+Corona»), que era información que sólo estaba en el dibujo.
+
+Y el botón de empezar se queda **pegado al fondo del panel**. En 1280×720 o en
+un móvil el menú no cabe por mucho que se recorte, y lo que no puede pasar es
+que haya que desplazarse a ciegas para encontrarlo. Comprobado a 1440×860,
+1366×768, 1280×720 y 390×780: visible en las cuatro.
+
+### Siete objetos más que iban clavados en un palo
+
+Un detector automático dibuja cada uno de los 52 objetos por separado y busca
+lo que cuelga fino por debajo del apoyo; una hoja de contactos con los 52
+juntos enseña lo que sobresale por arriba. Entre las dos salieron:
+
+| Objeto | Qué pasaba |
+|---|---|
+| 🛟 Boya | El salvavidas iba **ensartado en una barra** que cruzaba todo el apoyo. Ahora descansa sobre un noray, y el aro tiene agujero de verdad |
+| 🛟 Flotador | La peana se pintaba **la última** y tapaba medio flotador: sólo asomaban los parches rojos, sueltos |
+| 🚧 Conos | Iban **del revés y colgando** bajo el apoyo, con el argumento de que arriba «se atravesarían». No se atraviesan |
+| 🗿 Estatua | El busto flotaba sobre un pedestal estrecho: una cabeza en un palo |
+| 🎡 Noria | La rueda colgaba de una barra fina. Ahora tiene patas en A y zócalo |
+| ⛵ Velero | El mástil sobresalía por encima de las velas |
+| 🛥️ Yate | Un asta de bandera de 18 px sobre el puente, cambiada por un arco de radar |
+| 🎪 Carpa | El remate dorado flotaba 12 px por encima de la lona |
+| ⛱️ Sombrilla | Al quitarle el mástil se había quedado en una lámina plana; recupera volumen con gajos y un montón de arena |
+
+Lo que el detector sigue marcando —ruedas de tractor, de autobús y el aro de
+la noria— son formas redondas, no palos: en el punto más estrecho de un
+círculo la fila mide poco y el detector no distingue. Se comprobó en la hoja
+de contactos.
+
 ### Mapa del nivel
 
 Botón abajo a la izquierda, o **Tab**. La subida mide casi 17.000 px de alto y

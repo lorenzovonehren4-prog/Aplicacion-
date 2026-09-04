@@ -50,13 +50,13 @@
   /* --- Menú organizado en dos columnas --- */
   /* Pensado para pantallas anchas y BAJAS, tipo Chromebook 1366x768: el
      menú crece a lo ancho, nunca a lo alto. */
-  .menu { max-width:1060px; width:96vw; max-height:92vh; overflow:auto; text-align:left;
+  .menu { max-width:1060px; width:96vw; max-height:95vh; overflow:auto; text-align:left;
     background:linear-gradient(165deg, rgba(14,22,38,.93), rgba(9,14,26,.96));
     border:1px solid rgba(255,255,255,.10);
     box-shadow:0 28px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07);
-    border-radius:18px; padding:18px 22px 16px; }
-  .cabecera { text-align:center; margin-bottom:12px; }
-  .cabecera h1 { margin:0 0 3px; letter-spacing:3px; font-size:clamp(24px,3.2vw,36px); font-weight:900;
+    border-radius:18px; padding:13px 20px 9px; }
+  .cabecera { text-align:center; margin-bottom:8px; }
+  .cabecera h1 { margin:0 0 2px; letter-spacing:3px; font-size:clamp(22px,2.7vw,31px); font-weight:900;
     background:linear-gradient(180deg,#ffffff 35%,#8fd4ff);
     -webkit-background-clip:text; background-clip:text; color:transparent;
     text-shadow:0 6px 26px rgba(90,190,255,.35); }
@@ -68,7 +68,7 @@
   .col-pj { display:flex; flex-direction:column; }
   .bloque { flex:1; min-width:0; }
   .bloque h2 { font-size:12px; text-transform:uppercase; letter-spacing:1.6px;
-    color:#8fa8c0; margin:0 0 10px; padding-bottom:7px;
+    color:#8fa8c0; margin:0 0 8px; padding-bottom:6px;
     border-bottom:1px solid rgba(255,255,255,.09); display:flex; align-items:center; gap:8px; }
   .bloque h2::before { content:''; width:3px; height:12px; border-radius:2px;
     background:linear-gradient(180deg,#ffd700,#ff8a3d); }
@@ -96,12 +96,12 @@
   .menu .btn:hover { transform:translateY(-2px);
     box-shadow:0 8px 0 #b8850c, 0 16px 30px rgba(0,0,0,.4); }
   .menu .btn:active { transform:translateY(4px); box-shadow:0 2px 0 #b8850c; }
-  .escaparate { position:relative; margin:0 auto 10px; width:100%; max-width:200px;
+  .escaparate { position:relative; margin:0 auto 8px; width:100%; max-width:186px;
     border-radius:14px; overflow:hidden;
     background:linear-gradient(180deg,#a8e6fb 0%,#7fd2f0 55%,#5cbfe4 100%);
     border:1px solid rgba(255,255,255,.22);
     box-shadow:inset 0 -18px 30px rgba(20,70,110,.20); }
-  #preview { display:block; width:100%; height:150px; }
+  #preview { display:block; width:100%; height:124px; }
   .escaparate .nombreSkin { position:absolute; left:0; right:0; bottom:0;
     text-align:center; font-size:11px; letter-spacing:1.4px; text-transform:uppercase;
     color:#fff; background:linear-gradient(0deg,rgba(8,16,28,.72),transparent);
@@ -122,11 +122,17 @@
     color:#c9d6e5; letter-spacing:.4px; }
   .tarjeta.sel span { color:#fff; }
   /* En pantallas bajas se aprieta aún más; en estrechas se apila */
-  @media (max-height:700px) {
-    #preview { height:120px; }
-    .tarjeta canvas { height:40px; }
-    .cabecera h1 { font-size:26px; }
-    .menu { padding:12px 18px 12px; }
+  @media (max-height:830px) {
+    #preview { height:104px; }
+    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:34px; }
+    #rutaPreview { height:140px; }
+    .cabecera h1 { font-size:25px; }
+    .menu { padding:11px 17px 8px; }
+    .vitrina div { padding:3px 9px; }
+    .vitrina b { font-size:13px; }
+    .mecanicas li { font-size:11px; }
+    .mecanicas { gap:4px; }
+    .keys { gap:5px; }
   }
   @media (max-width:860px) { .columnas { grid-template-columns:1fr 1fr; }
     .col-pj { grid-column:1 / -1; flex-direction:row; gap:14px; align-items:center; }
@@ -138,7 +144,7 @@
   /* Con 18 colores y 16 accesorios, a cuatro por fila el menú se iba de alto
      y había que desplazarlo para llegar al botón de empezar. A cinco cabe. */
   #accesorios { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-bottom:6px; }
-  #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:44px; }
+  #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:40px; }
   .tarjeta span { font-size:9px; line-height:1.2; }
   .acc { padding:6px 10px; font-size:12px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600;
     border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); color:#c9d6e5; }
@@ -156,11 +162,11 @@
   .panel h1 { font-size:30px; color:#ffd700; margin-bottom:8px; letter-spacing:.06em; }
   .panel h1.win { color:#2ed573; }
   .panel p { color:#9aa0b4; font-size:14px; margin-bottom:18px; line-height:1.55; }
-  .keys { display:flex; flex-direction:column; gap:9px; text-align:left; margin-bottom:18px; }
-  .keyrow { display:flex; align-items:center; gap:11px; font-size:14px; color:#eee; }
-  .key { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:32px;
-    padding:0 8px; flex-shrink:0; background:rgba(255,255,255,.09);
-    border:1px solid rgba(255,255,255,.18); border-radius:6px; font-weight:700; font-size:13px; }
+  .keys { display:flex; flex-direction:column; gap:7px; text-align:left; margin-bottom:10px; }
+  .keyrow { display:flex; align-items:center; gap:10px; font-size:12.5px; color:#dfe7f0; }
+  .key { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:25px;
+    padding:0 7px; flex-shrink:0; background:rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.18); border-radius:6px; font-weight:700; font-size:12px; }
   .danger { color:#ff4757; font-weight:700; }
   .good { color:#2ed573; font-weight:700; }
   .btn { border:none; cursor:pointer; background:#ffd700; color:#1a1400; font-size:15px;
@@ -221,20 +227,55 @@
   #marcas:empty { display:none; }
   .js-mute { font-size:13px; letter-spacing:.4px; padding:10px; }
   .menu .js-mute { margin-top:9px; }
-  .marca-menu { margin-top:9px; text-align:center; font-size:12px; font-weight:700;
+  .marca-menu { margin-top:5px; text-align:center; font-size:12px; font-weight:700;
     letter-spacing:.4px; color:#ffd700; }
 
   /* ---- Pantalla de inicio ---- */
-  .vitrina { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+  .pestanas { display:flex; gap:6px; margin-bottom:12px;
+    border-bottom:1px solid rgba(255,255,255,.09); padding-bottom:9px; }
+  .pestana { flex:1; padding:9px 10px; border-radius:9px; cursor:pointer;
+    font-size:12px; font-weight:800; letter-spacing:1.3px; text-transform:uppercase;
+    color:#8fa8c0; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08); transition:color .12s, background .12s; }
+  .pestana:hover { color:#c9d6e5; background:rgba(255,255,255,.08); }
+  .pestana.activa { color:#10202e; background:linear-gradient(180deg,#ffe27a,#f5b31f);
+    border-color:transparent; }
+  .pestana em { font-style:normal; opacity:.65; margin-left:5px; font-size:11px; }
+  .oculta { display:none !important; }
+  .pista-eleccion { margin:9px 0 0; font-size:11.5px; color:#8fa8c0; text-align:center; }
+  .pista-eleccion b { color:#ffd700; }
+
+  .mecanicas { list-style:none; margin:0; padding:0; display:flex;
+    flex-direction:column; gap:6px; }
+  .mecanicas li { display:flex; align-items:flex-start; gap:8px; font-size:11.5px;
+    color:#9fb2c6; line-height:1.4; text-align:left; }
+  .mecanicas span { flex:1; }
+  .mecanicas i { flex:none; width:9px; height:9px; border-radius:3px;
+    margin-top:4px; }
+  .mecanicas b { color:#e6eef7; font-weight:700; }
+
+  /* El botón de empezar se queda pegado al fondo del panel. En 1280x720 o en
+     un móvil el menú no cabe por mucho que se recorte, y lo que no puede
+     pasar es que haya que desplazarse a ciegas para encontrar el botón. */
+  .pie-menu { display:flex; gap:10px; align-items:stretch; margin-top:11px;
+    position:sticky; bottom:-9px; z-index:2; padding:9px 0;
+    background:linear-gradient(180deg, rgba(10,15,26,0), rgba(10,15,26,.99) 38%); }
+  /* El botón fantasma es transparente por definición y dejaba ver la lista de
+     detrás cuando la barra se queda pegada al fondo. Aquí lleva relleno. */
+  .pie-menu .btn.ghost { background:rgba(24,32,48,.96); }
+  .pie-menu #start-btn { flex:2.4; margin-top:0; }
+  .pie-menu .js-mute { flex:1; margin-top:0; }
+  @media (max-width:600px) { .pie-menu { flex-direction:column; } }
+  .vitrina { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
   .vitrina div { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09);
-    border-radius:10px; padding:6px 12px; min-width:78px; }
-  .vitrina b { display:block; font-size:15px; color:#ffd700; font-weight:900;
+    border-radius:10px; padding:4px 11px; min-width:74px; }
+  .vitrina b { display:block; font-size:14px; color:#ffd700; font-weight:900;
     font-variant-numeric:tabular-nums; }
   .vitrina span { display:block; font-size:10px; color:#8fa8c0;
     text-transform:uppercase; letter-spacing:.9px; margin-top:1px; }
   .ruta { border-radius:11px; overflow:hidden; background:#0b1424;
     border:1px solid rgba(255,255,255,.09); }
-  #rutaPreview { display:block; width:100%; height:216px; }
+  #rutaPreview { display:block; width:100%; height:172px; }
   .ruta-pie { margin:7px 0 0; font-size:11px; color:#8fa8c0; line-height:1.45; }
   .ruta-pie b { color:#c9d6e5; }
   @media (max-height:700px) { #rutaPreview { height:170px; } }
@@ -352,20 +393,6 @@
               <span>Nombre</span>
               <input id="nombre-input" maxlength="12" placeholder="ESCALADOR" autocomplete="off">
             </label>
-          </section>
-
-          <section class="bloque">
-            <h2>Color</h2>
-            <div id="skins"></div>
-            <h2>Accesorio</h2>
-            <div id="accesorios"></div>
-          </section>
-
-          <section class="bloque">
-            <h2>La ruta</h2>
-            <div class="ruta"><canvas id="rutaPreview"></canvas></div>
-            <p class="ruta-pie">Las 6 cumbres, de abajo arriba. En partida,
-              <b>Tab</b> o el botón del mapa abren esto con tu posición.</p>
             <h2>Controles</h2>
             <div class="keys">
               <div class="keyrow"><span class="key">&larr; &rarr;</span><span>Moverte · <b>A</b> <b>D</b></span></div>
@@ -374,13 +401,39 @@
               <div class="keyrow"><span class="key">Tab</span><span>Mapa del nivel</span></div>
               <div class="keyrow"><span class="key">Esc</span><span>Pausa · <b>P</b></span></div>
               <div class="keyrow"><span class="key">M</span><span>Silenciar</span></div>
-              <div class="keyrow"><span class="key">&#9757;</span><span>En móvil y tablet, mando en pantalla</span></div>
+              <div class="keyrow"><span class="key">&#9757;</span><span>En móvil, mando en pantalla</span></div>
             </div>
+          </section>
+
+          <section class="bloque">
+            <!-- Dos pestañas en vez de dos rejillas apiladas: con 18 colores
+                 y 16 accesorios, una debajo de otra el menú medía el doble de
+                 la pantalla y el botón de empezar quedaba fuera. -->
+            <div class="pestanas" role="tablist">
+              <button class="pestana activa" id="tab-color" role="tab">Color
+                <em id="cuenta-color"></em></button>
+              <button class="pestana" id="tab-acc" role="tab">Accesorio
+                <em id="cuenta-acc"></em></button>
+            </div>
+            <div id="skins"></div>
+            <div id="accesorios" class="oculta"></div>
+            <p class="pista-eleccion" id="pista-eleccion"></p>
+          </section>
+
+          <section class="bloque">
+            <h2>La ruta</h2>
+            <div class="ruta"><canvas id="rutaPreview"></canvas></div>
+            <p class="ruta-pie">Las 6 cumbres, de abajo arriba. En partida,
+              <b>Tab</b> abre esto con tu posición.</p>
+            <h2>Lo que te vas a encontrar</h2>
+            <ul class="mecanicas" id="mecanicas"></ul>
           </section>
         </div>
 
-        <button id="start-btn" class="btn">Empezar a escalar</button>
-        <button class="btn ghost js-mute">🔊  Sonido activado</button>
+        <div class="pie-menu">
+          <button id="start-btn" class="btn">Empezar a escalar</button>
+          <button class="btn ghost js-mute">🔊  Sonido activado</button>
+        </div>
         <p class="marca-menu" id="marca-menu"></p>
       </div>
     </div>
@@ -4911,15 +4964,31 @@ function propBarca(x, y, w) {
 
 /** 🛟 Boya pequeña. */
 function propBoya(x, y, w) {
+  // El salvavidas iba ENSARTADO en una barra fina que cruzaba todo el apoyo:
+  // un aro atravesado por un palo. Ahora descansa sobre un noray de puerto,
+  // un bloque macizo del ancho del apoyo, que es lo que de verdad se pisa.
   const cx = x + w / 2;
+  peana(x, y, w, '#cdd6e0', '#9aa6b4', '#69737f');
+
+  const r = Math.min(24, Math.max(11, w * 0.26));
+  const cy = y + 20 + r * 0.35;
   ctx.fillStyle = '#e74c3c';
-  ctx.beginPath(); ctx.arc(cx, y + 16, Math.min(26, Math.max(11, w * 0.30)), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,30,20,0.85)'; ctx.lineWidth = 2;
+  ctx.stroke();
+  // Cuadrantes blancos, que es lo que hace que se lea como salvavidas
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
   ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(cx, y + 16, Math.min(12, Math.max(5, w * 0.14)), 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#c0392b';
-  rrect(x, y, w, 7, 3); ctx.fill();
-  ctx.strokeStyle = 'rgba(120,30,20,0.8)'; ctx.lineWidth = 1.6;
-  ctx.beginPath(); ctx.arc(cx, y + 16, Math.min(26, Math.max(11, w * 0.30)), 0, Math.PI * 2); ctx.stroke();
+  ctx.fillRect(cx - r, cy - r, r, r);
+  ctx.fillRect(cx, cy, r, r);
+  ctx.restore();
+  // Agujero: el fondo se ve a través, como en un flotador de verdad
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.44, 0, Math.PI * 2); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = 'rgba(120,30,20,0.7)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.44, 0, Math.PI * 2); ctx.stroke();
 }
 
 /** 🏮 Farola: se pisa el travesaño. */
@@ -7270,18 +7339,25 @@ function propVagoneta(x, y, w) {
 /** 🚧 Conos de obra. */
 function propConos(x, y, w) {
   peana(x, y, w, '#5f6672', '#3a3f4a', '#22262e');
-  const n = Math.max(1, Math.round(w / 40));
+  // Iban del revés y colgando bajo el apoyo —conos de obra boca abajo en el
+  // aire— con el argumento de que arriba «se atravesarían». No se atraviesan:
+  // se pisa la peana, y el cono queda dentro de su grosor como cualquier
+  // otro adorno de superficie.
+  const n = Math.max(1, Math.round(w / 46));
   for (let i = 0; i < n; i++) {
     const cx = x + (w / n) * (i + 0.5);
-    // Conos colgando por debajo: encima se atravesarían
+    ctx.fillStyle = '#c94d1c';
+    rrect(cx - 13, y + 15, 26, 5, 2); ctx.fill();
     ctx.fillStyle = '#e8622a';
     ctx.beginPath();
-    ctx.moveTo(cx, y + 48); ctx.lineTo(cx + 12, y + 16); ctx.lineTo(cx - 12, y + 16);
+    ctx.moveTo(cx, y - 12); ctx.lineTo(cx + 11, y + 16); ctx.lineTo(cx - 11, y + 16);
     ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#ffffff';
-    rrect(cx - 8, y + 28, 16, 6, 1); ctx.fill();
-    ctx.fillStyle = '#c94d1c';
-    rrect(cx - 14, y + 14, 28, 5, 2); ctx.fill();
+    rrect(cx - 7.5, y + 2, 15, 5, 1); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,50,15,0.8)'; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 12); ctx.lineTo(cx + 11, y + 16); ctx.lineTo(cx - 11, y + 16);
+    ctx.closePath(); ctx.stroke();
   }
 }
 
@@ -7441,22 +7517,29 @@ function propHorno(x, y, w) {
 
 /** 🛟 Flotador de rosquilla. */
 function propFlotador(x, y, w) {
-  const cx = x + w / 2, r = Math.min(30, Math.max(14, w * 0.30));
+  // La peana se pintaba la ÚLTIMA y tapaba la mitad de abajo del flotador:
+  // sólo asomaban por fuera los parches rojos, sueltos. Va primero.
+  peana(x, y, w, '#e8eef5', '#c3cdd8', '#8d99a6');
+  const cx = x + w / 2, r = Math.min(26, Math.max(13, w * 0.26));
   ctx.fillStyle = '#ffffff';
   ctx.beginPath(); ctx.ellipse(cx, y + r * 0.7, r, r * 0.7, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#7ad4ee';
-  ctx.beginPath(); ctx.ellipse(cx, y + r * 0.7, r * 0.42, r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, y + r * 0.7, r * 0.40, r * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+  // Los cuatro parches iban repartidos por un óvalo más grande que el propio
+  // flotador y los de abajo quedaban sueltos bajo él. Ahora van DENTRO.
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(cx, y + r * 0.7, r, r * 0.7, 0, 0, Math.PI * 2); ctx.clip();
   ctx.fillStyle = '#e74c3c';
   for (let a = 0; a < 4; a++) {
     const ang = (a / 4) * Math.PI * 2 + 0.4;
     ctx.beginPath();
-    ctx.ellipse(cx + Math.cos(ang) * r * 0.72, y + r * 0.7 + Math.sin(ang) * r * 0.5,
-                r * 0.2, r * 0.14, ang, 0, Math.PI * 2);
+    ctx.ellipse(cx + Math.cos(ang) * r * 0.66, y + r * 0.7 + Math.sin(ang) * r * 0.46,
+                r * 0.26, r * 0.17, ang, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.restore();
   ctx.strokeStyle = 'rgba(140,155,165,0.85)'; ctx.lineWidth = 1.7;
   ctx.beginPath(); ctx.ellipse(cx, y + r * 0.7, r, r * 0.7, 0, 0, Math.PI * 2); ctx.stroke();
-  peana(x, y, w, '#e8eef5', '#c3cdd8', '#8d99a6');
 }
 
 /** 🪜 Andamio. */
@@ -7513,29 +7596,36 @@ function propCoral(x, y, w) {
 
 /** ⛱️ Sombrilla de playa: se pisa la lona. */
 function propSombrilla(x, y, w) {
+  // Al quitarle el mástil se quedó en una lámina de 12 px: una raya roja. Se
+  // le devuelve el volumen con una lona con gajos y una base de arena, sin
+  // recuperar el palo.
   const cx = x + w / 2;
-  // sin mástil largo: la lona es la superficie
-  ctx.fillStyle = '#e74c3c';
-  ctx.beginPath();
-  ctx.moveTo(x, y + 12);
-  ctx.quadraticCurveTo(cx, y - 6, x + w, y + 12);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  for (let i = 0; i < 3; i++) {
-    const a = x + (w / 3) * i + w / 12;
+  const lona = () => {
     ctx.beginPath();
-    ctx.moveTo(a, y + 12);
-    ctx.quadraticCurveTo(a + w / 12, y + 2, a + w / 6, y + 12);
-    ctx.closePath(); ctx.fill();
-  }
-  ctx.fillStyle = '#c0392b';
-  rrect(x, y + 10, w, 5, 2); ctx.fill();
-  // Sin mástil: por corto que fuera, era un palo colgando en el aire.
-  ctx.strokeStyle = 'rgba(140,40,30,0.8)'; ctx.lineWidth = 1.7;
+    ctx.moveTo(x, y + 18);
+    ctx.quadraticCurveTo(cx, y - 20, x + w, y + 18);
+    ctx.quadraticCurveTo(cx, y + 8, x, y + 18);
+    ctx.closePath();
+  };
+  lona(); ctx.fillStyle = '#e74c3c'; ctx.fill();
+
+  ctx.save();
+  lona(); ctx.clip();
+  ctx.fillStyle = '#ffffff';
+  const gajo = w / 6;
+  for (let i = 0; i < 6; i += 2) ctx.fillRect(x + i * gajo, y - 24, gajo, 52);
+  ctx.restore();
+
+  lona();
+  ctx.strokeStyle = 'rgba(140,40,30,0.9)'; ctx.lineWidth = 2.2; ctx.stroke();
+
+  // Montón de arena en el que se clava, del ancho del apoyo
+  ctx.fillStyle = '#e3bd80';
   ctx.beginPath();
-  ctx.moveTo(x, y + 12);
-  ctx.quadraticCurveTo(cx, y - 6, x + w, y + 12);
-  ctx.stroke();
+  ctx.moveTo(x + 2, y + 40);
+  ctx.quadraticCurveTo(cx, y + 12, x + w - 2, y + 40);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,110,60,0.7)'; ctx.lineWidth = 1.8; ctx.stroke();
 }
 
 /** 🧊 Bloque con carámbanos colgando. */
@@ -7897,13 +7987,16 @@ function propYate(x, y, w) {
   cristal.addColorStop(1, '#3d7fa8');
   ctx.fillStyle = cristal;
   rrect(cx - 20, y - 25, 40, 14, 3); ctx.fill();
-  // Antena y bandera
-  ctx.strokeStyle = '#7d8fa0'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(cx + 20, y - 30); ctx.lineTo(cx + 20, y - 48); ctx.stroke();
-  ctx.fillStyle = '#e74c3c';
+  // El asta de la bandera era un pelo de 18 px sobre el puente. En su lugar,
+  // un arco de radar macizo: se lee igual de «yate» y no es un palo.
+  ctx.strokeStyle = '#8d9dad'; ctx.lineWidth = 5; ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(cx + 20, y - 48); ctx.lineTo(cx + 36, y - 43); ctx.lineTo(cx + 20, y - 38);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(cx + 6, y - 30);
+  ctx.quadraticCurveTo(cx + 20, y - 42, cx + 34, y - 30);
+  ctx.stroke();
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath(); ctx.arc(cx + 20, y - 38, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#8a2b22'; ctx.lineWidth = 1.6; ctx.stroke();
 }
 
 /** 🚁 Helipuerto: plataforma metálica con círculo y luces. */
@@ -7983,8 +8076,11 @@ function propCarpa(x, y, w) {
   ctx.strokeStyle = '#6b2028'; ctx.lineWidth = 2.4;
   ctx.beginPath();
   ctx.moveTo(x, y + 14); ctx.quadraticCurveTo(cx, y - 16, x + w, y + 14); ctx.stroke();
+  // El remate dorado quedaba flotando 12 px por encima de la lona, sin nada
+  // que lo sujetara. Va pegado a la cumbrera.
   ctx.fillStyle = '#ffd166';
-  ctx.beginPath(); ctx.arc(cx, y - 12, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, y - 6, 5.5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#a8801a'; ctx.lineWidth = 1.6; ctx.stroke();
 }
 
 /** 🛸 Plataforma flotante con reactores. */
@@ -8060,6 +8156,19 @@ function propTren(x, y, w) {
 /** 🎡 Noria pequeña: se pisa la barra superior. */
 function propNoria(x, y, w) {
   const cx = x + w / 2, r = Math.min(42, w * 0.42);
+  // La rueda colgaba sola bajo una barra fina. Ahora se apoya en dos patas
+  // en A y en un zócalo del ancho del apoyo: una noria de feria, no un
+  // molinillo clavado en un palo.
+  ctx.fillStyle = '#8a6a2a';
+  rrect(x + 4, y + r + 30, w - 8, 16, 4); ctx.fill();
+  ctx.strokeStyle = '#5c4614'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = '#c2871a'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+  for (const sg of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + sg * 4, y + 12);
+    ctx.lineTo(cx + sg * (r * 0.7), y + r + 30);
+    ctx.stroke();
+  }
   ctx.strokeStyle = '#e8a91f'; ctx.lineWidth = 5;
   ctx.beginPath(); ctx.arc(cx, y + r + 12, r, 0, Math.PI * 2); ctx.stroke();
   ctx.strokeStyle = '#c2871a'; ctx.lineWidth = 3;
@@ -8098,8 +8207,11 @@ function propVelero(x, y, w) {
   ctx.beginPath();
   ctx.moveTo(cx + 2, y - 6); ctx.lineTo(cx + 2, y - 54); ctx.lineTo(cx - 32, y - 8);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = '#6b563c'; ctx.lineWidth = 3.5;
-  ctx.beginPath(); ctx.moveTo(cx + 4, y - 64); ctx.lineTo(cx + 4, y); ctx.stroke();
+  // El mástil sobresalía por encima de las velas como un palo suelto. Ahora
+  // llega justo a la punta de la vela y es más grueso: parte del barco.
+  ctx.strokeStyle = '#6b563c'; ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx + 4, y - 58); ctx.lineTo(cx + 4, y + 4); ctx.stroke();
   const casco = ctx.createLinearGradient(0, y, 0, y + 34);
   casco.addColorStop(0, '#c08a52'); casco.addColorStop(1, '#7a4f27');
   ctx.fillStyle = casco;
@@ -8117,16 +8229,24 @@ function propEstatua(x, y, w) {
   const cx = x + w / 2;
   const ped = ctx.createLinearGradient(0, y, 0, y + 40);
   ped.addColorStop(0, '#c2c8d2'); ped.addColorStop(1, '#7d8490');
+  // El busto flotaba sobre un pedestal estrecho: una cabeza en un palo. Se
+  // ensancha el pedestal y el busto se apoya en unos hombros, no en un vástago.
   ctx.fillStyle = ped;
   rrect(x, y, w, 14, 3); ctx.fill();
-  rrect(x + w * 0.2, y + 14, w * 0.6, 26, 3); ctx.fill();
+  rrect(x + w * 0.12, y + 14, w * 0.76, 28, 4); ctx.fill();
   ctx.strokeStyle = '#4a4f59'; ctx.lineWidth = 2.2;
   rrect(x, y, w, 14, 3); ctx.stroke();
+  // Hombros
   ctx.fillStyle = '#aab2be';
-  ctx.beginPath(); ctx.ellipse(cx, y - 16, 13, 17, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - 22, y + 1);
+  ctx.quadraticCurveTo(cx - 18, y - 14, cx, y - 15);
+  ctx.quadraticCurveTo(cx + 18, y - 14, cx + 22, y + 1);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Cabeza
+  ctx.beginPath(); ctx.ellipse(cx, y - 25, 12, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#8d95a2';
-  ctx.beginPath(); ctx.ellipse(cx - 4, y - 20, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx - 4, y - 29, 4.5, 5.5, 0, 0, Math.PI * 2); ctx.fill();
 }
 
 /** 🏮 Puesto de comida con toldo. */
@@ -8337,9 +8457,14 @@ function dibujarMapa(lienzo, conJugador) {
     // cortas quedaban a dos píxeles y sus nombres se pisaban entre sí.
     const cuerpo = Math.round(11 * (window.devicePixelRatio || 1));
     if (altoBanda > cuerpo * 1.7) {
-      c.fillStyle = 'rgba(200,220,245,0.42)';
+      const rotulo = w + '. ' + WORLDS[w - 1].name;
       c.font = 'bold ' + cuerpo + 'px "Segoe UI", sans-serif';
-      c.fillText(w + '. ' + WORLDS[w - 1].name, 8, Y(techo) + cuerpo + 4);
+      // Fondo tras el nombre: sobre el trazado del recorrido no se leía
+      const anchoR = c.measureText(rotulo).width;
+      c.fillStyle = 'rgba(11,20,36,0.72)';
+      c.fillRect(4, Y(techo) + 3, anchoR + 10, cuerpo + 6);
+      c.fillStyle = 'rgba(205,224,248,0.62)';
+      c.fillText(rotulo, 9, Y(techo) + cuerpo + 4);
     }
   }
 
@@ -8667,7 +8792,66 @@ function actualizarMarcaMenu() {
   if (el) el.textContent = textoMarcas();
   pintarVitrina();
   pintarRutaMenu();
+  pintarMecanicas();
+  refrescarPestanas();
 }
+
+/* ====================================================================
+   MENÚ: pestañas, guía de mecánicas y textos de apoyo
+   ==================================================================== */
+
+/** Qué se va a encontrar el jugador, con el mismo código de color del mapa. */
+const GUIA_MECANICAS = [
+  ['spring', 'Trampolines', 'te lanzan más alto que un salto'],
+  ['mov', 'Plataformas móviles', 'van y vienen; más rápidas arriba'],
+  ['movY', 'Ascensores', 'suben y bajan contigo encima'],
+  ['ciclo', 'Van y vienen', 'parpadean antes de esfumarse'],
+  ['fragil', 'Apoyos frágiles', 'se rompen un segundo después de pisarlos'],
+  ['hielo', 'Hielo', 'no frenas de golpe: patinas'],
+  ['fino', 'Apoyos estrechos', 'aquí hay que afinar el salto'],
+  ['atajo', 'Atajos', 'una ruta más corta y más arriesgada'],
+];
+
+function pintarMecanicas() {
+  const cont = document.getElementById('mecanicas');
+  if (!cont || cont.children.length) return;
+  cont.innerHTML = GUIA_MECANICAS.map(([id, titulo, texto]) =>
+    '<li><i style="background:' + COLOR_MAPA[id] + '"></i>' +
+    '<span><b>' + titulo + '</b> · ' + texto + '</span></li>').join('');
+}
+
+/** Cuenta de cada pestaña y qué llevas puesto ahora mismo. */
+function refrescarPestanas() {
+  const cc = document.getElementById('cuenta-color');
+  const ca = document.getElementById('cuenta-acc');
+  if (cc) cc.textContent = SKINS.length;
+  if (ca) ca.textContent = ACCESORIOS.length;
+  const pista = document.getElementById('pista-eleccion');
+  if (pista) {
+    const acc = ACCESORIOS[accesorioElegido];
+    pista.innerHTML = 'Llevas <b>' + SKINS[skinElegida].nombre + '</b>' +
+      (acc && acc.id !== 'ninguno' ? ' con <b>' + (acc.corto || acc.nombre) + '</b>' : ', sin accesorio');
+  }
+}
+
+(function montarPestanas() {
+  const tColor = document.getElementById('tab-color');
+  const tAcc = document.getElementById('tab-acc');
+  const gColor = document.getElementById('skins');
+  const gAcc = document.getElementById('accesorios');
+  if (!tColor || !tAcc) return;
+  const mostrar = (esColor) => {
+    tColor.classList.toggle('activa', esColor);
+    tAcc.classList.toggle('activa', !esColor);
+    gColor.classList.toggle('oculta', !esColor);
+    gAcc.classList.toggle('oculta', esColor);
+    // Las tarjetas de la rejilla que estaba oculta no tienen tamaño hasta
+    // que se muestran: hay que repintarlas al cambiar de pestaña.
+    refrescarMenu();
+  };
+  tColor.addEventListener('click', () => mostrar(true));
+  tAcc.addEventListener('click', () => mostrar(false));
+})();
 
 /** Los récords en la cabecera del menú, en tarjetas legibles de un vistazo. */
 function pintarVitrina() {
@@ -8722,7 +8906,7 @@ cargarGuardado();
       et.textContent = a.corto || a.nombre;
       d.appendChild(cv); d.appendChild(et);
       d.addEventListener('click', () => {
-        accesorioElegido = i; marcar(acc, i); refrescarMenu(); guardar();
+        accesorioElegido = i; marcar(acc, i); refrescarMenu(); refrescarPestanas(); guardar();
       });
       acc.appendChild(d);
       d._cv = cv; d._acc = i;
@@ -8740,7 +8924,7 @@ cargarGuardado();
       et.textContent = s.nombre;
       d.appendChild(cv); d.appendChild(et);
       d.addEventListener('click', () => {
-        skinElegida = i; marcar(cont, i); refrescarMenu(); guardar();
+        skinElegida = i; marcar(cont, i); refrescarMenu(); refrescarPestanas(); guardar();
       });
       cont.appendChild(d);
       d._cv = cv; d._skin = i;
