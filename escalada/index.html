@@ -63,7 +63,7 @@
   .cabecera::after { content:''; display:block; width:64px; height:3px; margin:8px auto 0;
     border-radius:3px; background:linear-gradient(90deg,#ffd700,#ff8a3d); }
   .lema { margin:0; color:#9fb2c6; font-size:13px; }
-  .columnas { display:grid; grid-template-columns:0.9fr 1.1fr 1fr; gap:18px;
+  .columnas { display:grid; grid-template-columns:0.78fr 1.5fr 1.05fr; gap:18px;
     align-items:start; }
   .col-pj { display:flex; flex-direction:column; }
   .bloque { flex:1; min-width:0; }
@@ -109,8 +109,8 @@
 
   /* Tarjetas de skin y accesorio, con el personaje dibujado dentro */
   #skins, #accesorios { display:grid; gap:8px; }
-  #skins { grid-template-columns:repeat(4,1fr); }
-  #accesorios { grid-template-columns:repeat(4,1fr); }
+  #skins { grid-template-columns:repeat(5,1fr); }
+  #accesorios { grid-template-columns:repeat(5,1fr); }
   .tarjeta { position:relative; border-radius:11px; cursor:pointer; overflow:hidden;
     border:2px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05);
     transition:transform .12s, border-color .12s, background .12s; }
@@ -135,7 +135,9 @@
     .col-pj { flex-direction:column; } }
   /* Con 16 accesorios, en rejilla de ancho fijo: en flex se estiraban a lo
      ancho de la columna y las tarjetas salían de tamaños distintos. */
-  #accesorios { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:6px; }
+  /* Con 18 colores y 16 accesorios, a cuatro por fila el menú se iba de alto
+     y había que desplazarlo para llegar al botón de empezar. A cinco cabe. */
+  #accesorios { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-bottom:6px; }
   #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:44px; }
   .tarjeta span { font-size:9px; line-height:1.2; }
   .acc { padding:6px 10px; font-size:12px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600;
@@ -222,6 +224,46 @@
   .marca-menu { margin-top:9px; text-align:center; font-size:12px; font-weight:700;
     letter-spacing:.4px; color:#ffd700; }
 
+  /* ---- Pantalla de inicio ---- */
+  .vitrina { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+  .vitrina div { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09);
+    border-radius:10px; padding:6px 12px; min-width:78px; }
+  .vitrina b { display:block; font-size:15px; color:#ffd700; font-weight:900;
+    font-variant-numeric:tabular-nums; }
+  .vitrina span { display:block; font-size:10px; color:#8fa8c0;
+    text-transform:uppercase; letter-spacing:.9px; margin-top:1px; }
+  .ruta { border-radius:11px; overflow:hidden; background:#0b1424;
+    border:1px solid rgba(255,255,255,.09); }
+  #rutaPreview { display:block; width:100%; height:216px; }
+  .ruta-pie { margin:7px 0 0; font-size:11px; color:#8fa8c0; line-height:1.45; }
+  .ruta-pie b { color:#c9d6e5; }
+  @media (max-height:700px) { #rutaPreview { height:170px; } }
+
+  /* ---- Botón de mapa, abajo a la izquierda ---- */
+  #bottomleft { position:absolute; left:14px; bottom:14px; z-index:6; }
+  .mini.grande { width:46px; height:46px; }
+  /* Con el mando táctil puesto, el botón ◀ ocupa esa esquina */
+  #bottomleft.subido { bottom:120px; }
+
+  /* ---- Panel del mapa ---- */
+  .panel.mapa { width:min(1020px, 96vw); max-width:none; max-height:94vh;
+    display:flex; flex-direction:column; gap:10px; padding:18px 20px 16px; }
+  .mapa-cab h1 { font-size:19px; letter-spacing:2px; margin:0; }
+  .mapa-cab p { margin:3px 0 0; font-size:13px; color:#ffd700; font-weight:700; }
+  .mapa-lienzo { position:relative; flex:1; min-height:0; border-radius:12px;
+    overflow:hidden; background:linear-gradient(180deg,#0b1424,#101c30);
+    border:1px solid rgba(255,255,255,.10); cursor:grab; }
+  .mapa-lienzo:active { cursor:grabbing; }
+  #mapCanvas { display:block; width:100%; height:52vh; touch-action:none; }
+  .mapa-leyenda { display:flex; flex-wrap:wrap; gap:5px 14px; justify-content:center;
+    font-size:11px; color:#9fb2c6; }
+  .mapa-leyenda i { display:inline-block; width:9px; height:9px; border-radius:3px;
+    margin-right:5px; vertical-align:-1px; }
+  .mapa-mandos { display:flex; gap:8px; justify-content:center; }
+  .btn.chico { padding:7px 14px; font-size:13px; margin-top:0; width:auto; display:inline-block; }
+  .panel.mapa .btn { margin-top:0; }
+  @media (max-height:700px) { #mapCanvas { height:44vh; } .mapa-leyenda { display:none; } }
+
   /* En pantalla estrecha las tres piezas de arriba no caben en fila: el
      marcador se queda en su esquina y la barra de cumbre baja debajo. */
   @media (max-width:760px) {
@@ -270,6 +312,18 @@
       <div id="message"></div>
     </div>
 
+    <div id="bottomleft">
+      <button id="map-btn" class="mini grande" title="Mapa del nivel (Tab)">
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+          <path d="M9 3 3 5.4v15.2L9 18.2l6 2.4 6-2.4V2.6L15 5 9 3Z"
+                fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linejoin="round"/>
+          <path d="M9 3v15.2M15 5v15.2" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
     <div id="touch">
       <div class="lado">
         <div class="tbtn" id="t-left">◀</div>
@@ -284,7 +338,8 @@
       <div class="panel menu">
         <div class="cabecera">
           <h1>DON&#39;T LOOK UP</h1>
-          <p class="lema">1000 metros · 6 cumbres · un checkpoint por cumbre</p>
+          <p class="lema">1000 metros · 6 cumbres · sube o cae</p>
+          <div class="vitrina" id="vitrina"></div>
         </div>
 
         <div class="columnas">
@@ -307,20 +362,16 @@
           </section>
 
           <section class="bloque">
-            <h2>Las 6 cumbres</h2>
-            <ol class="cumbres">
-              <li><b>Emberwall Ascent</b><span>0–210 m</span></li>
-              <li><b>Coral Climb</b><span>211–274 m</span></li>
-              <li><b>Agent Adventure</b><span>275–448 m</span></li>
-              <li><b>Growing Up</b><span>449–573 m</span></li>
-              <li><b>Frosty Peaks</b><span>574–704 m</span></li>
-              <li><b>One Way Up</b><span>705–1000 m</span></li>
-            </ol>
+            <h2>La ruta</h2>
+            <div class="ruta"><canvas id="rutaPreview"></canvas></div>
+            <p class="ruta-pie">Las 6 cumbres, de abajo arriba. En partida,
+              <b>Tab</b> o el botón del mapa abren esto con tu posición.</p>
             <h2>Controles</h2>
             <div class="keys">
               <div class="keyrow"><span class="key">&larr; &rarr;</span><span>Moverte · <b>A</b> <b>D</b></span></div>
               <div class="keyrow"><span class="key">&uarr;</span><span>Saltar · <b>W</b> <b>Espacio</b></span></div>
               <div class="keyrow"><span class="key">&uarr;&uarr;</span><span>Doble salto en el aire</span></div>
+              <div class="keyrow"><span class="key">Tab</span><span>Mapa del nivel</span></div>
               <div class="keyrow"><span class="key">Esc</span><span>Pausa · <b>P</b></span></div>
               <div class="keyrow"><span class="key">M</span><span>Silenciar</span></div>
               <div class="keyrow"><span class="key">&#9757;</span><span>En móvil y tablet, mando en pantalla</span></div>
@@ -331,6 +382,23 @@
         <button id="start-btn" class="btn">Empezar a escalar</button>
         <button class="btn ghost js-mute">🔊  Sonido activado</button>
         <p class="marca-menu" id="marca-menu"></p>
+      </div>
+    </div>
+
+    <div id="map-screen" class="overlay hidden">
+      <div class="panel mapa">
+        <div class="mapa-cab">
+          <h1>MAPA DE LA SUBIDA</h1>
+          <p id="map-donde">Cumbre 1 · 0 m</p>
+        </div>
+        <div class="mapa-lienzo"><canvas id="mapCanvas"></canvas></div>
+        <div class="mapa-leyenda" id="map-leyenda"></div>
+        <div class="mapa-mandos">
+          <button class="btn ghost chico" id="map-menos">&minus;</button>
+          <button class="btn ghost chico" id="map-centrar">Centrarme</button>
+          <button class="btn ghost chico" id="map-mas">+</button>
+        </div>
+        <button id="map-cerrar" class="btn">Seguir escalando</button>
       </div>
     </div>
 
@@ -1694,26 +1762,40 @@ function dureza(i) {
   return d;
 }
 
-function sembrarCheckpoints() {
-  let puestos = 0, ultimo = 0;
+/**
+ * UN checkpoint por cumbre, y ni uno más.
+ *
+ * La versión anterior sembraba uno antes de cada tramo duro y salían 27 en
+ * total: con un punto de guardado cada diez apoyos, caerse dejaba de tener
+ * consecuencias y la subida perdía la tensión que es su gracia. Ahora se
+ * conserva el PRIMERO de cada cumbre —que es donde el nivel original los
+ * puso, justo al empezar cada tramo— y el resto vuelve a ser apoyo normal.
+ *
+ * Si alguna cumbre se quedara sin ninguno, se asciende el apoyo ancho más
+ * cercano a su inicio: nadie puede empezar una cumbre sin sitio al que volver.
+ */
+function unCheckpointPorCumbre() {
+  const primero = {};          // cumbre → índice del checkpoint que se queda
   for (let i = 0; i < platforms.length; i++) {
-    if (platforms[i].type === 'checkpoint') ultimo = i;
-  }
-  ultimo = 0;
-  for (let i = 4; i < platforms.length - 6; i++) {
-    if (platforms[i].type === 'checkpoint') { ultimo = i; continue; }
-    if (i - ultimo < 11) continue;
-    // Lo que viene detrás, sumado: un tramo duro, no un apoyo duro suelto
-    let suma = 0;
-    for (let k = i + 1; k <= i + 5; k++) suma += dureza(k);
-    if (suma < 6.4) continue;
     const p = platforms[i];
-    if (!apoyoLibre(p) || p.mov || p.width < 120) continue;
-    p.type = 'checkpoint';
-    ultimo = i;
-    puestos++;
+    if (p.type !== 'checkpoint' || p.extra) continue;
+    if (primero[p.world] === undefined) primero[p.world] = i;
+    else p.type = 'normal';    // sobra: vuelve a ser un apoyo cualquiera
   }
-  return puestos;
+
+  for (let w = 1; w <= TOTAL_WORLDS; w++) {
+    if (primero[w] !== undefined) continue;
+    const inicio = platforms.findIndex((p) => p.world === w && !p.extra);
+    if (inicio < 0) continue;
+    for (let i = inicio; i < Math.min(platforms.length, inicio + 14); i++) {
+      const p = platforms[i];
+      if (!apoyoLibre(p) || p.mov || p.width < 120) continue;
+      p.type = 'checkpoint';
+      primero[w] = i;
+      break;
+    }
+  }
+  return Object.keys(primero).length;
 }
 
 /* --------------------------------------------------------------------
@@ -1732,7 +1814,7 @@ function componerNivel() {
   r.suelos      = sembrarSuelos();
   r.precision   = sembrarPrecision();
   r.atajos      = sembrarAtajos();
-  r.checkpoints = sembrarCheckpoints();
+  r.checkpoints = unCheckpointPorCumbre();
   monedas = [];
   sembrarMonedas();
   r.monedas = monedas.length;
@@ -3166,7 +3248,13 @@ window.addEventListener('keydown', (e) => {
     showMessage(musicaOn ? 'Sonido activado' : 'Sonido silenciado', '#ffd700');
   }
   if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
-    if (pausado) reanudar(); else pausar();
+    if (mapaAbierto) cerrarMapa();
+    else if (pausado) reanudar();
+    else pausar();
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    if (mapaAbierto) cerrarMapa(); else abrirMapa();
   }
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   if (esIzq(e)) keys.left = true;
@@ -3192,7 +3280,7 @@ function soltarMandos() {
   document.querySelectorAll('.tbtn.pulsado').forEach((b) => b.classList.remove('pulsado'));
 }
 
-function pausar() {
+function pausar(mostrarPanel) {
   if (!running || gameOver) return;
   const seg = segundosPartida();
   pausado = true;
@@ -3200,7 +3288,8 @@ function pausar() {
   soltarMandos();
   pauseStats.textContent = alturaMetros + ' m  ·  ' + reloj(seg) + '  ·  ' +
     deaths + (deaths === 1 ? ' muerte' : ' muertes');
-  pauseScreen.classList.remove('hidden');
+  // El mapa también congela la partida, pero enseña su propio panel
+  if (mostrarPanel !== false) pauseScreen.classList.remove('hidden');
 }
 
 function reanudar() {
@@ -3214,6 +3303,8 @@ function reanudar() {
 }
 
 function volverAlMenu() {
+  mapaAbierto = false;
+  document.getElementById('map-screen').classList.add('hidden');
   segundosPartida();
   apuntarAltura();
   pausado = false; running = false; gameOver = false;
@@ -4122,7 +4213,7 @@ function decorados() {
   for (const p of platforms) {
     if (p.type !== 'normal') continue;
     const d = h(p.x * 0.077 + p.y * 0.041);
-    if (d > 0.30) continue;                        // aprox. 1 de cada 3 apoyos
+    if (d > 0.58) continue;                        // algo más de la mitad
     const arte = WORLDS[Math.max(0, Math.min(TOTAL_WORLDS - 1, p.world - 1))].arte;
     const lado = h(p.x * 0.19) > 0.5 ? 1 : -1;
     const dx = p.x + p.width / 2 + lado * (150 + h(p.y * 0.23) * 190);
@@ -4133,14 +4224,239 @@ function decorados() {
     ctx.save();
     ctx.translate(dx, dy);
     ctx.scale(esc, esc);
-    if (arte === 6)      decoFarola();
-    else if (arte === 2) decoBarca();
-    else if (arte === 4) decoTorre();
-    else if (arte === 1) (h(p.x) > 0.5 ? decoGranero() : decoTractor());
-    else if (arte === 5) decoIglu();
-    else                 decoSatelite();
+    const lista = DECOS[arte] || DECOS[7];
+    lista[Math.floor(h(p.x * 0.53 + p.y * 0.11) * lista.length) % lista.length]();
     ctx.restore();
   }
+}
+
+/* Qué se ve al fondo en cada cumbre. Antes había UNA cosa por bioma y el
+   mundo se repetía a sí mismo cada pocos metros; ahora hay tres o cuatro. */
+const DECOS = {
+  6: [decoFarola, decoPino, decoRoca],
+  2: [decoBarca, decoPalmera, decoFaro, decoBoyaMar],
+  4: [decoTorre, decoAntena, decoValla],
+  1: [decoGranero, decoTractor, decoMolino, decoSilo],
+  5: [decoIglu, decoPinoNevado, decoVentisca],
+  7: [decoSatelite, decoCohete, decoCristalGrande],
+};
+
+/* --------------------------------------------------------------------
+   DECORADOS NUEVOS
+   Se dibujan centrados en el origen, como los que ya había: quien llama ya
+   ha hecho el translate y el scale.
+   -------------------------------------------------------------------- */
+
+/** 🌲 Pino de bosque. */
+function decoPino() {
+  ctx.fillStyle = '#6b4426';
+  rrect(-7, -6, 14, 30, 3); ctx.fill();
+  ctx.fillStyle = '#2f7d3f';
+  for (let i = 0; i < 3; i++) {
+    const yy = -10 - i * 22, an = 42 - i * 10;
+    ctx.beginPath();
+    ctx.moveTo(0, yy - 30); ctx.lineTo(an, yy); ctx.lineTo(-an, yy);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.beginPath();
+  ctx.moveTo(0, -74); ctx.lineTo(14, -46); ctx.lineTo(0, -46);
+  ctx.closePath(); ctx.fill();
+}
+
+/** 🪨 Roca grande de camino. */
+function decoRoca() {
+  ctx.fillStyle = '#7d8794';
+  ctx.beginPath();
+  ctx.moveTo(-46, 20); ctx.lineTo(-30, -24); ctx.lineTo(6, -34);
+  ctx.lineTo(40, -12); ctx.lineTo(46, 20);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  ctx.beginPath();
+  ctx.moveTo(-30, -24); ctx.lineTo(6, -34); ctx.lineTo(2, -6); ctx.lineTo(-26, -2);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,48,58,0.7)'; ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(-46, 20); ctx.lineTo(-30, -24); ctx.lineTo(6, -34);
+  ctx.lineTo(40, -12); ctx.lineTo(46, 20);
+  ctx.stroke();
+}
+
+/** 🌴 Palmera de puerto. */
+function decoPalmera() {
+  ctx.strokeStyle = '#a8763f'; ctx.lineWidth = 10; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 22); ctx.quadraticCurveTo(-10, -20, 4, -52);
+  ctx.stroke();
+  ctx.fillStyle = '#2f9e5f';
+  for (let a = 0; a < 6; a++) {
+    const ang = Math.PI + (a / 5) * Math.PI;
+    ctx.save();
+    ctx.translate(4, -52); ctx.rotate(ang * 0.55 - 0.8);
+    ctx.beginPath();
+    ctx.ellipse(24, 0, 26, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = '#c9873f';
+  ctx.beginPath(); ctx.arc(2, -46, 5, 0, Math.PI * 2); ctx.fill();
+}
+
+/** 🗼 Faro rayado. */
+function decoFaro() {
+  ctx.fillStyle = '#f4f7fb';
+  ctx.beginPath();
+  ctx.moveTo(-20, 24); ctx.lineTo(-13, -56); ctx.lineTo(13, -56); ctx.lineTo(20, 24);
+  ctx.closePath(); ctx.fill();
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(-20, 24); ctx.lineTo(-13, -56); ctx.lineTo(13, -56); ctx.lineTo(20, 24);
+  ctx.closePath(); ctx.clip();
+  ctx.fillStyle = '#e04b52';
+  for (let yy = -50; yy < 24; yy += 26) ctx.fillRect(-24, yy, 48, 12);
+  ctx.restore();
+  ctx.strokeStyle = '#7d8fa0'; ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(-20, 24); ctx.lineTo(-13, -56); ctx.lineTo(13, -56); ctx.lineTo(20, 24);
+  ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = '#ffd166';
+  rrect(-11, -72, 22, 16, 4); ctx.fill(); ctx.stroke();
+}
+
+/** 🛟 Boya de mar, meciéndose. */
+function decoBoyaMar() {
+  const bal = Math.sin(t * 0.03) * 3;
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath(); ctx.arc(0, bal, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(0, bal, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,30,20,0.75)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, bal, 20, 0, Math.PI * 2); ctx.stroke();
+}
+
+/** 📡 Antena de base secreta. */
+function decoAntena() {
+  ctx.fillStyle = '#4a5570';
+  rrect(-26, 8, 52, 16, 4); ctx.fill();
+  ctx.strokeStyle = '#8fa3bf'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(0, 8); ctx.lineTo(0, -34); ctx.stroke();
+  ctx.fillStyle = '#c8d4e4';
+  ctx.beginPath(); ctx.ellipse(6, -44, 26, 18, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#7f8fa6'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+/** 🚧 Valla metálica. */
+function decoValla() {
+  ctx.strokeStyle = '#6d7482'; ctx.lineWidth = 4;
+  for (let px = -46; px <= 46; px += 23) {
+    ctx.beginPath(); ctx.moveTo(px, 22); ctx.lineTo(px, -26); ctx.stroke();
+  }
+  ctx.lineWidth = 3;
+  for (const yy of [-20, -2]) {
+    ctx.beginPath(); ctx.moveTo(-48, yy); ctx.lineTo(48, yy); ctx.stroke();
+  }
+  ctx.fillStyle = '#e0a800';
+  rrect(-14, -16, 28, 12, 2); ctx.fill();
+}
+
+/** 🌾 Molino de campo. */
+function decoMolino() {
+  ctx.fillStyle = '#e8ddc4';
+  ctx.beginPath();
+  ctx.moveTo(-24, 24); ctx.lineTo(-16, -34); ctx.lineTo(16, -34); ctx.lineTo(24, 24);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#9c8b68'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = '#a3402f';
+  ctx.beginPath();
+  ctx.moveTo(-20, -34); ctx.lineTo(0, -52); ctx.lineTo(20, -34);
+  ctx.closePath(); ctx.fill();
+  const giro = t * 0.012;
+  ctx.strokeStyle = '#c9b98f'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  for (let a = 0; a < 4; a++) {
+    const ang = giro + (a / 4) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -40);
+    ctx.lineTo(Math.cos(ang) * 34, -40 + Math.sin(ang) * 34);
+    ctx.stroke();
+  }
+}
+
+/** 🛢️ Silo de grano. */
+function decoSilo() {
+  ctx.fillStyle = '#b8c2cc';
+  rrect(-22, -40, 44, 64, 6); ctx.fill();
+  ctx.strokeStyle = '#7d8894'; ctx.lineWidth = 2;
+  for (let yy = -30; yy < 20; yy += 14) {
+    ctx.beginPath(); ctx.moveTo(-22, yy); ctx.lineTo(22, yy); ctx.stroke();
+  }
+  ctx.fillStyle = '#8d99a6';
+  ctx.beginPath(); ctx.ellipse(0, -40, 22, 12, 0, Math.PI, 0); ctx.fill();
+  ctx.strokeStyle = '#5f6a75'; ctx.lineWidth = 2.2;
+  rrect(-22, -40, 44, 64, 6); ctx.stroke();
+}
+
+/** 🌲 Pino nevado. */
+function decoPinoNevado() {
+  decoPino();
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  for (let i = 0; i < 3; i++) {
+    const yy = -10 - i * 22, an = 42 - i * 10;
+    ctx.beginPath();
+    ctx.moveTo(0, yy - 30); ctx.lineTo(an * 0.62, yy - 12); ctx.lineTo(-an * 0.62, yy - 12);
+    ctx.closePath(); ctx.fill();
+  }
+}
+
+/** ❄️ Ventisquero. */
+function decoVentisca() {
+  ctx.fillStyle = '#eef8ff';
+  ctx.beginPath();
+  ctx.moveTo(-58, 22);
+  ctx.quadraticCurveTo(-30, -18, 0, -8);
+  ctx.quadraticCurveTo(30, 2, 58, 22);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(160,200,225,0.6)';
+  ctx.beginPath();
+  ctx.moveTo(-58, 22);
+  ctx.quadraticCurveTo(-20, 8, 58, 22);
+  ctx.closePath(); ctx.fill();
+}
+
+/** 🚀 Cohete apoyado. */
+function decoCohete() {
+  ctx.fillStyle = '#e8eef5';
+  ctx.beginPath();
+  ctx.moveTo(0, -66);
+  ctx.quadraticCurveTo(15, -34, 14, 14);
+  ctx.lineTo(-14, 14);
+  ctx.quadraticCurveTo(-15, -34, 0, -66);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#8d99a6'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath();
+  ctx.moveTo(-14, 14); ctx.lineTo(-30, 26); ctx.lineTo(-14, -4);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(14, 14); ctx.lineTo(30, 26); ctx.lineTo(14, -4);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#4fc3f7';
+  ctx.beginPath(); ctx.arc(0, -30, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#2c6f8f'; ctx.lineWidth = 1.8; ctx.stroke();
+}
+
+/** 💎 Cristal enorme. */
+function decoCristalGrande() {
+  const late = 0.75 + 0.25 * Math.sin(t * 0.04);
+  ctx.fillStyle = 'rgba(160,120,255,' + late.toFixed(2) + ')';
+  ctx.beginPath();
+  ctx.moveTo(0, -62); ctx.lineTo(22, -12); ctx.lineTo(10, 24);
+  ctx.lineTo(-14, 24); ctx.lineTo(-24, -14);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,50,160,0.85)'; ctx.lineWidth = 2.4; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(0, -62); ctx.lineTo(6, -14); ctx.lineTo(-6, 20); ctx.lineTo(-11, -12);
+  ctx.closePath(); ctx.fill();
 }
 
 /** Farola de hierro con farol colgante. */
@@ -5265,7 +5581,10 @@ function draw() {
   ctx.setTransform(scale, 0, 0, scale, -cameraX * scale, -cameraY * scale);
 
   drawBackgrounds();
-
+  // `decorados()` llevaba TODO el desarrollo definido y sin llamar: por eso
+  // los mundos se veían pelados. Va entre el fondo y los apoyos, así que
+  // adorna sin que se pueda confundir con algo que se pisa.
+  decorados();
 
   for (const plat of platforms) {
     if (plat.y < cameraY - 120 || plat.y > cameraY + viewHeight + 120) continue;
@@ -7161,25 +7480,35 @@ function propAndamio(x, y, w) {
 
 /** 🪸 Coral: se pisa la placa superior. */
 function propCoral(x, y, w) {
-  const cx = x + w / 2;
+  // Los brazos salían de la peana hacia ABAJO y se quedaban colgando en el
+  // vacío: dos zarcillos finos bajo una plataforma, que es exactamente la
+  // pinta de «objeto clavado en un palo». Ahora el coral es un cuerpo macizo
+  // que ocupa el apoyo, con los brazos DENTRO, recortados por su silueta.
   peana(x, y, w, '#ffc2cd', '#ff8fa3', '#c25e73');
-  const brazos = Math.max(2, Math.round(w / 55));
+
+  const alto = 30;
+  const cuerpo = () => { rrect(x + 3, y + 16, w - 6, alto, 9); };
+  const g = ctx.createLinearGradient(0, y + 16, 0, y + 16 + alto);
+  g.addColorStop(0, '#f5849c');
+  g.addColorStop(1, '#b8455e');
+  cuerpo(); ctx.fillStyle = g; ctx.fill();
+
+  ctx.save();
+  cuerpo(); ctx.clip();
+  const brazos = Math.max(2, Math.round(w / 46));
   for (let i = 0; i < brazos; i++) {
     const bx = x + (w / brazos) * (i + 0.5);
-    const alt = 22 + h(bx) * 20;
-    ctx.strokeStyle = i % 2 ? '#e35d7b' : '#ff9f43';
-    ctx.lineWidth = 7; ctx.lineCap = 'round';
+    ctx.strokeStyle = i % 2 ? 'rgba(255,159,67,0.85)' : 'rgba(255,214,224,0.75)';
+    ctx.lineWidth = 6; ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(bx, y + 10);
-    ctx.quadraticCurveTo(bx + 8, y + 10 + alt * 0.6, bx - 4, y + 10 + alt);
-    ctx.stroke();
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(bx, y + 10 + alt * 0.4);
-    ctx.quadraticCurveTo(bx - 12, y + 10 + alt * 0.7, bx - 14, y + 10 + alt * 0.9);
+    ctx.moveTo(bx, y + 18 + h(bx) * 6);
+    ctx.quadraticCurveTo(bx + 9, y + 32, bx - 5, y + 46);
     ctx.stroke();
   }
+  ctx.restore();
 
+  ctx.strokeStyle = 'rgba(110,40,58,0.85)'; ctx.lineWidth = 2;
+  cuerpo(); ctx.stroke();
 }
 
 /** ⛱️ Sombrilla de playa: se pisa la lona. */
@@ -7909,6 +8238,264 @@ const PASO_MS = 1000 / 60;
 const MAX_PASOS = 5;          // tras un parón se recupera, pero sin dispararse
 let relojPrevio = 0, restante = 0;
 
+/* ====================================================================
+   MAPA DEL NIVEL
+   La subida mide casi 17.000 px de alto y zigzaguea a lo ancho, así que
+   jugando sólo se ve un trozo. El mapa enseña el recorrido ENTERO con lo que
+   hay en cada apoyo y dónde estás tú. Se dibuja del mismo array `platforms`
+   que juega el motor: no hay una copia del nivel que se pueda desincronizar.
+   ==================================================================== */
+
+const COLOR_MAPA = {
+  normal:     '#8ea2ba',
+  checkpoint: '#2ed573',
+  goal:       '#ffd700',
+  spring:     '#ff9f43',
+  mov:        '#4dd4f0',
+  movY:       '#6c8cff',
+  ciclo:      '#c084fc',
+  fragil:     '#ff5a5a',
+  hielo:      '#a8e6ff',
+  atajo:      '#a3e635',
+  fino:       '#ffb86b',
+};
+
+let mapaAbierto = false;
+let mapaZoom = 1, mapaPanX = 0, mapaPanY = 0, mapaLim = null;
+
+/** Rectángulo que ocupa todo el recorrido, calculado una vez. */
+function limitesMapa() {
+  if (mapaLim) return mapaLim;
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const p of platforms) {
+    x0 = Math.min(x0, p.mov ? p.mov.min : p.x);
+    x1 = Math.max(x1, (p.mov ? p.mov.max : p.x + p.width));
+    y0 = Math.min(y0, p.movY ? p.movY.min : p.y);
+    y1 = Math.max(y1, (p.movY ? p.movY.max : p.y) + p.height);
+  }
+  const m = 260;
+  mapaLim = { x0: x0 - m, x1: x1 + m, y0: y0 - m, y1: y1 + m };
+  return mapaLim;
+}
+
+/** Color con el que se pinta un apoyo en el mapa: manda su mecánica. */
+function colorApoyo(p) {
+  if (p.type === 'goal') return COLOR_MAPA.goal;
+  if (p.type === 'checkpoint') return COLOR_MAPA.checkpoint;
+  if (p.type === 'spring') return COLOR_MAPA.spring;
+  if (p.atajo) return COLOR_MAPA.atajo;
+  if (p.ciclo) return COLOR_MAPA.ciclo;
+  if (p.movY) return COLOR_MAPA.movY;
+  if (p.mov) return COLOR_MAPA.mov;
+  if (p.trampa) return COLOR_MAPA.fragil;
+  if (p.hielo) return COLOR_MAPA.hielo;
+  if (p.fino) return COLOR_MAPA.fino;
+  return COLOR_MAPA.normal;
+}
+
+function ajustarMapa() {
+  const cv = document.getElementById('mapCanvas');
+  const caja = cv.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, Math.round(caja.width * dpr));
+  cv.height = Math.max(1, Math.round(caja.height * dpr));
+}
+
+/** Escala y desplazamiento que llevan el mundo al lienzo del mapa. */
+function encajeMapa(cv) {
+  const L = limitesMapa();
+  const base = Math.min(cv.width / (L.x1 - L.x0), cv.height / (L.y1 - L.y0));
+  const k = base * mapaZoom;
+  return {
+    k,
+    ox: cv.width / 2 - ((L.x0 + L.x1) / 2) * k + mapaPanX,
+    oy: cv.height / 2 - ((L.y0 + L.y1) / 2) * k + mapaPanY,
+  };
+}
+
+function dibujarMapa(lienzo, conJugador) {
+  const cv = lienzo || document.getElementById('mapCanvas');
+  if (!cv || !cv.width) return;
+  const c = cv.getContext('2d');
+  const { k, ox, oy } = encajeMapa(cv);
+  const X = (x) => x * k + ox, Y = (y) => y * k + oy;
+
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = '#0b1424';
+  c.fillRect(0, 0, cv.width, cv.height);
+
+  // Franjas de cada cumbre, con su nombre: dan la escala de un vistazo
+  for (let w = 1; w <= TOTAL_WORLDS; w++) {
+    const pie = (w === 1) ? BASE_Y : (limitesMundo[w - 2] !== undefined
+                 ? limitesMundo[w - 2] : pieDeCumbre(w));
+    const techo = (w === TOTAL_WORLDS)
+      ? TOP_Y : (limitesMundo[w - 1] !== undefined ? limitesMundo[w - 1] : pieDeCumbre(w + 1));
+    const altoBanda = Y(pie) - Y(techo);
+    c.fillStyle = (w % 2 ? 'rgba(255,255,255,0.030)' : 'rgba(255,255,255,0.012)');
+    c.fillRect(0, Y(techo), cv.width, altoBanda);
+    // Sin sitio, no se escribe: en la vista previa del menú las cumbres
+    // cortas quedaban a dos píxeles y sus nombres se pisaban entre sí.
+    const cuerpo = Math.round(11 * (window.devicePixelRatio || 1));
+    if (altoBanda > cuerpo * 1.7) {
+      c.fillStyle = 'rgba(200,220,245,0.42)';
+      c.font = 'bold ' + cuerpo + 'px "Segoe UI", sans-serif';
+      c.fillText(w + '. ' + WORLDS[w - 1].name, 8, Y(techo) + cuerpo + 4);
+    }
+  }
+
+  // Monedas PRIMERO y pequeñas. Dibujadas grandes y encima, las 189 tapaban
+  // el recorrido entero: el mapa se leía como un collar de oro en vez de como
+  // un nivel. Aquí son polvo de fondo; lo que importa son los apoyos.
+  for (const m of monedas) {
+    if (m.tomada) continue;
+    c.fillStyle = m.bonus ? 'rgba(255,209,102,0.85)' : 'rgba(245,197,24,0.45)';
+    const r = Math.min(2.6, Math.max(0.7, (m.bonus ? 1.9 : 1.1) * Math.max(0.6, k * 70)));
+    c.beginPath(); c.arc(X(m.x), Y(m.y), r, 0, Math.PI * 2); c.fill();
+  }
+
+  // Hilo del recorrido: une los apoyos de la cadena en orden
+  c.strokeStyle = 'rgba(255,255,255,0.22)';
+  c.lineWidth = 1.5;
+  c.beginPath();
+  let primero = true;
+  for (const p of platforms) {
+    if (p.extra) continue;
+    const px = X(p.x + p.width / 2), py = Y(p.y);
+    if (primero) { c.moveTo(px, py); primero = false; } else c.lineTo(px, py);
+  }
+  c.stroke();
+
+  // Apoyos
+  for (const p of platforms) {
+    const w = Math.max(4, p.width * k), h = Math.max(3, p.height * k * 0.8);
+    c.fillStyle = colorApoyo(p);
+    c.globalAlpha = (p.ciclo && p.caido) ? 0.32 : 1;
+    c.fillRect(X(p.x), Y(p.y), w, h);
+    c.globalAlpha = 1;
+    if (p.type === 'checkpoint' || p.type === 'goal') {
+      c.strokeStyle = colorApoyo(p);
+      c.lineWidth = 1.4;
+      c.strokeRect(X(p.x) - 3, Y(p.y) - 3, w + 6, h + 6);
+    }
+  }
+
+  // Pinchos y géiseres
+  c.fillStyle = '#ff6b6b';
+  for (const sp of spikes) c.fillRect(X(sp.x), Y(sp.y) - 2, Math.max(2, sp.width * k), 2.5);
+  c.fillStyle = 'rgba(120,220,255,0.55)';
+  for (const g of geysers) c.fillRect(X(g.x), Y(g.y), Math.max(2, g.width * k), Math.max(3, g.height * k));
+
+  // TÚ. Anillo que late, para encontrarlo sin buscarlo.
+  if (conJugador === false) { pintarMeta(c, X, Y); return; }
+  const px = X(player.x + PW / 2), py = Y(player.y + PH / 2);
+  const late = 7 + Math.sin(t * 0.12) * 2.6;
+  c.strokeStyle = 'rgba(255,255,255,0.85)';
+  c.lineWidth = 2;
+  c.beginPath(); c.arc(px, py, late + 5, 0, Math.PI * 2); c.stroke();
+  c.fillStyle = '#ffffff';
+  c.beginPath(); c.arc(px, py, 4.2, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#ff4757';
+  c.beginPath(); c.arc(px, py, 2.4, 0, Math.PI * 2); c.fill();
+
+  pintarMeta(c, X, Y);
+}
+
+/** El rótulo de la meta, que se pinta igual con jugador y sin él. */
+function pintarMeta(c, X, Y) {
+  const meta = platforms.find((q) => q.type === 'goal');
+  if (!meta) return;
+  const cuerpo = Math.round(11 * (window.devicePixelRatio || 1));
+  c.fillStyle = '#ffd700';
+  c.font = 'bold ' + cuerpo + 'px "Segoe UI", sans-serif';
+  // Pegado al borde, el rótulo se cortaba: se mantiene dentro del lienzo
+  const mx = Math.max(4, Math.min(c.canvas.width - 44, X(meta.x + meta.width / 2) - 20));
+  const my = Math.max(cuerpo + 2, Y(meta.y) - 8);
+  c.fillText('META', mx, my);
+}
+
+/**
+ * Vista previa de la ruta para el menú. Se pinta una sola vez, no en cada
+ * fotograma: es un dibujo fijo y el menú ya repinta bastantes cosas.
+ */
+function pintarRutaMenu() {
+  const cv = document.getElementById('rutaPreview');
+  if (!cv || !platforms.length) return;
+  const caja = cv.getBoundingClientRect();
+  if (!caja.width) return;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(caja.width * dpr);
+  cv.height = Math.round(caja.height * dpr);
+  const zAntes = mapaZoom, xAntes = mapaPanX, yAntes = mapaPanY;
+  mapaZoom = 1; mapaPanX = 0; mapaPanY = 0;
+  dibujarMapa(cv, false);
+  mapaZoom = zAntes; mapaPanX = xAntes; mapaPanY = yAntes;
+}
+
+const LEYENDA = [
+  ['normal', 'Apoyo'], ['checkpoint', 'Checkpoint'], ['spring', 'Trampolín'],
+  ['mov', 'Móvil'], ['movY', 'Ascensor'], ['ciclo', 'Va y viene'],
+  ['fragil', 'Se rompe'], ['hielo', 'Hielo'], ['fino', 'Estrecho'],
+  ['atajo', 'Atajo'], ['goal', 'Meta'],
+];
+
+function montarLeyenda() {
+  const cont = document.getElementById('map-leyenda');
+  if (!cont || cont.children.length) return;
+  for (const [id, nombre] of LEYENDA) {
+    const s = document.createElement('span');
+    s.innerHTML = '<i style="background:' + COLOR_MAPA[id] + '"></i>' + nombre;
+    cont.appendChild(s);
+  }
+}
+
+function centrarMapaEnJugador() {
+  const cv = document.getElementById('mapCanvas');
+  if (!cv || !cv.width) return;
+  mapaPanX = 0; mapaPanY = 0;
+  const { k, ox, oy } = encajeMapa(cv);
+  mapaPanX = cv.width / 2 - (X0(player.x + PW / 2, k, ox));
+  mapaPanY = cv.height / 2 - (X0(player.y + PH / 2, k, oy));
+}
+/** Coordenada de mapa de un valor del mundo, con una escala dada. */
+function X0(v, k, o) { return v * k + o; }
+
+function abrirMapa() {
+  if (gameOver || (!running && !pausado)) return;
+  mapaAbierto = true;
+  pausar(false);                       // congela sin sacar el panel de pausa
+  montarLeyenda();
+  document.getElementById('map-screen').classList.remove('hidden');
+  requestAnimationFrame(() => {
+    ajustarMapa();
+    dibujarMapa();
+    mapaZoom = 1; mapaPanX = 0; mapaPanY = 0;
+    actualizarDondeEstoy();
+  });
+}
+
+function cerrarMapa() {
+  if (!mapaAbierto) return;
+  mapaAbierto = false;
+  document.getElementById('map-screen').classList.add('hidden');
+  reanudar();
+}
+
+function actualizarDondeEstoy() {
+  const el = document.getElementById('map-donde');
+  if (!el) return;
+  el.textContent = 'Cumbre ' + currentWorld + ' de ' + TOTAL_WORLDS + ' · ' +
+    WORLDS[currentWorld - 1].name + ' · ' + alturaMetros + ' m · ' +
+    monedasTomadas + ' de ' + monedas.length + ' monedas';
+}
+
+function zoomMapa(factor) {
+  const antes = mapaZoom;
+  mapaZoom = Math.max(1, Math.min(14, mapaZoom * factor));
+  // El zoom se hace alrededor del centro de la vista, no de la esquina
+  mapaPanX *= mapaZoom / antes;
+  mapaPanY *= mapaZoom / antes;
+}
+
 function gameLoop(ahora) {
   requestAnimationFrame(gameLoop);   // se agenda primero: el bucle nunca muere
   if (!relojPrevio) relojPrevio = ahora || 0;
@@ -7930,6 +8517,7 @@ function gameLoop(ahora) {
   // El menú sólo se repinta cuando se está viendo: en pausa o en la pantalla
   // final era trabajo tirado a la basura en cada fotograma.
   if (!running && !pausado && !gameOver) refrescarMenu();
+  if (mapaAbierto) dibujarMapa();
   sonarMusica();
   draw();
 }
@@ -7940,7 +8528,8 @@ function startGame() {
   startScreen.classList.add('hidden');
   winScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
-  pausado = false;
+  document.getElementById('map-screen').classList.add('hidden');
+  pausado = false; mapaAbierto = false; mapaLim = null;
   showMessage('Preparando la subida…', '#ffd700');
   requestAnimationFrame(() => requestAnimationFrame(arrancarPartida));
 }
@@ -8076,6 +8665,22 @@ function textoRecordCorto() {
 function actualizarMarcaMenu() {
   const el = document.getElementById('marca-menu');
   if (el) el.textContent = textoMarcas();
+  pintarVitrina();
+  pintarRutaMenu();
+}
+
+/** Los récords en la cabecera del menú, en tarjetas legibles de un vistazo. */
+function pintarVitrina() {
+  const cont = document.getElementById('vitrina');
+  if (!cont) return;
+  const filas = [
+    ['Mejor altura', (marcas.altura || 0) + ' m'],
+    ['Mejor vuelta', marcas.completado ? reloj(marcas.tiempo) : '—'],
+    ['Menos caídas', marcas.muertes === null ? '—' : String(marcas.muertes)],
+    ['Récord pts', marcas.puntos ? String(marcas.puntos) : '—'],
+  ];
+  cont.innerHTML = filas.map(([t, v]) =>
+    '<div><b>' + v + '</b><span>' + t + '</span></div>').join('');
 }
 
 function actualizarBotonMute() {
@@ -8208,6 +8813,9 @@ function montarTactil() {
   if (!esTactil) return;
   const zona = document.getElementById('touch');
   if (zona) zona.classList.add('on');
+  // El botón ◀ se come la esquina de abajo a la izquierda: el mapa sube
+  const esquina = document.getElementById('bottomleft');
+  if (esquina) esquina.classList.add('subido');
 
   const liga = (id, pulsar, soltar) => {
     const el = document.getElementById(id);
@@ -8240,6 +8848,40 @@ document.getElementById('menu-btn').addEventListener('click', volverAlMenu);
 document.getElementById('pause-btn').addEventListener('click', () => {
   if (pausado) reanudar(); else pausar();
 });
+
+/* ---- Mapa ---- */
+document.getElementById('map-btn').addEventListener('click', abrirMapa);
+document.getElementById('map-cerrar').addEventListener('click', cerrarMapa);
+document.getElementById('map-mas').addEventListener('click', () => zoomMapa(1.5));
+document.getElementById('map-menos').addEventListener('click', () => zoomMapa(1 / 1.5));
+document.getElementById('map-centrar').addEventListener('click', centrarMapaEnJugador);
+
+(function mapaArrastrable() {
+  const cv = document.getElementById('mapCanvas');
+  if (!cv) return;
+  let arrastra = false, ux = 0, uy = 0;
+  cv.addEventListener('pointerdown', (ev) => {
+    arrastra = true; ux = ev.clientX; uy = ev.clientY;
+    try { cv.setPointerCapture(ev.pointerId); } catch (e) {}
+  });
+  cv.addEventListener('pointermove', (ev) => {
+    if (!arrastra) return;
+    const dpr = window.devicePixelRatio || 1;
+    mapaPanX += (ev.clientX - ux) * dpr;
+    mapaPanY += (ev.clientY - uy) * dpr;
+    ux = ev.clientX; uy = ev.clientY;
+  });
+  const soltar = () => { arrastra = false; };
+  cv.addEventListener('pointerup', soltar);
+  cv.addEventListener('pointercancel', soltar);
+  // La rueda acerca y aleja, como en cualquier mapa
+  cv.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    zoomMapa(ev.deltaY < 0 ? 1.18 : 1 / 1.18);
+  }, { passive: false });
+})();
+
+window.addEventListener('resize', () => { if (mapaAbierto) ajustarMapa(); });
 muteBtn.addEventListener('click', alternarSonido);
 document.querySelectorAll('.js-mute').forEach((b) => b.addEventListener('click', alternarSonido));
 
@@ -8261,6 +8903,10 @@ actualizarMarcaMenu();
 requestAnimationFrame(gameLoop);
 resizeCanvas();
 generateLevel();
+// La vista previa de la ruta necesita el nivel YA compuesto: al arrancar,
+// `actualizarMarcaMenu()` corre antes que esto y se encontraba `platforms`
+// vacío, así que el recuadro salía en negro.
+pintarRutaMenu();
 cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
 draw();
 

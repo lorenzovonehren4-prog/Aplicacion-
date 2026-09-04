@@ -119,6 +119,55 @@ salto: si son alcanzables depende de la fase del vaivén, y eso no está
 verificado. Encenderlos sin comprobar la fase es volver a poder dejar el juego
 imposible.
 
+### Mapa del nivel
+
+Botón abajo a la izquierda, o **Tab**. La subida mide casi 17.000 px de alto y
+zigzaguea a lo ancho, así que jugando sólo se ve un trozo: el mapa enseña el
+recorrido entero, con las seis cumbres en franjas, el color de cada mecánica,
+las monedas que faltan y **dónde estás tú**, en un anillo que late. Se puede
+acercar con la rueda o los botones, arrastrar, y «Centrarme» vuelve a tu
+posición. Congela la partida mientras está abierto.
+
+Se dibuja del mismo array `platforms` que juega el motor —no hay una copia del
+nivel que se pueda desincronizar— y por eso las plataformas que van y vienen
+aparecen y desaparecen también en el mapa.
+
+En el mando táctil el botón sube 120 px: la esquina de abajo a la izquierda la
+ocupa el botón ◀.
+
+### Pantalla de inicio
+
+Cuatro tarjetas de récord en la cabecera (mejor altura, mejor vuelta, menos
+caídas, récord de puntos) y, donde antes había una lista de texto con las seis
+cumbres, **la ruta dibujada**: la misma función del mapa, sin el marcador del
+jugador. Las rejillas de color y accesorio pasan a cinco por fila, que con 18
+colores y 16 accesorios era la diferencia entre ver el botón de empezar y
+tener que desplazarse hasta él.
+
+### Un checkpoint por cumbre
+
+La pasada anterior sembraba uno antes de cada tramo duro y salían **27**: con
+un punto de guardado cada diez apoyos, caerse dejaba de tener consecuencias.
+Ahora se conserva el primero de cada cumbre —donde el nivel original los puso,
+al empezar cada tramo— y el resto vuelve a ser apoyo normal. Si alguna cumbre
+se quedara sin ninguno, se asciende el apoyo ancho más cercano a su inicio.
+
+### Dos cosas más que estaban escritas y apagadas
+
+**`decorados()` no se llamaba desde ninguna parte.** Todo el desarrollo. Por
+eso los mundos se veían pelados: farolas, barcas, torres, graneros, tractores,
+iglús y satélites estaban dibujados y nadie los pintaba. Ya se llama, entre el
+fondo y los apoyos, y de paso hay **once decorados nuevos** para que cada
+bioma tenga tres o cuatro en vez de uno: pino y roca en Emberwall; palmera,
+faro y boya en Coral; antena y valla en Agent; molino y silo en Growing Up;
+pino nevado y ventisquero en Frosty; cohete y cristal en One Way Up.
+
+**El coral colgaba zarcillos en el aire.** Los brazos salían de la peana hacia
+abajo, hasta 52 px por debajo de la plataforma: dos hilos finos flotando, que
+es exactamente la pinta de «objeto clavado en un palo». Ahora el coral es un
+cuerpo macizo que ocupa el apoyo, con los brazos dentro, recortados por su
+silueta.
+
 ### Diseño de nivel: tipos de apoyo, objetos y curva de dificultad
 
 El nivel venía siendo una cadena lineal de 294 apoyos casi todos iguales: 280
