@@ -613,6 +613,11 @@ export class Level30 extends LevelBase {
   renderMasterCode() {
     this.setPrompt('Seis respuestas que ya diste. Sólo hay que recordarlas.');
 
+    // Cada teclado engancha un listener global de teclado. Hoy esta fase se
+    // pinta una sola vez, pero si algún día se repintara, el teclado anterior
+    // seguiría escuchando: se retira antes de crear el nuevo.
+    this.keypad?.destroy();
+
     this.keypad = createKeypad({
       maxLength: MASTER_CODE.length,
       fixedLength: true,

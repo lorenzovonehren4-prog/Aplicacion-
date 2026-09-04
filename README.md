@@ -15,10 +15,20 @@ necesita servirse por HTTP (abrir `index.html` con `file://` no funciona):
 
 ```bash
 python3 -m http.server 8000
-# o: npx serve .
+# o: npm start
 ```
 
 Y abrir <http://localhost:8000>.
+
+El juego en sí no tiene dependencias. `package.json` sólo existe para las
+pruebas, que necesitan Playwright:
+
+```bash
+npm install
+npm test                 # las 17 suites
+npm test -- partida      # sólo las que llevan "partida" en el nombre
+node tests/16-responsive.mjs   # una suelta
+```
 
 ---
 
@@ -52,8 +62,9 @@ mind-escape/
 │   ├── ui/                 menu · level-select · level-screen · settings ·
 │   │                       completion-modal · ending
 │   └── utils/              dom · animations · math
-└── data/
-    └── levels-meta.json    Título, tipo, dificultad y umbral de cada nivel
+├── data/
+│   └── levels-meta.json    Título, tipo, dificultad y umbral de cada nivel
+└── tests/                  Suites en Playwright + su lanzador
 ```
 
 ### Las tres reglas que sostienen todo
@@ -282,3 +293,30 @@ en consola.
 A eso se suma una auditoría que recorre las 33 pantallas a 320, 375 y 768 px
 buscando desbordamiento horizontal, elementos fuera del área visible y
 objetivos táctiles por debajo de 40 px. Actualmente pasa con **0 incidencias**.
+
+## Las pruebas
+
+`npm test` levanta un servidor estático y ejecuta las 17 suites de `tests/`.
+Cada una es un script independiente y se puede lanzar suelta.
+
+| Suite | Qué comprueba |
+|---|---|
+| `01-flujo-basico` | Menú, selector, ajustes, desbloqueo, borrado de progreso |
+| `02-reglas-de-juego` | Estrellas, reintentos, récords, datos corruptos |
+| `03` · `04` | Que las soluciones sean **únicas** donde debe serlo: el Sudoku por fuerza bruta, el cableado del 16 entre las 24 permutaciones, las rotaciones del 25 entre 262 144 combinaciones |
+| `05` … `08` | Partidas completas: resuelven los 30 niveles como lo haría una persona |
+| `09` · `10` · `11` | La bombilla del 7 en sus tres lecturas, los caminos del 13, la pantalla final |
+| `12-audio` | Con el sonido **activo**: cuenta los osciladores de Web Audio que se crean |
+| `13-estres-router` | Navegación más rápida que la transición, atrás/adelante, rutas basura |
+| `14-fugas` · `15-dom-limpio` | Que salir de un nivel devuelva listeners, intervalos y nodos |
+| `16-responsive` | Las 33 pantallas a 320, 375 y 768 px |
+| `17` | Que los números del nivel 1 no se solapen |
+
+Dos notas sobre cómo están escritas:
+
+- **Resuelven de verdad, no hacen trampa.** La suite del nivel 12 aplica el
+  método real (3 vs 3 y luego 1 vs 1, deduciendo el grupo del resultado); la
+  del 7 enciende un interruptor, espera a que caliente y lo apaga.
+- **El audio se mide, no se simula.** Espiar `audio.play()` no funciona porque
+  los módulos ES lo importan como binding de solo lectura, así que la suite
+  parchea `createOscillator` y cuenta los osciladores reales.

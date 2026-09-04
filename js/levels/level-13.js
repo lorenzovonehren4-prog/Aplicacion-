@@ -286,8 +286,12 @@ export class Level13 extends LevelBase {
     const endpointColor = this.endpointOf.get(key(r, c));
 
     if (endpointColor) {
-      // Pulsar un punto siempre reinicia su camino desde ahí: es la vía para
-      // deshacer sin tener que borrar toda la cuadrícula.
+      // Un camino ya cerrado no se borra por tocar su punto: sería tirar por la
+      // borda medio puzzle de un toque accidental. Para rehacerlo están pulsar
+      // una celda intermedia (que lo recorta ahí) y el botón de borrar todo.
+      if (this.isConnected(endpointColor)) return null;
+
+      // Si aún no está cerrado, empezar de nuevo desde este punto es lo útil.
       this.paths.set(endpointColor, [[r, c]]);
       this.activeColor = endpointColor;
       this.render();
