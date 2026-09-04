@@ -1053,26 +1053,58 @@ function alrededor(a, b) {
 }
 
 /**
- * ¿Se llega de `a` a `b`? Con el motor de verdad, probando puntos de
- * despegue y momentos del segundo salto. Es la misma comprobación que hace
- * el jugador con las manos, no una fórmula aparte.
+ * Lo que cuesta ir de `a` a `b`, en fotogramas: caminar desde donde caes
+ * hasta el punto de despegue, más el vuelo. `Infinity` si no se llega.
+ *
+ * Con el motor de verdad, probando puntos de despegue y momentos del segundo
+ * salto: es la misma comprobación que hace el jugador con las manos, no una
+ * fórmula aparte. El coste hace falta para las plataformas frágiles, que
+ * aguantan 60 fotogramas contados desde que las pisas.
  */
-function seLlega(a, b) {
+function costeSalida(a, b, basta) {
+  // `basta` es el coste con el que ya nos damos por satisfechos: en cuanto se
+  // encuentra un camino así de bueno se corta. Sin él había que barrer los
+  // 300 despegues de cada apoyo hasta el final, y sembrar el nivel entero
+  // pasaba de 1,1 s a la nada.
+  const tope = (basta === undefined) ? -1 : basta;
   const cerca = alrededor(a, b);
   const dir = (b.x + b.width / 2) >= (a.x + a.width / 2) ? 1 : -1;
-  for (let lx = a.x - PW + 8; lx <= a.x + a.width - 8; lx += 6) {
+  const entrada = (a.entradaX !== undefined) ? a.entradaX : a.x + a.width / 2;
+  // Desde el hielo se despega con carrerilla ya hecha: el apoyo helado es
+  // ancho de sobra para cogerla, y lo que el hielo quita es el control al
+  // frenar y al girar, no la velocidad punta.
+  const vx0 = a.hielo ? dir * SPEED : 0;
+
+  // Se prueban antes los despegues cerca de donde caes, que son los baratos
+  const puntos = [];
+  for (let lx = a.x - PW + 8; lx <= a.x + a.width - 8; lx += 6) puntos.push(lx);
+  puntos.sort((u, v) => Math.abs(u - entrada) - Math.abs(v - entrada));
+
+  let mejor = Infinity;
+  for (const lx of puntos) {
+    const paseo = Math.abs(lx - entrada) / SPEED;
+    if (paseo >= mejor) continue;
     for (let f2 = 0; f2 <= 30; f2 += 2) {
-      const e = { x: lx, y: a.y - PH, vx: 0, vy: 0, onGround: true, saltos: 2,
-                  coyote: 0, buffer: 0, enHielo: false, apoyo: a, arrastre: null };
+      const e = { x: lx, y: a.y - PH, vx: vx0, vy: 0, onGround: true, saltos: 2,
+                  coyote: 0, buffer: 0, enHielo: !!a.hielo, apoyo: a, arrastre: null };
       for (let f = 0; f < 110; f++) {
         const cayo = pasoFisica(e, dir, f === 0 || (f2 > 0 && f === f2), cerca);
-        if (cayo) { if (cayo === b) return true; break; }
+        if (cayo) {
+          if (cayo === b) {
+            mejor = Math.min(mejor, paseo + f);
+            if (mejor <= tope) return mejor;
+          }
+          break;
+        }
         if (e.y > a.y + 620) break;
       }
     }
   }
-  return false;
+  return mejor;
 }
+
+/** ¿Se llega de `a` a `b`, sin importar lo que cueste? */
+function seLlega(a, b) { return costeSalida(a, b, Infinity) < Infinity; }
 
 /** El trozo más ancho del apoyo desde el que se puede saltar sin techo. */
 function huecoLibre(p) {
@@ -1120,8 +1152,63 @@ function despejarRatoneras() {
   return { arreglados, rendidos };
 }
 
+/* ====================================================================
+   SUELOS DINÁMICOS
+   El motor ya sabía hacer hielo (se patina), apoyos frágiles (se caen un
+   segundo después de pisarlos) y pinchos. El nivel incrustado no traía ni
+   uno: la generación acababa con `lasers = []; spikes = []` y las
+   conversiones a hielo y a frágil comentadas. Media mecánica apagada.
+
+   Aquí se siembran sobre el nivel ya cargado, escalando por cumbre igual que
+   el resto de la dificultad, y CADA UNO se comprueba con el motor de física
+   antes de quedarse: el que estropea el recorrido se deshace.
+   ==================================================================== */
+
+// De los 60 fotogramas que aguanta un apoyo frágil, los que como mucho puede
+// costar salir de él. El resto es margen para una persona, no para el robot.
+const MARGEN_FRAGIL = 42;
+
+/** La misma curva que usa el generador: sube despacio y se dispara al final. */
+function dificultad(mundo) {
+  return Math.pow((mundo - 1) / (TOTAL_WORLDS - 1), 1.55);
+}
+
+function sembrarSuelos() {
+  reiniciarAzar();          // el mapa tiene que salir idéntico en cada partida
+  const puestos = { hielo: 0, fragil: 0, pinchos: 0 };
+
+  for (let i = 1; i < platforms.length - 1; i++) {
+    const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
+    if (p.type !== 'normal' || p.mov) continue;
+
+    // HIELO. Sólo en Frosty Peaks: es donde el bloque de hielo pega con el
+    // paisaje, y donde el juego ya lo dibujaba. Y sólo en apoyos anchos,
+    // porque para despegar patinando hace falta carrerilla.
+    if (p.world === 5 && p.width > 140 &&
+        rnd() < 0.40 + 0.34 * dificultad(p.world)) {
+      p.hielo = true;
+      if (seLlega(ant, p) && seLlega(p, sig)) { puestos.hielo++; continue; }
+      delete p.hielo;
+    }
+
+    // FRÁGIL. Se cae un segundo después de pisarlo. Nunca dos seguidos —dos
+    // prisas encadenadas no son dificultad, son una ruleta— y sólo si salir
+    // cabe holgado en la cuenta atrás.
+    if (p.world >= 3 && !ant.trampa &&
+        rnd() < 0.07 + 0.33 * dificultad(p.world) &&
+        costeSalida(p, sig, MARGEN_FRAGIL) <= MARGEN_FRAGIL) {
+      p.trampa = true;
+      puestos.fragil++;
+    }
+  }
+
+  generarPinchos();
+  puestos.pinchos = spikes.length;
+  return puestos;
+}
+
 function generateLevel() {
-  if (cargarNivelFijo()) { despejarRatoneras(); return; }
+  if (cargarNivelFijo()) { despejarRatoneras(); sembrarSuelos(); return; }
   inicioGen = Date.now();
   reiniciarAzar();          // mismo mapa en cada partida
   platforms = [];
@@ -1568,10 +1655,11 @@ function generateLevel() {
 
   }
 
-  // Sin pinchos, trampas ni láseres: la dificultad la ponen los saltos.
+  // Sin láseres: cruzan el arco del salto y su fase no está verificada.
   lasers = [];
   spikes = [];
   despejarRatoneras();
+  sembrarSuelos();
   generarGeiseres();
   limpiarGeiseresQueEstorban();
 }
@@ -2046,6 +2134,7 @@ function generarPinchos() {
   for (let i = 1; i < platforms.length; i++) {
     const p = platforms[i];
     if (p.type !== 'normal' || p.mov || p.world < 2) continue;
+    if (p.hielo || p.trampa) continue;           // ya tienen su propia gracia
     if (p.width < 165) continue;                 // hace falta sitio de sobra
     if (rnd() > (0.06 + 0.52 * Math.pow((p.world - 1) / 6, 1.5))) continue;
 
@@ -2054,16 +2143,22 @@ function generarPinchos() {
     const sig = platforms[i + 1];
     const sale = (sig && sig.traza) ? sig.traza[0].x : p.x + p.width / 2;
 
+    // El PASILLO: desde donde caes hasta donde despegas. Antes bastaba con
+    // dejar libres los dos extremos, pero un pincho EN MEDIO obliga a
+    // saltarlo, y ese salto gasta el del suelo: al llegar al borde te queda
+    // solo el del aire y el salto verificado ya no sale. Ahora el pincho se
+    // queda fuera del pasillo entero: sigue matando al que se pasa de frenada
+    // pero no se cruza en el camino bueno.
+    const pasIni = Math.min(cae, sale) - 8;
+    const pasFin = Math.max(cae, sale) + PW + 8;
+
     const ancho = 30 + rnd() * 26;
     let puesto = null;
     for (let intento = 0; intento < 20 && !puesto; intento++) {
       const x = p.x + 45 + rnd() * Math.max(1, p.width - 90 - ancho);
-      // No pueden caer donde aterrizas ni desde donde despegas. En medio sí:
-      // se saltan por encima, que para eso miden 16 px y el salto sube 131.
-      const libreCaida  = (x > cae  + PW + 14) || (x + ancho < cae  - 14);
-      const libreDespegue = (x > sale + PW + 14) || (x + ancho < sale - 14);
+      const fueraDelPaso = (x > pasFin) || (x + ancho < pasIni);
       const margenIzq = x - p.x, margenDer = (p.x + p.width) - (x + ancho);
-      if (libreCaida && libreDespegue && margenIzq >= 42 && margenDer >= 42) {
+      if (fueraDelPaso && margenIzq >= 42 && margenDer >= 42) {
         puesto = { x, y: p.y - SPIKE_H, width: ancho, height: SPIKE_H };
       }
     }
@@ -2361,6 +2456,15 @@ const pauseStats   = document.getElementById('pause-stats');
 const marcasEl     = document.getElementById('marcas');
 const muteBtn      = document.getElementById('mute-btn');
 
+/* Los suelos nuevos se explican solos la primera vez que los pisas, no en
+   una leyenda del menú que nadie lee. */
+let avisado = {};
+function avisar(clave, txt, color) {
+  if (avisado[clave]) return;
+  avisado[clave] = true;
+  showMessage(txt, color);
+}
+
 let msgTimer = null;
 function showMessage(txt, color) {
   messageEl.textContent = txt;
@@ -2594,6 +2698,8 @@ function update() {
       }
     }
     if (aterrizo.type === 'spring') efecto([392, 587], 0.09, 'square', 0.055);
+    if (aterrizo.hielo) avisar('hielo', 'Hielo: aquí se patina', '#8fd4ff');
+    if (aterrizo.trampa) avisar('fragil', 'Se rompe: no te pares', '#ff9f43');
     if (aterrizo.type === 'goal') triggerWin();
   }
 
@@ -4427,15 +4533,47 @@ function draw() {
     ctx.save();
     if (tembl) ctx.translate(tembl, 0);
     drawPlatform(plat);
+    // La grieta de un apoyo frágil va con reborde oscuro: sin él se perdía
+    // sobre los apoyos claros, y un suelo que no se ve no es una mecánica,
+    // es una encerrona.
     if (plat.trampa) {
-      ctx.strokeStyle = 'rgba(255,80,80,0.75)';
-      ctx.lineWidth = 2;
+      const grieta = () => {
+        ctx.beginPath();
+        ctx.moveTo(plat.x + 8, plat.y + 5);
+        ctx.lineTo(plat.x + plat.width * 0.4, plat.y + plat.height - 3);
+        ctx.lineTo(plat.x + plat.width * 0.62, plat.y + 6);
+        ctx.lineTo(plat.x + plat.width - 8, plat.y + plat.height - 4);
+        ctx.stroke();
+      };
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(28,10,14,0.55)';
+      ctx.lineWidth = 6;
+      grieta();
+      ctx.strokeStyle = '#ff5a5a';
+      ctx.lineWidth = 3;
+      grieta();
+    }
+
+    // El hielo resbala, pero en Frosty Peaks TODO es blanco y azul: sin una
+    // marca propia no se distinguía del apoyo de nieve de al lado, que agarra.
+    if (plat.hielo) {
+      ctx.strokeStyle = 'rgba(90,220,255,0.95)';
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(plat.x + 8, plat.y + 5);
-      ctx.lineTo(plat.x + plat.width * 0.4, plat.y + plat.height - 3);
-      ctx.lineTo(plat.x + plat.width * 0.62, plat.y + 6);
-      ctx.lineTo(plat.x + plat.width - 8, plat.y + plat.height - 4);
+      ctx.moveTo(plat.x + 5, plat.y + 2.5);
+      ctx.lineTo(plat.x + plat.width - 5, plat.y + 2.5);
       ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      for (let k = 0; k < 3; k++) {
+        const bx = plat.x + plat.width * (0.22 + k * 0.28);
+        ctx.beginPath();
+        ctx.moveTo(bx, plat.y + 9);
+        ctx.lineTo(bx + 7, plat.y + 13);
+        ctx.lineTo(bx, plat.y + 17);
+        ctx.lineTo(bx - 7, plat.y + 13);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
     ctx.restore();
 
@@ -6488,7 +6626,7 @@ function arrancarPartida() {
   cameraX = 0; cameraY = player.y + PH / 2 - viewHeight / 2;
   currentWorld = 1; deaths = 0; tiempoJuego = 0; gameOver = false;
   alturaMetros = 0; recordMetros = 0; particles = []; pedirSalto = false;
-  tiempoAcumulado = 0;
+  tiempoAcumulado = 0; avisado = {};
   _hudAltura = -1; _hudStats = ''; _hudRecord = '';
   worldDisplay.textContent = 1;
   worldName.textContent = WORLDS[0].name;

@@ -59,6 +59,59 @@ derecha: se leía «Cumbre 2» estando en la 1, «4» estando en la 3. Ahora se
 decide por altura, con los límites reales del nivel, y al cambiar de cumbre lo
 anuncia.
 
+### Media mecánica estaba apagada
+
+El motor sabe hacer hielo (se patina), apoyos frágiles (se caen un segundo
+después de pisarlos) y pinchos. El nivel incrustado no traía **ni uno**: la
+generación acababa con `lasers = []; spikes = []` y las conversiones a hielo y
+a frágil estaban comentadas. De 294 apoyos: 280 normales, 7 trampolines, 6
+checkpoints, 17 móviles y 14 géiseres. Nada más.
+
+`sembrarSuelos()` los siembra sobre el nivel ya cargado, con la misma curva de
+dificultad que usa el generador —`((cumbre-1)/5)^1.55`— y **verifica cada uno
+con el motor de física antes de dejarlo puesto**:
+
+| Suelo | Dónde | Cuántos | Qué se comprueba |
+|---|---|---|---|
+| ❄️ Hielo | Cumbre 5, apoyos anchos | 14 | Que el salto de entrada y el de salida siguen saliendo *patinando*: la simulación arranca con `enHielo` puesto, no con la física de agarre |
+| 🩸 Frágil | Cumbres 3-6, nunca dos seguidos | 34 | Que salir cuesta ≤ 42 fotogramas de los 60 que aguanta. El resto es margen para una persona |
+| ⚠️ Pinchos | Cumbres 2-6 | 7 | Que ninguno cae en el pasillo que se camina de la caída al despegue |
+
+Los pinchos necesitaron un arreglo aparte. `generarPinchos()` sólo dejaba
+libres los dos extremos, pero un pincho **en medio** obliga a saltarlo, y ese
+salto gasta el del suelo: al llegar al borde te queda sólo el del aire y el
+salto verificado ya no sale. Ahora se quedan fuera del pasillo entero — siguen
+matando al que se pasa de frenada, pero no se cruzan en el camino bueno.
+
+Dos detalles de dibujo, porque un suelo que no se ve no es una mecánica:
+
+- La grieta roja de los frágiles lleva reborde oscuro; sin él se perdía sobre
+  los apoyos claros.
+- El hielo lleva filo cian y rombos. En Frosty Peaks *todo* es blanco y azul:
+  sin marca propia no se distinguía del apoyo de nieve de al lado, que agarra.
+
+Y cada suelo nuevo se explica solo la primera vez que lo pisas («Hielo: aquí se
+patina», «Se rompe: no te pares»), en vez de en una leyenda del menú que nadie
+lee.
+
+**Los láseres siguen apagados.** `generarLaseres()` los coloca en la banda
+limpia entre dos apoyos, pero esa banda es justo por donde pasa el arco del
+salto: si son alcanzables depende de la fase del vaivén, y eso no está
+verificado. Encenderlos sin comprobar la fase es volver a poder dejar el juego
+imposible.
+
+### El verificador ahora mide coste, no sólo sí/no
+
+`costeSalida(a, b, basta)` devuelve los fotogramas que cuesta ir de un apoyo al
+siguiente: caminar desde donde caes hasta el punto de despegue, más el vuelo.
+Es lo que decide si un apoyo puede ser frágil. `seLlega()` es ahora una línea
+encima de él.
+
+El parámetro `basta` corta la búsqueda en cuanto encuentra un camino lo
+bastante bueno, y los puntos de despegue se prueban ordenados por cercanía a
+donde caes. Sembrar el nivel entero pasó de 1139 ms a 169 ms; el repaso de
+ratoneras, de 153 ms a 32 ms.
+
 ### Lo demás
 
 - **Pausa** (`Esc`/`P`, botón de esquina, y automática al cambiar de pestaña),
@@ -85,7 +138,9 @@ Todo vive en `index.html`. Las piezas, por orden:
 | `NIVEL_FIJO` | El nivel entero ya generado y verificado, serializado |
 | Constantes | Gravedad, salto, cumbres, metros por cumbre |
 | Física | `pasoFisica()`, el motor **único** que comparten el juego y el generador |
-| Ratoneras | `despejarRatoneras()`, `seLlega()`: repaso del recorrido al cargar |
+| Verificación | `costeSalida()`, `seLlega()`, `alrededor()`: replay del recorrido con el motor real |
+| Ratoneras | `despejarRatoneras()`: apoyos con techo demasiado bajo para saltar |
+| Suelos | `sembrarSuelos()`: hielo, frágiles y pinchos, verificados uno a uno |
 | Generación | Sólo se usa si no hay `NIVEL_FIJO`: coloca apoyos y verifica cada salto simulándolo |
 | Estado y lógica | Cámara, muertes, checkpoints, pausa, marcador |
 | Sonido | Notas generadas con Web Audio, sin archivos |
