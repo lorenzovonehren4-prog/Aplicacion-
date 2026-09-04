@@ -109,8 +109,8 @@
 
   /* Tarjetas de skin y accesorio, con el personaje dibujado dentro */
   #skins, #accesorios { display:grid; gap:8px; }
-  #skins { grid-template-columns:repeat(3,1fr); }
-  #accesorios { grid-template-columns:repeat(3,1fr); }
+  #skins { grid-template-columns:repeat(4,1fr); }
+  #accesorios { grid-template-columns:repeat(4,1fr); }
   .tarjeta { position:relative; border-radius:11px; cursor:pointer; overflow:hidden;
     border:2px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05);
     transition:transform .12s, border-color .12s, background .12s; }
@@ -133,12 +133,22 @@
     .col-pj .escaparate { margin:0; } .col-pj .campo { flex:1; } }
   @media (max-width:600px) { .columnas { grid-template-columns:1fr; }
     .col-pj { flex-direction:column; } }
-  #accesorios { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:6px; }
+  /* Con 16 accesorios, en rejilla de ancho fijo: en flex se estiraban a lo
+     ancho de la columna y las tarjetas salían de tamaños distintos. */
+  #accesorios { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:6px; }
+  #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:44px; }
+  .tarjeta span { font-size:9px; line-height:1.2; }
   .acc { padding:6px 10px; font-size:12px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600;
     border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); color:#c9d6e5; }
   .acc.sel { border-color:#ffd700; background:rgba(255,215,0,.12); color:#fff; }
   .skin i { display:block; width:26px; height:30px; border-radius:13px 13px 10px 10px;
     border:2px solid rgba(20,16,46,.9); }
+  /* El menú lleva las dos clases, `panel menu`, y `.panel` se declara
+     DESPUÉS: su `width:min(440px,100%)` ganaba por orden de cascada y
+     aplastaba el `max-width:1060px` del menú. En móvil los dos valores
+     coinciden y no se notaba; en escritorio el menú llevaba todo este
+     tiempo metido en 440 px, con las tarjetas y los nombres cortados. */
+  .panel.menu { width:min(1060px, 96vw); max-width:none; }
   .panel { width:min(440px,100%); background:rgba(18,18,30,.96);
     border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:32px 28px; text-align:center; }
   .panel h1 { font-size:30px; color:#ffd700; margin-bottom:8px; letter-spacing:.06em; }
@@ -656,6 +666,12 @@ const SKINS = [
   { nombre: 'Morado',  claro: '#c39bff', medio: '#8f5cf0', oscuro: '#5b2eb0', pata: '#3f2b96', pataOsc: '#271a63' },
   { nombre: 'Rosa',    claro: '#ffa5cd', medio: '#f2609e', oscuro: '#b32e6b', pata: '#8e2f7a', pataOsc: '#5e1d51' },
   { nombre: 'Dorado',  claro: '#ffe27a', medio: '#f5c02b', oscuro: '#b08a08', pata: '#8a6a1c', pataOsc: '#5c4610' },
+  { nombre: 'Rojo',    claro: '#ff9a8a', medio: '#ef4136', oscuro: '#a3160f', pata: '#8e2b22', pataOsc: '#5c1712' },
+  { nombre: 'Azul',    claro: '#8ec5ff', medio: '#3b82f6', oscuro: '#1d4ed8', pata: '#1e3a8a', pataOsc: '#12245c' },
+  { nombre: 'Blanco',  claro: '#ffffff', medio: '#e7edf5', oscuro: '#b3c0d1', pata: '#8b9ab0', pataOsc: '#5d6b80' },
+  { nombre: 'Grafito', claro: '#7b8493', medio: '#4a5261', oscuro: '#262c38', pata: '#1d2028', pataOsc: '#0f1218' },
+  { nombre: 'Lima',    claro: '#e8ff8a', medio: '#c3ea2c', oscuro: '#89a80c', pata: '#6f8f14', pataOsc: '#465c08' },
+  { nombre: 'Choco',   claro: '#c98c5a', medio: '#9c5f31', oscuro: '#63381a', pata: '#4a2913', pataOsc: '#2d180b' },
 ];
 let skinElegida = 0;
 let modoRetrato = false;   // cuando se dibuja en el menú, sin etiqueta de nombre
@@ -3316,11 +3332,13 @@ function copaRedonda(x, y, w, alto, c1, c2) {
 
 /** 🌳 Árbol: la copa es la superficie, el tronco cuelga por debajo. */
 function objArbol(x, y, w, hh, P) {
-  const tx = x + w / 2;
+  // Antes colgaba un tronco de 62 px bajo la copa, en el vacío: un árbol
+  // clavado en el aire. Ahora la copa se apoya en un cepellón del ancho del
+  // apoyo, que es lo que de verdad se pisa.
   ctx.fillStyle = P.tronco;
-  ctx.fillRect(tx - 9, y + hh - 4, 18, 62);
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ctx.fillRect(tx + 2, y + hh - 4, 7, 62);
+  rrect(x + 6, y + hh * 0.45, w - 12, hh * 0.75, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.16)';
+  rrect(x + w * 0.58, y + hh * 0.45, w * 0.3, hh * 0.75, 6); ctx.fill();
   copaRedonda(x, y, w, hh + 26, P.copa, P.copa2);
 }
 
@@ -3789,11 +3807,15 @@ function drawObjeto(p) {
   ctx.rotate(p.ang || 0);
   ctx.translate(-(x + w / 2), -(y + hh / 2));
 
-  // Sombra proyectada común: da peso a todos los objetos por igual
+  // Sombra proyectada común. Iba desplazada 3 y 8 px con el TAMAÑO ENTERO
+  // del apoyo, así que asomaba por debajo y por la derecha de cada objeto:
+  // sobre el cielo claro no se leía como sombra sino como una caja fantasma
+  // detrás de la plataforma. Ahora se ciñe: menos desplazamiento, menos alto
+  // y menos opacidad.
   ctx.save();
-  ctx.globalAlpha = 0.20;
+  ctx.globalAlpha = 0.14;
   ctx.fillStyle = '#0a1a2a';
-  rrect(x + 3, y + 8, w, Math.max(20, hh), 7); ctx.fill();
+  rrect(x + 2, y + 5, w - 3, Math.max(13, hh * 0.72), 6); ctx.fill();
   ctx.restore();
 
   if (p.hielo) propHielo(x, y, w, hh);
@@ -4007,14 +4029,17 @@ function propMuñeco(x, y, w) {
 /** 📡 Antena: se pisa la pasarela. */
 function propAntena(x, y, w) {
   peana(x, y, w, '#7d8ba6', '#4a5570', '#2b3242');
-  ctx.strokeStyle = '#8fa3bf'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.moveTo(x + w * 0.5, y + 14); ctx.lineTo(x + w * 0.5, y + 46); ctx.stroke();
-  // La parabólica va POR DEBAJO: encima de la pasarela no sería sólida
+  // La parabólica colgaba de un poste de 32 px bajo la pasarela: el conjunto
+  // se veía como un plato pinchado en un palo. Ahora va TUMBADA sobre la
+  // peana, contra el borde, donde no estorba a los pies.
+  const dcx = x + w - 24, dcy = y + 19;
   ctx.fillStyle = '#c8d4e4';
-  ctx.beginPath(); ctx.ellipse(x + w * 0.5 + 8, y + 44, 28, 20, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(dcx, dcy, 17, 11, -0.35, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = '#7f8fa6'; ctx.lineWidth = 2; ctx.stroke();
   ctx.fillStyle = '#5a6b85';
-  ctx.beginPath(); ctx.ellipse(x + w * 0.5 + 8, y + 44, 10, 7, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(dcx, dcy, 6, 4, -0.35, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#8fa3bf'; ctx.lineWidth = 2.6;
+  ctx.beginPath(); ctx.moveTo(dcx - 12, dcy + 8); ctx.lineTo(dcx + 5, dcy + 10); ctx.stroke();
   const on = Math.sin(t * 0.08 + x * 0.01) > 0;
   ctx.fillStyle = on ? '#ff5252' : '#5a1f1f';
   ctx.beginPath(); ctx.arc(x + w - 10, y + 7, 2.6, 0, Math.PI * 2); ctx.fill();
@@ -4233,8 +4258,12 @@ function objTronco(x, y, w, hh, P) {
 /** 🍄 Seta gigante: sombrero con lunares y pie grueso. */
 function objSeta(x, y, w, hh, P) {
   const cx = x + w / 2;
+  // El pie medía `hh + 22` y salía muy por debajo del sombrero, que es lo
+  // que se pisa. Ahora es un pie ancho y corto, sin palo al aire.
   ctx.fillStyle = '#efe0c0';
-  rrect(cx - 9, y + hh * 0.5, 18, hh + 22, 5); ctx.fill();
+  rrect(cx - w * 0.26, y + hh * 0.5, w * 0.52, hh * 0.62, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(150,130,95,0.28)';
+  rrect(cx + w * 0.06, y + hh * 0.5, w * 0.2, hh * 0.62, 6); ctx.fill();
   ctx.fillStyle = '#d94f4f';
   ctx.beginPath();
   ctx.ellipse(cx, y + hh * 0.55, w / 2, hh * 0.9, 0, Math.PI, 0);
@@ -4277,15 +4306,17 @@ function objFarol(x, y, w, hh, P) {
   const n = Math.max(1, Math.floor(w / 46));
   for (let i = 0; i < n; i++) {
     const fx = x + (w / n) * (i + 0.5);
-    const balanceo = Math.sin(t * 0.035 + i * 1.7) * 3;
-    ctx.strokeStyle = '#4a2f1c'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(fx, y + 7); ctx.lineTo(fx + balanceo, y + 18); ctx.stroke();
-    ctx.shadowColor = '#ff9f43'; ctx.shadowBlur = 12;
+    // Sin cuerda: los faroles van ENCASTRADOS en la viga, no colgando de un
+    // hilo. El latido de la luz da el movimiento que antes daba el balanceo.
+    const latido = 0.85 + 0.15 * Math.sin(t * 0.05 + i * 1.7);
+    ctx.shadowColor = '#ff9f43'; ctx.shadowBlur = 14 * latido;
     ctx.fillStyle = '#ff6b81';
-    ctx.beginPath(); ctx.ellipse(fx + balanceo, y + 27, 10, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(fx, y + 20, 11, 13, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(255,230,150,0.85)';
-    ctx.beginPath(); ctx.ellipse(fx + balanceo, y + 27, 5, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#8a3b46'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.ellipse(fx, y + 20, 11, 13, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,236,170,' + (0.7 + latido * 0.3).toFixed(2) + ')';
+    ctx.beginPath(); ctx.ellipse(fx, y + 20, 5, 7.5, 0, 0, Math.PI * 2); ctx.fill();
   }
 }
 
@@ -4745,11 +4776,11 @@ const GIM_PATAS = {
    O negro | H tela oscura | S plata | W blanco | R rojo | M marrón
    ==================================================================== */
 const ACCESORIOS = [
-  { id: 'ninguno', nombre: 'Sin accesorio', fila: 0, px: [] },
+  { id: 'ninguno', corto: 'Ninguno', nombre: 'Sin accesorio', fila: 0, px: [] },
 
-  { id: 'gafas', nombre: 'Gafas de sol', fila: 0, px: [] },
-  { id: 'gorra', nombre: 'Gorra', fila: 0, px: [] },
-  { id: 'bombin', nombre: 'Bombín y bigote', fila: -5, px: [
+  { id: 'gafas', corto: 'Gafas', nombre: 'Gafas de sol', fila: 0, px: [] },
+  { id: 'gorra', corto: 'Gorra', nombre: 'Gorra', fila: 0, px: [] },
+  { id: 'bombin', corto: 'Bombín', nombre: 'Bombín y bigote', fila: -5, px: [
       '......OOOO......',
       '.....OHHHHO.....',
       '.....OHHHHO.....',
@@ -4761,7 +4792,7 @@ const ACCESORIOS = [
       '.....OOOOOO.....',
     ] } },
 
-  { id: 'demonio', nombre: 'Cuernos y alas', fila: -5, px: [
+  { id: 'demonio', corto: 'Diablo', nombre: 'Cuernos y alas', fila: -5, px: [
       '..OO........OO..',
       '..OMO......OMO..',
       '...OMO....OMO...',
@@ -4769,7 +4800,17 @@ const ACCESORIOS = [
       '....OMOOOOMO....',
     ], alas: true },
 
-  { id: 'tiburon', nombre: 'Capucha de tiburón', fila: -4, px: [
+  { id: 'corona', corto: 'Corona',      nombre: 'Corona',        fila: 0, px: [] },
+  { id: 'obrero', corto: 'Obra',      nombre: 'Casco de obra',  fila: 0, px: [] },
+  { id: 'fiesta', corto: 'Fiesta',      nombre: 'Gorro de fiesta', fila: 0, px: [] },
+  { id: 'bruja', corto: 'Bruja',       nombre: 'Sombrero de bruja', fila: 0, px: [] },
+  { id: 'mexicano', corto: 'Charro',    nombre: 'Sombrero charro', fila: 0, px: [] },
+  { id: 'reno', corto: 'Reno',        nombre: 'Cuernos de reno', fila: 0, px: [] },
+  { id: 'luchador', corto: 'Luchador',    nombre: 'Máscara luchador', fila: 0, px: [] },
+  { id: 'momia', corto: 'Momia',       nombre: 'Vendas de momia', fila: 0, px: [] },
+  { id: 'auriculares', corto: 'Cascos', nombre: 'Auriculares',    fila: 0, px: [] },
+  { id: 'espacial', corto: 'Espacial',    nombre: 'Casco espacial',  fila: 0, px: [] },
+  { id: 'tiburon', corto: 'Tiburón', nombre: 'Capucha de tiburón', fila: -4, px: [
       '.....OOOOOO.....',
       '...OOSSSSSSOO...',
       '..OSSSSSSSSSSO..',
@@ -4826,6 +4867,9 @@ function drawPlayer() {
   const mira = player.facing === 1;
   const corriendo = Math.abs(player.vx) > 0.5 && player.onGround;
   const aire = player.onGround ? 0 : 1;
+  // Lo que está haciendo, para que la cara lo cuente
+  const cayendo = player.vy > 7;
+  const subiendo = player.vy < -3;
   const piel = SKINS[Math.max(0, Math.min(SKINS.length - 1, skinElegida))];
   // La escala se calcula sobre el ancho REAL del dibujo (58 unidades), no
   // sobre un valor antiguo: si no, el personaje se sale de su caja.
@@ -4929,6 +4973,13 @@ function drawPlayer() {
   brillo.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = brillo;
   ctx.fillRect(-36, -60, 72, 34);
+  // Luz de rebote en la panza: despega al personaje del apoyo que pisa, que
+  // antes se le fundía con el cuerpo en los apoyos oscuros.
+  const rebote = ctx.createLinearGradient(0, -22, 0, -9);
+  rebote.addColorStop(0, 'rgba(255,255,255,0)');
+  rebote.addColorStop(1, 'rgba(255,255,255,0.24)');
+  ctx.fillStyle = rebote;
+  ctx.fillRect(-36, -23, 72, 15);
   ctx.restore();
 
   cuerpo();
@@ -4951,9 +5002,51 @@ function drawPlayer() {
     // MEDIDO: ojo de 7.7% de ancho y 18% de alto (proporción 2.1), separados
     // un 23% del ancho, centrados al 43% desde arriba. Los míos eran más
     // finos y alargados (proporción 4.1).
-    // Ojos algo más pequeños
-    ctx.beginPath(); ctx.ellipse(-9 + dx, -33, 2.8, 5.8, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(9 + dx, -33, 2.8, 5.8, 0, 0, Math.PI * 2); ctx.fill();
+    // El mismo óvalo, estirado al caer y achinado al subir: la expresión
+    // sale de la forma del ojo, no de dibujar otra cara.
+    const abre = cayendo ? 1.34 : (subiendo ? 0.84 : 1);
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.ellipse(s * 9 + dx, -33, cayendo ? 3.2 : 2.8, 5.8 * abre, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Reflejo. Sin él los ojos son dos agujeros, no dos ojos.
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath();
+      ctx.ellipse(s * 9 + dx - 0.9, -35.3, 1.05, 1.5, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // --- Mofletes: la cara era piel lisa de lado a lado ---
+  ctx.fillStyle = 'rgba(255,120,150,0.28)';
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(s * 19 + dx * 0.8, -26.5, 5.4, 3.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // --- Boca. No tenía ninguna, y es de donde sale el carácter: sonríe
+  // parado, aprieta al correr, hace una "o" al saltar y se le abre de par en
+  // par en las caídas largas. Cuesta cuatro trazos y cambia el personaje. ---
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  if (cayendo) {
+    ctx.fillStyle = '#2a1020';
+    ctx.beginPath(); ctx.ellipse(dx, -23, 4.6, 6.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,120,150,0.5)';
+    ctx.beginPath(); ctx.ellipse(dx, -20.4, 2.6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  } else if (aire) {
+    ctx.fillStyle = '#2a1020';
+    ctx.beginPath(); ctx.ellipse(dx, -23.5, 3.3, 4.2, 0, 0, Math.PI * 2); ctx.fill();
+  } else if (corriendo) {
+    ctx.fillStyle = '#2a1020';
+    ctx.beginPath(); ctx.ellipse(dx + 1.4, -23.4, 4.4, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.strokeStyle = '#2a1020'; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(dx - 5, -25);
+    ctx.quadraticCurveTo(dx, -20.2, dx + 5, -25);
+    ctx.stroke();
   }
 
   dibujarAccesorioIlustrado(piel, '#000000', dx, aire, corriendo);
@@ -5030,6 +5123,185 @@ function dibujarAccesorioIlustrado(piel, contorno, dx, aire, corriendo) {
     ctx.fillStyle = '#ffd166';
     ctx.beginPath(); ctx.arc(0, -57, 3.4, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = contorno; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'corona') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    const oro = ctx.createLinearGradient(0, -64, 0, -46);
+    oro.addColorStop(0, '#ffe680'); oro.addColorStop(1, '#e0a11a');
+    ctx.fillStyle = oro;
+    ctx.beginPath();
+    ctx.moveTo(-17, -46); ctx.lineTo(-17, -60); ctx.lineTo(-8.5, -52);
+    ctx.lineTo(0, -64); ctx.lineTo(8.5, -52); ctx.lineTo(17, -60); ctx.lineTo(17, -46);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath(); ctx.arc(0, -49.5, 2.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2e86de';
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * 10, -48.5, 2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'obrero') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    const casco = ctx.createLinearGradient(0, -64, 0, -46);
+    casco.addColorStop(0, '#ffd83d'); casco.addColorStop(1, '#dd9e00');
+    ctx.fillStyle = casco;
+    ctx.beginPath();
+    ctx.moveTo(-21, -46); ctx.bezierCurveTo(-21, -65, 21, -65, 21, -46);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#f5c400';
+    ctx.beginPath(); ctx.ellipse(0, -46, 27, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#b98400'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(0, -63); ctx.lineTo(0, -47.5); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'fiesta') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina + 0.1);
+    const cono = () => {
+      ctx.beginPath();
+      ctx.moveTo(-13, -46); ctx.lineTo(0, -71); ctx.lineTo(13, -46); ctx.closePath();
+    };
+    cono(); ctx.fillStyle = '#ff6b9d'; ctx.fill();
+    ctx.save(); cono(); ctx.clip();
+    ctx.fillStyle = '#5ad1ff';
+    for (let i = 0; i < 3; i++) ctx.fillRect(-15, -68 + i * 8.5, 30, 4);
+    ctx.restore();
+    cono(); ctx.strokeStyle = contorno; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.fillStyle = '#ffe66d';
+    ctx.beginPath(); ctx.arc(0, -73, 4.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'bruja') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina + 0.05);
+    ctx.fillStyle = '#4a2d7a';
+    ctx.beginPath();
+    ctx.moveTo(-13, -47);
+    ctx.quadraticCurveTo(-7, -66, 11, -73);
+    ctx.quadraticCurveTo(5, -58, 13, -47);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.8; ctx.stroke();
+    ctx.fillStyle = '#5f3a99';
+    ctx.beginPath(); ctx.ellipse(0, -46, 26, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#f1c40f';
+    rrect(-12.5, -54, 25, 6, 2); ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'mexicano') {
+    ctx.save(); ctx.translate(dx * 0.6, 0); ctx.rotate(inclina * 0.7);
+    ctx.fillStyle = '#c8922f';
+    ctx.beginPath(); ctx.ellipse(0, -45, 35, 8.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.fillStyle = '#e0aa3e';
+    ctx.beginPath();
+    ctx.moveTo(-14, -46); ctx.bezierCurveTo(-13, -64, 13, -64, 14, -46);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(-14, -46); ctx.bezierCurveTo(-13, -64, 13, -64, 14, -46);
+    ctx.closePath(); ctx.clip();
+    ctx.fillStyle = '#c0392b'; ctx.fillRect(-16, -53, 32, 5.5);
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'reno') {
+    ctx.save(); ctx.translate(dx * 0.5, 0); ctx.rotate(inclina * 0.7);
+    ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 4.2; ctx.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * 9, -52);
+      ctx.quadraticCurveTo(s * 16, -62, s * 13, -70);
+      ctx.moveTo(s * 14.5, -62); ctx.lineTo(s * 23, -66);
+      ctx.moveTo(s * 13, -56); ctx.lineTo(s * 21, -55);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.save(); ctx.translate(dx, 0);
+    ctx.fillStyle = '#ef2b2b';
+    ctx.beginPath(); ctx.arc(0, -27.5, 4.3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath(); ctx.arc(-1.3, -29, 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'luchador') {
+    ctx.save(); ctx.translate(dx * 0.85, 0);
+    ctx.fillStyle = '#1e5fa8';
+    ctx.beginPath();
+    ctx.moveTo(-28, -38);
+    ctx.bezierCurveTo(-31, -55, -16, -60, 0, -60);
+    ctx.bezierCurveTo(16, -60, 31, -55, 28, -38);
+    ctx.bezierCurveTo(14, -34, -14, -34, -28, -38);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.8; ctx.stroke();
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.moveTo(-4, -58); ctx.lineTo(7, -50); ctx.lineTo(1, -49);
+    ctx.lineTo(6, -38); ctx.lineTo(-7, -47); ctx.lineTo(-1, -48);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'momia') {
+    ctx.save(); ctx.translate(dx * 0.85, 0);
+    const venda = (x1, y1, cx1, cy1, x2, y2) => {
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx1, cy1, x2, y2); ctx.stroke();
+    };
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#ece4cf'; ctx.lineWidth = 8;
+    venda(-30, -45, 0, -39, 28, -50);
+    venda(-27, -55, 2, -61, 27, -44);
+    venda(-24, -34, -6, -30, 6, -36);
+    ctx.strokeStyle = 'rgba(150,138,110,0.45)'; ctx.lineWidth = 1.4;
+    venda(-30, -45, 0, -39, 28, -50);
+    venda(-27, -55, 2, -61, 27, -44);
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'auriculares') {
+    ctx.save(); ctx.translate(dx * 0.35, 0);
+    ctx.strokeStyle = '#2f3542'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(0, -44, 30, Math.PI * 1.13, Math.PI * 1.87); ctx.stroke();
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#e6534f';
+      rrect(s * 30 - 7, -46, 14, 19, 6); ctx.fill();
+      ctx.strokeStyle = contorno; ctx.lineWidth = 2.4; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.30)';
+      rrect(s * 30 - 4.5, -43.5, 4.5, 12, 2.2); ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'espacial') {
+    ctx.save();
+    // El cristal va DELANTE de la cara, que para eso es un casco: se pinta
+    // translúcido para que se siga viendo quién hay dentro.
+    ctx.fillStyle = 'rgba(190,235,255,0.28)';
+    ctx.beginPath(); ctx.arc(0, -35, 37, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#dceefb'; ctx.lineWidth = 3.4; ctx.stroke();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.40)';
+    ctx.beginPath(); ctx.ellipse(-17, -50, 8, 13, -0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c9d6e6';
+    rrect(-26, -15, 52, 8, 4); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.2; ctx.stroke();
     ctx.restore();
     return;
   }
@@ -5552,9 +5824,13 @@ function propBanco(x, y, w) {
   rrect(x, y, w, 8, 3); ctx.fill();
   ctx.fillStyle = '#96612f';
   rrect(x, y + 12, w, 6, 2); ctx.fill();
-  ctx.fillStyle = '#4a5560';
-  rrect(x + 8, y + 8, 7, 30, 2); ctx.fill();
-  rrect(x + w - 15, y + 8, 7, 30, 2); ctx.fill();
+  // Sin patas colgando: el banco se apoya en un zócalo macizo, del ancho
+  // del apoyo. Dos palos al aire no sujetan nada y dejaban el objeto
+  // flotando sobre dos alfileres.
+  ctx.fillStyle = '#7d5330';
+  rrect(x + 4, y + 18, w - 8, 16, 3); ctx.fill();
+  ctx.fillStyle = '#5e3d23';
+  rrect(x + 4, y + 28, w - 8, 6, 3); ctx.fill();
   ctx.strokeStyle = 'rgba(80,50,25,0.85)'; ctx.lineWidth = 1.7;
   rrect(x, y, w, 8, 3); ctx.stroke();
 }
@@ -5568,17 +5844,17 @@ function propPozo(x, y, w) {
   ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#d4503f';
   rrect(x, y, w, 6, 2); ctx.fill();
+  // El brocal sube hasta el tejadillo: antes los unían dos postes finos y
+  // entre medias no había nada, así que el tejado parecía flotar sobre dos
+  // palillos y el pozo quedaba suelto más abajo.
   ctx.fillStyle = '#6b6f7a';
-  rrect(x + 10, y + 34, w - 20, 30, 3); ctx.fill();
+  rrect(x + 10, y + 12, w - 20, 30, 3); ctx.fill();
   ctx.strokeStyle = '#4a4e57'; ctx.lineWidth = 1.4;
   for (let i = 14; i < w - 14; i += 18) {
-    ctx.beginPath(); ctx.moveTo(x + i, y + 34); ctx.lineTo(x + i, y + 64); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + i, y + 12); ctx.lineTo(x + i, y + 42); ctx.stroke();
   }
-  ctx.fillStyle = '#8a5a3b';
-  rrect(x + 14, y + 12, 6, 24, 2); ctx.fill();
-  rrect(x + w - 20, y + 12, 6, 24, 2); ctx.fill();
   ctx.fillStyle = '#22262d';
-  rrect(x + 16, y + 36, w - 32, 8, 2); ctx.fill();
+  rrect(x + 16, y + 16, w - 32, 8, 2); ctx.fill();
 }
 
 /** 🛢️ Fila de barriles. */
@@ -5614,11 +5890,14 @@ function propVagoneta(x, y, w) {
     ctx.moveTo(mx, y + 10); ctx.lineTo(mx + 6, y + 19); ctx.lineTo(mx - 6, y + 19);
     ctx.closePath(); ctx.fill();
   }
-  ctx.fillStyle = '#2b2138';
-  ctx.beginPath(); ctx.arc(x + 15, y + 40, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x + w - 15, y + 40, 7, 0, Math.PI * 2); ctx.fill();
+  // Sin ruedas ni raíl por debajo: colgaban en el vacío bajo la plataforma.
+  // Los remaches del bastidor dan el mismo aire de vagoneta sin salirse.
   ctx.fillStyle = '#4a3f52';
-  rrect(x - 6, y + 46, w + 12, 5, 2); ctx.fill();
+  rrect(x + 3, y + 27, w - 6, 6, 2); ctx.fill();
+  ctx.fillStyle = '#2b2138';
+  for (let i = 8; i < w - 8; i += 22) {
+    ctx.beginPath(); ctx.arc(x + i, y + 30, 2.4, 0, Math.PI * 2); ctx.fill();
+  }
 }
 
 /** 🚧 Conos de obra. */
@@ -5817,15 +6096,17 @@ function propFlotador(x, y, w) {
 function propAndamio(x, y, w) {
   ctx.fillStyle = '#8a919e';
   rrect(x, y, w, 8, 2); ctx.fill();
+  // El bastidor se queda en un cajón compacto: los montantes bajaban 56 px
+  // por debajo del tablero y el andamio parecía colgado de dos zancos.
   ctx.fillStyle = '#5f6673';
-  rrect(x + 6, y + 8, 8, 56, 2); ctx.fill();
-  rrect(x + w - 14, y + 8, 8, 56, 2); ctx.fill();
-  ctx.strokeStyle = '#6d7482'; ctx.lineWidth = 4;
-  for (let fy = y + 22; fy < y + 62; fy += 18) {
-    ctx.beginPath(); ctx.moveTo(x + 8, fy); ctx.lineTo(x + w - 8, fy); ctx.stroke();
-  }
+  rrect(x + 3, y + 8, w - 6, 22, 2); ctx.fill();
+  ctx.fillStyle = '#4b525e';
+  rrect(x + 3, y + 24, w - 6, 6, 2); ctx.fill();
+  ctx.strokeStyle = '#7d8492'; ctx.lineWidth = 2.5;
   ctx.beginPath();
-  ctx.moveTo(x + 10, y + 12); ctx.lineTo(x + w - 10, y + 58); ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.moveTo(x + 8, y + 10); ctx.lineTo(x + w - 8, y + 27);
+  ctx.moveTo(x + w - 8, y + 10); ctx.lineTo(x + 8, y + 27);
+  ctx.stroke();
   ctx.strokeStyle = 'rgba(50,55,64,0.85)'; ctx.lineWidth = 1.8;
   rrect(x, y, w, 8, 2); ctx.stroke();
 }
@@ -5872,8 +6153,7 @@ function propSombrilla(x, y, w) {
   }
   ctx.fillStyle = '#c0392b';
   rrect(x, y + 10, w, 5, 2); ctx.fill();
-  ctx.fillStyle = '#8a6a3b';
-  rrect(cx - 3, y + 15, 6, 16, 2); ctx.fill();     // mástil corto
+  // Sin mástil: por corto que fuera, era un palo colgando en el aire.
   ctx.strokeStyle = 'rgba(140,40,30,0.8)'; ctx.lineWidth = 1.7;
   ctx.beginPath();
   ctx.moveTo(x, y + 12);
@@ -6659,7 +6939,9 @@ function retrato(cv, iSkin, iAcc) {
     // El origen local del personaje está en sus PIES, a PH del punto que se
     // traslada. Sin descontarlo, se dibujaba por debajo del lienzo y solo
     // asomaba la coronilla.
-    const alturaTotal = PH * 1.6;
+    // Los gorros altos (bruja, fiesta) suben hasta -73 en coordenadas del
+    // dibujo: con el 1,6 de antes se les cortaba la punta en las tarjetas.
+    const alturaTotal = PH * 2.0;
     const factor = Math.min((cv.height - 6) / alturaTotal, cv.width / (PW * 1.8));
     c2.translate(cv.width / 2 - (PW / 2) * factor, cv.height - 4 - PH * factor);
     c2.scale(factor, factor);
@@ -6777,7 +7059,9 @@ cargarGuardado();
       const cv = document.createElement('canvas');
       cv.width = 96; cv.height = 76;
       const et = document.createElement('span');
-      et.textContent = a.nombre.replace(' y bigote', '').replace('Capucha de ', '');
+      // El recorte a golpe de replace() dejaba etiquetas como «tiburón», en
+      // minúscula y sin sustantivo. Cada accesorio trae su nombre corto.
+      et.textContent = a.corto || a.nombre;
       d.appendChild(cv); d.appendChild(et);
       d.addEventListener('click', () => {
         accesorioElegido = i; marcar(acc, i); refrescarMenu(); guardar();
@@ -6838,7 +7122,7 @@ function pintarVistaPrevia() {
     player = pj;
     const camX = cameraX, camY = cameraY, esc = scale;
     cameraX = 0; cameraY = 0; scale = 1;
-    const alturaTotal = PH * 1.6;
+    const alturaTotal = PH * 2.0;
     const factor = Math.min((cv.height - 26) / alturaTotal, cv.width / (PW * 2.2));
     ctx.save();
     ctx.translate(cv.width / 2 - (PW / 2) * factor, cv.height - 20 - PH * factor);

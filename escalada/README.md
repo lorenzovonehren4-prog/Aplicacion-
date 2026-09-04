@@ -100,6 +100,64 @@ salto: si son alcanzables depende de la fase del vaivén, y eso no está
 verificado. Encenderlos sin comprobar la fase es volver a poder dejar el juego
 imposible.
 
+### Los objetos iban clavados en palos
+
+Nueve props colgaban de algo fino en el vacío bajo la plataforma: las patas
+del banco y del andamio, las ruedas y el raíl de la vagoneta, los postes del
+pozo, el mástil de la sombrilla, el poste de la parabólica, el tronco del
+árbol, el pie de la seta y la cuerda del farol. Fuera todos. Cada objeto se
+apoya ahora en su propio volumen —zócalo, cepellón, brocal, bastidor— dentro
+del rectángulo que de verdad se pisa.
+
+La parabólica era el caso peor: colgaba de un poste de 32 px **por debajo** de
+la pasarela, con el comentario «encima no sería sólida». Ahora va tumbada
+sobre la peana, contra el borde, donde no estorba a los pies.
+
+### La sombra no era una sombra
+
+Se dibujaba con el tamaño entero del apoyo, desplazada 3 y 8 px, al 20 %. Como
+casi ningún objeto llena su rectángulo, asomaba por debajo y por la derecha: en
+el cielo claro no se leía como sombra sino como una caja fantasma detrás de
+cada plataforma. Ahora va ceñida: 2 y 5 px, el 72 % del alto, al 14 %.
+
+### El personaje no tenía boca
+
+Ni mofletes, ni reflejo en los ojos. Era un óvalo con dos agujeros negros.
+Ahora la cara cuenta lo que está pasando, que es de donde sale el carácter:
+
+| Estado | Ojos | Boca |
+|---|---|---|
+| Parado | normales, con reflejo | sonrisa |
+| Corriendo | normales | apretada |
+| Subiendo | achinados (0,84) | «o» pequeña |
+| Cayendo fuerte | abiertos (1,34) | abierta de par en par |
+
+Más mofletes rosas y una luz de rebote en la panza, que lo despega de los
+apoyos oscuros donde antes se le fundía el cuerpo. Sin estirar ni aplastar: ese
+efecto estaba quitado a propósito y sigue quitado.
+
+### El menú llevaba desde siempre metido en 440 px
+
+El menú es `<div class="panel menu">` y `.panel` se declara **después** que
+`.menu` en la hoja de estilos: su `width:min(440px,100%)` ganaba por orden de
+cascada y machacaba el `max-width:1060px` del menú. En móvil los dos valores
+coinciden y por eso no se veía; en escritorio las tarjetas y los nombres salían
+cortados en una columna estrechísima, justo lo contrario de lo que decía el
+comentario del propio CSS («el menú crece a lo ancho, nunca a lo alto»).
+
+### 12 colores y 16 accesorios
+
+Eran 6 y 6. Los nuevos colores son Rojo, Azul, Blanco, Grafito, Lima y Choco.
+Los accesorios nuevos —corona, casco de obra, gorro de fiesta, sombrero de
+bruja, sombrero charro, cuernos de reno con nariz roja, máscara de luchador,
+vendas de momia, auriculares y casco espacial— están dibujados con curvas en
+el mismo sistema que los otros, no con rejillas de píxeles.
+
+El casco espacial se pinta **delante** de la cara y translúcido, que para eso
+es un casco: se sigue viendo quién hay dentro. Y el retrato del menú reserva
+ahora el doble de alto sobre la cabeza (`PH * 2.0`), porque a los gorros altos
+se les cortaba la punta en las tarjetas.
+
 ### El verificador ahora mide coste, no sólo sí/no
 
 `costeSalida(a, b, basta)` devuelve los fotogramas que cuesta ir de un apoyo al
