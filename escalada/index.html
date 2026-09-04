@@ -401,6 +401,18 @@ const HOLGURA = 14;           // px que hay que sobrepasar la plataforma de dest
 const HOLGURA_CANTO = 20;     // px de margen respecto a los bordes al aterrizar
 
 /* ====================================================================
+   ANIMACIÓN
+   El tamaño del DIBUJO es independiente de la caja de colisión: el nivel
+   está verificado contra 52x44 px y tocar eso invalidaría los 293 saltos
+   comprobados. Así que el personaje se dibuja más grande sobre la misma
+   caja, anclado en los pies para que no se hunda en el apoyo.
+   ==================================================================== */
+const ESCALA_PJ = 1.16;       // cuánto más grande se pinta que su caja
+const GIRO_DOBLE = 24;        // fotogramas que dura la voltereta del doble salto
+const APLASTE = 0.24;         // cuánto se achata al aterrizar fuerte
+const ESTIRE = 0.17;          // cuánto se estira subiendo o cayendo
+
+/* ====================================================================
    LAS 6 CUMBRES, con los nombres y las longitudes del juego original.
    Son MUY desiguales: la segunda dura 63 m y la última 300.
    ==================================================================== */
@@ -672,6 +684,15 @@ const SKINS = [
   { nombre: 'Grafito', claro: '#7b8493', medio: '#4a5261', oscuro: '#262c38', pata: '#1d2028', pataOsc: '#0f1218' },
   { nombre: 'Lima',    claro: '#e8ff8a', medio: '#c3ea2c', oscuro: '#89a80c', pata: '#6f8f14', pataOsc: '#465c08' },
   { nombre: 'Choco',   claro: '#c98c5a', medio: '#9c5f31', oscuro: '#63381a', pata: '#4a2913', pataOsc: '#2d180b' },
+  /* Disfraces: además del color pintan algo sobre el cuerpo y, algunos,
+     apéndices por delante o por detrás. El color de base sigue mandando,
+     así que el brillo y la sombra del cuerpo les caen igual que al resto. */
+  { nombre: 'Abeja',   traje: 'abeja',    claro: '#ffe27a', medio: '#f5b71f', oscuro: '#b07f08', pata: '#3a3126', pataOsc: '#221c14' },
+  { nombre: 'Fantasma', traje: 'fantasma', claro: '#ffffff', medio: '#eef3fb', oscuro: '#c2cede', pata: '#dbe4f0', pataOsc: '#aab8cc' },
+  { nombre: 'Calabaza', traje: 'calabaza', claro: '#ffb15c', medio: '#f2801f', oscuro: '#a8500a', pata: '#3f7a2a', pataOsc: '#255016' },
+  { nombre: 'Robot',   traje: 'robot',    claro: '#cfd8e6', medio: '#93a1b5', oscuro: '#5b6779', pata: '#3d4654', pataOsc: '#242b36' },
+  { nombre: 'Sandía',  traje: 'sandia',   claro: '#7fd96a', medio: '#46ad3a', oscuro: '#25701f', pata: '#2f6b24', pataOsc: '#1a4415' },
+  { nombre: 'Gato',    traje: 'gato',     claro: '#ffcf8a', medio: '#f0983a', oscuro: '#ad6112', pata: '#8a4a10', pataOsc: '#59300a' },
 ];
 let skinElegida = 0;
 let modoRetrato = false;   // cuando se dibuja en el menú, sin etiqueta de nombre
@@ -2646,6 +2667,61 @@ function volverAlMenu() {
    LÓGICA
    ==================================================================== */
 
+/* ====================================================================
+   POLVO
+   Un salto sin polvo no pesa. Cada emisor sale de un momento concreto del
+   movimiento, no de un temporizador suelto.
+   ==================================================================== */
+
+/** Puñado de polvo desde los pies, abriéndose hacia los lados. */
+function polvo(cuantas, fuerza, alto, vida) {
+  const px = player.x + PW / 2, py = player.y + PH;
+  for (let i = 0; i < cuantas; i++) {
+    const lado = (rnd() < 0.5 ? -1 : 1);
+    particles.push({
+      x: px + (rnd() - 0.5) * PW * 0.7, y: py - rnd() * 4,
+      vx: lado * (0.7 + rnd() * fuerza),
+      vy: -(0.3 + rnd() * alto),
+      size: 2.2 + rnd() * 3.4, vida0: vida, life: vida,
+      peso: 0.08, roce: 0.90,
+    });
+  }
+}
+
+/** Al aterrizar: cuanto más fuerte cae, más polvo levanta. */
+function polvoAterrizaje(vy) {
+  const f = Math.max(0, Math.min(1, (vy - 3) / 10));
+  if (f <= 0) return;
+  polvo(4 + Math.round(f * 9), 1.2 + f * 2.6, 0.6 + f * 1.6, 20 + Math.round(f * 12));
+}
+
+/** Al despegar: el polvo sale hacia abajo y hacia fuera. */
+function polvoDespegue() {
+  polvo(7, 1.9, 0.4, 20);
+}
+
+/** Al cambiar de sentido corriendo: derrape hacia donde venías. */
+function polvoDerrape(sentido) {
+  const px = player.x + PW / 2, py = player.y + PH;
+  for (let i = 0; i < 6; i++) {
+    particles.push({
+      x: px - sentido * (4 + rnd() * 10), y: py - rnd() * 5,
+      vx: -sentido * (1.4 + rnd() * 2.4), vy: -(0.4 + rnd() * 1.1),
+      size: 2 + rnd() * 3, vida0: 18, life: 18, peso: 0.09, roce: 0.90,
+    });
+  }
+}
+
+/** Mientras corre, una motita cada pocos fotogramas en el pie de atrás. */
+function polvoCarrera() {
+  particles.push({
+    x: player.x + PW / 2 - player.facing * (6 + rnd() * 6),
+    y: player.y + PH - rnd() * 3,
+    vx: -player.facing * (0.3 + rnd() * 0.8), vy: -(0.2 + rnd() * 0.7),
+    size: 1.6 + rnd() * 2, vida0: 14, life: 14, peso: 0.07, roce: 0.92,
+  });
+}
+
 function die(motivo) {
   deaths++;
   apuntarAltura();
@@ -2656,6 +2732,8 @@ function die(motivo) {
   player.x = player.spawnX;
   player.y = player.spawnY;
   player.vx = 0; player.vy = 0; player.saltos = 2;
+  player.giro = 0; player.scaleX = 1; player.scaleY = 1;
+  player.aterrizajeReciente = 0; player.dirPrev = 0;
   showMessage(motivo, '#ff4757');
 }
 
@@ -2671,36 +2749,73 @@ function update() {
 
   const eraSegundo = (player.saltos === 1 && !player.onGround);
   const vyPrevia = player.vy;
+  const estabaEnSuelo = player.onGround;
+  const dirPrevia = player.dirPrev || 0;
   const aterrizo = pasoFisica(player, dir, pedirSalto, platforms);
 
   if (pedirSalto && player.saltos > 0) {
     efecto(eraSegundo ? [520, 700] : [330, 440], 0.07, 'square', 0.05);
   }
 
-  // Nube de polvo y destello al usar el doble salto en el aire
+  // DOBLE SALTO: anillo de polvo, chispas y voltereta completa. Es el gesto
+  // que más se repite en la partida, así que es el que más tiene que lucir.
   if (pedirSalto && eraSegundo) {
-    for (let i = 0; i < 18; i++) {
-      const ang = (i / 18) * Math.PI * 2;
+    player.giro = GIRO_DOBLE;
+    for (let i = 0; i < 22; i++) {
+      const ang = (i / 22) * Math.PI * 2;
       particles.push({
         x: player.x + PW / 2, y: player.y + PH,
-        vx: Math.cos(ang) * (1.6 + rnd() * 2.4),
-        vy: Math.abs(Math.sin(ang)) * (1.2 + rnd() * 2) + 0.6,
-        size: rnd() * 5 + 2.5, life: 26, anillo: i < 10,
+        vx: Math.cos(ang) * (2.0 + rnd() * 2.6),
+        vy: Math.sin(ang) * (0.9 + rnd() * 1.4) + 0.5,
+        size: rnd() * 4.5 + 2.4, vida0: 24, life: 24,
+        anillo: i % 2 === 0, chispa: i % 4 === 1,
+        peso: 0.03, roce: 0.88,
       });
     }
+  } else if (pedirSalto && estabaEnSuelo && !player.onGround) {
+    polvoDespegue();          // salto desde el suelo
   }
+
+  // Derrape al cambiar de sentido a toda velocidad
+  if (player.onGround && dir !== 0 && dirPrevia !== 0 && dir !== dirPrevia) {
+    polvoDerrape(dirPrevia);
+  }
+  player.dirPrev = dir;
+
+  // Polvillo de carrera, una motita cada seis fotogramas
+  if (player.onGround && dir !== 0 && tiempoJuego % 6 === 0) polvoCarrera();
 
   // Fotogramas de achatado tras un aterrizaje fuerte
   if (player.aterrizajeReciente > 0) player.aterrizajeReciente--;
+  if (player.giro > 0) player.giro--;
 
-  // El temporizador sigue vivo para la bufanda y los pies, pero el personaje
-  // ya NO se estira ni se aplasta: se quitó ese efecto a petición.
   player.animTimer += 0.15;
-  player.scaleX = 1;
-  player.scaleY = 1;
+
+  /* --- Estirar y aplastar ---------------------------------------------
+     Sale de la VELOCIDAD, no de un temporizador: se estira en el aire en
+     proporción a lo rápido que sube o cae, y se achata al tomar tierra.
+     Es lo que da peso al salto. El volumen se compensa —lo que crece de
+     alto encoge de ancho— para que no parezca que engorda. */
+  const vertical = Math.max(-1, Math.min(1, player.vy / 13));
+  let objX = 1, objY = 1;
+  if (!player.onGround) {
+    objY = 1 + Math.abs(vertical) * ESTIRE;
+    objX = 1 - Math.abs(vertical) * ESTIRE * 0.8;
+  }
+  if (player.aterrizajeReciente > 0) {
+    const f = player.aterrizajeReciente / 9;
+    objY = 1 - APLASTE * f;
+    objX = 1 + APLASTE * 0.85 * f;
+  }
+  player.scaleX += (objX - player.scaleX) * 0.32;
+  player.scaleY += (objY - player.scaleY) * 0.32;
   pedirSalto = false;
 
-  if (aterrizo && vyPrevia > 7) player.aterrizajeReciente = 8;
+  if (aterrizo && vyPrevia > 3) {
+    player.aterrizajeReciente = 9;
+    polvoAterrizaje(vyPrevia);
+    if (vyPrevia > 9) efecto([150, 110], 0.06, 'triangle', 0.03);
+  }
 
 
   if (aterrizo) {
@@ -2761,7 +2876,12 @@ function update() {
 
   for (let i = particles.length - 1; i >= 0; i--) {
     const q = particles[i];
-    q.x += q.vx; q.y += q.vy; q.life--;
+    q.x += q.vx; q.y += q.vy;
+    // El polvo pesa y se frena; antes todas las partículas volaban rectas
+    // para siempre, que es lo que delata que son puntos y no polvo.
+    q.vx *= (q.roce !== undefined ? q.roce : 0.94);
+    q.vy = q.vy * 0.94 + (q.peso !== undefined ? q.peso : 0.06);
+    q.life--;
     if (q.life <= 0) particles.splice(i, 1);
   }
 
@@ -4676,12 +4796,14 @@ function draw() {
 
   // Polvo y destello del doble salto, por encima del personaje
   for (const q of particles) {
-    const a = Math.max(0, q.life / 26);
-    ctx.fillStyle = q.anillo
-      ? 'rgba(255,255,255,' + (a * 0.9).toFixed(2) + ')'
-      : 'rgba(255,180,120,' + a.toFixed(2) + ')';
+    // La opacidad sale de la vida QUE TENÍA cada una, no de un 26 fijo: con
+    // el número clavado, el polvo corto nacía ya medio transparente.
+    const a = Math.max(0, q.life / (q.vida0 || 26));
+    if (q.anillo) ctx.fillStyle = 'rgba(255,255,255,' + (a * 0.9).toFixed(2) + ')';
+    else if (q.chispa) ctx.fillStyle = 'rgba(255,214,120,' + a.toFixed(2) + ')';
+    else ctx.fillStyle = 'rgba(228,238,250,' + (a * 0.85).toFixed(2) + ')';
     ctx.beginPath();
-    ctx.arc(q.x, q.y, q.size * (0.4 + a * 0.6), 0, Math.PI * 2);
+    ctx.arc(q.x, q.y, q.size * (0.35 + a * 0.65), 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -4861,6 +4983,231 @@ function dibujarAccesorio(px, py, COLS, FILAS, paleta) {
   }
 }
 
+
+/* ====================================================================
+   DISFRACES
+   Tres pasadas por disfraz: lo que va DETRÁS del cuerpo (alas, cola), lo
+   que va DENTRO recortado por su silueta (rayas, costuras, semillas) y lo
+   que va DELANTE (orejas, antenas, rabito). Coordenadas del personaje:
+   los pies en 0, la coronilla en -58, los costados en ±32.
+   ==================================================================== */
+
+/** Alas y colas: se pintan antes que el cuerpo para que asomen por detrás. */
+function trajeDetras(piel, reloj, aire) {
+  const id = piel.traje;
+
+  if (id === 'abeja') {
+    // Baten deprisa siempre, y aún más en el aire
+    const bat = Math.sin(reloj * (aire ? 9 : 5)) * 0.30;
+    ctx.fillStyle = 'rgba(226,244,255,0.62)';
+    ctx.strokeStyle = 'rgba(120,160,190,0.75)';
+    ctx.lineWidth = 1.8;
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.translate(s * 20, -46);
+      ctx.rotate(s * (0.5 + bat));
+      ctx.beginPath(); ctx.ellipse(0, -12, 8.5, 17, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    return;
+  }
+
+  if (id === 'gato') {
+    // La cola se mece con el paso
+    const mece = Math.sin(reloj * 1.6) * 0.22;
+    ctx.strokeStyle = piel.medio; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-26, -18);
+    ctx.quadraticCurveTo(-48, -22 + mece * 20, -44, -46 + mece * 14);
+    ctx.stroke();
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 12.5;
+    ctx.beginPath();
+    ctx.moveTo(-44.5, -45 + mece * 14);
+    ctx.lineTo(-44, -46 + mece * 14);
+    ctx.stroke();
+    ctx.strokeStyle = piel.claro; ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-44.5, -44 + mece * 14);
+    ctx.lineTo(-44, -46 + mece * 14);
+    ctx.stroke();
+    return;
+  }
+}
+
+/** Lo que se pinta sobre el cuerpo, recortado por su silueta. */
+function trajeDentro(piel) {
+  const id = piel.traje;
+
+  if (id === 'abeja') {
+    ctx.fillStyle = '#2a2318';
+    for (let i = 0; i < 3; i++) {
+      const yy = -38 + i * 11;
+      ctx.beginPath();
+      ctx.moveTo(-40, yy);
+      ctx.quadraticCurveTo(0, yy + 4.5, 40, yy);
+      ctx.lineTo(40, yy + 6.5);
+      ctx.quadraticCurveTo(0, yy + 11, -40, yy + 6.5);
+      ctx.closePath(); ctx.fill();
+    }
+    return;
+  }
+
+  if (id === 'calabaza') {
+    ctx.strokeStyle = 'rgba(150,64,4,0.55)'; ctx.lineWidth = 3;
+    for (const dx2 of [-19, -6.5, 6.5, 19]) {
+      ctx.beginPath();
+      ctx.moveTo(dx2 * 0.55, -58);
+      ctx.quadraticCurveTo(dx2 * 1.5, -33, dx2 * 0.7, -8);
+      ctx.stroke();
+    }
+    return;
+  }
+
+  if (id === 'robot') {
+    ctx.strokeStyle = 'rgba(60,72,90,0.75)'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(-40, -20); ctx.lineTo(40, -20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-40, -45); ctx.lineTo(40, -45); ctx.stroke();
+    ctx.fillStyle = 'rgba(60,72,90,0.85)';
+    for (const px of [-26, -13, 13, 26]) {
+      ctx.beginPath(); ctx.arc(px, -16, 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    // Pantallita de estado en el pecho
+    ctx.fillStyle = '#123044';
+    rrect(-11, -18.5, 22, 8, 2); ctx.fill();
+    ctx.fillStyle = '#49e3a0';
+    const barras = 1 + Math.floor((t * 0.05) % 3);
+    for (let i = 0; i < barras; i++) ctx.fillRect(-8.5 + i * 5.6, -16.5, 4, 4);
+    return;
+  }
+
+  if (id === 'sandia') {
+    // Corteza verde arriba, carne roja abajo, y las pepitas
+    ctx.fillStyle = '#e8455a';
+    ctx.beginPath();
+    ctx.moveTo(-40, -30);
+    ctx.quadraticCurveTo(0, -37, 40, -30);
+    ctx.lineTo(40, 4); ctx.lineTo(-40, 4);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f7f2e2';
+    ctx.beginPath();
+    ctx.moveTo(-40, -30);
+    ctx.quadraticCurveTo(0, -37, 40, -30);
+    ctx.lineTo(40, -26.5);
+    ctx.quadraticCurveTo(0, -33.5, -40, -26.5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2a1a12';
+    for (const [sx, sy] of [[-19, -20], [-7, -14], [8, -19], [19, -13], [0, -24], [-14, -9], [14, -8]]) {
+      ctx.save();
+      ctx.translate(sx, sy); ctx.rotate(sx * 0.05);
+      ctx.beginPath(); ctx.ellipse(0, 0, 2.1, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    return;
+  }
+
+  if (id === 'gato') {
+    ctx.fillStyle = 'rgba(140,72,10,0.5)';
+    for (let i = 0; i < 3; i++) {
+      const yy = -46 + i * 9;
+      ctx.beginPath();
+      ctx.moveTo(-34, yy); ctx.quadraticCurveTo(-24, yy + 2.5, -16, yy + 1);
+      ctx.lineTo(-16, yy + 5); ctx.quadraticCurveTo(-25, yy + 6.5, -34, yy + 4.5);
+      ctx.closePath(); ctx.fill();
+    }
+    return;
+  }
+}
+
+/** Orejas, antenas, rabitos y faldones: por delante del contorno. */
+function trajeDelante(piel, reloj) {
+  const id = piel.traje;
+
+  if (id === 'abeja') {
+    ctx.strokeStyle = '#2a2318'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * 8, -55);
+      ctx.quadraticCurveTo(s * 15, -68, s * 11, -74);
+      ctx.stroke();
+      ctx.fillStyle = '#2a2318';
+      ctx.beginPath(); ctx.arc(s * 11, -75.5, 3.4, 0, Math.PI * 2); ctx.fill();
+    }
+    return;
+  }
+
+  if (id === 'calabaza') {
+    ctx.fillStyle = '#3f7a2a';
+    rrect(-5, -68, 10, 13, 3); ctx.fill();
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.6;
+    rrect(-5, -68, 10, 13, 3); ctx.stroke();
+    ctx.fillStyle = '#57a038';
+    ctx.beginPath();
+    ctx.moveTo(4, -64);
+    ctx.quadraticCurveTo(20, -72, 22, -60);
+    ctx.quadraticCurveTo(12, -60, 4, -58);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    return;
+  }
+
+  if (id === 'robot') {
+    ctx.strokeStyle = '#5b6779'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, -56); ctx.lineTo(0, -70); ctx.stroke();
+    const enciende = Math.sin(t * 0.09) > 0;
+    ctx.fillStyle = enciende ? '#ff5252' : '#7a2a2a';
+    ctx.beginPath(); ctx.arc(0, -73, 4.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.stroke();
+    return;
+  }
+
+  if (id === 'gato') {
+    ctx.fillStyle = piel.medio;
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.8;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * 9, -53); ctx.lineTo(s * 17, -71); ctx.lineTo(s * 25, -50);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff9db5';
+      ctx.beginPath();
+      ctx.moveTo(s * 13, -54); ctx.lineTo(s * 17.5, -65); ctx.lineTo(s * 21, -53);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = piel.medio;
+    }
+    // Bigotes, antes de que se pinten los ojos y la boca
+    ctx.strokeStyle = 'rgba(50,30,10,0.6)'; ctx.lineWidth = 1.6;
+    for (const s of [-1, 1]) {
+      for (const yy of [-27, -23.5]) {
+        ctx.beginPath();
+        ctx.moveTo(s * 14, yy); ctx.lineTo(s * 30, yy - 2.5);
+        ctx.stroke();
+      }
+    }
+    return;
+  }
+
+  if (id === 'fantasma') {
+    // Faldón ondulado que tapa las patas: un fantasma no tiene pies
+    ctx.beginPath();
+    ctx.moveTo(-31, -22);
+    ctx.lineTo(-31, -4);
+    for (let i = 0; i < 4; i++) {
+      const x0 = -31 + (62 / 4) * i;
+      const x1 = x0 + (62 / 8);
+      const x2 = x0 + (62 / 4);
+      const onda = Math.sin(reloj * 1.4 + i * 1.3) * 2.2;
+      ctx.quadraticCurveTo(x1, 7 + onda, x2, -3);
+    }
+    ctx.lineTo(31, -22);
+    ctx.closePath();
+    const gf = ctx.createLinearGradient(0, -22, 0, 4);
+    gf.addColorStop(0, piel.claro);
+    gf.addColorStop(1, piel.oscuro);
+    ctx.fillStyle = gf; ctx.fill();
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 3.4; ctx.stroke();
+    return;
+  }
+}
+
 function drawPlayer() {
   const cx = player.x + player.width / 2;
   const abajo = player.y + player.height;
@@ -4873,7 +5220,10 @@ function drawPlayer() {
   const piel = SKINS[Math.max(0, Math.min(SKINS.length - 1, skinElegida))];
   // La escala se calcula sobre el ancho REAL del dibujo (58 unidades), no
   // sobre un valor antiguo: si no, el personaje se sale de su caja.
-  const k = player.width / 64;   // el dibujo mide 64 de ancho
+  // El dibujo mide 64 de ancho. ESCALA_PJ lo agranda SIN tocar la caja de
+  // colisión, que sigue siendo 52x44 y es contra la que está verificado el
+  // nivel entero. Ancla en los pies, así que crece hacia arriba.
+  const k = (player.width / 64) * ESCALA_PJ;
 
   const objetivoAng = (player.onGround && player.apoyo) ? (player.apoyo.ang || 0) : 0;
   if (player.angulo === undefined) player.angulo = 0;
@@ -4893,13 +5243,31 @@ function drawPlayer() {
 
   ctx.save();
   ctx.translate(cx, abajo + bob);
-  ctx.rotate(player.angulo * (mira ? 1 : -1));
-  ctx.scale(k * (mira ? 1 : -1), k);
+  // Inclinación hacia donde se corre: el cuerpo va por delante de los pies.
+  const tumbe = corriendo ? 0.055 * (mira ? 1 : -1) : 0;
+  ctx.rotate(player.angulo * (mira ? 1 : -1) + tumbe);
+
+  // VOLTERETA del doble salto: una vuelta entera alrededor del centro del
+  // cuerpo, no de los pies, que si no el personaje describe una órbita.
+  if (player.giro > 0) {
+    const prog = 1 - player.giro / GIRO_DOBLE;
+    const cyGiro = -27 * k;
+    ctx.translate(0, cyGiro);
+    ctx.rotate(prog * Math.PI * 2 * (mira ? 1 : -1));
+    ctx.translate(0, -cyGiro);
+  }
+
+  // Estirar y aplastar. Con el origen en los pies, escalar en Y estira hacia
+  // arriba y el personaje nunca se hunde en el apoyo.
+  const eX = player.scaleX || 1, eY = player.scaleY || 1;
+  ctx.scale(k * eX * (mira ? 1 : -1), k * eY);
 
   // El rasgo que define el estilo del modelo: contorno negro MUY grueso
   const TRAZO = 3.4;   // línea más fina: 5,2 comía el cuerpo
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   ctx.strokeStyle = '#000000';
+
+  if (piel.traje) trajeDetras(piel, player.animTimer, aire);
 
   // --- Patas: rectángulos anchos y cortos, como en el modelo ---
   // MEDIDO DEL MODELO: las patas son solo el 5% del alto, no el 27%.
@@ -4968,6 +5336,9 @@ function drawPlayer() {
 
   ctx.save();
   cuerpo(); ctx.clip();
+  // El traje va DENTRO del recorte del cuerpo y antes del brillo, para que
+  // la luz caiga también sobre él y no parezca una pegatina encima.
+  if (piel.traje) trajeDentro(piel);
   const brillo = ctx.createRadialGradient(-13, -46, 2, -10, -42, 29);
   brillo.addColorStop(0, 'rgba(255,255,255,0.48)');
   brillo.addColorStop(1, 'rgba(255,255,255,0)');
@@ -4984,6 +5355,8 @@ function drawPlayer() {
 
   cuerpo();
   ctx.lineWidth = TRAZO + 0.6; ctx.stroke();
+
+  if (piel.traje) trajeDelante(piel, player.animTimer);
 
   // --- Ojos: dos óvalos negros simples ---
   const parpadea = (player.animTimer % 9) > 8.82;
@@ -6913,6 +7286,7 @@ function arrancarPartida() {
   player.arrastre = null; player.arrastreX = undefined;
   player.coyote = 0; player.enHielo = false; player.aterrizajeReciente = 0; player.buffer = 0;
   player.scaleX = 1; player.scaleY = 1; player.animTimer = 0;
+  player.giro = 0; player.dirPrev = 0;
   startTime = performance.now();
   showMessage('¡Vamos! Cumbre 1 de ' + TOTAL_WORLDS + ': ' + WORLDS[0].name, '#2ed573');
   running = true;

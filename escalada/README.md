@@ -100,6 +100,54 @@ salto: si son alcanzables depende de la fase del vaivén, y eso no está
 verificado. Encenderlos sin comprobar la fase es volver a poder dejar el juego
 imposible.
 
+### Animación: el salto no pesaba
+
+Un salto sin polvo y sin deformación no pesa. Todo lo que se añadió sale del
+**estado real del movimiento**, no de temporizadores sueltos:
+
+| Momento | Qué hace |
+|---|---|
+| Correr | El cuerpo se inclina 3° hacia delante y suelta una motita de polvo cada 6 fotogramas en el pie de atrás |
+| Cambiar de sentido | Derrape: seis partículas salen hacia donde venías |
+| Despegar | Siete puñados de polvo desde los pies |
+| En el aire | Se estira en proporción a `vy`, encogiendo de ancho para no engordar |
+| **Doble salto** | Voltereta completa alrededor del centro del cuerpo, más anillo de 22 partículas con chispas |
+| Aterrizar | Se achata, y el polvo que levanta va en proporción a la velocidad de caída (4 partículas a 3 px/frame, 13 a 13) |
+
+El estirar y aplastar estaba quitado en la versión de partida («se quitó ese
+efecto a petición»). Vuelve porque se pidió animación de salto en condiciones,
+pero ahora sale de la velocidad y compensa el volumen —lo que crece de alto
+encoge de ancho—, que es lo que hace que se lea como peso y no como un globo.
+
+Las partículas también se arreglaron: tenían gravedad cero y rozamiento cero,
+así que volaban en línea recta para siempre, que es exactamente lo que delata
+que son puntos y no polvo. Y la opacidad se calculaba contra un `26` fijo, de
+modo que el polvo de vida corta nacía ya medio transparente; ahora cada
+partícula recuerda la vida con la que nació.
+
+### El tamaño del dibujo, separado de la caja de colisión
+
+El personaje se pinta un **16 % más grande** (`ESCALA_PJ`), anclado en los
+pies para que no se hunda en el apoyo. La caja de colisión sigue siendo
+**52 × 44 px exactos**: es contra ella contra la que están verificados los 293
+saltos del recorrido, y tocarla invalidaría el nivel entero. Medido después
+del cambio: 60,00 pasos de física por segundo y 417 px/s de carrera.
+
+### Seis disfraces
+
+Además de los 12 colores, seis skins que pintan sobre el cuerpo: **Abeja**
+(alas que baten más rápido en el aire, rayas, antenas), **Fantasma** (faldón
+ondulado que tapa las patas), **Calabaza** (gajos y rabito con hoja),
+**Robot** (costuras, remaches, pantallita de estado y antena que parpadea),
+**Sandía** (corteza, carne y pepitas) y **Gato** (orejas, rayas, bigotes y
+cola que se mece con el paso).
+
+Cada disfraz se dibuja en tres pasadas: lo que va **detrás** del cuerpo (alas,
+cola), lo que va **dentro** recortado por su silueta (rayas, costuras,
+pepitas) y lo que va **delante** (orejas, antenas, faldón). Lo de dentro se
+pinta antes que el brillo, para que la luz caiga también sobre el disfraz y no
+parezca una pegatina pegada encima.
+
 ### Los objetos iban clavados en palos
 
 Nueve props colgaban de algo fino en el vacío bajo la plataforma: las patas
