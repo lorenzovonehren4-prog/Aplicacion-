@@ -100,6 +100,119 @@ salto: si son alcanzables depende de la fase del vaivén, y eso no está
 verificado. Encenderlos sin comprobar la fase es volver a poder dejar el juego
 imposible.
 
+### Diseño de nivel: tipos de apoyo, objetos y curva de dificultad
+
+El nivel venía siendo una cadena lineal de 294 apoyos casi todos iguales: 280
+normales, 17 móviles horizontales, 7 trampolines. Sin movimiento vertical, sin
+apoyos que aparezcan y desaparezcan, sin caminos alternativos y sin nada que
+recoger.
+
+Todo lo nuevo se añade en **pasadas sobre el nivel ya cargado**, no
+regenerándolo: cada pasada propone un cambio, lo comprueba con `pasoFisica`
+—el mismo motor que juega el jugador— y lo deshace si no sale. Así se puede
+enriquecer el nivel sin poder dejarlo imposible.
+
+#### Motor: lo que hacía falta añadir
+
+| Añadido | Por qué |
+|---|---|
+| `p.movY` | `moverPlataformas()` solo escribía `p.x`. Ahora hay carril vertical, y `pasoFisica` arrastra al jugador en Y: sin eso el ascensor sube y te deja plantado en el aire |
+| `p.ciclo` | Apoyos que aparecen y desaparecen con periodo fijo, con parpadeo de aviso y el hueco marcado mientras faltan |
+| `monedas` | No existía nada coleccionable |
+| `arcoSalida()` | El verificador ya calculaba la trayectoria del salto; ahora la devuelve, y las monedas se siembran **encima del arco**, así que caen solas al hacer el salto que toca |
+
+#### Tipos de apoyo, por franja
+
+| | Inicial (cumbres 1-2) | Intermedio (3-4) | Avanzado (5-6) |
+|---|---|---|---|
+| Apoyos | 88 | 98 | 122 |
+| Móviles horizontales | 3 | 14 | 23 (más rápidos) |
+| Ascensores verticales | — | 4 | 11 |
+| Aparecen y desaparecen | — | 2 | 11 |
+| Frágiles | — | 9 | 19 |
+| Hielo | — | — | 9 |
+| Estrechos (precisión) | — | — | 3 |
+| Caminos alternativos | — | 4 | 10 |
+| Checkpoints | 8 | 9 | 9 |
+
+La curva no es una rampa: además de la dificultad por cumbre
+—`((cumbre-1)/5)^1.55`, la misma del generador— hay una **onda de ritmo**
+(`ritmo(i)`) que alterna tramos densos y tramos de respiro dentro de cada
+cumbre. Sin ella todo pesa igual y una subida larga se siente como una lista.
+
+Los checkpoints no se ponen cada N apoyos: `dureza(i)` puntúa cada salto
+—hueco, anchura, mecánicas encima, pinchos— y se coloca uno antes de cada
+tramo cuya suma pasa de un umbral, con separación mínima de 11 apoyos.
+
+#### Objetos
+
+**192 monedas**, de las cuales 20 son de bonus. Las normales van sembradas
+sobre el arco del salto verificado: se recogen haciendo el recorrido normal.
+Las de bonus van por encima del punto más alto del arco o sobre los atajos, y
+piden gastar el doble salto antes de tiempo — son una decisión, no un regalo.
+Hay cadena de racha (x2, x3…) que sube el tono del sonido y multiplica los
+puntos, y se enfría en segundo y medio.
+
+Primera versión: 463 monedas, una en cada salto. Eso no es recompensa, es
+decorado. Ahora los tramos de descanso van limpios y nunca hay dos saltos
+seguidos con monedas.
+
+#### Presentación de las mecánicas
+
+Cada mecánica se explica sola la primera vez que se pisa, con fanfarria corta:
+«Ascensor: te lleva con él», «Va y viene: mira el parpadeo», «¡Atajo! Te
+saltas un apoyo», «Apoyo estrecho: aquí hay que afinar». Nada de leyendas en
+el menú.
+
+#### Cuatro fallos que destapó la verificación
+
+**Mis atajos hacían de muro.** La primera versión los ponía pegados encima del
+apoyo que se saltan, a 69 px: menos de lo que mide el personaje más su salto.
+El apoyo de debajo quedaba con techo y con pared. Ahora van al hueco entre
+origen y destino, y se rechaza cualquier candidato que deje a un apoyo de
+debajo sin sitio desde el que despegar (`huecoLibre`).
+
+**Mi verificación aceptaba despegues imposibles.** `seLlega` daba por bueno un
+salto aunque solo saliera desde una x exacta. El jugador avanza a 7 px por
+fotograma y no puede pararse donde quiera. Ahora `ventanaSalida()` exige una
+**ventana** de 18 px y —como ya hacía el generador original— que se pueda
+**llegar caminando** hasta ella: un despegue al que otro apoyo le hace de muro
+lo encuentra el simulador, que empieza ya colocado, pero el jugador no.
+
+**Los pinchos mataban al que iba en ascensor.** `generarPinchos()` clava el
+pincho en la `y` que tiene el apoyo en ese momento. Sobre algo que se mueve o
+que desaparece, el pincho se queda flotando donde estaba el apoyo — y solapa
+justo con el jugador que va montado. Ahora los pinchos no se ponen sobre
+móviles, ascensores, cíclicas ni atajos.
+
+**Los pinchos caían en el camino bueno.** El pasillo libre se calculaba con
+la trayectoria guardada en el nivel, pero `ventanaSalida()` puede elegir otro
+punto de despegue igual de válido, y el pincho acababa justo donde el jugador
+pisa de verdad. Ahora se protegen los dos sitios donde el jugador **se para**
+—donde cae y desde donde despega, incluido el despegue alterno— y se exige
+plataforma a ambos lados del pincho: en medio se salta, y como al aterrizar se
+recuperan los dos saltos, ese brinco no cuesta nada mientras haya dónde caer.
+
+**Se apilaban mecánicas en un mismo apoyo.** `sembrarSuelos()` añadía hielo a
+un ascensor ya verificado, y el hielo cambia el despegue: la verificación por
+fases del ascensor dejaba de valer. Además se lee fatal, con los rombos del
+hielo y las flechas del ascensor peleándose por el mismo sitio. Ahora es una
+mecánica por apoyo; las combinaciones se hacen **encadenando** apoyos, no
+amontonando cosas en uno.
+
+#### Coste
+
+Componer el nivel entero cuesta unos 1,6 s, una sola vez. Tres cosas lo
+bajaron de 8,2 s:
+
+- Cribado barato antes de medir: `seLlega` cuesta quince veces menos que
+  `ventanaSalida`, y casi todos los candidatos se caen a la primera.
+- Separar las dos preguntas: cuántas fases sirven lo dice `seLlega`; si el
+  jugador puede colocarse lo dice la ventana, y eso no depende de la fase.
+- `generateLevel()` se llamaba **dos veces** —al cargar la página y al pulsar
+  Empezar— y componía el nivel entero las dos. Como es determinista, ahora la
+  segunda vez solo reinicia el estado.
+
 ### Animación: el salto no pesaba
 
 Un salto sin polvo y sin deformación no pesa. Todo lo que se añadió sale del

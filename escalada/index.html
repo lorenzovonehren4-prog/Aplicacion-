@@ -252,6 +252,7 @@
     <div id="height-badge">
       <b id="heightDisplay">0 / 1000 m</b>
       <span id="statsDisplay">0:00  ·  ☠ 0</span>
+      <span id="puntosDisplay">0 pts  ·  0 monedas</span>
       <span id="recordDisplay"></span>
     </div>
 
@@ -407,6 +408,8 @@ const HOLGURA_CANTO = 20;     // px de margen respecto a los bordes al aterrizar
    comprobados. Así que el personaje se dibuja más grande sobre la misma
    caja, anclado en los pies para que no se hunda en el apoyo.
    ==================================================================== */
+const AVISO_CICLO = 26;       // fotogramas de parpadeo antes de que se vaya
+const RADIO_MONEDA = 13;      // lo que hay que rozar para recogerla
 const ESCALA_PJ = 1.16;       // cuánto más grande se pinta que su caja
 const GIRO_DOBLE = 24;        // fotogramas que dura la voltereta del doble salto
 const APLASTE = 0.24;         // cuánto se achata al aterrizar fuerte
@@ -497,12 +500,36 @@ function vaiven(min, max, ancho, speed, fase, tiempo) {
   return min + u;
 }
 
-/** Coloca las plataformas móviles en el instante `tiempo`. */
+/**
+ * Coloca en el instante `tiempo` todo lo que se mueve o va y viene:
+ * carriles horizontales, carriles VERTICALES y apoyos que aparecen y
+ * desaparecen. Es la única función que escribe la posición de un apoyo, así
+ * que el juego y el verificador ven exactamente lo mismo.
+ */
 function moverPlataformas(plats, tiempo) {
   for (const p of plats) {
-    if (!p.mov) continue;
-    p.x = vaiven(p.mov.min, p.mov.max, p.width, p.mov.speed, p.mov.fase, tiempo);
+    if (p.mov)  p.x = vaiven(p.mov.min,  p.mov.max,  p.width,  p.mov.speed,  p.mov.fase,  tiempo);
+    if (p.movY) p.y = vaiven(p.movY.min, p.movY.max, p.height, p.movY.speed, p.movY.fase, tiempo);
+    if (p.ciclo) {
+      // Aparece y desaparece con un periodo fijo. `avisa` enciende el
+      // parpadeo antes de irse: sin aviso no es un reto, es una encerrona.
+      const c = p.ciclo, vuelta = c.visible + c.oculto;
+      let u = (tiempo + c.fase) % vuelta;
+      if (u < 0) u += vuelta;
+      p.caido = u >= c.visible;
+      p.avisa = !p.caido && u > c.visible - AVISO_CICLO;
+      p.reaparece = undefined;      // el ciclo manda, no la cuenta de trampa
+    }
   }
+}
+
+/** Fotogramas visibles que le quedan a un apoyo cíclico. Infinito si es fijo. */
+function ventanaCiclo(p, tiempo) {
+  if (!p.ciclo) return Infinity;
+  const c = p.ciclo, vuelta = c.visible + c.oculto;
+  let u = (tiempo + c.fase) % vuelta;
+  if (u < 0) u += vuelta;
+  return u >= c.visible ? 0 : c.visible - u;
 }
 
 function solapa(a, b) {
@@ -535,13 +562,22 @@ function pasoFisica(e, dirX, saltar, plats) {
     e.onGround = false;
   }
 
-  // Si vas montado en una plataforma móvil, te desplaza con ella
+  // Si vas montado en una plataforma móvil, te desplaza con ella. En las de
+  // carril VERTICAL hay que arrastrar también en Y: sin esto el ascensor
+  // sube y te deja plantado en el aire, o baja y te empotra en su tapa.
   if (e.arrastre && e.onGround) {
     const p = e.arrastre;
     if (e.arrastreX !== undefined) e.x += (p.x - e.arrastreX);
     e.arrastreX = p.x;
+    if (p.movY) {
+      if (e.arrastreY !== undefined) e.y += (p.y - e.arrastreY);
+      e.arrastreY = p.y;
+    } else {
+      e.arrastreY = undefined;
+    }
   } else {
     e.arrastreX = undefined;
+    e.arrastreY = undefined;
   }
   e.arrastre = null;
 
@@ -636,7 +672,11 @@ function pasoFisica(e, dirX, saltar, plats) {
         e.onGround = true;
         if (p.hielo) e.enHielo = true;
         e.apoyo = p;               // para inclinar al personaje en la rampa
-        if (p.mov) { e.arrastre = p; if (e.arrastreX === undefined) e.arrastreX = p.x; }
+        if (p.mov || p.movY) {
+          e.arrastre = p;
+          if (e.arrastreX === undefined) e.arrastreX = p.x;
+          if (p.movY && e.arrastreY === undefined) e.arrastreY = p.y;
+        }
       }
       break;
     }
@@ -652,6 +692,11 @@ let platforms = [];
 let lasers = [];
 let spikes = [];
 let geysers = [];
+/* Coleccionables. Se siembran SOBRE las trayectorias ya verificadas, así que
+   las normales caen solas al hacer el salto que toca; las de bonus piden un
+   desvío y valen más. `tomada` se reinicia en cada partida, no al morir: si
+   no, morir sería una forma barata de refarmear puntos. */
+let monedas = [];
 let TOP_Y = 0;
 /* ====================================================================
    AZAR CON SEMILLA FIJA
@@ -1118,6 +1163,7 @@ function costeSalida(a, b, basta) {
   puntos.sort((u, v) => Math.abs(u - entrada) - Math.abs(v - entrada));
 
   let mejor = Infinity;
+  planSalida = null;
   for (const lx of puntos) {
     const paseo = Math.abs(lx - entrada) / SPEED;
     if (paseo >= mejor) continue;
@@ -1127,8 +1173,11 @@ function costeSalida(a, b, basta) {
       for (let f = 0; f < 110; f++) {
         const cayo = pasoFisica(e, dir, f === 0 || (f2 > 0 && f === f2), cerca);
         if (cayo) {
-          if (cayo === b) {
-            mejor = Math.min(mejor, paseo + f);
+          if (cayo === b && paseo + f < mejor) {
+            mejor = paseo + f;
+            // Se guarda CÓMO se llegó. Sirve para reproducir el arco exacto
+            // y sembrar monedas encima, sin una segunda simulación aparte.
+            planSalida = { lx, f2, dir };
             if (mejor <= tope) return mejor;
           }
           break;
@@ -1140,8 +1189,85 @@ function costeSalida(a, b, basta) {
   return mejor;
 }
 
+/** Cómo se llegó en la última llamada a `costeSalida`. */
+let planSalida = null;
+
+/**
+ * El arco que describe el salto de `a` a `b`: los puntos por donde pasa el
+ * CENTRO del jugador. Reproduce el plan que encontró el verificador, así que
+ * cualquier cosa que se ponga encima es alcanzable por definición.
+ */
+function arcoSalida(a, b) {
+  if (!isFinite(costeSalida(a, b, 999)) || !planSalida) return null;
+  const { lx, f2, dir } = planSalida;
+  const cerca = alrededor(a, b);
+  const e = { x: lx, y: a.y - PH, vx: a.hielo ? dir * SPEED : 0, vy: 0,
+              onGround: true, saltos: 2, coyote: 0, buffer: 0,
+              enHielo: !!a.hielo, apoyo: a, arrastre: null };
+  const arco = [];
+  for (let f = 0; f < 110; f++) {
+    const cayo = pasoFisica(e, dir, f === 0 || (f2 > 0 && f === f2), cerca);
+    arco.push({ x: e.x + PW / 2, y: e.y + PH / 2 });
+    if (cayo) break;
+  }
+  return arco.length > 4 ? arco : null;
+}
+
 /** ¿Se llega de `a` a `b`, sin importar lo que cueste? */
 function seLlega(a, b) { return costeSalida(a, b, Infinity) < Infinity; }
+
+/* Ancho mínimo de la zona de despegue, en píxeles. El jugador avanza a 7 px
+   por fotograma y no puede pararse donde quiera: un salto que solo sale
+   desde una x exacta lo encuentra el simulador pero no lo da una persona. */
+const MARGEN_SALTO = 18;
+
+/**
+ * Como `seLlega`, pero exigiendo una VENTANA de despegue en vez de un punto,
+ * que es la diferencia entre un salto difícil y uno injusto. Devuelve el
+ * centro del tramo más ancho que funciona, o null si no hay ninguno decente.
+ */
+function ventanaSalida(a, b, minAncho) {
+  const cerca = alrededor(a, b);
+  const dir = (b.x + b.width / 2) >= (a.x + a.width / 2) ? 1 : -1;
+  const vx0 = a.hielo ? dir * SPEED : 0;
+  const PASO = 3;
+  const desde = a.x - PW + 6, hasta = a.x + a.width - 6;
+
+  // Primera pasada: desde qué puntos SALE el salto
+  const tramos = [];
+  let ini = null, largo = 0;
+  for (let lx = desde; lx <= hasta; lx += PASO) {
+    let sale = false;
+    for (let f2 = 0; f2 <= 30 && !sale; f2 += 2) {
+      const e = { x: lx, y: a.y - PH, vx: vx0, vy: 0, onGround: true, saltos: 2,
+                  coyote: 0, buffer: 0, enHielo: !!a.hielo, apoyo: a, arrastre: null };
+      for (let f = 0; f < 110; f++) {
+        const cayo = pasoFisica(e, dir, f === 0 || (f2 > 0 && f === f2), cerca);
+        if (cayo) { if (cayo === b) sale = true; break; }
+        if (e.y > a.y + 620) break;
+      }
+    }
+    if (sale) { if (ini === null) ini = lx; largo++; }
+    else { if (ini !== null) tramos.push({ ini, largo }); ini = null; largo = 0; }
+  }
+  if (ini !== null) tramos.push({ ini, largo });
+
+  // Segunda: de los tramos anchos, el primero al que se pueda LLEGAR andando.
+  // Un despegue al que otro apoyo le hace de muro lo encuentra el simulador
+  // —que empieza ya colocado— pero el jugador no puede usarlo nunca. La
+  // comprobación va por tramo y no por píxel: cuesta veinte veces menos y
+  // dice lo mismo, porque dentro de un tramo se camina sin obstáculos.
+  tramos.sort((u, v) => v.largo - u.largo);
+  for (const tr of tramos) {
+    if ((tr.largo - 1) * PASO < minAncho) break;
+    const centro = tr.ini + ((tr.largo - 1) * PASO) / 2;
+    if (sePuedeCaminarHasta(a, centro, cerca)) return centro;
+  }
+  return null;
+}
+
+/** Atajo de lectura: ¿este salto es JUSTO, no solo posible? */
+function saltoJusto(a, b) { return ventanaSalida(a, b, MARGEN_SALTO) !== null; }
 
 /** El trozo más ancho del apoyo desde el que se puede saltar sin techo. */
 function huecoLibre(p) {
@@ -1211,12 +1337,17 @@ function dificultad(mundo) {
 }
 
 function sembrarSuelos() {
-  reiniciarAzar();          // el mapa tiene que salir idéntico en cada partida
   const puestos = { hielo: 0, fragil: 0, pinchos: 0 };
 
   for (let i = 1; i < platforms.length - 1; i++) {
     const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
     if (p.type !== 'normal' || p.mov) continue;
+    // Una mecánica por apoyo. Apilar hielo sobre un ascensor invalida la
+    // verificación por fases que se le hizo al ascensor —el hielo cambia el
+    // despegue— y encima se lee fatal: los rombos y las flechas compiten en
+    // el mismo sitio. Las combinaciones se hacen encadenando apoyos, no
+    // amontonando mecánicas en uno.
+    if (p.movY || p.ciclo || p.extra) continue;
 
     // HIELO. Sólo en Frosty Peaks: es donde el bloque de hielo pega con el
     // paisaje, y donde el juego ya lo dibujaba. Y sólo en apoyos anchos,
@@ -1244,8 +1375,389 @@ function sembrarSuelos() {
   return puestos;
 }
 
+/* ====================================================================
+   DISEÑO DE NIVEL
+   Todo lo que sigue son pasadas SOBRE el nivel ya cargado y verificado. Cada
+   una propone un cambio, lo comprueba con `pasoFisica` —el mismo motor que
+   juega el jugador— y lo deshace si no sale. Así se puede enriquecer el
+   nivel sin volver a generarlo y sin poder dejarlo imposible.
+
+   Las tres franjas de dificultad son las cumbres:
+     inicial    cumbres 1-2   apoyos anchos, saltos cómodos, sin trampas
+     intermedio cumbres 3-4   frágiles, móviles, primeros ascensores, atajos
+     avanzado   cumbres 5-6   hielo, cíclicas, precisión, móviles rápidos
+   ==================================================================== */
+
+/** 1 inicial, 2 intermedio, 3 avanzado. */
+function franja(mundo) {
+  return mundo <= 2 ? 1 : (mundo <= 4 ? 2 : 3);
+}
+
+/**
+ * Onda de RITMO a lo largo de la cumbre. Sin ella la dificultad sube como una
+ * rampa y todo pesa igual; con ella hay tramos de respiro y tramos densos, que
+ * es lo que hace que una subida larga se sienta como un nivel y no como una
+ * lista. Devuelve 0 en los descansos y 1 en los picos.
+ */
+function ritmo(i) {
+  return 0.5 + 0.5 * Math.sin(i * 0.42 + 1.1);
+}
+
+/** Probabilidad base modulada por la franja y por el ritmo del tramo. */
+function ganas(mundo, i, suelo, techo) {
+  const d = dificultad(mundo);
+  return (suelo + (techo - suelo) * d) * (0.30 + 0.95 * ritmo(i));
+}
+
+/** ¿Este apoyo se puede tocar sin romper nada de lo que ya hay? */
+function apoyoLibre(p) {
+  return p && !p.extra && p.type === 'normal' && !p.hielo && !p.trampa &&
+         !p.petalo && !p.ciclo && !p.movY;
+}
+
+/**
+ * Comprueba una idea en VARIAS fases del reloj, no solo en una. Un apoyo que
+ * se mueve o que va y viene solo es justo si la mayoría de los momentos
+ * sirven; con una única muestra se colaban ratoneras de temporización.
+ */
+function fasesQueSalen(a, b, muestras) {
+  // Medir la ventana cuesta quince veces más que preguntar si se llega. La
+  // inmensa mayoría de los candidatos se caen a la primera, así que primero
+  // se criba barato en tres instantes y solo lo que sobrevive se mide bien.
+  // Sin esto, sembrar móviles y ascensores costaba 6,5 s de los 8,2 de carga.
+  for (let k = 0; k < 3; k++) {
+    moverPlataformas(platforms, k * 200);
+    if (!seLlega(a, b)) { moverPlataformas(platforms, 0); return 0; }
+  }
+  // Las dos preguntas son distintas y no hace falta cruzarlas en todas las
+  // fases: cuántos instantes SIRVEN lo dice `seLlega`, que es barato, y si el
+  // jugador puede COLOCARSE lo dice la ventana, que no depende de la fase.
+  // Así bastan dos medidas de ventana en vez de una por fase.
+  let bien = 0, conVentana = false, intentos = 0;
+  for (let k = 0; k < muestras; k++) {
+    moverPlataformas(platforms, k * (600 / muestras));
+    if (!seLlega(a, b)) continue;
+    bien++;
+    if (!conVentana && intentos < 2) { intentos++; if (saltoJusto(a, b)) conVentana = true; }
+  }
+  moverPlataformas(platforms, 0);
+  return conVentana ? bien / muestras : 0;
+}
+
+/* --------------------------------------------------------------------
+   MÓVILES HORIZONTALES
+   El nivel traía 17, todos en las cumbres 1-4: la franja avanzada se
+   quedaba sin ninguna. Aquí se crean donde faltan y se aceleran las que ya
+   había, en proporción a la cumbre.
+   -------------------------------------------------------------------- */
+function sembrarMoviles() {
+  let nuevas = 0, aceleradas = 0;
+
+  // Las que ya existen corren más arriba, pero solo si sigue saliendo
+  for (let i = 1; i < platforms.length - 1; i++) {
+    const p = platforms[i];
+    if (!p.mov || p.world < 4) continue;
+    const antes = p.mov.speed;
+    p.mov.speed = antes * (1 + dificultad(p.world) * 0.75);
+    if (fasesQueSalen(platforms[i - 1], p, 6) >= 0.7) aceleradas++;
+    else p.mov.speed = antes;
+  }
+
+  for (let i = 2; i < platforms.length - 2; i++) {
+    const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
+    if (!apoyoLibre(p) || p.mov || p.world < 5 || p.width < 96) continue;
+    if (ant.mov || sig.mov || ant.movY || sig.movY) continue;
+    if (rnd() > ganas(p.world, i, 0.10, 0.34)) continue;
+
+    const carril = 54 + dificultad(p.world) * 96;
+    const guardado = p.x;
+    p.mov = {
+      min: p.x - carril / 2, max: p.x + p.width + carril / 2,
+      speed: 0.9 + dificultad(p.world) * 0.9,
+      fase: Math.floor(rnd() * 400),
+    };
+    const entra = fasesQueSalen(ant, p, 6);
+    const sale  = entra >= 0.75 ? fasesQueSalen(p, sig, 6) : 0;
+    if (entra >= 0.75 && sale >= 0.45) nuevas++;
+    else { delete p.mov; p.x = guardado; }
+    moverPlataformas(platforms, 0);
+  }
+  return { nuevas, aceleradas };
+}
+
+/* --------------------------------------------------------------------
+   ASCENSORES: carril vertical
+   -------------------------------------------------------------------- */
+function sembrarAscensores() {
+  let puestos = 0;
+  for (let i = 2; i < platforms.length - 2; i++) {
+    const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
+    if (!apoyoLibre(p) || p.mov || p.width < 110 || p.world < 3) continue;
+    if (ant.movY || sig.movY) continue;                 // nunca dos seguidos
+    if (rnd() > ganas(p.world, i, 0.05, 0.20)) continue;
+
+    const amplitud = 26 + dificultad(p.world) * 34;
+    const guardado = p.y;
+    p.movY = {
+      min: p.y - amplitud, max: p.y + amplitud * 0.55, height: p.height,
+      speed: 0.55 + dificultad(p.world) * 0.75,
+      fase: Math.floor(rnd() * 400),
+    };
+    // Llegar tiene que salir casi siempre —no puedes esperar en el aire—;
+    // salir basta con que salga a menudo, porque puedes montarte y esperar.
+    const entra = fasesQueSalen(ant, p, 6);
+    const sale  = entra >= 0.75 ? fasesQueSalen(p, sig, 6) : 0;
+    if (entra >= 0.75 && sale >= 0.40) { puestos++; }
+    else { delete p.movY; p.y = guardado; }
+    moverPlataformas(platforms, 0);
+    p.y = p.movY ? vaiven(p.movY.min, p.movY.max, p.height, p.movY.speed, p.movY.fase, 0) : guardado;
+  }
+  return puestos;
+}
+
+/* --------------------------------------------------------------------
+   CÍCLICAS: aparecen y desaparecen
+   -------------------------------------------------------------------- */
+function sembrarCiclicas() {
+  let puestos = 0;
+  for (let i = 2; i < platforms.length - 2; i++) {
+    const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
+    if (!apoyoLibre(p) || p.mov || p.world < 4) continue;
+    if (ant.ciclo || sig.ciclo || ant.movY || p.width < 90) continue;
+    if (ant.type === 'checkpoint') continue;            // no justo al reaparecer
+    if (rnd() > ganas(p.world, i, 0.10, 0.34)) continue;
+
+    const d = dificultad(p.world);
+    // Estos números venían mal calibrados: con `132 - d*44` y `40 + d*30`, en
+    // la cumbre 6 salía visible 88 y oculto 70, y el guardián de abajo las
+    // rechazaba TODAS justo donde más falta hacían. Ahora la ventana visible
+    // se acorta con la dificultad pero sin bajar nunca del doble de la ausencia.
+    const visible = Math.round(152 - d * 42);
+    const oculto  = Math.round(32 + d * 22);
+    // Tiene que estar puesta MUCHO más tiempo del que falta: si no, llegar
+    // se convierte en cara o cruz en vez de en cuestión de leer el ritmo.
+    if (visible < oculto * 1.8) continue;
+    p.ciclo = { visible, oculto, fase: Math.floor(rnd() * (visible + oculto)) };
+
+    // Y salir de ella tiene que caber holgado en la ventana en que existe
+    const coste = costeSalida(p, sig, visible - 40);
+    if (coste <= visible - 40) puestos++;
+    else { delete p.ciclo; p.caido = false; p.avisa = false; }
+  }
+  return puestos;
+}
+
+/* --------------------------------------------------------------------
+   PRECISIÓN: apoyos estrechos donde ya se sabe saltar
+   -------------------------------------------------------------------- */
+function sembrarPrecision() {
+  let puestos = 0;
+  for (let i = 2; i < platforms.length - 2; i++) {
+    const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
+    if (!apoyoLibre(p) || p.mov || p.world < 5 || p.width < 150) continue;
+    if (rnd() > ganas(p.world, i, 0.06, 0.26)) continue;
+
+    const anchoPrevio = p.width, xPrevio = p.x, entradaPrevia = p.entradaX;
+    const nuevo = Math.max(76, Math.round(p.width * (0.66 - dificultad(p.world) * 0.06)));
+    // Se estrecha alrededor del punto por donde SE CAE en ella, no del
+    // centro: encogiendo por el centro el sitio de aterrizaje desaparecía.
+    const caida = (p.entradaX !== undefined) ? p.entradaX + PW / 2 : p.x + p.width / 2;
+    p.x = Math.max(p.x, Math.min(p.x + p.width - nuevo, caida - nuevo / 2));
+    p.width = nuevo;
+    if (p.entradaX !== undefined) {
+      p.entradaX = Math.max(p.x - PW + 10, Math.min(p.x + p.width - 10, p.entradaX));
+    }
+
+    if (saltoJusto(ant, p) && saltoJusto(p, sig)) { p.fino = true; puestos++; }
+    else { p.width = anchoPrevio; p.x = xPrevio; p.entradaX = entradaPrevia; }
+  }
+  return puestos;
+}
+
+/* --------------------------------------------------------------------
+   ATAJOS: un segundo camino, más corto y más arriesgado
+   -------------------------------------------------------------------- */
+function sembrarAtajos() {
+  const nuevos = [];
+  for (let i = 1; i < platforms.length - 3; i++) {
+    const a = platforms[i], salto = platforms[i + 1], destino = platforms[i + 2];
+    if (a.extra || destino.extra || a.world < 3) continue;
+    if (a.type === 'goal' || salto.type === 'checkpoint' || destino.type === 'goal') continue;
+    if (rnd() > ganas(a.world, i, 0.11, 0.26)) continue;
+
+    // El atajo va al HUECO entre el origen y el destino, por encima de la
+    // línea que los une: es una ruta alternativa que se ve desde abajo, no un
+    // peldaño más. La primera versión lo ponía pegado encima del apoyo que se
+    // salta, a 69 px, y ese apoyo quedaba con techo: ratonera y muro a la vez.
+    const ancho = 92 + rnd() * 32;
+    const medio = (a.x + a.width / 2 + destino.x + destino.width / 2) / 2;
+    const cand = {
+      x: medio - ancho / 2 + (rnd() - 0.5) * 50,
+      y: Math.min(a.y, destino.y) - 34 - rnd() * 46,
+      width: ancho, height: PLAT_H,
+      type: 'normal', world: a.world, extra: true, atajo: true, ang: 0,
+    };
+    if (cand.y < TOP_Y - 200) continue;
+
+    // Rechazo barato: nada de atravesar otro apoyo
+    let choca = false;
+    for (const q of platforms) {
+      if (q.x >= cand.x + cand.width || q.x + q.width <= cand.x) continue;
+      if (cand.y < q.y + q.height + 10 && cand.y + cand.height + 10 > q.y) { choca = true; break; }
+    }
+    if (choca) continue;
+
+    platforms.push(cand);
+
+    // La prueba de verdad no es geométrica sino de juego: ningún apoyo de
+    // debajo puede quedarse sin sitio desde el que saltar. Una regla a ojo
+    // —«148 px de despeje siempre»— rechazaba el 98 % de los atajos en un
+    // nivel donde los apoyos van a 90 px unos de otros.
+    let ratonera = huecoLibre(cand).ancho < PW;
+    if (!ratonera) for (const q of platforms) {
+      if (q === cand || q.extra || q.y <= cand.y) continue;
+      if (q.x >= cand.x + cand.width || q.x + q.width <= cand.x) continue;
+      if (huecoLibre(q).ancho < PW) { ratonera = true; break; }
+    }
+
+    const sirve = !ratonera &&
+                  saltoJusto(a, cand) && saltoJusto(cand, destino) &&
+                  // y el camino principal tiene que seguir intacto
+                  saltoJusto(a, salto) && saltoJusto(salto, destino);
+    if (sirve) nuevos.push(cand);
+    else platforms.pop();
+  }
+  return nuevos.length;
+}
+
+/* --------------------------------------------------------------------
+   MONEDAS: sobre el arco del salto, que es donde ya vas a pasar
+   -------------------------------------------------------------------- */
+function ponerMoneda(x, y, valor, bonus) {
+  monedas.push({ x, y, valor, bonus: !!bonus, tomada: false, fase: monedas.length * 0.7 });
+}
+
+function sembrarMonedas() {
+  // Con una tirada en cada salto salían 463 monedas: eso no es recompensa,
+  // es decorado. Se dejan los tramos de descanso limpios y no se ponen en
+  // saltos consecutivos, para que encontrarlas siga significando algo.
+  const conMonedas = new Set();
+  for (let i = 0; i + 1 < platforms.length; i++) {
+    const a = platforms[i], b = platforms[i + 1];
+    if (a.extra || b.extra || a.ciclo || b.ciclo || a.movY || b.movY) continue;
+    if (a.mov || b.mov) continue;                   // el arco cambia con la fase
+    if (ritmo(i) < 0.42) continue;                  // los descansos van limpios
+    if (i > 0 && conMonedas.has(i - 1)) continue;   // nunca dos saltos seguidos
+    conMonedas.add(i);
+
+    const arco = arcoSalida(a, b);
+    if (!arco) continue;
+    // Tres a lo largo del arco: se recogen solas haciendo el salto que toca
+    for (const frac of [0.30, 0.5, 0.70]) {
+      const q = arco[Math.round(frac * (arco.length - 1))];
+      if (q) ponerMoneda(q.x, q.y, 10, false);
+    }
+    // Y una de bonus por encima del punto más alto: pide gastar el doble
+    // salto antes de tiempo, así que es una decisión, no un regalo.
+    if (a.world >= 2 && rnd() < 0.22) {
+      let alto = arco[0];
+      for (const q of arco) if (q.y < alto.y) alto = q;
+      ponerMoneda(alto.x, alto.y - 46, 50, true);
+    }
+  }
+  // Los atajos llevan su recompensa: si te la juegas, cobras
+  for (const p of platforms) {
+    if (!p.atajo) continue;
+    ponerMoneda(p.x + p.width / 2, p.y - 34, 50, true);
+  }
+}
+
+/* --------------------------------------------------------------------
+   CHECKPOINTS antes de lo difícil
+   -------------------------------------------------------------------- */
+
+/** Cuánto castiga este apoyo: hueco, anchura y mecánicas que lleva encima. */
+function dureza(i) {
+  const p = platforms[i], sig = platforms[i + 1];
+  if (!p || !sig) return 0;
+  let d = 0;
+  const centro = p.x + p.width / 2, centroSig = sig.x + sig.width / 2;
+  d += Math.min(2.2, Math.hypot(centroSig - centro, sig.y - p.y) / 190);
+  if (p.width < 100) d += 1.1; else if (p.width < 150) d += 0.5;
+  if (p.mov) d += 0.7;
+  if (p.movY) d += 0.9;
+  if (p.ciclo) d += 1.3;
+  if (p.trampa) d += 0.9;
+  if (p.hielo) d += 0.8;
+  if (p.fino) d += 0.6;
+  for (const sp of spikes) if (Math.abs(sp.y - (p.y - SPIKE_H)) < 1) d += 0.7;
+  return d;
+}
+
+function sembrarCheckpoints() {
+  let puestos = 0, ultimo = 0;
+  for (let i = 0; i < platforms.length; i++) {
+    if (platforms[i].type === 'checkpoint') ultimo = i;
+  }
+  ultimo = 0;
+  for (let i = 4; i < platforms.length - 6; i++) {
+    if (platforms[i].type === 'checkpoint') { ultimo = i; continue; }
+    if (i - ultimo < 11) continue;
+    // Lo que viene detrás, sumado: un tramo duro, no un apoyo duro suelto
+    let suma = 0;
+    for (let k = i + 1; k <= i + 5; k++) suma += dureza(k);
+    if (suma < 6.4) continue;
+    const p = platforms[i];
+    if (!apoyoLibre(p) || p.mov || p.width < 120) continue;
+    p.type = 'checkpoint';
+    ultimo = i;
+    puestos++;
+  }
+  return puestos;
+}
+
+/* --------------------------------------------------------------------
+   Todo junto, en orden fijo para que el mapa salga idéntico cada partida
+   -------------------------------------------------------------------- */
+function componerNivel() {
+  // Una sola semilla para TODAS las pasadas y un orden fijo: así el mapa sale
+  // idéntico en cada partida y se puede memorizar, que es media gracia de un
+  // juego de escalada. El movimiento va antes que los suelos porque un apoyo
+  // que se mueve no debe además resbalar ni romperse.
+  reiniciarAzar();
+  const r = {};
+  r.moviles     = sembrarMoviles();
+  r.ascensores  = sembrarAscensores();
+  r.ciclicas    = sembrarCiclicas();
+  r.suelos      = sembrarSuelos();
+  r.precision   = sembrarPrecision();
+  r.atajos      = sembrarAtajos();
+  r.checkpoints = sembrarCheckpoints();
+  monedas = [];
+  sembrarMonedas();
+  r.monedas = monedas.length;
+  moverPlataformas(platforms, 0);
+  return r;
+}
+
+/* El nivel se compone UNA vez. `generateLevel()` se llamaba dos veces —al
+   cargar la página y otra vez al pulsar Empezar— y la composición entera se
+   repetía. Como es determinista, la segunda vez basta con devolver el nivel a
+   su estado inicial: es lo único que cambia al jugar. */
+let nivelCompuesto = false;
+
+function reiniciarNivel() {
+  for (const p of platforms) {
+    p.caido = false; p.tocada = undefined; p.reaparece = undefined;
+    p.avisa = false; p.avisado = false;
+  }
+  for (const m of monedas) m.tomada = false;
+  moverPlataformas(platforms, 0);
+}
+
 function generateLevel() {
-  if (cargarNivelFijo()) { despejarRatoneras(); sembrarSuelos(); return; }
+  if (nivelCompuesto) { reiniciarNivel(); return; }
+  if (cargarNivelFijo()) { despejarRatoneras(); componerNivel(); nivelCompuesto = true; return; }
   inicioGen = Date.now();
   reiniciarAzar();          // mismo mapa en cada partida
   platforms = [];
@@ -1696,9 +2208,10 @@ function generateLevel() {
   lasers = [];
   spikes = [];
   despejarRatoneras();
-  sembrarSuelos();
+  componerNivel();
   generarGeiseres();
   limpiarGeiseresQueEstorban();
+  nivelCompuesto = true;
 }
 
 /**
@@ -2171,9 +2684,16 @@ function generarPinchos() {
   for (let i = 1; i < platforms.length; i++) {
     const p = platforms[i];
     if (p.type !== 'normal' || p.mov || p.world < 2) continue;
+    // Los pinchos se clavan en la `y` que tiene el apoyo AHORA. Sobre algo
+    // que se mueve o que desaparece se quedan flotando donde estaba, y matan
+    // al que va montado: es lo que pasaba con los ascensores.
+    if (p.movY || p.ciclo || p.extra) continue;
     if (p.hielo || p.trampa) continue;           // ya tienen su propia gracia
     if (p.width < 165) continue;                 // hace falta sitio de sobra
-    if (rnd() > (0.06 + 0.52 * Math.pow((p.world - 1) / 6, 1.5))) continue;
+    // Al dejar fuera móviles, cíclicas y atajos quedaban solo cinco pinchos
+    // en todo el nivel: se sube la tirada para que el obstáculo se note en
+    // las cumbres altas, que es donde tiene que doler.
+    if (rnd() > (0.10 + 0.70 * Math.pow((p.world - 1) / 6, 1.5))) continue;
 
     // Punto donde se aterriza en ella y punto desde el que se despega
     const cae = p.traza ? p.traza[p.traza.length - 1].x : p.x + p.width / 2;
@@ -2186,16 +2706,28 @@ function generarPinchos() {
     // solo el del aire y el salto verificado ya no sale. Ahora el pincho se
     // queda fuera del pasillo entero: sigue matando al que se pasa de frenada
     // pero no se cruza en el camino bueno.
-    const pasIni = Math.min(cae, sale) - 8;
-    const pasFin = Math.max(cae, sale) + PW + 8;
+    // Lo que hay que proteger son los DOS SITIOS DONDE SE PARA el jugador:
+    // donde cae y desde donde despega. Un pincho en medio se salta, y como al
+    // aterrizar se recuperan los dos saltos, ese brinco no cuesta nada —
+    // siempre que quede plataforma a ambos lados donde volver a caer. Excluir
+    // el pasillo entero, como probé antes, dejaba sitio para UN pincho en
+    // todo el nivel. Se cuenta también el despegue alterno que puede elegir
+    // `ventanaSalida`, que es el que el jugador usa de verdad.
+    const alterno = ventanaSalida(p, sig, MARGEN_SALTO);
+    const paradas = [cae, sale];
+    if (alterno !== null) paradas.push(alterno);
 
     const ancho = 30 + rnd() * 26;
     let puesto = null;
-    for (let intento = 0; intento < 20 && !puesto; intento++) {
-      const x = p.x + 45 + rnd() * Math.max(1, p.width - 90 - ancho);
-      const fueraDelPaso = (x > pasFin) || (x + ancho < pasIni);
+    for (let intento = 0; intento < 24 && !puesto; intento++) {
+      const x = p.x + 52 + rnd() * Math.max(1, p.width - 104 - ancho);
+      let libre = true;
+      for (const q of paradas) {
+        if (!(x > q + PW + 14 || x + ancho < q - 14)) { libre = false; break; }
+      }
+      // Y a cada lado tiene que quedar plataforma suficiente para aterrizar
       const margenIzq = x - p.x, margenDer = (p.x + p.width) - (x + ancho);
-      if (fueraDelPaso && margenIzq >= 42 && margenDer >= 42) {
+      if (libre && margenIzq >= 52 && margenDer >= 52) {
         puesto = { x, y: p.y - SPIKE_H, width: ancho, height: SPIKE_H };
       }
     }
@@ -2462,6 +2994,7 @@ let running = false, gameOver = false;
 let deaths = 0, startTime = 0, tiempoJuego = 0;
 let alturaMetros = 0, recordMetros = 0, alturaSubida = 0;
 let pausado = false;
+let puntos = 0, monedasTomadas = 0, cadena = 0, cadenaTimer = 0;
 // El cronómetro se guarda aparte para poder congelarlo en la pausa: con sólo
 // `performance.now() - startTime` el tiempo seguía corriendo con el juego parado.
 let tiempoAcumulado = 0;
@@ -2486,6 +3019,7 @@ const startScreen  = document.getElementById('start-screen');
 const winScreen    = document.getElementById('win-screen');
 const winStats     = document.getElementById('win-stats');
 const statsEl      = document.getElementById('statsDisplay');
+const puntosEl     = document.getElementById('puntosDisplay');
 const recordEl     = document.getElementById('recordDisplay');
 const barraEl      = document.getElementById('progresoBarra');
 const pauseScreen  = document.getElementById('pause-screen');
@@ -2500,6 +3034,13 @@ function avisar(clave, txt, color) {
   if (avisado[clave]) return;
   avisado[clave] = true;
   showMessage(txt, color);
+}
+
+/** Como `avisar`, pero además suena: presenta una mecánica nueva. */
+function avisarMecanica(clave, txt, color) {
+  if (avisado[clave]) return;
+  avisar(clave, txt, color);
+  sonMecanica();
 }
 
 let msgTimer = null;
@@ -2558,6 +3099,26 @@ function efecto(freqs, dur, tipo, vol) {
   const t0 = audioCtx.currentTime;
   freqs.forEach((f, i) => nota(f, dur, t0 + i * dur * 0.6, tipo, vol));
 }
+
+/* ---- Efectos de las mecánicas nuevas ----------------------------------
+   Todos salen del mismo `efecto()` que ya usaba el juego, así que siguen sin
+   hacer falta archivos de audio y el juego sigue siendo un único HTML. */
+
+/** Moneda. Sube de tono con la cadena: recoger seguidas suena a racha. */
+function sonMoneda(bonus, racha) {
+  const base = bonus ? 784 : 587;
+  const sube = Math.pow(2, Math.min(10, racha) / 24);
+  if (bonus) efecto([base * sube, base * 1.5 * sube, base * 2 * sube], 0.085, 'triangle', 0.055);
+  else efecto([base * sube, base * 1.5 * sube], 0.055, 'square', 0.04);
+}
+
+/** Mecánica nueva: fanfarria corta, para que se note que algo cambió. */
+function sonMecanica() {
+  efecto([392, 523, 659, 784], 0.10, 'triangle', 0.055);
+}
+
+/** Aviso de que una plataforma cíclica se va: dos ticks secos. */
+function sonAviso() { efecto([880], 0.035, 'square', 0.022); }
 
 const MELODIA = [
   261.63, 329.63, 392.00, 523.25, 392.00, 329.63,
@@ -2850,6 +3411,47 @@ function update() {
     aterrizo.tocada = 0;
   }
 
+  // --- Monedas ---------------------------------------------------------
+  // La cadena premia encadenar sin pausa: se enfría en un segundo y medio.
+  if (cadenaTimer > 0 && --cadenaTimer === 0) cadena = 0;
+  for (const m of monedas) {
+    if (m.tomada) continue;
+    const r = (m.bonus ? 13 : 10) + RADIO_MONEDA;
+    if (Math.abs((player.x + PW / 2) - m.x) > r) continue;
+    if (Math.abs((player.y + PH / 2) - m.y) > r + 8) continue;
+    m.tomada = true;
+    monedasTomadas++;
+    cadena++; cadenaTimer = 90;
+    puntos += m.valor * (1 + Math.min(9, cadena - 1) * 0.1);
+    sonMoneda(m.bonus, cadena - 1);
+    for (let k = 0; k < (m.bonus ? 14 : 6); k++) {
+      const ang = rnd() * Math.PI * 2;
+      particles.push({
+        x: m.x, y: m.y, vx: Math.cos(ang) * (1 + rnd() * 2),
+        vy: Math.sin(ang) * (1 + rnd() * 2) - 0.6,
+        size: 1.8 + rnd() * 2.4, vida0: 22, life: 22,
+        chispa: true, peso: 0.02, roce: 0.9,
+      });
+    }
+  }
+
+  // Tic de aviso cuando la cíclica que estás pisando va a esfumarse. Solo la
+  // que pisas: sonar por todas las que hay a la vista sería ruido.
+  if (player.onGround && player.apoyo && player.apoyo.ciclo) {
+    const pa = player.apoyo;
+    if (pa.avisa && !pa.avisado) { pa.avisado = true; sonAviso(); }
+    if (!pa.avisa) pa.avisado = false;
+  }
+
+  // --- Presentación de cada mecánica la primera vez que se pisa -----------
+  if (aterrizo) {
+    if (aterrizo.movY) avisarMecanica('ascensor', 'Ascensor: te lleva con él', '#8fd4ff');
+    else if (aterrizo.ciclo) avisarMecanica('ciclica', 'Va y viene: mira el parpadeo', '#ffd166');
+    else if (aterrizo.mov) avisarMecanica('movil', 'Plataforma móvil', '#8fd4ff');
+    else if (aterrizo.atajo) avisarMecanica('atajo', '¡Atajo! Te saltas un apoyo', '#2ed573');
+    else if (aterrizo.fino) avisarMecanica('fino', 'Apoyo estrecho: aquí hay que afinar', '#ff9f43');
+  }
+
   // Géiseres: te lanzan hacia arriba mientras estés dentro
   for (const g of geysers) {
     if (rectSolapa(player.x, player.y, PW, PH, g.x, g.y, g.width, g.height)) {
@@ -2938,7 +3540,7 @@ function update() {
 
 /* El texto sólo se toca cuando cambia: escribir en el DOM 60 veces por
    segundo obliga al navegador a recalcular la maqueta sin ninguna falta. */
-let _hudAltura = -1, _hudStats = '', _hudRecord = '';
+let _hudAltura = -1, _hudStats = '', _hudRecord = '', _hudPuntos = '';
 function refrescarMarcador() {
   if (alturaMetros !== _hudAltura) {
     _hudAltura = alturaMetros;
@@ -2947,6 +3549,9 @@ function refrescarMarcador() {
   }
   const st = reloj(segundosPartida()) + '  ·  ☠ ' + deaths;
   if (st !== _hudStats) { _hudStats = st; statsEl.textContent = st; }
+  const pt = Math.round(puntos) + ' pts  ·  ' + monedasTomadas + '/' + monedas.length +
+             (cadena > 1 ? '  ·  x' + cadena : '');
+  if (pt !== _hudPuntos) { _hudPuntos = pt; puntosEl.textContent = pt; }
   const rc = textoRecordCorto();
   if (rc !== _hudRecord) { _hudRecord = rc; recordEl.textContent = rc; }
 }
@@ -2957,7 +3562,8 @@ function triggerWin() {
   efecto([523, 659, 784, 1047], 0.18, 'triangle', 0.07);
   const nuevos = anotarPartida(seg);
   winStats.textContent = 'Tiempo: ' + reloj(seg) + '  ·  Muertes: ' + deaths +
-                         '  ·  1000 m de subida';
+                         '  ·  ' + Math.round(puntos) + ' pts (' + monedasTomadas +
+                         ' de ' + monedas.length + ' monedas)';
   marcasEl.textContent = nuevos.length
     ? '¡Récord de ' + nuevos.join(' y de ') + '!  ' + textoMarcas()
     : textoMarcas();
@@ -4666,13 +5272,20 @@ function draw() {
     if (plat.x + plat.width < cameraX - 120 || plat.x > cameraX + viewWidth + 120) continue;
 
     // Carril de las plataformas móviles, para que se vea por dónde van
-    if (plat.mov) {
+    if (plat.mov || plat.movY) {
       ctx.strokeStyle = 'rgba(255,255,255,0.22)';
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 8]);
       ctx.beginPath();
-      ctx.moveTo(plat.mov.min, plat.y + plat.height / 2);
-      ctx.lineTo(plat.mov.max, plat.y + plat.height / 2);
+      if (plat.mov) {
+        ctx.moveTo(plat.mov.min, plat.y + plat.height / 2);
+        ctx.lineTo(plat.mov.max, plat.y + plat.height / 2);
+      }
+      if (plat.movY) {
+        const cxr = plat.x + plat.width / 2;
+        ctx.moveTo(cxr, plat.movY.min + plat.height / 2);
+        ctx.lineTo(cxr, plat.movY.max + plat.height / 2);
+      }
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -4680,9 +5293,23 @@ function draw() {
     // Las trampas tiemblan mientras cuentan atrás
     let tembl = 0;
     if (plat.tocada !== undefined) tembl = Math.sin(plat.tocada * 1.5) * 3;
+
+    // Un apoyo cíclico ausente deja su HUECO marcado: así se ve dónde va a
+    // volver y se puede esperar en su sitio en vez de adivinar.
+    if (plat.caido && plat.ciclo) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 7]);
+      rrect(plat.x, plat.y, plat.width, plat.height, 6); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
     if (plat.caido) continue;
     ctx.save();
     if (tembl) ctx.translate(tembl, 0);
+    // Parpadeo de aviso justo antes de esfumarse
+    if (plat.avisa) ctx.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * 0.42));
     drawPlatform(plat);
     // La grieta de un apoyo frágil va con reborde oscuro: sin él se perdía
     // sobre los apoyos claros, y un suelo que no se ve no es una mecánica,
@@ -4728,6 +5355,25 @@ function draw() {
     }
     ctx.restore();
 
+    if (plat.movY) {   // ascensor: dos flechas, arriba y abajo
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      const fx = plat.x + plat.width / 2;
+      ctx.beginPath();
+      ctx.moveTo(fx, plat.y + 4); ctx.lineTo(fx + 6, plat.y + 11); ctx.lineTo(fx - 6, plat.y + 11);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(fx, plat.y + plat.height - 4); ctx.lineTo(fx + 6, plat.y + plat.height - 11);
+      ctx.lineTo(fx - 6, plat.y + plat.height - 11);
+      ctx.closePath(); ctx.fill();
+    }
+    if (plat.ciclo) {   // cíclica: reloj de arena en una esquina
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      const rx = plat.x + plat.width - 15, ry = plat.y + 6;
+      ctx.beginPath();
+      ctx.moveTo(rx - 5, ry); ctx.lineTo(rx + 5, ry);
+      ctx.lineTo(rx - 5, ry + 11); ctx.lineTo(rx + 5, ry + 11);
+      ctx.closePath(); ctx.fill();
+    }
     if (plat.mov) {   // marca de "esto se mueve"
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.fillRect(plat.x + 4, plat.y + plat.height / 2 - 2, 5, 4);
@@ -4795,6 +5441,35 @@ function draw() {
   drawPlayer();
 
   // Polvo y destello del doble salto, por encima del personaje
+  // --- Monedas. Giran sobre su eje: el ancho late, el alto no, que es como
+  // se lee una moneda dando vueltas sin dibujar diez fotogramas. ---
+  for (const m of monedas) {
+    if (m.tomada) continue;
+    if (m.x < cameraX - 60 || m.x > cameraX + viewWidth + 60) continue;
+    if (m.y < cameraY - 60 || m.y > cameraY + viewHeight + 60) continue;
+    const giro = Math.abs(Math.cos(t * 0.055 + m.fase));
+    const flota = Math.sin(t * 0.04 + m.fase) * 3;
+    const r = m.bonus ? 13 : 10;
+    const cy = m.y + flota;
+    ctx.save();
+    if (m.bonus) { ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 14; }
+    ctx.fillStyle = m.bonus ? '#ffd166' : '#f5c518';
+    ctx.beginPath();
+    ctx.ellipse(m.x, cy, Math.max(2.2, r * giro), r, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = m.bonus ? '#a8720d' : '#8a6a10';
+    ctx.lineWidth = 2.4; ctx.stroke();
+    if (giro > 0.42) {
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      ctx.ellipse(m.x - r * giro * 0.28, cy - r * 0.3,
+                  Math.max(1, r * giro * 0.26), r * 0.34, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   for (const q of particles) {
     // La opacidad sale de la vida QUE TENÍA cada una, no de un 26 fijo: con
     // el número clavado, el polvo corto nacía ya medio transparente.
@@ -7280,7 +7955,9 @@ function arrancarPartida() {
   currentWorld = 1; deaths = 0; tiempoJuego = 0; gameOver = false;
   alturaMetros = 0; recordMetros = 0; particles = []; pedirSalto = false;
   tiempoAcumulado = 0; avisado = {};
-  _hudAltura = -1; _hudStats = ''; _hudRecord = '';
+  puntos = 0; monedasTomadas = 0; cadena = 0; cadenaTimer = 0;
+  for (const m of monedas) m.tomada = false;
+  _hudAltura = -1; _hudStats = ''; _hudRecord = ''; _hudPuntos = '';
   worldDisplay.textContent = 1;
   worldName.textContent = WORLDS[0].name;
   player.arrastre = null; player.arrastreX = undefined;
@@ -7333,7 +8010,7 @@ function retrato(cv, iSkin, iAcc) {
    ==================================================================== */
 
 const CLAVE_GUARDADO = 'dontlookup.v1';
-let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false };
+let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0 };
 
 function cargarGuardado() {
   let d = null;
@@ -7372,6 +8049,7 @@ function anotarPartida(seg) {
   const nuevos = [];
   if (!marcas.completado || seg < marcas.tiempo) { marcas.tiempo = seg; nuevos.push('tiempo'); }
   if (marcas.muertes === null || deaths < marcas.muertes) { marcas.muertes = deaths; nuevos.push('caídas'); }
+  if (puntos > (marcas.puntos || 0)) { marcas.puntos = Math.round(puntos); nuevos.push('puntos'); }
   marcas.altura = Math.max(marcas.altura, recordMetros);
   marcas.completado = true;
   guardar();
@@ -7381,7 +8059,8 @@ function anotarPartida(seg) {
 function textoMarcas() {
   if (marcas.completado) {
     return 'Mejor vuelta: ' + reloj(marcas.tiempo) + '  ·  ' + marcas.muertes +
-           (marcas.muertes === 1 ? ' muerte' : ' muertes');
+           (marcas.muertes === 1 ? ' muerte' : ' muertes') +
+           (marcas.puntos ? '  ·  ' + marcas.puntos + ' pts' : '');
   }
   if (marcas.altura > 0) return 'Tu mejor marca: ' + marcas.altura + ' m';
   return '';
