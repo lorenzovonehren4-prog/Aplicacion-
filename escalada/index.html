@@ -35,9 +35,13 @@
   .overlay.hidden { display:none; }
   .campo { display:block; margin:14px 0 6px; font-size:14px; color:#c9d6e5; text-align:left; }
   .campo input { display:block; width:100%; margin-top:6px; padding:10px 12px;
-    border-radius:9px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.07);
-    color:#fff; font-size:16px; font-weight:700; letter-spacing:.5px; outline:none; }
-  .campo input:focus { border-color:#6c5ce7; background:rgba(108,92,231,.16); }
+    border-radius:10px; border:1px solid rgba(255,255,255,.13); background:rgba(0,0,0,.28);
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.3);
+    color:#fff; font-size:16px; font-weight:700; letter-spacing:.5px; outline:none;
+    transition:border-color .13s, box-shadow .13s; }
+  .campo input::placeholder { color:#61748a; }
+  .campo input:focus { border-color:#ffd700;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.3), 0 0 0 3px rgba(255,215,0,.15); }
   .sub { margin:14px 0 8px; font-size:14px; color:#c9d6e5; }
   #skins { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:6px; }
   .skin { width:46px; height:46px; border-radius:12px; cursor:pointer;
@@ -50,29 +54,68 @@
   /* --- Menú organizado en dos columnas --- */
   /* Pensado para pantallas anchas y BAJAS, tipo Chromebook 1366x768: el
      menú crece a lo ancho, nunca a lo alto. */
-  .menu { max-width:1060px; width:96vw; max-height:95vh; overflow:auto; text-align:left;
-    background:linear-gradient(165deg, rgba(14,22,38,.93), rgba(9,14,26,.96));
+  /* El fondo del inicio: dos halos de color detrás del panel, para que el
+     menú se despegue del mundo borroso en vez de fundirse con él. */
+  #start-screen {
+    background:
+      radial-gradient(1100px 620px at 50% -12%, rgba(96,168,255,.20), transparent 68%),
+      radial-gradient(900px 560px at 50% 116%, rgba(255,170,60,.13), transparent 66%),
+      rgba(4,7,14,.86);
+  }
+  .menu { max-width:1180px; width:96vw; max-height:96vh; overflow:auto; text-align:left;
+    background:
+      radial-gradient(660px 320px at 10% -10%, rgba(120,190,255,.13), transparent 62%),
+      radial-gradient(560px 300px at 94% 112%, rgba(255,180,70,.10), transparent 62%),
+      linear-gradient(168deg, rgba(18,27,46,.965), rgba(8,12,22,.985));
     border:1px solid rgba(255,255,255,.10);
-    box-shadow:0 28px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07);
-    border-radius:18px; padding:13px 20px 9px; }
-  .cabecera { text-align:center; margin-bottom:8px; }
-  .cabecera h1 { margin:0 0 2px; letter-spacing:3px; font-size:clamp(22px,2.7vw,31px); font-weight:900;
-    background:linear-gradient(180deg,#ffffff 35%,#8fd4ff);
+    box-shadow:0 40px 90px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.10);
+    border-radius:20px; padding:15px 20px 9px; }
+
+  /* Cabecera en dos piezas: el rótulo a la izquierda y los récords a la
+     derecha. Antes iban uno debajo de otro y se comían 90 px de alto. */
+  .cabecera { display:flex; align-items:flex-end; justify-content:space-between;
+    gap:22px; text-align:left; position:relative;
+    margin-bottom:12px; padding-bottom:10px;
+    border-bottom:1px solid rgba(255,255,255,.08); }
+  .cabecera::after { content:''; position:absolute; left:0; bottom:-1px;
+    width:132px; height:2px; border-radius:2px;
+    background:linear-gradient(90deg,#ffd700,#ff8a3d,transparent); }
+  .kicker { display:flex; align-items:center; gap:8px; margin:0 0 4px;
+    font-size:10.5px; font-weight:800; letter-spacing:2.6px;
+    text-transform:uppercase; color:#7f96b0; }
+  .kicker i { width:18px; height:2px; border-radius:2px;
+    background:linear-gradient(90deg,#ffd700,#ff8a3d); }
+  /* `.panel h1` se declara después y su `color:#ffd700` ganaba por cascada:
+     el degradado del rótulo no se veía nunca. Con `.menu .cabecera h1` la
+     especificidad es mayor y el título sale como estaba pensado. */
+  .menu .cabecera h1 { margin:0 0 3px; letter-spacing:.5px; line-height:.95;
+    font-size:clamp(26px,2.9vw,39px); font-weight:900;
+    background:linear-gradient(178deg,#ffffff 6%,#ffeaad 48%,#f0ac22 100%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
-    text-shadow:0 6px 26px rgba(90,190,255,.35); }
-  .cabecera::after { content:''; display:block; width:64px; height:3px; margin:8px auto 0;
-    border-radius:3px; background:linear-gradient(90deg,#ffd700,#ff8a3d); }
-  .lema { margin:0; color:#9fb2c6; font-size:13px; }
-  .columnas { display:grid; grid-template-columns:0.78fr 1.5fr 1.05fr; gap:18px;
-    align-items:start; }
-  .col-pj { display:flex; flex-direction:column; }
-  .bloque { flex:1; min-width:0; }
-  .bloque h2 { font-size:12px; text-transform:uppercase; letter-spacing:1.6px;
-    color:#8fa8c0; margin:0 0 8px; padding-bottom:6px;
-    border-bottom:1px solid rgba(255,255,255,.09); display:flex; align-items:center; gap:8px; }
-  .bloque h2::before { content:''; width:3px; height:12px; border-radius:2px;
+    filter:drop-shadow(0 8px 24px rgba(255,180,60,.26)); }
+  .lema { margin:0; color:#93a8bd; font-size:13px; letter-spacing:.2px; }
+
+  /* Tres tarjetas de verdad, no tres huecos: con fondo propio y a la misma
+     altura, la columna corta deja de parecer un agujero en el panel. */
+  .columnas { display:grid; gap:13px; align-items:stretch;
+    grid-template-columns:0.86fr 1.48fr 1.22fr;
+    grid-template-rows:auto 1fr;
+    grid-template-areas:'pj pers ruta' 'ctrl pers ruta'; }
+  .col-pj { grid-area:pj; } .col-pers { grid-area:pers; }
+  .col-ruta { grid-area:ruta; } .col-ctrl { grid-area:ctrl; }
+  .bloque { display:flex; flex-direction:column; min-width:0;
+    background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.014));
+    border:1px solid rgba(255,255,255,.07); border-radius:16px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+    padding:12px 13px 13px; }
+  .bloque h2 { font-size:11px; text-transform:uppercase; letter-spacing:2px;
+    font-weight:800; color:#8fa8c0; margin:0 0 10px; padding:0; border:0;
+    display:flex; align-items:center; gap:9px; }
+  .bloque h2::before { content:''; flex:none; width:3px; height:13px; border-radius:2px;
     background:linear-gradient(180deg,#ffd700,#ff8a3d); }
-  .bloque h2 + .keys, .bloque .cumbres + h2 { margin-top:16px; }
+  .bloque h2::after { content:''; flex:1; height:1px;
+    background:linear-gradient(90deg, rgba(255,255,255,.13), transparent); }
+  .bloque h2 + .keys, .bloque .cumbres + h2 { margin-top:0; }
   .etiqueta { margin:12px 0 7px; font-size:12px; color:#9fb2c6;
     text-transform:uppercase; letter-spacing:.8px; }
   .campo span { display:block; font-size:12px; color:#9fb2c6; margin-bottom:6px;
@@ -85,67 +128,72 @@
     margin-right:8px; min-width:14px; }
   .cumbres li b { flex:1; font-weight:600; color:#e6eef7; }
   .cumbres li span { color:#8fa3b8; font-size:12px; white-space:nowrap; }
-  #skins { justify-content:flex-start; }
-  #accesorios { justify-content:flex-start; }
-  .menu .btn { display:block; width:100%; margin-top:14px; padding:13px;
+  #skins, #accesorios { justify-content:flex-start; }
+  .menu .btn { display:block; width:100%; margin-top:14px; padding:12px;
     font-size:17px; font-weight:800; letter-spacing:1.4px; border:none;
     border-radius:13px; cursor:pointer; color:#10202e;
     background:linear-gradient(180deg,#ffe27a,#f5b31f);
-    box-shadow:0 6px 0 #b8850c, 0 12px 24px rgba(0,0,0,.35);
+    box-shadow:0 6px 0 #b8850c, 0 12px 24px rgba(0,0,0,.35),
+               inset 0 1px 0 rgba(255,255,255,.55);
     transition:transform .08s, box-shadow .08s; }
   .menu .btn:hover { transform:translateY(-2px);
-    box-shadow:0 8px 0 #b8850c, 0 16px 30px rgba(0,0,0,.4); }
+    box-shadow:0 8px 0 #b8850c, 0 16px 30px rgba(0,0,0,.4),
+               inset 0 1px 0 rgba(255,255,255,.55); }
   .menu .btn:active { transform:translateY(4px); box-shadow:0 2px 0 #b8850c; }
-  .escaparate { position:relative; margin:0 auto 8px; width:100%; max-width:186px;
+  /* Un brillo que cruza el botón de tanto en tanto: es el único sitio del
+     menú con movimiento, así que la vista va sola a donde hay que pulsar. */
+  #start-btn { position:relative; overflow:hidden; }
+  #start-btn span { position:relative; z-index:1; }
+  #start-btn::after { content:''; position:absolute; top:-60%; left:-40%;
+    width:24%; height:220%; transform:rotate(17deg); pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+    animation:brilloBoton 4.2s ease-in-out infinite; }
+  @keyframes brilloBoton { 0%,74% { left:-40%; } 94%,100% { left:125%; } }
+  @media (prefers-reduced-motion:reduce) { #start-btn::after { animation:none; opacity:0; } }
+  /* El escaparate es lo primero que se mira: una pantalla con marco y una
+     placa con el nombre debajo, no una caja con el rótulo encima de los pies. */
+  .escaparate { position:relative; margin:0 0 9px; width:100%;
     border-radius:14px; overflow:hidden;
     background:linear-gradient(180deg,#a8e6fb 0%,#7fd2f0 55%,#5cbfe4 100%);
-    border:1px solid rgba(255,255,255,.22);
-    box-shadow:inset 0 -18px 30px rgba(20,70,110,.20); }
-  #preview { display:block; width:100%; height:124px; }
-  .escaparate .nombreSkin { position:absolute; left:0; right:0; bottom:0;
-    text-align:center; font-size:11px; letter-spacing:1.4px; text-transform:uppercase;
-    color:#fff; background:linear-gradient(0deg,rgba(8,16,28,.72),transparent);
-    padding:14px 0 6px; }
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 12px 26px rgba(0,0,0,.34); }
+  .escaparate::before { content:''; position:absolute; left:0; right:0; top:0; bottom:34px;
+    pointer-events:none; z-index:1;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),
+               inset 0 -26px 32px rgba(16,58,96,.26); }
+  #preview { display:block; width:100%; height:152px; }
+  .escaparate .nombreSkin { position:static; height:34px; display:flex;
+    align-items:center; justify-content:center; gap:7px;
+    font-size:11.5px; font-weight:800; letter-spacing:2.4px; text-transform:uppercase;
+    color:#ffe9a8; background:rgba(7,12,22,.9);
+    border-top:1px solid rgba(255,255,255,.12); }
+  .escaparate .nombreSkin::before { content:''; width:5px; height:5px; border-radius:50%;
+    background:#ffd700; box-shadow:0 0 8px rgba(255,215,0,.8); }
 
   /* Tarjetas de skin y accesorio, con el personaje dibujado dentro */
-  #skins, #accesorios { display:grid; gap:8px; }
-  #skins { grid-template-columns:repeat(5,1fr); }
-  #accesorios { grid-template-columns:repeat(5,1fr); }
-  .tarjeta { position:relative; border-radius:11px; cursor:pointer; overflow:hidden;
-    border:2px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05);
-    transition:transform .12s, border-color .12s, background .12s; }
-  .tarjeta:hover { transform:translateY(-2px); background:rgba(255,255,255,.09); }
-  .tarjeta.sel { border-color:#ffd700; background:rgba(255,215,0,.13);
-    box-shadow:0 0 0 3px rgba(255,215,0,.16); }
-  .tarjeta canvas { display:block; width:100%; height:48px; }
-  .tarjeta span { display:block; text-align:center; font-size:10px; padding:3px 2px 5px;
-    color:#c9d6e5; letter-spacing:.4px; }
-  .tarjeta.sel span { color:#fff; }
+  #skins, #accesorios { display:grid; gap:8px; margin-bottom:0; }
+  #skins { grid-template-columns:repeat(4,1fr); }
+  #accesorios { grid-template-columns:repeat(4,1fr); }
+  .tarjeta { position:relative; border-radius:12px; cursor:pointer; overflow:hidden;
+    border:1px solid rgba(255,255,255,.09);
+    background:linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.02));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+    transition:transform .13s, border-color .13s, background .13s, box-shadow .13s; }
+  .tarjeta:hover { transform:translateY(-3px); border-color:rgba(255,255,255,.24);
+    box-shadow:0 9px 18px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.11); }
+  .tarjeta.sel { border-color:#ffd700;
+    background:linear-gradient(180deg, rgba(255,215,0,.2), rgba(255,140,40,.06));
+    box-shadow:0 0 0 1px rgba(255,215,0,.55), 0 8px 20px rgba(255,170,40,.2); }
+  /* Marca de elegido: con 18 colores parecidos, el borde dorado solo no basta */
+  .tarjeta.sel::after { content:'✓'; position:absolute; top:2px; right:5px;
+    font-size:10px; font-weight:900; color:#ffd700; text-shadow:0 1px 2px rgba(0,0,0,.6); }
+  .tarjeta canvas { display:block; width:100%; height:56px; }
+  .tarjeta span { display:block; text-align:center; font-size:9.5px; line-height:1.2;
+    padding:3px 2px 5px; color:#c9d6e5; letter-spacing:.4px; }
+  .tarjeta.sel span { color:#fff; font-weight:700; }
   /* En pantallas bajas se aprieta aún más; en estrechas se apila */
-  @media (max-height:830px) {
-    #preview { height:104px; }
-    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:34px; }
-    #rutaPreview { height:140px; }
-    .cabecera h1 { font-size:25px; }
-    .menu { padding:11px 17px 8px; }
-    .vitrina div { padding:3px 9px; }
-    .vitrina b { font-size:13px; }
-    .mecanicas li { font-size:11px; }
-    .mecanicas { gap:4px; }
-    .keys { gap:5px; }
-  }
-  @media (max-width:860px) { .columnas { grid-template-columns:1fr 1fr; }
-    .col-pj { grid-column:1 / -1; flex-direction:row; gap:14px; align-items:center; }
-    .col-pj .escaparate { margin:0; } .col-pj .campo { flex:1; } }
-  @media (max-width:600px) { .columnas { grid-template-columns:1fr; }
-    .col-pj { flex-direction:column; } }
-  /* Con 16 accesorios, en rejilla de ancho fijo: en flex se estiraban a lo
-     ancho de la columna y las tarjetas salían de tamaños distintos. */
-  /* Con 18 colores y 16 accesorios, a cuatro por fila el menú se iba de alto
-     y había que desplazarlo para llegar al botón de empezar. A cinco cabe. */
-  #accesorios { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-bottom:6px; }
-  #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:40px; }
-  .tarjeta span { font-size:9px; line-height:1.2; }
+  /* La pista de lo que llevas puesto se queda abajo del todo de su tarjeta */
+  .col-pers .pista-eleccion { margin-top:auto; }
   .acc { padding:6px 10px; font-size:12px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600;
     border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); color:#c9d6e5; }
   .acc.sel { border-color:#ffd700; background:rgba(255,215,0,.12); color:#fff; }
@@ -156,17 +204,25 @@
      aplastaba el `max-width:1060px` del menú. En móvil los dos valores
      coinciden y no se notaba; en escritorio el menú llevaba todo este
      tiempo metido en 440 px, con las tarjetas y los nombres cortados. */
-  .panel.menu { width:min(1060px, 96vw); max-width:none; }
+  .panel.menu { width:min(1180px, 96vw); max-width:none; padding:15px 20px 10px; }
   .panel { width:min(440px,100%); background:rgba(18,18,30,.96);
     border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:32px 28px; text-align:center; }
   .panel h1 { font-size:30px; color:#ffd700; margin-bottom:8px; letter-spacing:.06em; }
   .panel h1.win { color:#2ed573; }
   .panel p { color:#9aa0b4; font-size:14px; margin-bottom:18px; line-height:1.55; }
-  .keys { display:flex; flex-direction:column; gap:7px; text-align:left; margin-bottom:10px; }
-  .keyrow { display:flex; align-items:center; gap:10px; font-size:12.5px; color:#dfe7f0; }
-  .key { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:25px;
-    padding:0 7px; flex-shrink:0; background:rgba(255,255,255,.09);
-    border:1px solid rgba(255,255,255,.18); border-radius:6px; font-weight:700; font-size:12px; }
+  .keys { display:flex; flex-direction:column; gap:4px; text-align:left; margin-bottom:0; }
+  /* El aviso del mando en pantalla solo tiene sentido en un aparato de dedo */
+  .solo-tactil { display:none; }
+  @media (pointer:coarse) { .solo-tactil { display:flex; } }
+  .keyrow { display:flex; align-items:center; gap:10px; font-size:12.5px; color:#c2d0de; }
+  .keyrow b { color:#eef4fa; }
+  /* Teclas con relieve: se distinguen del texto sin necesidad de leerlas */
+  .key { display:inline-flex; align-items:center; justify-content:center; min-width:31px; height:26px;
+    padding:0 8px; flex-shrink:0; color:#eef4fa;
+    background:linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.045));
+    border:1px solid rgba(255,255,255,.16); border-bottom-color:rgba(0,0,0,.45);
+    box-shadow:0 2px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.16);
+    border-radius:7px; font-weight:800; font-size:12px; }
   .danger { color:#ff4757; font-weight:700; }
   .good { color:#2ed573; font-weight:700; }
   .btn { border:none; cursor:pointer; background:#ffd700; color:#1a1400; font-size:15px;
@@ -229,60 +285,89 @@
   .menu .js-mute { margin-top:9px; }
   .marca-menu { margin-top:5px; text-align:center; font-size:12px; font-weight:700;
     letter-spacing:.4px; color:#ffd700; }
+  /* Sin marcas todavía, el párrafo vacío se comía 23 px al final del panel */
+  .marca-menu:empty { display:none; }
 
   /* ---- Pantalla de inicio ---- */
-  .pestanas { display:flex; gap:6px; margin-bottom:12px;
-    border-bottom:1px solid rgba(255,255,255,.09); padding-bottom:9px; }
-  .pestana { flex:1; padding:9px 10px; border-radius:9px; cursor:pointer;
+  /* Las dos pestañas van dentro de un raíl hundido: se lee como un
+     interruptor de dos posiciones y no como dos botones sueltos. */
+  .pestanas { display:flex; gap:4px; margin-bottom:11px; padding:4px;
+    border:1px solid rgba(255,255,255,.07); border-radius:13px;
+    background:rgba(0,0,0,.26); box-shadow:inset 0 2px 6px rgba(0,0,0,.3); }
+  .pestana { flex:1; padding:8px 10px; border-radius:10px; cursor:pointer; border:0;
+    display:flex; align-items:center; justify-content:center; gap:7px;
     font-size:12px; font-weight:800; letter-spacing:1.3px; text-transform:uppercase;
-    color:#8fa8c0; background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08); transition:color .12s, background .12s; }
-  .pestana:hover { color:#c9d6e5; background:rgba(255,255,255,.08); }
+    color:#8fa8c0; background:transparent;
+    transition:color .13s, background .13s, box-shadow .13s; }
+  .pestana:hover { color:#dbe6f2; background:rgba(255,255,255,.06); }
   .pestana.activa { color:#10202e; background:linear-gradient(180deg,#ffe27a,#f5b31f);
-    border-color:transparent; }
-  .pestana em { font-style:normal; opacity:.65; margin-left:5px; font-size:11px; }
+    box-shadow:0 3px 10px rgba(245,179,31,.3), inset 0 1px 0 rgba(255,255,255,.5); }
+  .pestana em { font-style:normal; font-size:10px; font-weight:800; margin:0;
+    padding:1px 6px; border-radius:7px; background:rgba(255,255,255,.09); }
+  .pestana.activa em { background:rgba(16,32,46,.16); }
   .oculta { display:none !important; }
-  .pista-eleccion { margin:9px 0 0; font-size:11.5px; color:#8fa8c0; text-align:center; }
+  .pista-eleccion { margin:10px 0 0; font-size:11.5px; color:#8fa8c0; text-align:center;
+    padding:7px 10px; border-radius:10px; background:rgba(0,0,0,.22);
+    border:1px solid rgba(255,255,255,.05); }
   .pista-eleccion b { color:#ffd700; }
 
   .mecanicas { list-style:none; margin:0; padding:0; display:flex;
-    flex-direction:column; gap:6px; }
-  .mecanicas li { display:flex; align-items:flex-start; gap:8px; font-size:11.5px;
-    color:#9fb2c6; line-height:1.4; text-align:left; }
+    flex-direction:column; gap:4px; }
+  .mecanicas li { display:flex; align-items:flex-start; gap:9px; font-size:11.5px;
+    color:#9fb2c6; line-height:1.35; text-align:left;
+    padding:4px 8px; border-radius:9px; background:rgba(255,255,255,.028); }
   .mecanicas span { flex:1; }
-  .mecanicas i { flex:none; width:9px; height:9px; border-radius:3px;
-    margin-top:4px; }
+  /* El mismo punto de color que usa el mapa, para poder cruzar las dos vistas */
+  .mecanicas i { flex:none; width:9px; height:9px; border-radius:50%; margin-top:4px;
+    box-shadow:0 0 0 3px rgba(255,255,255,.06); }
   .mecanicas b { color:#e6eef7; font-weight:700; }
 
   /* El botón de empezar se queda pegado al fondo del panel. En 1280x720 o en
      un móvil el menú no cabe por mucho que se recorte, y lo que no puede
      pasar es que haya que desplazarse a ciegas para encontrar el botón. */
   .pie-menu { display:flex; gap:10px; align-items:stretch; margin-top:11px;
-    position:sticky; bottom:-9px; z-index:2; padding:9px 0;
-    background:linear-gradient(180deg, rgba(10,15,26,0), rgba(10,15,26,.99) 38%); }
+    position:sticky; bottom:-10px; z-index:2; padding:9px 0 8px;
+    background:linear-gradient(180deg, rgba(9,13,23,0), rgba(9,13,23,.985) 34%); }
   /* El botón fantasma es transparente por definición y dejaba ver la lista de
      detrás cuando la barra se queda pegada al fondo. Aquí lleva relleno. */
   .pie-menu .btn.ghost { background:rgba(24,32,48,.96); }
+  .menu .btn.ghost { color:#c9d6e5;
+    background:linear-gradient(180deg, rgba(38,48,68,.96), rgba(24,32,48,.96));
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 4px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.07); }
+  .menu .btn.ghost:hover { transform:translateY(-2px);
+    background:linear-gradient(180deg, rgba(48,60,84,.96), rgba(30,40,58,.96));
+    box-shadow:0 6px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.09); }
+  .menu .btn.ghost:active { transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.4); }
   .pie-menu #start-btn { flex:2.4; margin-top:0; }
   .pie-menu .js-mute { flex:1; margin-top:0; }
   @media (max-width:600px) { .pie-menu { flex-direction:column; } }
-  .vitrina { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
-  .vitrina div { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09);
-    border-radius:10px; padding:4px 11px; min-width:74px; }
-  .vitrina b { display:block; font-size:14px; color:#ffd700; font-weight:900;
-    font-variant-numeric:tabular-nums; }
-  .vitrina span { display:block; font-size:10px; color:#8fa8c0;
-    text-transform:uppercase; letter-spacing:.9px; margin-top:1px; }
+  /* Los récords, en la esquina de la cabecera: cuatro fichas con su franja
+     de color, no cuatro cajas iguales en fila. */
+  .vitrina { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;
+    margin:0; flex:none; }
+  .vitrina div { position:relative; overflow:hidden; text-align:left;
+    min-width:88px; padding:7px 12px 8px 13px; border-radius:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.022));
+    border:1px solid rgba(255,255,255,.09);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
+  .vitrina div::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:var(--acento,#ffd700); }
+  .vitrina b { display:block; font-size:17px; color:#f4f8fd; font-weight:900;
+    line-height:1.1; font-variant-numeric:tabular-nums; }
+  .vitrina div.puesto b { color:var(--acento,#ffd700); }
+  .vitrina span { display:block; font-size:9.5px; color:#8fa8c0;
+    text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
   /* Barra bajo «mejor altura»: cuánto queda de los 1000 m */
-  .vitrina div { position:relative; overflow:hidden; }
-  .vitrina u { position:absolute; left:0; bottom:0; height:3px; text-decoration:none;
+  .vitrina u { position:absolute; left:3px; bottom:0; height:3px; text-decoration:none;
     background:linear-gradient(90deg,#ffd700,#ff8a3d); border-radius:0 3px 0 0; }
-  .ruta { border-radius:11px; overflow:hidden; background:#0b1424;
-    border:1px solid rgba(255,255,255,.09); }
+  .ruta { position:relative; border-radius:12px; overflow:hidden; background:#0b1424;
+    border:1px solid rgba(255,255,255,.09);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
   #rutaPreview { display:block; width:100%; height:172px; }
-  .ruta-pie { margin:7px 0 0; font-size:11px; color:#8fa8c0; line-height:1.45; }
+  .ruta-pie { margin:7px 0 11px; font-size:11px; color:#8fa8c0; line-height:1.4; }
   .ruta-pie b { color:#c9d6e5; }
-  @media (max-height:700px) { #rutaPreview { height:170px; } }
+  @media (max-height:700px) { #rutaPreview { height:158px; } }
 
   /* ---- Botón de mapa, abajo a la izquierda ---- */
   #bottomleft { position:absolute; left:14px; bottom:14px; z-index:6; }
@@ -292,8 +377,16 @@
 
   /* ---- Panel del mapa ---- */
   .panel.mapa { width:min(1020px, 96vw); max-width:none; max-height:94vh;
-    display:flex; flex-direction:column; gap:10px; padding:18px 20px 16px; }
-  .mapa-cab h1 { font-size:19px; letter-spacing:2px; margin:0; }
+    display:flex; flex-direction:column; gap:10px; padding:18px 20px 16px;
+    background:
+      radial-gradient(620px 300px at 12% -10%, rgba(120,190,255,.12), transparent 62%),
+      radial-gradient(520px 280px at 92% 112%, rgba(255,180,70,.09), transparent 62%),
+      linear-gradient(168deg, rgba(18,27,46,.965), rgba(8,12,22,.985));
+    border:1px solid rgba(255,255,255,.10); border-radius:20px;
+    box-shadow:0 40px 90px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.10); }
+  .mapa-cab h1 { font-size:19px; letter-spacing:2px; margin:0;
+    background:linear-gradient(178deg,#ffffff 8%,#ffeaad 55%,#f0ac22 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
   .mapa-cab p { margin:3px 0 0; font-size:13px; color:#ffd700; font-weight:700; }
   .mapa-lienzo { position:relative; flex:1; min-height:0; border-radius:12px;
     overflow:hidden; background:linear-gradient(180deg,#0b1424,#101c30);
@@ -330,6 +423,79 @@
     .tbtn { width:62px; height:62px; font-size:22px; }
     .tbtn.salto { width:74px; height:74px; font-size:26px; }
   }
+
+  /* ====================================================================
+     ADAPTACIÓN DE LA PANTALLA DE INICIO
+     Van al final del hoja de estilo A PROPÓSITO: estas reglas ajustan
+     cosas que se declaran más abajo (el pie, la vitrina, la ruta) y
+     desde arriba perdían la cascada y no hacían nada.
+     ==================================================================== */
+  @media (max-height:830px) {
+    #preview { height:136px; }
+    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:44px; }
+    #rutaPreview { height:158px; }
+    .menu .cabecera h1 { font-size:29px; }
+    .panel.menu { padding:12px 17px 8px; }
+    .cabecera { margin-bottom:10px; padding-bottom:8px; }
+    .kicker { font-size:10px; margin-bottom:2px; }
+    .lema { font-size:12px; }
+    .ruta-pie { margin:6px 0 9px; }
+    .pie-menu { padding:7px 0 6px; }
+    .vitrina div { min-width:80px; padding:5px 10px 6px 11px; }
+    .vitrina b { font-size:15px; }
+    .bloque { padding:10px 12px 11px; }
+    .bloque h2 { margin-bottom:8px; }
+    .mecanicas li { font-size:11px; padding:3px 8px; }
+    .mecanicas { gap:3px; }
+    .keys { gap:4px; }
+  }
+  @media (max-height:720px) {
+    #preview { height:118px; }
+    #rutaPreview { height:126px; }
+    .escaparate .nombreSkin { height:28px; }
+    .escaparate::before { bottom:28px; }
+    .menu .cabecera h1 { font-size:25px; }
+    .keyrow { font-size:11.5px; }
+    .key { height:23px; min-width:28px; }
+    .menu .btn { padding:10px; font-size:16px; }
+    .pestana { padding:6px 10px; }
+    .pista-eleccion { padding:5px 9px; }
+    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:36px; }
+    .tarjeta span { font-size:9px; padding:2px 2px 4px; }
+  }
+  /* Dos columnas: la ruta pasa a lo ancho debajo, que es donde mejor se lee */
+  @media (max-width:980px) {
+    .columnas { grid-template-columns:1fr 1.25fr;
+      grid-template-areas:'pj pers' 'ctrl pers' 'ruta ruta'; }
+  }
+  /* Una columna. El orden importa: primero a quién llevas, luego cómo se
+     viste, después la ruta, y los controles al final. */
+  @media (max-width:700px) {
+    .columnas { grid-template-columns:1fr; grid-template-rows:none;
+      grid-template-areas:'pj' 'pers' 'ruta' 'ctrl'; }
+    .cabecera { flex-direction:column; align-items:stretch; text-align:center; gap:12px; }
+    .cabecera::after { left:50%; transform:translateX(-50%);
+      background:linear-gradient(90deg,transparent,#ffd700,#ff8a3d,transparent); }
+    .kicker { justify-content:center; }
+    /* Cuatro fichas en rejilla de dos: en fila se partían 3 + 1 */
+    .vitrina { display:grid; grid-template-columns:1fr 1fr; }
+    .vitrina div { min-width:0; }
+    #preview { height:170px; }
+    /* Apilado, el degradado del pie deja ver el menú entre los dos botones */
+    .pie-menu { background:#0a0e18; border-radius:14px 14px 0 0;
+      padding:9px 0 calc(8px + env(safe-area-inset-bottom, 0px)); }
+    .pie-menu .js-mute { padding:9px; font-size:13px; }
+    .menu .btn { margin-top:9px; }
+  }
+  /* Móvil estrecho: las tarjetas de aspecto a tres por fila se leen mejor
+     que a cuatro, que dejaban los nombres en dos líneas. */
+  @media (max-width:430px) {
+    #skins, #accesorios { grid-template-columns:repeat(3,1fr); }
+    .menu .cabecera h1 { font-size:clamp(26px,9vw,34px); }
+    .vitrina div { padding:6px 10px 7px 11px; }
+    .vitrina b { font-size:15px; }
+  }
+
 </style>
 </head>
 <body>
@@ -382,34 +548,41 @@
     <div id="start-screen" class="overlay">
       <div class="panel menu">
         <div class="cabecera">
-          <h1>DON&#39;T LOOK UP</h1>
-          <p class="lema">1000 metros · 6 cumbres · sube o cae</p>
+          <div class="titulo">
+            <p class="kicker"><i></i>Ascenso vertical</p>
+            <h1>DON&#39;T LOOK UP</h1>
+            <p class="lema">1000 metros · 6 cumbres · sube o cae</p>
+          </div>
           <div class="vitrina" id="vitrina"></div>
         </div>
 
         <div class="columnas">
           <section class="bloque col-pj">
+            <h2>Tu escalador</h2>
             <div class="escaparate">
-              <canvas id="preview" width="200" height="150"></canvas>
+              <canvas id="preview" width="260" height="200"></canvas>
               <div class="nombreSkin" id="nombreSkin">Cian</div>
             </div>
             <label class="campo">
               <span>Nombre</span>
               <input id="nombre-input" maxlength="12" placeholder="ESCALADOR" autocomplete="off">
             </label>
+          </section>
+
+          <section class="bloque col-ctrl">
             <h2>Controles</h2>
             <div class="keys">
               <div class="keyrow"><span class="key">&larr; &rarr;</span><span>Moverte · <b>A</b> <b>D</b></span></div>
               <div class="keyrow"><span class="key">&uarr;</span><span>Saltar · <b>W</b> <b>Espacio</b></span></div>
               <div class="keyrow"><span class="key">&uarr;&uarr;</span><span>Doble salto en el aire</span></div>
               <div class="keyrow"><span class="key">Tab</span><span>Mapa del nivel</span></div>
-              <div class="keyrow"><span class="key">Esc</span><span>Pausa · <b>P</b></span></div>
-              <div class="keyrow"><span class="key">M</span><span>Silenciar</span></div>
-              <div class="keyrow"><span class="key">&#9757;</span><span>En móvil, mando en pantalla</span></div>
+              <div class="keyrow"><span class="key">Esc</span><span>Pausa · <b>P</b> · con <b>M</b> se silencia</span></div>
+              <div class="keyrow solo-tactil"><span class="key">&#9757;</span><span>Mando en pantalla</span></div>
             </div>
           </section>
 
-          <section class="bloque">
+          <section class="bloque col-pers">
+            <h2>Aspecto</h2>
             <!-- Dos pestañas en vez de dos rejillas apiladas: con 18 colores
                  y 16 accesorios, una debajo de otra el menú medía el doble de
                  la pantalla y el botón de empezar quedaba fuera. -->
@@ -424,18 +597,18 @@
             <p class="pista-eleccion" id="pista-eleccion"></p>
           </section>
 
-          <section class="bloque">
+          <section class="bloque col-ruta">
             <h2>La ruta</h2>
             <div class="ruta"><canvas id="rutaPreview"></canvas></div>
-            <p class="ruta-pie">Las 6 cumbres, de abajo arriba. En partida,
-              <b>Tab</b> abre esto con tu posición.</p>
+            <p class="ruta-pie">Las 6 cumbres, de abajo arriba.
+              En partida, <b>Tab</b> la abre con tu posición.</p>
             <h2>Lo que te vas a encontrar</h2>
             <ul class="mecanicas" id="mecanicas"></ul>
           </section>
         </div>
 
         <div class="pie-menu">
-          <button id="start-btn" class="btn">Empezar a escalar</button>
+          <button id="start-btn" class="btn"><span>Empezar a escalar &nbsp;→</span></button>
           <button class="btn ghost js-mute">🔊  Sonido activado</button>
         </div>
         <p class="marca-menu" id="marca-menu"></p>
@@ -8943,7 +9116,7 @@ function dibujarMapa(lienzo, conJugador) {
       // A la derecha de la regla de metros: pegados al borde se pisaban con
       // los «200 m», «400 m»… y no se leía ninguno de los dos.
       const anchoR = c.measureText(rotulo).width;
-      const rx = (cv.width > 700) ? 60 : 8;
+      const rx = anchoCSS(cv) > 700 ? 72 : 8;
       c.fillStyle = 'rgba(11,20,36,0.72)';
       c.fillRect(rx - 5, Y(techo) + 3, anchoR + 10, cuerpo + 6);
       c.fillStyle = 'rgba(205,224,248,0.62)';
@@ -8955,7 +9128,7 @@ function dibujarMapa(lienzo, conJugador) {
   // no la decía por ninguna parte: se leía como un plano, no como una subida.
   // Sólo en el mapa grande: en la vista previa del menú, de 300 px, la regla
   // y los nombres de las cumbres se pisaban y no se leía ninguno.
-  const conRegla = cv.width > 700;
+  const conRegla = anchoCSS(cv) > 700;
   const cuerpoR = Math.round(10 * (window.devicePixelRatio || 1));
   c.font = 'bold ' + cuerpoR + 'px "Segoe UI", sans-serif';
   for (let m = 0; conRegla && m <= 1000; m += 100) {
@@ -9050,6 +9223,12 @@ function dibujarMapa(lienzo, conJugador) {
   pintarMeta(c, X, Y);
 }
 
+/** Ancho del lienzo en píxeles de CSS, no de pantalla. En una retina
+ *  `cv.width` es el doble y las decisiones de «¿cabe esto?» salían al revés. */
+function anchoCSS(cv) {
+  return cv.width / Math.min(2, window.devicePixelRatio || 1);
+}
+
 /** El rótulo de la meta, que se pinta igual con jugador y sin él. */
 function pintarMeta(c, X, Y) {
   const meta = platforms.find((q) => q.type === 'goal');
@@ -9058,7 +9237,11 @@ function pintarMeta(c, X, Y) {
   c.fillStyle = '#ffd700';
   c.font = 'bold ' + cuerpo + 'px "Segoe UI", sans-serif';
   // Pegado al borde, el rótulo se cortaba: se mantiene dentro del lienzo
-  const mx = Math.max(4, Math.min(c.canvas.width - 44, X(meta.x + meta.width / 2) - 20));
+  // El ancho del rótulo va en píxeles del lienzo, que en retina son el doble:
+  // con un margen fijo de 44 la palabra se seguía saliendo por la derecha.
+  const ancho = c.measureText('META').width;
+  const mx = Math.max(4, Math.min(c.canvas.width - ancho - 4,
+                                  X(meta.x + meta.width / 2) - ancho / 2));
   const my = Math.max(cuerpo + 2, Y(meta.y) - 8);
   c.fillText('META', mx, my);
 }
@@ -9223,8 +9406,24 @@ function arrancarPartida() {
 
 // ---- Selector de personaje y nombre ----
 /** Dibuja el personaje en un lienzo pequeño, con un color y accesorio dados. */
+/**
+ * Ajusta un lienzo del menú al hueco que ocupa de verdad.
+ * Las tarjetas venían con 96x76 fijos metidos en una caja de 90x48: el CSS
+ * estiraba el dibujo y los personajes salían achatados. Midiendo la caja y
+ * multiplicando por la densidad de la pantalla, el retrato sale con sus
+ * proporciones y además nítido en pantallas retina.
+ */
+function ajustarLienzo(cv) {
+  const caja = cv.getBoundingClientRect();
+  if (!caja.width || !caja.height) return false;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.round(caja.width * dpr), h = Math.round(caja.height * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  return true;
+}
+
 function retrato(cv, iSkin, iAcc) {
-  if (!cv || !cv.width) return;
+  if (!cv || !ajustarLienzo(cv)) return;
   const c2 = cv.getContext('2d');
   const antesCtx = ctx, antesPj = player, antesSkin = skinElegida, antesAcc = accesorioElegido;
   const camX = cameraX, camY = cameraY, esc = scale;
@@ -9396,14 +9595,18 @@ function pintarVitrina() {
   const cont = document.getElementById('vitrina');
   if (!cont) return;
   const pct = Math.max(0, Math.min(100, (marcas.altura || 0) / 10));
+  // Cada ficha lleva su color: en gris cuando no hay marca todavía, encendida
+  // en cuanto se consigue. De un vistazo se ve qué falta por hacer.
   const filas = [
-    ['Mejor altura', (marcas.altura || 0) + ' m', pct],
-    ['Mejor vuelta', marcas.completado ? reloj(marcas.tiempo) : '—', null],
-    ['Menos caídas', marcas.muertes === null ? '—' : String(marcas.muertes), null],
-    ['Récord pts', marcas.puntos ? String(marcas.puntos) : '—', null],
+    ['Mejor altura', (marcas.altura || 0) + ' m', pct, '#ffd700', marcas.altura > 0],
+    ['Mejor vuelta', marcas.completado ? reloj(marcas.tiempo) : '—', null, '#5ad1ff', marcas.completado],
+    ['Menos caídas', marcas.muertes === null ? '—' : String(marcas.muertes), null, '#ff7a6b', marcas.muertes !== null],
+    ['Récord pts', marcas.puntos ? String(marcas.puntos) : '—', null, '#8be36a', !!marcas.puntos],
   ];
-  cont.innerHTML = filas.map(([t, v, p]) =>
-    '<div><b>' + v + '</b><span>' + t + '</span>' +
+  cont.innerHTML = filas.map(([t, v, p, color, hecho]) =>
+    '<div class="' + (hecho ? 'puesto' : '') + '" style="--acento:' +
+    (hecho ? color : 'rgba(255,255,255,.16)') + '">' +
+    '<b>' + v + '</b><span>' + t + '</span>' +
     (p === null ? '' : '<u style="width:' + p.toFixed(1) + '%"></u>') + '</div>').join('');
 }
 
@@ -9494,54 +9697,84 @@ function refrescarMenu() {
 function pintarEscena(cv) {
   const c = cv.getContext('2d');
   const W = cv.width, H = cv.height;
+  // Todo se mide en `u`, no en píxeles sueltos: el lienzo cambia de tamaño
+  // con la ventana y con la densidad de la pantalla, y la escena tiene que
+  // salir con las mismas proporciones en 124 px de alto que en 372.
+  const u = H / 150;
+  const caja = (x, y, an, al, r) => {
+    c.beginPath();
+    if (c.roundRect) c.roundRect(x, y, an, al, r); else c.rect(x, y, an, al);
+  };
+
   const cielo = c.createLinearGradient(0, 0, 0, H);
-  cielo.addColorStop(0, '#a8e6fb');
-  cielo.addColorStop(0.55, '#7fd2f0');
-  cielo.addColorStop(1, '#5cbfe4');
+  cielo.addColorStop(0, '#bfeeff');
+  cielo.addColorStop(0.42, '#8ed9f4');
+  cielo.addColorStop(1, '#57bce4');
   c.fillStyle = cielo;
   c.fillRect(0, 0, W, H);
 
+  // Sol bajo, con su halo: da hora del día y una fuente de luz coherente
+  const sx = W * 0.78, sy = H * 0.24, sr = 13 * u;
+  const halo = c.createRadialGradient(sx, sy, 0, sx, sy, sr * 3.4);
+  halo.addColorStop(0, 'rgba(255,246,205,0.95)');
+  halo.addColorStop(0.32, 'rgba(255,236,170,0.42)');
+  halo.addColorStop(1, 'rgba(255,236,170,0)');
+  c.fillStyle = halo;
+  c.beginPath(); c.arc(sx, sy, sr * 3.4, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#fff6d0';
+  c.beginPath(); c.arc(sx, sy, sr, 0, Math.PI * 2); c.fill();
+
+  // Dos hileras de montañas: la de atrás más pálida, para que haya fondo
+  const sierra = (base, alto, tono) => {
+    c.fillStyle = tono;
+    c.beginPath();
+    c.moveTo(-10, H * base);
+    c.lineTo(W * 0.22, H * (base - alto));
+    c.lineTo(W * 0.40, H * (base - alto * 0.45));
+    c.lineTo(W * 0.62, H * (base - alto * 1.05));
+    c.lineTo(W * 0.82, H * (base - alto * 0.5));
+    c.lineTo(W + 10, H * (base - alto * 0.85));
+    c.lineTo(W + 10, H); c.lineTo(-10, H);
+    c.closePath(); c.fill();
+  };
+  sierra(0.80, 0.34, 'rgba(255,255,255,0.26)');
+  sierra(0.88, 0.24, 'rgba(126,183,214,0.42)');
+
   // Nubes que cruzan despacio: la escena respira sin distraer
-  c.fillStyle = 'rgba(255,255,255,0.55)';
   for (let i = 0; i < 3; i++) {
     const vel = 0.16 + i * 0.09;
-    const cx = ((t * vel + i * 90) % (W + 90)) - 45;
-    const cy = H * (0.18 + i * 0.16);
-    const r = 12 + i * 4;
+    const cx = ((t * vel + i * 110) % (W + 130 * u)) - 65 * u;
+    const cy = H * (0.16 + i * 0.15);
+    const r = (11 + i * 4) * u;
+    c.fillStyle = 'rgba(255,255,255,' + (0.72 - i * 0.12) + ')';
     for (const [dx, dy, k] of [[-r, 2, 0.8], [0, -3, 1], [r, 2, 0.85], [r * 0.5, 4, 0.7]]) {
-      c.beginPath(); c.arc(cx + dx, cy + dy, r * k, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(cx + dx, cy + dy * u, r * k, 0, Math.PI * 2); c.fill();
     }
   }
 
-  // Montañas al fondo
-  c.fillStyle = 'rgba(255,255,255,0.30)';
-  c.beginPath();
-  c.moveTo(-10, H * 0.82);
-  c.lineTo(W * 0.28, H * 0.46); c.lineTo(W * 0.52, H * 0.74);
-  c.lineTo(W * 0.74, H * 0.40); c.lineTo(W + 10, H * 0.80);
-  c.lineTo(W + 10, H); c.lineTo(-10, H);
-  c.closePath(); c.fill();
-
-  // El apoyo sobre el que está de pie
-  const py = H - 26, pw = W * 0.62, px = (W - pw) / 2;
-  c.fillStyle = 'rgba(20,60,90,0.18)';
-  c.beginPath(); c.ellipse(W / 2, py + 2, pw * 0.42, 5, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#7a5230';
-  c.beginPath(); c.roundRect ? c.roundRect(px, py, pw, 20, 6) : c.rect(px, py, pw, 20);
-  c.fill();
-  c.fillStyle = '#4f9a3a';
-  c.beginPath(); c.roundRect ? c.roundRect(px, py, pw, 7, 6) : c.rect(px, py, pw, 7);
-  c.fill();
-  c.strokeStyle = 'rgba(35,60,25,0.7)'; c.lineWidth = 2;
-  c.beginPath(); c.roundRect ? c.roundRect(px, py, pw, 20, 6) : c.rect(px, py, pw, 20);
-  c.stroke();
+  // El apoyo sobre el que está de pie, con hierba, tierra y su sombra
+  const alto = 20 * u, py = H - 24 * u, pw = W * 0.6, px = (W - pw) / 2;
+  c.fillStyle = 'rgba(18,58,88,0.20)';
+  c.beginPath(); c.ellipse(W / 2, py + 3 * u, pw * 0.44, 5 * u, 0, 0, Math.PI * 2); c.fill();
+  const tierra = c.createLinearGradient(0, py, 0, py + alto);
+  tierra.addColorStop(0, '#8a5f37');
+  tierra.addColorStop(1, '#6b4526');
+  c.fillStyle = tierra;
+  caja(px, py, pw, alto, 6 * u); c.fill();
+  const hierba = c.createLinearGradient(0, py, 0, py + 8 * u);
+  hierba.addColorStop(0, '#6fc04c');
+  hierba.addColorStop(1, '#469336');
+  c.fillStyle = hierba;
+  caja(px, py, pw, 8 * u, 6 * u); c.fill();
+  c.strokeStyle = 'rgba(32,56,24,0.65)'; c.lineWidth = Math.max(1, 2 * u);
+  caja(px, py, pw, alto, 6 * u); c.stroke();
   return py;
 }
 
 function pintarVistaPrevia() {
   const cv = document.getElementById('preview');
   // Si el lienzo aún no tiene tamaño, dibujar daría NaN y ensuciaría el canvas
-  if (!cv || !cv.width || !cv.height) return;
+  if (!cv || !ajustarLienzo(cv) || !cv.width || !cv.height) return;
   // El contexto se pide aquí y no en una variable de módulo: el selector se
   // monta antes de esa declaración y rompía el menú al arrancar.
   const ctxPrev = cv.getContext('2d');
@@ -9558,7 +9791,7 @@ function pintarVistaPrevia() {
     const camX = cameraX, camY = cameraY, esc = scale;
     cameraX = 0; cameraY = 0; scale = 1;
     const alturaTotal = PH * 2.0;
-    const factor = Math.min((cv.height - 34) / alturaTotal, cv.width / (PW * 2.2));
+    const factor = Math.min((sueloEscena - 10) / alturaTotal, cv.width / (PW * 2.4));
     ctx.save();
     // Los pies, sobre el apoyo que dibuja la escena
     ctx.translate(cv.width / 2 - (PW / 2) * factor, sueloEscena - PH * factor + 2);

@@ -158,6 +158,62 @@ Enseñaba el nivel pero no decía nada de la subida. Ahora:
 La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
 se pisaba con los nombres de las cumbres.
 
+### La pantalla de inicio, a fondo
+
+Estaba **ordenada** desde la pasada anterior, pero seguía siendo plana: todos
+los bloques con el mismo borde y el mismo radio, sin jerarquía, y con un hueco
+de 250 px bajo la rejilla de colores porque las tres columnas medían cosas
+distintas. Esta pasada va de calidad, no de colocación.
+
+**Tres trampas de cascada, otra vez la misma clase de fallo.** `.panel` se
+declara *después* de `.menu`, así que ganaba en todo lo que compartían:
+
+| Lo que decía el menú | Lo que se aplicaba de verdad | Consecuencia |
+|---|---|---|
+| `h1` con degradado dorado | `.panel h1 { color:#ffd700 }` | El degradado del título no se vio nunca |
+| `padding:15px 20px 9px` | `.panel { padding:32px 28px }` | 55 px de alto tirados |
+| `canvas { height:44px }` en pantallas bajas | una regla suelta al final con `56px` | Las consultas de medios no hacían nada |
+
+Las tres se arreglan con `.menu .cabecera h1` y `.panel.menu`, y **moviendo
+todas las consultas de medios del inicio al final de la hoja**, con un comentario
+que dice por qué están ahí. Antes estaban arriba, delante de las reglas que
+querían ajustar, y la mitad eran letra muerta.
+
+**Lo que cambia en pantalla:**
+
+- **Cabecera en dos piezas**: el rótulo a la izquierda —con antetítulo, el
+  título en degradado a 39 px y el lema— y las cuatro fichas de récord a la
+  derecha. Antes iban una debajo de otra y costaban 90 px de alto. Cada ficha
+  lleva su color y se enciende sólo cuando esa marca existe: de un vistazo se
+  ve qué falta por hacer.
+- **Cada columna es una tarjeta** con fondo, borde y luz propia, y todas miden
+  lo mismo. El hueco de antes ya no se lee como un agujero.
+- **Escaparate más grande**, con sol, halo, dos hileras de montañas y una placa
+  con el nombre del color debajo del marco, en vez del rótulo encima de los pies.
+- **Rejilla de aspecto a cuatro por fila** (tres en móvil), con las tarjetas más
+  grandes, marca de elegido y un raíl hundido para las dos pestañas.
+- **Teclas con relieve**, listas de mecánicas en filas, campo de nombre hundido
+  con foco dorado y un brillo que cruza el botón de empezar cada cuatro segundos
+  —el único movimiento del menú, y va justo donde hay que pulsar.
+- El botón de sonido dejó de llevar debajo la sombra dorada del botón principal.
+
+**Dos fallos de dibujo que salieron por el camino:**
+
+- Las tarjetas tenían un lienzo de 96×76 metido en una caja de 90×48: el CSS
+  estiraba el resultado y **los personajes salían achatados**. Ahora
+  `ajustarLienzo()` mide la caja real y multiplica por la densidad de pantalla,
+  así que el retrato sale con sus proporciones y además nítido en retina.
+- «¿Es este lienzo lo bastante ancho?» se preguntaba con `cv.width`, que en una
+  retina es el doble: la vista previa del menú se creía un mapa grande y le
+  salía la regla de metros encima de los nombres de las cumbres. Ahora la
+  pregunta va en píxeles de CSS (`anchoCSS()`), y el rótulo `META` se recorta
+  midiendo el texto en vez de con un margen fijo de 44.
+
+**Comprobado** a 1600×900, 1440×860, 1366×768, 1280×720, 1024×700 y 390×780. El
+panel entero cabe hasta 1440×860; por debajo se desplaza, pero el botón de
+empezar sigue pegado al fondo y visible en las seis. El sobrante bajó de 152 px
+a 4 en 1440×860, y de 231 a 64 en 1280×720.
+
 ### El escaparate del personaje era una caja de degradado
 
 Ahora es una escena con las mismas rutinas que el juego: cielo, nubes que
