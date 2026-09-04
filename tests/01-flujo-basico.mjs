@@ -1,7 +1,6 @@
-import { launch, BASE as ENTRY } from './browser.mjs';
+import { readFile } from 'node:fs/promises';
 
-/** Raíz del servidor: el helper entrega la URL de index.html. */
-const BASE = ENTRY.replace(/\/index\.html$/, '');
+import { launch, BASE as ENTRY } from './browser.mjs';
 const errors = [];
 const results = [];
 
@@ -25,7 +24,7 @@ page.on('console', (msg) => {
 });
 page.on('pageerror', (err) => errors.push(`pageerror: ${err.message}`));
 
-await page.goto(BASE + '/index.html', { waitUntil: 'networkidle' });
+await page.goto(ENTRY, { waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
 
 // --- Menú ---
@@ -44,7 +43,7 @@ check('29 niveles bloqueados al empezar', locked === 29, `locked=${locked}`);
 check('Nivel 1 desbloqueado', (await page.locator('.level-card--unlocked').count()) === 1);
 
 // --- Ajustes ---
-await page.goto(BASE + '/index.html#/settings', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/settings', { waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
 check('Ajustes muestra estadísticas', (await page.locator('.stats-block__row').count()) === 4);
 const soundSwitch = page.locator('button[role="switch"]').first();
@@ -57,13 +56,13 @@ check('Ajuste persistido en localStorage', persisted === false, `sound=${persist
 await soundSwitch.click();
 
 // --- Nivel bloqueado redirige ---
-await page.goto(BASE + '/index.html#/level/5', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/level/5', { waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
 check('Nivel bloqueado redirige al selector',
   page.url().includes('/levels'), page.url());
 
 // --- Nivel 1 ---
-await page.goto(BASE + '/index.html#/level/1', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/level/1', { waitUntil: 'networkidle' });
 await page.waitForTimeout(600);
 const numbers = await page.locator('.lv01__number').count();
 check('Nivel 1 pinta 18 números', numbers === 18, `count=${numbers}`);
@@ -113,7 +112,7 @@ check('Intento fallido contabilizado', saved.levelData['1'].attempts >= 1,
   `attempts=${saved.levelData['1'].attempts}`);
 
 // --- El modal no debe sobrevivir a la navegación ---
-await page.goto(BASE + '/index.html#/settings', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/settings', { waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
 check('El modal se cierra al navegar', (await page.locator('.modal-backdrop').count()) === 0,
   `backdrops=${await page.locator('.modal-backdrop').count()}`);
@@ -121,7 +120,7 @@ await page.goBack();
 await page.waitForTimeout(700);
 
 // --- Siguiente nivel (no implementado → estado "en construcción") ---
-await page.goto(BASE + '/index.html#/level/1', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/level/1', { waitUntil: 'networkidle' });
 await page.waitForTimeout(600);
 await page.locator('.lv01__number--target').click();
 await page.waitForTimeout(1200);
@@ -134,7 +133,9 @@ check('El nivel siguiente mantiene el panel de pistas', (await page.locator('.hi
 
 // Estado "en construcción": el primer nivel aún sin implementar, leído del
 // catálogo para que el test no caduque al implementar más niveles.
-const meta = await (await fetch(BASE + '/data/levels-meta.json')).json();
+// El catálogo se lee del disco y no por HTTP: así la suite vale igual
+// contra el proyecto servido que contra el archivo único compilado.
+const meta = JSON.parse(await readFile(new URL('../data/levels-meta.json', import.meta.url), 'utf8'));
 const pending = meta.levels.find((l) => !l.implemented);
 
 if (pending) {
@@ -143,7 +144,7 @@ if (pending) {
     s.unlockedLevels = [...new Set([...s.unlockedLevels, id])];
     localStorage.setItem('mindEscape_progress', JSON.stringify(s));
   }, pending.id);
-  await page.goto(`${BASE}/index.html#/level/${pending.id}`, { waitUntil: 'networkidle' });
+  await page.goto(`${ENTRY}#/level/${pending.id}`, { waitUntil: 'networkidle' });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(700);
   check('Un nivel sin implementar muestra "en construcción"',
@@ -153,7 +154,7 @@ if (pending) {
 } else {
   // Con los 30 niveles hechos ya no hay estado "en construcción" que probar:
   // en su lugar se comprueba que un id fuera de catálogo no rompe nada.
-  await page.goto(BASE + '/index.html#/level/31', { waitUntil: 'networkidle' });
+  await page.goto(ENTRY + '#/level/31', { waitUntil: 'networkidle' });
   await page.waitForTimeout(700);
   check('Los 30 niveles están implementados', true, 'no queda ninguno pendiente');
   check('Un nivel fuera de catálogo redirige al selector',
@@ -161,7 +162,7 @@ if (pending) {
 }
 
 // --- Vuelta al menú: "Continuar" ya existe ---
-await page.goto(BASE + '/index.html#/menu', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/menu', { waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
 check('Menú ofrece Continuar con progreso',
   (await page.getByRole('button', { name: /Continuar/i }).count()) === 1);
@@ -170,7 +171,7 @@ check('Menú muestra barra de progreso', (await page.locator('.menu__progress-fi
 // --- Persistencia entre recargas ---
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
-await page.goto(BASE + '/index.html#/levels', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/levels', { waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
 check('Tras recargar, nivel 1 sigue completado',
   (await page.locator('.level-card--completed').count()) === 1);
@@ -179,7 +180,7 @@ const lockedNow = await page.locator('.level-card--locked').count();
 check('Tras recargar, el resto sigue bloqueado', lockedNow >= 27, `locked=${lockedNow}`);
 
 // --- Borrar progreso ---
-await page.goto(BASE + '/index.html#/settings', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/settings', { waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
 await page.getByRole('button', { name: /Borrar progreso/i }).click();
 await page.waitForTimeout(400);
@@ -190,13 +191,13 @@ check('Borrar progreso limpia localStorage', cleared === null, String(cleared).s
 
 // --- Responsive 320px ---
 await page.setViewportSize({ width: 320, height: 640 });
-await page.goto(BASE + '/index.html#/levels', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/levels', { waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
 const overflow = await page.evaluate(() =>
   document.documentElement.scrollWidth - document.documentElement.clientWidth);
 check('Sin scroll horizontal a 320px', overflow <= 0, `overflow=${overflow}px`);
 
-await page.goto(BASE + '/index.html#/level/1', { waitUntil: 'networkidle' });
+await page.goto(ENTRY + '#/level/1', { waitUntil: 'networkidle' });
 await page.waitForTimeout(600);
 const overflowLevel = await page.evaluate(() =>
   document.documentElement.scrollWidth - document.documentElement.clientWidth);

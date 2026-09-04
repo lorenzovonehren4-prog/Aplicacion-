@@ -6,9 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 8000",
+    "build": "node tools/build-single-file.mjs",
     "test": "node tests/run.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "playwright": "^1.49.0"
   }
 }

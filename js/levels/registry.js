@@ -10,8 +10,6 @@
 
 import { pad2 } from '../utils/math.js';
 
-const META_URL = new URL('../../data/levels-meta.json', import.meta.url);
-
 let catalog = null;
 const moduleCache = new Map();
 
@@ -23,7 +21,11 @@ export async function loadCatalog() {
   if (catalog) return catalog;
 
   try {
-    const response = await fetch(META_URL);
+    // La ruta se resuelve aquí y no en el ámbito del módulo: en la compilación
+    // a un solo archivo no hay import.meta.url, y esta línea nunca llega a
+    // ejecutarse porque el catálogo ya viene sembrado.
+    const metaUrl = new URL('../../data/levels-meta.json', import.meta.url);
+    const response = await fetch(metaUrl);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     catalog = normalizeCatalog(data);
@@ -74,6 +76,26 @@ export async function loadLevelClass(levelId) {
 
   moduleCache.set(id, promise);
   return promise;
+}
+
+/* --------------------------------------------------------------------------
+   Semillas para la compilación en un solo archivo
+   -------------------------------------------------------------------------- */
+
+/**
+ * El juego también se reparte como un único HTML que se abre con doble clic.
+ * Ahí no hay servidor: ni el fetch del catálogo ni el import dinámico de los
+ * niveles llegan a ninguna parte. El empaquetador incrusta ambas cosas y las
+ * deja aquí antes de arrancar, de forma que el resto del código sigue pidiendo
+ * los niveles igual y no se entera de por dónde vinieron.
+ */
+export function seedCatalog(data) {
+  catalog = normalizeCatalog(data);
+}
+
+/** @param {number} levelId @param {Function} LevelClass */
+export function seedLevelClass(levelId, LevelClass) {
+  moduleCache.set(Number(levelId), Promise.resolve(LevelClass));
 }
 
 /* --------------------------------------------------------------------------

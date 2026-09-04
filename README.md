@@ -20,14 +20,38 @@ python3 -m http.server 8000
 
 Y abrir <http://localhost:8000>.
 
-El juego en sí no tiene dependencias. `package.json` sólo existe para las
-pruebas, que necesitan Playwright:
+El juego en sí no tiene dependencias ni proceso de compilación: se sirve tal
+cual y así se desarrolla. `package.json` existe para las pruebas y para el
+empaquetado, que no hacen falta para jugar:
 
 ```bash
 npm install
 npm test                 # las 17 suites
 npm test -- partida      # sólo las que llevan "partida" en el nombre
 node tests/16-responsive.mjs   # una suelta
+
+npm run build            # dist/mind-escape.html, el juego en un solo archivo
+```
+
+### El juego en un solo archivo
+
+`npm run build` mete los 54 archivos en un único HTML de unos 370 kB que se
+abre con doble clic: sin servidor, sin red y sin instalar nada. Es la forma de
+repartirlo; para desarrollar no aporta nada.
+
+Servido por HTTP el juego busca dos cosas fuera: el catálogo (`fetch` de
+`levels-meta.json`) y cada nivel (import dinámico bajo demanda). Con `file://`
+ninguna de las dos llega a ninguna parte, así que el empaquetador las incrusta
+y las siembra en el registro antes de arrancar — ver `seedCatalog` y
+`seedLevelClass` en `js/levels/registry.js`. El resto del código sigue pidiendo
+los niveles igual y no se entera de por dónde vinieron.
+
+Las mismas 17 suites se pueden lanzar contra el archivo compilado, que es como
+se comprueba que el empaquetado no rompe nada:
+
+```bash
+npm run build
+MIND_ESCAPE_URL=http://127.0.0.1:8765/dist/mind-escape.html npm test
 ```
 
 ---
@@ -64,7 +88,8 @@ mind-escape/
 │   └── utils/              dom · animations · math
 ├── data/
 │   └── levels-meta.json    Título, tipo, dificultad y umbral de cada nivel
-└── tests/                  Suites en Playwright + su lanzador
+├── tests/                  Suites en Playwright + su lanzador
+└── tools/                  Empaquetado a un solo archivo
 ```
 
 ### Las tres reglas que sostienen todo
