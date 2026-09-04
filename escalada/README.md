@@ -11,6 +11,25 @@ python3 -m http.server 8000   # → http://localhost:8000/escalada/
 o simplemente **doble clic en `index.html`**: no pide nada al servidor, así que
 `file://` también funciona.
 
+## Comprobar que el nivel se puede terminar
+
+```bash
+python3 -m http.server 8777        # desde la raíz del repositorio
+node escalada/verificar-nivel.mjs
+```
+
+Usa el motor de física del propio juego —no reimplementa nada— y recorre los
+293 saltos preguntando si se llega, si hay una ventana de despegue de verdad y
+a cuántas fases del vaivén sirve cada apoyo que se mueve. Comprueba también
+que los atajos tengan entrada y salida y que no quede ninguna moneda suelta.
+Sale con código 1 si algo está roto, así que vale tal cual como comprobación
+previa a publicar.
+
+Última pasada: **293 saltos, 0 imposibles, 11 atajos correctos, 189 monedas
+alcanzables, 0 errores de consola.** Un solo salto —el 208— tiene una ventana
+de despegue por debajo del estándar de 18 px que exige el verificador nuevo:
+viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
+
 ## Controles
 
 | | |
