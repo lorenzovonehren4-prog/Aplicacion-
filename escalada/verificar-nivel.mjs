@@ -12,6 +12,7 @@
  *     x exacta a la que además hay que poder llegar caminando?
  *   - ¿los atajos tienen entrada y salida?
  *   - ¿queda alguna moneda suelta, lejos de todo apoyo?
+ *   - ¿algún dron bloquea el salto que vigila, o se ha metido en un apoyo?
  *
  * Uso:
  *   python3 -m http.server 8777        # desde la raíz del repositorio
@@ -85,6 +86,44 @@ const informe = await pagina.evaluate(() => {
     if (!(entra && sale)) atajosMalos.push(k);
   }
 
+  // DRONES. Uno puesto encima de un apoyo, o que tape el arco del salto en
+  // todo su vaivén, convertiría un salto verificado en imposible.
+  const dronesMalos = [];
+  for (let k = 0; k < voladores.length; k++) {
+    const v = voladores[k];
+    for (const q of platforms) {
+      if (rectSolapa(v.min, v.y, (v.max - v.min) + DRON_W, DRON_H,
+                     q.x, q.y, q.width, q.height)) { dronesMalos.push([k, 'sobre un apoyo']); break; }
+    }
+  }
+  // El salto que vigila cada dron: el que cruza su carril
+  const dronesQueTapan = [];
+  for (let k = 0; k < voladores.length; k++) {
+    const v = voladores[k];
+    let i = -1;
+    for (let j = 1; j + 1 < platforms.length; j++) {
+      const a = platforms[j], b = platforms[j + 1];
+      if (a.extra || b.extra) continue;
+      const izq = Math.min(a.x + a.width, b.x + b.width);
+      const der = Math.max(a.x, b.x);
+      if (v.min >= izq - 20 && v.max <= der + 20 && Math.abs(Math.min(a.y, b.y) - v.y) < 190) { i = j; break; }
+    }
+    if (i < 0) continue;
+    const arco = arcoDelPlan(platforms[i], platforms[i + 1]);
+    if (!arco) continue;
+    let libres = 0;
+    for (let m = 0; m < 12; m++) {
+      let choca = false;
+      for (let f = 0; f < arco.length && !choca; f++) {
+        const dx = dronX(v, m * 26 + f);
+        if (rectSolapa(arco[f].x - PW / 2 + 6, arco[f].y - PH / 2 + 4, PW - 12, PH - 8,
+                       dx, v.y, DRON_W, DRON_H)) choca = true;
+      }
+      if (!choca) libres++;
+    }
+    if (libres < 3) dronesQueTapan.push([k, libres + '/12 fases libres']);
+  }
+
   let monedasSueltas = 0;
   for (const m of monedas) {
     let cerca = false;
@@ -111,10 +150,17 @@ const informe = await pagina.evaluate(() => {
     if (q.type === 'checkpoint') c.checkpoint++;
   }
 
+  // Los tramos que cubre cada nivel, para ver que ninguno queda vacío
+  const niveles = NIVELES.map((n) => {
+    const r = rangoNivel(n.id), m = metrosNivel(n.id);
+    return { id: n.id, apoyos: r.fin - r.ini + 1, metros: m.desde + '-' + m.hasta };
+  });
+
   return { saltosCadena: nCadena - 1, imposibles, sinVentanaJusta, apretados,
            atajos: platforms.length - nCadena, atajosMalos,
            monedas: monedas.length, monedasSueltas, pinchos: spikes.length,
-           geiseres: geysers.length, franjas };
+           geiseres: geysers.length, drones: voladores.length,
+           dronesMalos, dronesQueTapan, niveles, franjas };
 });
 
 await navegador.close();
@@ -123,8 +169,10 @@ console.log(JSON.stringify(informe, null, 1));
 console.log('errores de consola:', errores.length ? errores : 'ninguno');
 
 const roto = informe.imposibles.length || informe.atajosMalos.length ||
-             informe.monedasSueltas || errores.length;
+             informe.monedasSueltas || informe.dronesMalos.length ||
+             informe.dronesQueTapan.length ||
+             informe.niveles.some((n) => n.apoyos < 10) || errores.length;
 console.log(roto
-  ? '\nFALLA: hay saltos imposibles, atajos rotos, monedas sueltas o errores.'
-  : '\nEl recorrido se puede completar de principio a fin.');
+  ? '\nFALLA: hay saltos imposibles, atajos rotos, monedas sueltas, drones que estorban o errores.'
+  : '\nEl recorrido se puede completar de principio a fin, y los tres niveles también.');
 process.exit(roto ? 1 : 0);

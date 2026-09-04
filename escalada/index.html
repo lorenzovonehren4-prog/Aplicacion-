@@ -75,7 +75,7 @@
      derecha. Antes iban uno debajo de otro y se comían 90 px de alto. */
   .cabecera { display:flex; align-items:flex-end; justify-content:space-between;
     gap:22px; text-align:left; position:relative;
-    margin-bottom:12px; padding-bottom:10px;
+    margin-bottom:10px; padding-bottom:8px;
     border-bottom:1px solid rgba(255,255,255,.08); }
   .cabecera::after { content:''; position:absolute; left:0; bottom:-1px;
     width:132px; height:2px; border-radius:2px;
@@ -129,8 +129,8 @@
   .cumbres li b { flex:1; font-weight:600; color:#e6eef7; }
   .cumbres li span { color:#8fa3b8; font-size:12px; white-space:nowrap; }
   #skins, #accesorios { justify-content:flex-start; }
-  .menu .btn { display:block; width:100%; margin-top:14px; padding:12px;
-    font-size:17px; font-weight:800; letter-spacing:1.4px; border:none;
+  .menu .btn { display:block; width:100%; margin-top:14px; padding:11px;
+    font-size:16.5px; font-weight:800; letter-spacing:1.4px; border:none;
     border-radius:13px; cursor:pointer; color:#10202e;
     background:linear-gradient(180deg,#ffe27a,#f5b31f);
     box-shadow:0 6px 0 #b8850c, 0 12px 24px rgba(0,0,0,.35),
@@ -187,7 +187,7 @@
   /* Marca de elegido: con 18 colores parecidos, el borde dorado solo no basta */
   .tarjeta.sel::after { content:'✓'; position:absolute; top:2px; right:5px;
     font-size:10px; font-weight:900; color:#ffd700; text-shadow:0 1px 2px rgba(0,0,0,.6); }
-  .tarjeta canvas { display:block; width:100%; height:56px; }
+  .tarjeta canvas { display:block; width:100%; height:50px; }
   .tarjeta span { display:block; text-align:center; font-size:9.5px; line-height:1.2;
     padding:3px 2px 5px; color:#c9d6e5; letter-spacing:.4px; }
   .tarjeta.sel span { color:#fff; font-weight:700; }
@@ -241,6 +241,9 @@
   #height-badge span { font-size:12px; font-weight:700; color:#4a5568; }
   #recordDisplay { color:#a9761a; }
   #recordDisplay:empty { display:none; }
+  /* Vidas del nivel: los llenos en rojo, los gastados apagados */
+  #vidas { color:#e94b4b; font-size:13px; letter-spacing:2px; }
+  #vidas:empty { display:none; }
 
   /* Barra de progreso hacia los 1000 m */
   #progreso { position:relative; width:110px; height:7px; border-radius:99px;
@@ -291,7 +294,7 @@
   /* ---- Pantalla de inicio ---- */
   /* Las dos pestañas van dentro de un raíl hundido: se lee como un
      interruptor de dos posiciones y no como dos botones sueltos. */
-  .pestanas { display:flex; gap:4px; margin-bottom:11px; padding:4px;
+  .pestanas { display:flex; gap:4px; margin-bottom:9px; padding:3px;
     border:1px solid rgba(255,255,255,.07); border-radius:13px;
     background:rgba(0,0,0,.26); box-shadow:inset 0 2px 6px rgba(0,0,0,.3); }
   .pestana { flex:1; padding:8px 10px; border-radius:10px; cursor:pointer; border:0;
@@ -306,16 +309,16 @@
     padding:1px 6px; border-radius:7px; background:rgba(255,255,255,.09); }
   .pestana.activa em { background:rgba(16,32,46,.16); }
   .oculta { display:none !important; }
-  .pista-eleccion { margin:10px 0 0; font-size:11.5px; color:#8fa8c0; text-align:center;
-    padding:7px 10px; border-radius:10px; background:rgba(0,0,0,.22);
+  .pista-eleccion { margin:9px 0 0; font-size:11.5px; color:#8fa8c0; text-align:center;
+    padding:6px 10px; border-radius:10px; background:rgba(0,0,0,.22);
     border:1px solid rgba(255,255,255,.05); }
   .pista-eleccion b { color:#ffd700; }
 
   .mecanicas { list-style:none; margin:0; padding:0; display:flex;
     flex-direction:column; gap:4px; }
-  .mecanicas li { display:flex; align-items:flex-start; gap:9px; font-size:11.5px;
-    color:#9fb2c6; line-height:1.35; text-align:left;
-    padding:4px 8px; border-radius:9px; background:rgba(255,255,255,.028); }
+  .mecanicas li { display:flex; align-items:flex-start; gap:9px; font-size:11px;
+    color:#9fb2c6; line-height:1.3; text-align:left;
+    padding:3px 8px; border-radius:8px; background:rgba(255,255,255,.028); }
   .mecanicas span { flex:1; }
   /* El mismo punto de color que usa el mapa, para poder cruzar las dos vistas */
   .mecanicas i { flex:none; width:9px; height:9px; border-radius:50%; margin-top:4px;
@@ -364,10 +367,57 @@
   .ruta { position:relative; border-radius:12px; overflow:hidden; background:#0b1424;
     border:1px solid rgba(255,255,255,.09);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
-  #rutaPreview { display:block; width:100%; height:172px; }
+  #rutaPreview { display:block; width:100%; height:142px; }
   .ruta-pie { margin:7px 0 11px; font-size:11px; color:#8fa8c0; line-height:1.4; }
   .ruta-pie b { color:#c9d6e5; }
   @media (max-height:700px) { #rutaPreview { height:158px; } }
+
+  /* ---- Selector de niveles: una tira a lo ancho, encima de las columnas.
+     Es la PRIMERA decisión de la pantalla, así que va donde se mira primero
+     y no escondida en una de las tres tarjetas. ---- */
+  .niveles { display:grid; grid-template-columns:repeat(4,1fr); gap:9px;
+    margin-bottom:11px; }
+  .nivel { display:flex; align-items:center; gap:9px; cursor:pointer;
+    padding:7px 11px; border-radius:13px; text-align:left; min-width:0;
+    border:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+    transition:transform .12s, border-color .12s, background .12s, box-shadow .12s; }
+  .nivel:hover { transform:translateY(-2px); border-color:rgba(255,255,255,.22);
+    background:rgba(255,255,255,.08);
+    box-shadow:0 8px 16px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.09); }
+  .nivel.sel { border-color:#ffd700;
+    background:linear-gradient(180deg, rgba(255,215,0,.16), rgba(255,140,40,.05));
+    box-shadow:0 0 0 1px rgba(255,215,0,.45); }
+  /* El número, en un disco: se distingue de la lista de un vistazo */
+  .nivel i { flex:none; width:26px; height:26px; border-radius:9px; font-style:normal;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:900; color:#0e1522;
+    background:linear-gradient(180deg,#ffe27a,#f5b31f); }
+  .nivel.completo i { background:linear-gradient(180deg,#9fd4ff,#4a8fd0); font-size:15px; }
+  .nivel b { display:block; font-size:12.5px; color:#eef4fa; font-weight:800;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nivel span { display:block; font-size:10.5px; color:#8fa8c0; line-height:1.3;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nivel em { font-style:normal; color:#ffd700; font-weight:700; }
+  .nivel div { min-width:0; }
+  /* Marca de superado: en la tira sólo cabe el visto, sin el tiempo */
+  .nivel u { flex:none; margin-left:auto; text-decoration:none; font-size:12px;
+    font-weight:800; color:#2ed573; }
+  @media (max-width:860px) { .niveles { grid-template-columns:1fr 1fr; } }
+
+
+  /* ---- Pantallas de fin ---- */
+  .panel h1.perdiste { color:#ff6b6b; }
+  #over-motivo { color:#c9d6e5; font-size:14px; margin-bottom:14px; }
+  #over-stats { color:#9aa0b4; font-size:13.5px; line-height:1.6; margin:12px 0 18px; }
+  #over-stats b { color:#ffd700; font-size:20px; }
+  /* Cuánto del nivel te llevaste: la puntuación es la altura, así que se ve */
+  .barra-fin { position:relative; height:9px; border-radius:99px; overflow:hidden;
+    background:rgba(255,255,255,.1); box-shadow:inset 0 1px 3px rgba(0,0,0,.4); }
+  .barra-fin i { position:absolute; inset:0 auto 0 0; width:0%;
+    border-radius:99px; background:linear-gradient(90deg,#ffd700,#ff8a3d); }
+  #win-lema { margin-bottom:10px; }
 
   /* ---- Botón de mapa, abajo a la izquierda ---- */
   #bottomleft { position:absolute; left:14px; bottom:14px; z-index:6; }
@@ -431,9 +481,9 @@
      desde arriba perdían la cascada y no hacían nada.
      ==================================================================== */
   @media (max-height:830px) {
-    #preview { height:136px; }
-    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:44px; }
-    #rutaPreview { height:158px; }
+    #preview { height:130px; }
+    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:40px; }
+    #rutaPreview { height:138px; }
     .menu .cabecera h1 { font-size:29px; }
     .panel.menu { padding:12px 17px 8px; }
     .cabecera { margin-bottom:10px; padding-bottom:8px; }
@@ -447,6 +497,10 @@
     .bloque h2 { margin-bottom:8px; }
     .mecanicas li { font-size:11px; padding:3px 8px; }
     .mecanicas { gap:3px; }
+    .niveles { gap:6px; margin-bottom:9px; }
+    .nivel { padding:5px 9px; gap:8px; }
+    .nivel span { font-size:10px; }
+    .nivel i { width:23px; height:23px; font-size:12px; }
     .keys { gap:4px; }
   }
   @media (max-height:720px) {
@@ -507,6 +561,7 @@
       <span id="statsDisplay">0:00  ·  ☠ 0</span>
       <span id="puntosDisplay">0 pts  ·  0 monedas</span>
       <span id="recordDisplay"></span>
+      <span id="vidas"></span>
     </div>
 
     <div id="topright">
@@ -551,10 +606,12 @@
           <div class="titulo">
             <p class="kicker"><i></i>Ascenso vertical</p>
             <h1>DON&#39;T LOOK UP</h1>
-            <p class="lema">1000 metros · 6 cumbres · sube o cae</p>
+            <p class="lema">Sube o cae</p>
           </div>
           <div class="vitrina" id="vitrina"></div>
         </div>
+
+        <div class="niveles" id="niveles"></div>
 
         <div class="columnas">
           <section class="bloque col-pj">
@@ -644,11 +701,24 @@
 
     <div id="win-screen" class="overlay hidden">
       <div class="panel">
-        <h1 class="win">¡LO LOGRASTE!</h1>
-        <p>1000 metros y las 6 cumbres, de punta a punta.</p>
+        <h1 class="win" id="win-titulo">¡LO LOGRASTE!</h1>
+        <p id="win-lema">1000 metros y las 6 cumbres, de punta a punta.</p>
         <p id="win-stats"></p>
         <p id="marcas"></p>
-        <button id="restart-btn" class="btn">Jugar de nuevo</button>
+        <button id="next-btn" class="btn oculta">Siguiente nivel  &rarr;</button>
+        <button id="restart-btn" class="btn ghost">Repetir</button>
+        <button id="win-menu-btn" class="btn ghost">Volver al menú</button>
+      </div>
+    </div>
+
+    <div id="over-screen" class="overlay hidden">
+      <div class="panel">
+        <h1 class="perdiste">SE ACABÓ</h1>
+        <p id="over-motivo"></p>
+        <div class="barra-fin"><i id="over-barra"></i></div>
+        <p id="over-stats"></p>
+        <button id="over-reintentar" class="btn">Reintentar nivel</button>
+        <button id="over-menu" class="btn ghost">Volver al menú</button>
       </div>
     </div>
   </div>
@@ -995,6 +1065,10 @@ let geysers = [];
    desvío y valen más. `tomada` se reinicia en cada partida, no al morir: si
    no, morir sería una forma barata de refarmear puntos. */
 let monedas = [];
+/* Drones que patrullan el vacío de las cumbres altas. Se colocan DESPUÉS de
+   verificar los saltos, así que ninguno puede tocar una trayectoria buena:
+   la comprobación es la misma que se le hace a los géiseres. */
+let voladores = [];
 let TOP_Y = 0;
 /* ====================================================================
    AZAR CON SEMILLA FIJA
@@ -1929,6 +2003,111 @@ function sembrarAtajos() {
 }
 
 /* --------------------------------------------------------------------
+   DRONES: el obstáculo que se mueve por su cuenta
+   Van y vienen por el hueco ENTRE dos apoyos, a la altura del salto. Para
+   que sean un obstáculo y no una encerrona, cada uno se comprueba contra la
+   trayectoria verificada de ese salto en todo su recorrido: si en algún
+   momento del vaivén pisaría el arco bueno, no se pone. Así hay que
+   esquivarlos —cambian el ritmo del salto— pero nunca lo hacen imposible.
+   -------------------------------------------------------------------- */
+const DRON_W = 34, DRON_H = 22;
+
+/** Dónde está un dron en el instante `tiempo`. */
+function dronX(v, tiempo) {
+  return vaiven(v.min, v.max, DRON_W, v.speed, v.fase, tiempo);
+}
+
+/**
+ * El arco de un salto, reproduciendo el PLAN DE TECLAS que quedó guardado al
+ * verificarlo (`traza.plan`: desde dónde se despega, hacia dónde y en qué
+ * fotograma se usa el doble salto). Buscarlo otra vez con `arcoSalida()`
+ * cuesta cientos de simulaciones por salto —sembrar drones se llevaba dos
+ * segundos de la carga—; reproducirlo cuesta una.
+ */
+function arcoDelPlan(a, b) {
+  const plan = b.traza && b.traza.plan;
+  if (!plan) return arcoSalida(a, b);
+  const cerca = alrededor(a, b);
+  const esTrampolin = (a.type === 'spring');
+  const e = { x: plan.lanzX, y: a.y - PH,
+              vx: a.hielo ? plan.dir * SPEED : 0,
+              vy: esTrampolin ? SPRING_FORCE : 0,
+              onGround: !esTrampolin, saltos: 2, coyote: 0, buffer: 0,
+              enHielo: !!a.hielo, apoyo: a, arrastre: null };
+  const arco = [];
+  let llego = false;
+  for (let f = 0; f < 120; f++) {
+    const saltar = (!esTrampolin && plan.j0 && f === 0) || (plan.f2 > 0 && f === plan.f2);
+    const cayo = pasoFisica(e, plan.dir, saltar, cerca);
+    arco.push({ x: e.x + PW / 2, y: e.y + PH / 2 });
+    if (cayo) { llego = (cayo === b); break; }
+  }
+  // Si el plan guardado ya no lleva a donde decía, se busca en serio
+  return (llego && arco.length > 4) ? arco : arcoSalida(a, b);
+}
+
+function sembrarVoladores() {
+  voladores = [];
+  for (let i = 1; i < platforms.length - 1; i++) {
+    const a = platforms[i], b = platforms[i + 1];
+    if (a.extra || b.extra || a.world < 5) continue;
+    if (rnd() > ganas(a.world, i, 0.28, 0.62)) continue;
+
+    // El hueco entre los dos apoyos, que es por donde se vuela
+    const izq = Math.min(a.x + a.width, b.x + b.width);
+    const der = Math.max(a.x, b.x);
+    if (der - izq < DRON_W + 46) continue;
+
+    // A la altura del vértice del salto: ahí es donde estorba de verdad, y
+    // queda MUY por encima de donde se está de pie esperando (54 px).
+    const v = {
+      min: izq + 12, max: der - 12,
+      speed: 0.8 + dificultad(a.world) * 1.0,
+      fase: Math.floor(rnd() * 400),
+      y: Math.min(a.y, b.y) - 96 - rnd() * 34,
+    };
+    if (v.max - v.min < DRON_W + 26) continue;
+
+    // Primero lo barato: no puede rozar ningún apoyo ni el sitio donde uno se
+    // planta a esperar. Descarta la mayoría sin simular nada.
+    let dentro = false;
+    for (const q of platforms) {
+      if (q.x > v.max + DRON_W + 40 || q.x + q.width < v.min - 40) continue;
+      if (rectSolapa(v.min, v.y, (v.max - v.min) + DRON_W, DRON_H,
+                     q.x - PW, q.y - PH - 6, q.width + PW * 2, q.height + PH + 10)) {
+        dentro = true; break;
+      }
+    }
+    if (dentro) continue;
+
+    const arco = arcoDelPlan(a, b);
+    if (!arco) continue;
+
+    // No se le exige no tocar nunca —eso sería un adorno—, sino que HAYA
+    // momentos buenos de sobra: se prueban doce instantes de salida y al menos
+    // cinco tienen que dejar el arco entero limpio. Así siempre se puede
+    // esperar el hueco, como con las plataformas que van y vienen, pero hay
+    // que mirar antes de saltar.
+    const MUESTRAS = 12;
+    let libres = 0;
+    for (let k = 0; k < MUESTRAS; k++) {
+      const t0 = k * 26;
+      let choca = false;
+      for (let f = 0; f < arco.length && !choca; f++) {
+        const dx = dronX(v, t0 + f);
+        if (rectSolapa(arco[f].x - PW / 2 + 6, arco[f].y - PH / 2 + 4, PW - 12, PH - 8,
+                       dx, v.y, DRON_W, DRON_H)) choca = true;
+      }
+      if (!choca) libres++;
+    }
+    if (libres < 5) continue;
+
+    voladores.push(v);
+  }
+  return voladores.length;
+}
+
+/* --------------------------------------------------------------------
    MONEDAS: sobre el arco del salto, que es donde ya vas a pasar
    -------------------------------------------------------------------- */
 function ponerMoneda(x, y, valor, bonus) {
@@ -2048,8 +2227,75 @@ function componerNivel() {
   monedas = [];
   sembrarMonedas();
   r.monedas = monedas.length;
+  // Los drones van los ÚLTIMOS a propósito: cada pasada gasta números del
+  // azar con semilla, así que colarlos antes cambiaría el sorteo de todas
+  // las siguientes y movería monedas que ya estaban donde debían.
+  r.voladores   = sembrarVoladores();
   moverPlataformas(platforms, 0);
   return r;
+}
+
+/* ====================================================================
+   NIVELES
+   El recorrido de 1000 m está verificado salto a salto: 293 saltos, cero
+   imposibles. Partirlo en tres niveles NO significa generar tres niveles
+   nuevos —eso tiraría esa verificación a la basura— sino jugar TRAMOS del
+   mismo: cada nivel empieza en el checkpoint de su primera cumbre y acaba
+   en el último apoyo de la última. Lo que cambia entre uno y otro no es el
+   sitio sino LO QUE TE ENCUENTRAS, porque las mecánicas ya están sembradas
+   por franja de dificultad:
+
+     1 · Principiante  cumbres 1-2   apoyos anchos, monedas, algún trampolín
+     2 · Intermedio    cumbres 3-4   móviles, ascensores, pinchos, atajos
+     3 · Avanzado      cumbres 5-6   frágiles, hielo, van y vienen, voladores
+
+   El «Ascenso completo» es la partida de siempre, de 0 a 1000 m.
+   ==================================================================== */
+
+const NIVELES = [
+  { id: 1, nombre: 'Principiante', cumbres: [1, 2], vidas: 5,
+    resumen: 'Apoyos anchos y saltos cómodos. Para aprender a moverte.' },
+  { id: 2, nombre: 'Intermedio', cumbres: [3, 4], vidas: 4,
+    resumen: 'Plataformas móviles, ascensores, pinchos y atajos.' },
+  { id: 3, nombre: 'Avanzado', cumbres: [5, 6], vidas: 3,
+    resumen: 'Se rompen, resbalan, se esfuman… y hay drones patrullando.' },
+  { id: 0, nombre: 'Ascenso completo', cumbres: [1, TOTAL_WORLDS], vidas: 0,
+    resumen: 'Los 1000 metros de una tirada, sin límite de caídas.' },
+];
+
+let nivelElegido = 0;          // 0 = ascenso completo
+let vidasRestantes = 0;        // 0 en el ascenso completo: no se cuentan
+let metaNivel = null;          // apoyo que termina el nivel en curso
+
+/** El nivel por su id, o el ascenso completo si el id no existe. */
+function nivelPorId(id) {
+  return NIVELES.find((n) => n.id === id) || NIVELES[NIVELES.length - 1];
+}
+
+/**
+ * Primer y último apoyo del tramo que cubre un nivel. Se buscan por `world`
+ * en el array real, no por índices fijos: las pasadas de composición pueden
+ * añadir atajos, y esos no cuentan como principio ni como final de nada.
+ */
+function rangoNivel(id) {
+  const n = nivelPorId(id);
+  const [w0, w1] = n.cumbres;
+  let ini = -1, fin = -1;
+  for (let i = 0; i < platforms.length; i++) {
+    const p = platforms[i];
+    if (p.extra) continue;
+    if (p.world === w0 && ini < 0) ini = i;
+    if (p.world <= w1) fin = i;
+  }
+  if (ini < 0) ini = 0;
+  if (fin <= ini) fin = platforms.length - 1;
+  return { ini, fin };
+}
+
+/** Metros a los que empieza y acaba un nivel: para el marcador y el menú. */
+function metrosNivel(id) {
+  const { ini, fin } = rangoNivel(id);
+  return { desde: metrosEnAltura(platforms[ini].y), hasta: metrosEnAltura(platforms[fin].y) };
 }
 
 /* El nivel se compone UNA vez. `generateLevel()` se llamaba dos veces —al
@@ -3535,6 +3781,7 @@ function reanudar() {
 function volverAlMenu() {
   mapaAbierto = false;
   document.getElementById('map-screen').classList.add('hidden');
+  document.getElementById('over-screen').classList.add('hidden');
   segundosPartida();
   apuntarAltura();
   pausado = false; running = false; gameOver = false;
@@ -3608,6 +3855,13 @@ function die(motivo) {
   deaths++;
   apuntarAltura();
   efecto([300, 220, 150], 0.13, 'sawtooth', 0.05);
+  // En un nivel las caídas se cuentan: al agotarlas, se acabó. En el ascenso
+  // completo (`vidas: 0`) no hay límite, que es como se ha jugado siempre.
+  if (vidasRestantes > 0) {
+    vidasRestantes--;
+    refrescarVidas();
+    if (vidasRestantes === 0) { triggerOver(motivo); return; }
+  }
   // Trampas y pétalos vuelven a estar en su sitio: si no, tras varias
   // muertes el camino se quedaría sin apoyos y sería imposible seguir.
   for (const p of platforms) { p.caido = false; p.tocada = undefined; p.reaparece = undefined; }
@@ -3713,7 +3967,7 @@ function update() {
     if (aterrizo.type === 'spring') efecto([392, 587], 0.09, 'square', 0.055);
     if (aterrizo.hielo) avisar('hielo', 'Hielo: aquí se patina', '#8fd4ff');
     if (aterrizo.trampa) avisar('fragil', 'Se rompe: no te pares', '#ff9f43');
-    if (aterrizo.type === 'goal') triggerWin();
+    if (aterrizo.type === 'goal' || (metaNivel && aterrizo === metaNivel)) triggerWin();
   }
 
   // Trampas y pétalos: cuentan atrás desde que los pisas y luego se caen
@@ -3785,6 +4039,17 @@ function update() {
   for (const s of spikes) {
     if (rectSolapa(player.x, player.y, PW, PH, s.x, s.y, s.width, s.height)) {
       die('¡Pinchos! Volviendo al checkpoint…');
+      break;
+    }
+  }
+
+  // Drones: patrullan el hueco y te tiran si los tocas
+  for (const v of voladores) {
+    v.x = dronX(v, tiempoJuego);
+    if (rectSolapa(player.x + 6, player.y + 4, PW - 12, PH - 8,
+                   v.x, v.y, DRON_W, DRON_H)) {
+      avisarMecanica('dron', 'Drones: esquívalos en el aire', '#ff6b6b');
+      die('¡Te llevaste un dron por delante!');
       break;
     }
   }
@@ -3881,14 +4146,58 @@ function triggerWin() {
   gameOver = true; running = false;
   const seg = segundosPartida();
   efecto([523, 659, 784, 1047], 0.18, 'triangle', 0.07);
+  const nivel = nivelPorId(nivelElegido);
   const nuevos = anotarPartida(seg);
-  winStats.textContent = 'Tiempo: ' + reloj(seg) + '  ·  Muertes: ' + deaths +
+  document.getElementById('win-titulo').textContent = nivelElegido
+    ? '¡NIVEL ' + nivel.id + ' SUPERADO!' : '¡LO LOGRASTE!';
+  document.getElementById('win-lema').textContent = nivelElegido
+    ? nivel.nombre + ' · hasta los ' + recordMetros + ' m'
+    : '1000 metros y las 6 cumbres, de punta a punta.';
+  winStats.textContent = 'Tiempo: ' + reloj(seg) + '  ·  Caídas: ' + deaths +
                          '  ·  ' + Math.round(puntos) + ' pts (' + monedasTomadas +
                          ' de ' + monedas.length + ' monedas)';
   marcasEl.textContent = nuevos.length
     ? '¡Récord de ' + nuevos.join(' y de ') + '!  ' + textoMarcas()
     : textoMarcas();
+  // Sólo hay «siguiente nivel» si queda alguno por encima
+  const sig = document.getElementById('next-btn');
+  const hayOtro = nivelElegido >= 1 && nivelElegido < 3;
+  sig.classList.toggle('oculta', !hayOtro);
+  if (hayOtro) sig.textContent = 'Nivel ' + (nivelElegido + 1) + ' · ' +
+    nivelPorId(nivelElegido + 1).nombre + '  →';
   winScreen.classList.remove('hidden');
+}
+
+/**
+ * Se acabaron las caídas. La puntuación es la ALTURA MÁXIMA alcanzada, que
+ * es lo que mide de verdad lo lejos que llegaste, más los puntos de monedas.
+ */
+function triggerOver(motivo) {
+  gameOver = true; running = false;
+  const seg = segundosPartida();
+  efecto([330, 260, 190, 130], 0.16, 'sawtooth', 0.06);
+  apuntarAltura();
+  const nivel = nivelPorId(nivelElegido);
+  const meta = metaNivel ? metrosEnAltura(metaNivel.y) : 1000;
+  const desde = metrosNivel(nivelElegido).desde;
+  const hecho = Math.max(0, Math.min(100,
+    ((recordMetros - desde) / Math.max(1, meta - desde)) * 100));
+  document.getElementById('over-motivo').textContent = motivo || 'Te quedaste sin intentos.';
+  document.getElementById('over-stats').innerHTML =
+    '<b>' + recordMetros + ' m</b> de ' + meta + '  ·  ' + hecho.toFixed(0) + ' % del nivel' +
+    '<br>Nivel ' + nivel.id + ' · ' + nivel.nombre + '  ·  ' +
+    Math.round(puntos) + ' pts  ·  ' + reloj(seg);
+  document.getElementById('over-barra').style.width = hecho.toFixed(1) + '%';
+  document.getElementById('over-screen').classList.remove('hidden');
+}
+
+/** Las vidas que quedan, en el marcador. Sin límite, no se enseña nada. */
+function refrescarVidas() {
+  const el = document.getElementById('vidas');
+  if (!el) return;
+  const nivel = nivelPorId(nivelElegido);
+  if (!nivel.vidas) { el.textContent = ''; return; }
+  el.textContent = '♥'.repeat(vidasRestantes) + '♡'.repeat(Math.max(0, nivel.vidas - vidasRestantes));
 }
 
 /* ====================================================================
@@ -6440,6 +6749,49 @@ function draw() {
     }
     ctx.fillStyle = '#6b7080';
     ctx.fillRect(s.x, s.y + s.height - 3, s.width, 3);
+  }
+
+  // Drones patrullando. Se dibuja también su carril, en línea de puntos:
+  // saber por dónde va a venir es lo que hace que esquivarlo sea una
+  // decisión y no un susto.
+  for (const v of voladores) {
+    if (v.x === undefined) v.x = dronX(v, tiempoJuego);
+    if (v.y < cameraY - 80 || v.y > cameraY + viewHeight + 80) continue;
+    if (fuera(v.min, v.max - v.min)) continue;
+    const cx = v.x + DRON_W / 2, cy = v.y + DRON_H / 2;
+
+    ctx.strokeStyle = 'rgba(255,120,120,0.22)';
+    ctx.lineWidth = 2; ctx.setLineDash([5, 7]);
+    ctx.beginPath();
+    ctx.moveTo(v.min, cy); ctx.lineTo(v.max, cy);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // Hélices: dos óvalos que giran deprisa a los lados
+    ctx.fillStyle = 'rgba(210,230,245,0.55)';
+    const giro = Math.abs(Math.cos(t * 0.6));
+    for (const sg of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(cx + sg * 15, v.y + 3, 11 * (0.35 + giro * 0.65), 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#39424e'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 15, v.y + 4); ctx.lineTo(cx + 15, v.y + 4);
+    ctx.stroke();
+
+    // Casco
+    ctx.fillStyle = '#3a4250';
+    rrect(v.x + 3, v.y + 5, DRON_W - 6, DRON_H - 7, 7); ctx.fill();
+    ctx.strokeStyle = '#1b212a'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Ojo rojo que barre de lado a lado: el aviso de que es peligroso
+    const mira = Math.sin(t * 0.07 + v.fase) * 3;
+    ctx.shadowColor = '#ff4757'; ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ff4757';
+    ctx.beginPath(); ctx.arc(cx + mira, cy + 1, 4.2, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath(); ctx.arc(cx + mira - 1.2, cy - 0.4, 1.4, 0, Math.PI * 2); ctx.fill();
   }
 
   // Láseres
@@ -9009,6 +9361,7 @@ const COLOR_MAPA = {
   hielo:      '#a8e6ff',
   atajo:      '#a3e635',
   fino:       '#ffb86b',
+  dron:       '#ff6b6b',
 };
 
 let mapaAbierto = false;
@@ -9175,12 +9528,33 @@ function dibujarMapa(lienzo, conJugador) {
   c.lineWidth = 2.4; c.strokeStyle = 'rgba(255,215,0,0.55)';
   hilo(true);
 
+  // En el menú, con un nivel elegido, el tramo que se va a jugar se queda
+  // encendido y el resto se apaga: se ve DE UN VISTAZO por dónde va ese nivel.
+  const soloTramo = (conJugador === false && nivelElegido) ? rangoNivel(nivelElegido) : null;
+  if (soloTramo) {
+    const yA = Y(platforms[soloTramo.fin].y) - 6;
+    const yB = Y(platforms[soloTramo.ini].y) + 6;
+    c.fillStyle = 'rgba(255,215,0,0.055)';
+    c.fillRect(0, yA, cv.width, yB - yA);
+    c.strokeStyle = 'rgba(255,215,0,0.4)'; c.lineWidth = 1.5;
+    c.setLineDash([6, 5]);
+    c.beginPath();
+    c.moveTo(0, yA); c.lineTo(cv.width, yA);
+    c.moveTo(0, yB); c.lineTo(cv.width, yB);
+    c.stroke();
+    c.setLineDash([]);
+  }
+
   // Apoyos. Los que están por encima de tu mejor altura van apagados.
-  for (const p of platforms) {
+  for (let iP = 0; iP < platforms.length; iP++) {
+    const p = platforms[iP];
     const w = Math.max(4, p.width * k), h = Math.max(3, p.height * k * 0.8);
     const alcanzado = p.y >= techoHecho;
+    const dentro = !soloTramo || (iP >= soloTramo.ini && iP <= soloTramo.fin);
     c.fillStyle = colorApoyo(p);
-    c.globalAlpha = (p.ciclo && p.caido) ? 0.24 : (alcanzado ? 1 : 0.45);
+    c.globalAlpha = (p.ciclo && p.caido) ? 0.24
+                  : soloTramo ? (dentro ? 1 : 0.13)
+                  : (alcanzado ? 1 : 0.45);
     c.fillRect(X(p.x), Y(p.y), w, h);
     c.globalAlpha = 1;
     if (p.type === 'checkpoint' || p.type === 'goal') {
@@ -9207,6 +9581,13 @@ function dibujarMapa(lienzo, conJugador) {
   for (const sp of spikes) c.fillRect(X(sp.x), Y(sp.y) - 2, Math.max(2, sp.width * k), 2.5);
   c.fillStyle = 'rgba(120,220,255,0.55)';
   for (const g of geysers) c.fillRect(X(g.x), Y(g.y), Math.max(2, g.width * k), Math.max(3, g.height * k));
+  // Drones: su carril entero, para saber dónde patrullan
+  c.strokeStyle = 'rgba(255,107,107,0.7)'; c.lineWidth = 1.6;
+  for (const v of voladores) {
+    c.beginPath();
+    c.moveTo(X(v.min), Y(v.y)); c.lineTo(X(v.max), Y(v.y));
+    c.stroke();
+  }
 
   // TÚ. Anillo que late, para encontrarlo sin buscarlo.
   if (conJugador === false) { pintarMeta(c, X, Y); return; }
@@ -9265,6 +9646,7 @@ function pintarRutaMenu() {
 }
 
 const LEYENDA = [
+  ['dron', 'Dron'],
   ['normal', 'Apoyo'], ['checkpoint', 'Checkpoint'], ['spring', 'Trampolín'],
   ['mov', 'Móvil'], ['movY', 'Ascensor'], ['ciclo', 'Va y viene'],
   ['fragil', 'Se rompe'], ['hielo', 'Hielo'], ['fino', 'Estrecho'],
@@ -9374,6 +9756,7 @@ function startGame() {
   startScreen.classList.add('hidden');
   winScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
+  document.getElementById('over-screen').classList.add('hidden');
   document.getElementById('map-screen').classList.add('hidden');
   pausado = false; mapaAbierto = false; mapaLim = null;
   showMessage('Preparando la subida…', '#ffd700');
@@ -9382,25 +9765,36 @@ function startGame() {
 
 function arrancarPartida() {
   generateLevel();
-  player.x = 120; player.y = GROUND_Y - PH;
+  const nivel = nivelPorId(nivelElegido);
+  const { ini, fin } = rangoNivel(nivelElegido);
+  const salida = platforms[ini];
+  metaNivel = platforms[fin];
+  vidasRestantes = nivel.vidas;
+  // Se sale de pie sobre el primer apoyo del tramo, no en el aire
+  const px = salida.x + salida.width / 2 - PW / 2;
+  player.x = px; player.y = salida.y - PH;
   player.vx = 0; player.vy = 0; player.onGround = true; player.saltos = 2;
   player.facing = 1;
-  player.spawnX = 120; player.spawnY = GROUND_Y - PH;
-  cameraX = 0; cameraY = player.y + PH / 2 - viewHeight / 2;
-  currentWorld = 1; deaths = 0; tiempoJuego = 0; gameOver = false;
+  player.spawnX = px; player.spawnY = salida.y - PH;
+  cameraX = Math.max(0, px - viewWidth * 0.38);
+  cameraY = player.y + PH / 2 - viewHeight / 2;
+  currentWorld = nivel.cumbres[0]; deaths = 0; tiempoJuego = 0; gameOver = false;
   alturaMetros = 0; recordMetros = 0; particles = []; pedirSalto = false;
   tiempoAcumulado = 0; avisado = {};
   puntos = 0; monedasTomadas = 0; cadena = 0; cadenaTimer = 0;
   for (const m of monedas) m.tomada = false;
   _hudAltura = -1; _hudStats = ''; _hudRecord = ''; _hudPuntos = '';
-  worldDisplay.textContent = 1;
-  worldName.textContent = WORLDS[0].name;
+  worldDisplay.textContent = currentWorld;
+  worldName.textContent = WORLDS[currentWorld - 1].name;
+  refrescarVidas();
   player.arrastre = null; player.arrastreX = undefined;
   player.coyote = 0; player.enHielo = false; player.aterrizajeReciente = 0; player.buffer = 0;
   player.scaleX = 1; player.scaleY = 1; player.animTimer = 0;
   player.giro = 0; player.dirPrev = 0;
   startTime = performance.now();
-  showMessage('¡Vamos! Cumbre 1 de ' + TOTAL_WORLDS + ': ' + WORLDS[0].name, '#2ed573');
+  showMessage(nivelElegido
+    ? 'Nivel ' + nivel.id + ' · ' + nivel.nombre + ': llega arriba'
+    : '¡Vamos! Cumbre 1 de ' + TOTAL_WORLDS + ': ' + WORLDS[0].name, '#2ed573');
   running = true;
 }
 
@@ -9461,13 +9855,34 @@ function retrato(cv, iSkin, iAcc) {
    ==================================================================== */
 
 const CLAVE_GUARDADO = 'dontlookup.v1';
-let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0 };
+let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0,
+               niveles: {} };
+
+/** Marca en blanco, la misma forma para el ascenso completo y para un nivel. */
+function marcaVacia() {
+  return { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0 };
+}
+
+/**
+ * Dónde se anota lo que acaba de pasar. El ascenso completo escribe en
+ * `marcas` —que es donde ha escrito siempre, así que las partidas guardadas
+ * de antes siguen valiendo— y cada nivel en su propio hueco.
+ */
+function marcaDe(id) {
+  if (!id) return marcas;
+  if (!marcas.niveles) marcas.niveles = {};
+  if (!marcas.niveles[id]) marcas.niveles[id] = marcaVacia();
+  return marcas.niveles[id];
+}
 
 function cargarGuardado() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(CLAVE_GUARDADO) || 'null'); } catch (e) {}
   if (!d || typeof d !== 'object') return;
   if (d.marcas) Object.assign(marcas, d.marcas);
+  if (!marcas.niveles || typeof marcas.niveles !== 'object') marcas.niveles = {};
+  const nv = d.prefs && d.prefs.nivel;
+  if (typeof nv === 'number' && NIVELES.some((n) => n.id === nv)) nivelElegido = nv;
   const p = d.prefs || {};
   if (typeof p.skin === 'number' && SKINS[p.skin]) skinElegida = p.skin;
   if (typeof p.acc === 'number' && ACCESORIOS[p.acc]) accesorioElegido = p.acc;
@@ -9485,24 +9900,29 @@ function guardar() {
     localStorage.setItem(CLAVE_GUARDADO, JSON.stringify({
       marcas,
       prefs: { skin: skinElegida, acc: accesorioElegido,
-               sonido: musicaOn, nombre: nombreJugador },
+               sonido: musicaOn, nombre: nombreJugador, nivel: nivelElegido },
     }));
   } catch (e) {}
 }
 
 /** Anota lo más alto que se ha llegado, aunque la partida no se termine. */
 function apuntarAltura() {
+  const m = marcaDe(nivelElegido);
+  if (recordMetros > m.altura) { m.altura = recordMetros; guardar(); }
+  // La altura máxima cuenta siempre para el récord general: llegaste ahí
   if (recordMetros > marcas.altura) { marcas.altura = recordMetros; guardar(); }
 }
 
 /** Cierra una partida completada y devuelve qué récords se han batido. */
 function anotarPartida(seg) {
+  const m = marcaDe(nivelElegido);
   const nuevos = [];
-  if (!marcas.completado || seg < marcas.tiempo) { marcas.tiempo = seg; nuevos.push('tiempo'); }
-  if (marcas.muertes === null || deaths < marcas.muertes) { marcas.muertes = deaths; nuevos.push('caídas'); }
-  if (puntos > (marcas.puntos || 0)) { marcas.puntos = Math.round(puntos); nuevos.push('puntos'); }
+  if (!m.completado || seg < m.tiempo) { m.tiempo = seg; nuevos.push('tiempo'); }
+  if (m.muertes === null || deaths < m.muertes) { m.muertes = deaths; nuevos.push('caídas'); }
+  if (puntos > (m.puntos || 0)) { m.puntos = Math.round(puntos); nuevos.push('puntos'); }
+  m.altura = Math.max(m.altura, recordMetros);
+  m.completado = true;
   marcas.altura = Math.max(marcas.altura, recordMetros);
-  marcas.completado = true;
   guardar();
   return nuevos;
 }
@@ -9527,6 +9947,7 @@ function textoRecordCorto() {
 function actualizarMarcaMenu() {
   const el = document.getElementById('marca-menu');
   if (el) el.textContent = textoMarcas();
+  pintarNiveles();
   pintarVitrina();
   pintarRutaMenu();
   pintarMecanicas();
@@ -9547,6 +9968,7 @@ const GUIA_MECANICAS = [
   ['hielo', 'Hielo', 'no frenas de golpe: patinas'],
   ['fino', 'Apoyos estrechos', 'aquí hay que afinar el salto'],
   ['atajo', 'Atajos', 'una ruta más corta y más arriesgada'],
+  ['dron', 'Drones', 'patrullan el hueco: hay que esquivarlos'],
 ];
 
 function pintarMecanicas() {
@@ -9589,6 +10011,40 @@ function refrescarPestanas() {
   tColor.addEventListener('click', () => mostrar(true));
   tAcc.addEventListener('click', () => mostrar(false));
 })();
+
+/**
+ * Las cuatro tarjetas del selector. Cada una dice qué tramo cubre en metros
+ * —calculado del nivel real, no escrito a mano— y si ya la has superado.
+ */
+function pintarNiveles() {
+  const cont = document.getElementById('niveles');
+  if (!cont || !platforms.length) return;
+  // La ficha es estrecha: dentro caben el número, el nombre y el tramo. Lo
+  // que trae cada nivel se cuenta debajo, sólo del elegido, en una línea.
+  cont.innerHTML = NIVELES.map((n) => {
+    const r = metrosNivel(n.id);
+    const m = marcaDe(n.id);
+    const tramo = n.id
+      ? r.desde + '–' + r.hasta + ' m · ' + n.vidas + ' vidas'
+      : '0–1000 m · sin límite';
+    return '<div class="nivel' + (n.id === nivelElegido ? ' sel' : '') +
+      (n.id ? '' : ' completo') + '" data-nivel="' + n.id + '" title="' + n.resumen + '">' +
+      '<i>' + (n.id || '∞') + '</i><div>' +
+      '<b>' + (n.id ? 'Nivel ' + n.id + ' · ' : '') + n.nombre + '</b>' +
+      '<span>' + tramo + '</span></div>' +
+      (m.completado ? '<u title="Superado en ' + reloj(m.tiempo) + ' con ' + m.muertes +
+        ' caídas">✓</u>' : '') + '</div>';
+  }).join('');
+  Array.from(cont.children).forEach((d) => {
+    d.addEventListener('click', () => {
+      nivelElegido = Number(d.dataset.nivel);
+      guardar();
+      pintarNiveles();
+      pintarRutaMenu();     // la vista previa resalta el tramo elegido
+    });
+  });
+
+}
 
 /** Los récords en la cabecera del menú, en tarjetas legibles de un vistazo. */
 function pintarVitrina() {
@@ -9854,6 +10310,13 @@ function montarTactil() {
 
 document.getElementById('start-btn').addEventListener('click', () => { leerPersonalizacion(); startGame(); });
 document.getElementById('restart-btn').addEventListener('click', startGame);
+document.getElementById('win-menu-btn').addEventListener('click', volverAlMenu);
+document.getElementById('over-reintentar').addEventListener('click', startGame);
+document.getElementById('over-menu').addEventListener('click', volverAlMenu);
+document.getElementById('next-btn').addEventListener('click', () => {
+  if (nivelElegido >= 1 && nivelElegido < 3) { nivelElegido++; guardar(); }
+  startGame();
+});
 document.getElementById('resume-btn').addEventListener('click', reanudar);
 document.getElementById('menu-btn').addEventListener('click', volverAlMenu);
 document.getElementById('pause-btn').addEventListener('click', () => {
@@ -9917,10 +10380,12 @@ actualizarMarcaMenu();
 requestAnimationFrame(gameLoop);
 resizeCanvas();
 generateLevel();
-// La vista previa de la ruta necesita el nivel YA compuesto: al arrancar,
-// `actualizarMarcaMenu()` corre antes que esto y se encontraba `platforms`
-// vacío, así que el recuadro salía en negro.
+// La vista previa de la ruta y las tarjetas de nivel necesitan el nivel YA
+// compuesto: al arrancar, `actualizarMarcaMenu()` corre antes que esto y se
+// encontraba `platforms` vacío, así que el recuadro salía en negro y el
+// selector, sin metros que enseñar, no se pintaba.
 pintarRutaMenu();
+pintarNiveles();
 cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
 draw();
 

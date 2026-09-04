@@ -158,6 +158,65 @@ Enseñaba el nivel pero no decía nada de la subida. Ahora:
 La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
 se pisaba con los nombres de las cumbres.
 
+### Tres niveles, vidas y drones
+
+La idea era un `LevelManager` con tres niveles progresivos. Casi todas las
+mecánicas que pedía ya estaban —estáticas y monedas, móviles y pinchos,
+frágiles y trampolines—, sembradas por franja de dificultad. Lo que no había
+era **dónde elegir**, un final de nivel y algo que se moviera por su cuenta.
+
+**Los niveles son tramos del recorrido, no niveles nuevos.** Generar tres
+mapas nuevos tiraría a la basura la verificación de los 293 saltos. En vez de
+eso, cada nivel juega un trozo del que ya está comprobado:
+
+| Nivel | Cumbres | Metros | Apoyos | Vidas | Qué trae |
+|---|---|---|---|---|---|
+| 1 · Principiante | 1-2 | 0-271 | 88 | 5 | Apoyos anchos, monedas, algún trampolín |
+| 2 · Intermedio | 3-4 | 275-569 | 94 | 4 | Móviles, ascensores, pinchos, atajos |
+| 3 · Avanzado | 5-6 | 572-1000 | 112 | 3 | Frágiles, hielo, van y vienen, drones |
+| ∞ · Ascenso completo | 1-6 | 0-1000 | 294 | sin límite | La partida de siempre |
+
+`rangoNivel()` busca el primer y el último apoyo de cada tramo **por su
+cumbre en el array real**, no por índices escritos a mano: las pasadas de
+composición añaden atajos, y esos no son el principio ni el final de nada.
+
+**Game Over de verdad.** Sin condición de derrota no hay pantalla de Game
+Over que valga, así que en modo nivel las caídas se cuentan: 5, 4 y 3 según
+el nivel, con corazones en el marcador. Al agotarlas sale el resumen con la
+puntuación que pedía el enunciado —la **altura máxima alcanzada**— y cuánto
+del nivel te llevaste, en barra. El ascenso completo se queda **sin límite**:
+es como se ha jugado siempre y no tiene sentido cambiarlo a estas alturas.
+
+Al superar un nivel, la pantalla de victoria ofrece **el siguiente**, y cada
+nivel guarda su propia marca (tiempo, caídas, puntos). Las partidas guardadas
+de antes siguen valiendo: el ascenso completo escribe donde escribía.
+
+**Drones, el obstáculo que se mueve solo.** Patrullan el hueco ENTRE dos
+apoyos, a la altura del vértice del salto, en las cumbres 5-6. La regla que
+los hace justos es la misma que la de las plataformas que van y vienen: no se
+les exige no tocar nunca el arco del salto —eso sería un adorno— sino que
+**haya momentos buenos de sobra**. Se prueban doce instantes de salida y al
+menos cinco tienen que dejar el arco entero limpio, así que siempre se puede
+esperar el hueco, pero hay que mirar antes de saltar. Salen 11 en el nivel.
+
+Verificarlos costaba dos segundos de la carga porque `arcoSalida()` vuelve a
+buscar el salto desde cero. Pero el salto **ya está resuelto**: cada apoyo
+guarda el plan de teclas con el que se verificó (`traza.plan`: desde dónde se
+despega, hacia dónde y en qué fotograma va el doble salto). `arcoDelPlan()`
+lo reproduce con una sola simulación. La pasada entera pasó de 2 s a **10 ms**.
+
+El verificador comprueba ahora también los drones —ninguno sobre un apoyo,
+ninguno con menos de 3 de 12 fases libres— y que los tres tramos tengan
+apoyos de sobra. Sigue dando 293 saltos, 0 imposibles y 189 monedas.
+
+**Lo que costó de sitio.** El selector son 55 px a lo ancho bajo la cabecera
+—ahí va porque es la primera decisión de la pantalla, no un ajuste escondido
+en una columna—. Para hacerle hueco se fue el lema, que decía «1000 metros ·
+6 cumbres» justo cuando las fichas lo dicen con más detalle. Probé a comprimir
+los controles en fichas que fluyen: en una columna de 250 px se apilan igual y
+ocupan más, así que volvió la lista. El panel entra entero en 1600×900 y se
+desplaza 41 px en 1440×860; el botón de empezar sigue fijo y visible en todas.
+
 ### La pantalla de inicio, a fondo
 
 Estaba **ordenada** desde la pasada anterior, pero seguía siendo plana: todos
