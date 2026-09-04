@@ -273,6 +273,10 @@
     font-variant-numeric:tabular-nums; }
   .vitrina span { display:block; font-size:10px; color:#8fa8c0;
     text-transform:uppercase; letter-spacing:.9px; margin-top:1px; }
+  /* Barra bajo «mejor altura»: cuánto queda de los 1000 m */
+  .vitrina div { position:relative; overflow:hidden; }
+  .vitrina u { position:absolute; left:0; bottom:0; height:3px; text-decoration:none;
+    background:linear-gradient(90deg,#ffd700,#ff8a3d); border-radius:0 3px 0 0; }
   .ruta { border-radius:11px; overflow:hidden; background:#0b1424;
     border:1px solid rgba(255,255,255,.09); }
   #rutaPreview { display:block; width:100%; height:172px; }
@@ -4789,46 +4793,500 @@ const MATERIALES = {
 const CATALOGO = {
   // Emberwall Ascent — castillo y fragua. Nada de ferias ni trenes.
   6: {
-    grandes: ['torreon', 'muralla', 'horno', 'estatua'],
-    medios:  ['andamio', 'yunque', 'barriles', 'vagoneta', 'roca'],
-    chicos:  ['farola', 'roca', 'cajas', 'yunque'],
+    grandes: ['torreon', 'muralla', 'horno', 'estatua', 'catapulta'],
+    medios:  ['andamio', 'yunque', 'barriles', 'vagoneta', 'roca', 'escudos', 'brasero'],
+    chicos:  ['farola', 'roca', 'cajas', 'yunque', 'brasero'],
   },
   // Coral Climb — puerto y playa
   2: {
-    grandes: ['yate', 'velero', 'barca', 'puesto'],
-    medios:  ['sombrilla', 'barriles', 'coral', 'tablon'],
-    chicos:  ['boya', 'flotador', 'coral', 'arena'],
+    grandes: ['yate', 'velero', 'barca', 'puesto', 'castilloArena'],
+    medios:  ['sombrilla', 'barriles', 'coral', 'tablon', 'redPesca', 'tablaSurf'],
+    chicos:  ['boya', 'flotador', 'coral', 'arena', 'tablaSurf'],
   },
   // Agent Adventure — base secreta. Fuera la noria y la locomotora.
   4: {
-    grandes: ['contenedor', 'helipuerto', 'autobus'],
-    medios:  ['vagoneta', 'andamio', 'neumaticos', 'metal'],
-    chicos:  ['conos', 'baul', 'cajas', 'neumaticos'],
+    grandes: ['contenedor', 'helipuerto', 'autobus', 'generador'],
+    medios:  ['vagoneta', 'andamio', 'neumaticos', 'metal', 'dron', 'cajaFuerte'],
+    chicos:  ['conos', 'baul', 'cajas', 'neumaticos', 'cajaFuerte'],
   },
   // Growing Up — granja y feria de pueblo: aquí la carpa y la noria sí pegan
   1: {
-    grandes: ['granero', 'autobus', 'carpa', 'noria', 'puesto'],
-    medios:  ['tractor', 'pozo', 'heno', 'banco', 'tren'],
-    chicos:  ['valla', 'sacos', 'cajas', 'hierba'],
+    grandes: ['granero', 'autobus', 'carpa', 'noria', 'puesto', 'espantapajaros'],
+    medios:  ['tractor', 'pozo', 'heno', 'banco', 'tren', 'abrevadero', 'calabazas'],
+    chicos:  ['valla', 'sacos', 'cajas', 'hierba', 'calabazas'],
   },
   // Frosty Peaks — solo nieve y hielo. Fuera torreón, carpa y estatua.
   5: {
-    grandes: ['iglu', 'refugio', 'ventisquero'],
-    medios:  ['ventisquero', 'pinoNevado', 'carambano', 'hielo'],
-    chicos:  ['munieco', 'pinguino', 'hielo', 'nieve'],
+    grandes: ['iglu', 'refugio', 'ventisquero', 'tiendaNieve'],
+    medios:  ['ventisquero', 'pinoNevado', 'carambano', 'hielo', 'hoguera', 'mojon'],
+    chicos:  ['munieco', 'pinguino', 'hielo', 'nieve', 'mojon'],
   },
   // One Way Up — cielo y tecnología. Fuera la cama.
   7: {
-    grandes: ['plataformaOVNI', 'moduloOrbital', 'helipuerto'],
-    medios:  ['antena', 'andamio', 'burbuja', 'moduloOrbital'],
-    chicos:  ['burbuja', 'metal', 'antena', 'baul'],
+    grandes: ['plataformaOVNI', 'moduloOrbital', 'helipuerto', 'portal'],
+    medios:  ['antena', 'andamio', 'burbuja', 'moduloOrbital', 'reactor', 'panelSolar'],
+    chicos:  ['burbuja', 'metal', 'antena', 'baul', 'panelSolar'],
   },
 };
 
 
+
+/* ====================================================================
+   OBJETOS POR AMBIENTE
+   Tres por cumbre, cada uno de su mundo. Todos se apoyan en su propio
+   volumen dentro del rectángulo que se pisa: nada colgando de un palo.
+   ==================================================================== */
+
+/* ---- 6 · Emberwall Ascent: castillo y fragua ---------------------- */
+
+/** 🏹 Catapulta: se pisa la viga del bastidor. */
+function propCatapulta(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#8a5a3b';
+  rrect(x, y, w, 12, 3); ctx.fill();
+  ctx.strokeStyle = '#4a2f1c'; ctx.lineWidth = 2.2; ctx.stroke();
+  // Bastidor macizo en A
+  ctx.fillStyle = '#6b4529';
+  ctx.beginPath();
+  ctx.moveTo(cx - 30, y + 46); ctx.lineTo(cx - 12, y + 12);
+  ctx.lineTo(cx + 12, y + 12); ctx.lineTo(cx + 30, y + 46);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Brazo tumbado, apoyado en el bastidor
+  ctx.strokeStyle = '#8a5a3b'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - 34, y + 30); ctx.lineTo(cx + 30, y + 6); ctx.stroke();
+  ctx.fillStyle = '#5f6672';
+  ctx.beginPath(); ctx.arc(cx + 32, y + 5, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#33383f'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+/** 🛡️ Panoplia: soporte de armas con escudos apoyados. */
+function propEscudos(x, y, w) {
+  ctx.fillStyle = '#6b4529';
+  rrect(x, y, w, 14, 3); ctx.fill();
+  ctx.strokeStyle = '#3d2410'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = '#54402c';
+  rrect(x + 5, y + 14, w - 10, 22, 3); ctx.fill();
+  const n = Math.max(2, Math.round(w / 62));
+  for (let i = 0; i < n; i++) {
+    const sx = x + (w / n) * (i + 0.5);
+    ctx.fillStyle = i % 2 ? '#c0392b' : '#2e86de';
+    ctx.beginPath();
+    ctx.moveTo(sx - 13, y + 16);
+    ctx.lineTo(sx + 13, y + 16);
+    ctx.quadraticCurveTo(sx + 12, y + 40, sx, y + 46);
+    ctx.quadraticCurveTo(sx - 12, y + 40, sx - 13, y + 16);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#e8c96a'; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx, y + 18); ctx.lineTo(sx, y + 42); ctx.stroke();
+  }
+}
+
+/** 🔥 Brasero: pebetero ancho con brasas vivas. */
+function propBrasero(x, y, w) {
+  const cx = x + w / 2;
+  peana(x, y, w, '#7b6a55', '#57493a', '#332a21');
+  ctx.fillStyle = '#3f3730';
+  ctx.beginPath();
+  ctx.moveTo(x + 12, y + 20); ctx.lineTo(x + w - 12, y + 20);
+  ctx.lineTo(x + w - 22, y + 48); ctx.lineTo(x + 22, y + 48);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#1e1a16'; ctx.lineWidth = 2.2; ctx.stroke();
+  const vivo = 0.75 + 0.25 * Math.sin(t * 0.09 + x * 0.01);
+  ctx.shadowColor = '#ff8a3d'; ctx.shadowBlur = 18 * vivo;
+  ctx.fillStyle = '#ff7a2d';
+  for (let i = 0; i < 3; i++) {
+    const fx = cx + (i - 1) * (w * 0.16);
+    const alto = 12 + 8 * Math.abs(Math.sin(t * 0.11 + i * 2));
+    ctx.beginPath();
+    ctx.moveTo(fx, y + 18 - alto);
+    ctx.quadraticCurveTo(fx + 8, y + 20, fx, y + 24);
+    ctx.quadraticCurveTo(fx - 8, y + 20, fx, y + 18 - alto);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,214,120,' + vivo.toFixed(2) + ')';
+  rrect(x + 20, y + 20, w - 40, 5, 2); ctx.fill();
+}
+
+/* ---- 2 · Coral Climb: puerto y playa ------------------------------ */
+
+/** 🏰 Castillo de arena: se pisa la almena. */
+function propCastilloArena(x, y, w) {
+  ctx.fillStyle = '#e3bd80';
+  rrect(x, y, w, 16, 3); ctx.fill();
+  ctx.fillStyle = '#cfa869';
+  rrect(x + 6, y + 16, w - 12, 26, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,110,60,0.75)'; ctx.lineWidth = 2;
+  rrect(x, y, w, 16, 3); ctx.stroke();
+  // Torretas
+  const n = Math.max(2, Math.round(w / 70));
+  for (let i = 0; i < n; i++) {
+    const tx = x + (w / n) * (i + 0.5);
+    ctx.fillStyle = '#ecc98f';
+    rrect(tx - 12, y - 18, 24, 20, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e3bd80';
+    for (let k = -1; k <= 1; k++) ctx.fillRect(tx - 11 + (k + 1) * 8, y - 24, 6, 7);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  rrect(x + 3, y + 2, w - 6, 4, 2); ctx.fill();
+}
+
+/** 🎣 Red de pesca sobre cajones. */
+function propRedPesca(x, y, w) {
+  ctx.fillStyle = '#9c6835';
+  rrect(x, y, w, 34, 3); ctx.fill();
+  ctx.strokeStyle = '#5c3d1c'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = '#b57d43';
+  rrect(x + 4, y + 3, w - 8, 7, 2); ctx.fill();
+  ctx.save();
+  rrect(x, y, w, 34, 3); ctx.clip();
+  ctx.strokeStyle = 'rgba(230,240,235,0.55)'; ctx.lineWidth = 1.6;
+  for (let d = -40; d < w + 40; d += 13) {
+    ctx.beginPath(); ctx.moveTo(x + d, y + 34); ctx.lineTo(x + d + 34, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + d, y); ctx.lineTo(x + d + 34, y + 34); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.fillStyle = '#e8734a';
+  ctx.beginPath(); ctx.arc(x + w - 20, y + 24, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#8a3b22'; ctx.lineWidth = 1.8; ctx.stroke();
+}
+
+/** 🏄 Tablas de surf apiladas. */
+function propTablaSurf(x, y, w) {
+  peana(x, y, w, '#e8dcc4', '#c9b795', '#8f8163');
+  const colores = [['#e74c3c', '#ffd166'], ['#2e86de', '#eaf6ff'], ['#2ecc71', '#f6fff8']];
+  for (let i = 0; i < 3; i++) {
+    const ty = y + 20 + i * 11, dx = (i % 2 ? 8 : -6);
+    const [c1, c2] = colores[i];
+    ctx.fillStyle = c1;
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2 + dx, ty, w * 0.42, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(40,50,60,0.6)'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2 + dx, ty, w * 0.30, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/* ---- 4 · Agent Adventure: base secreta ---------------------------- */
+
+/** ⚡ Generador con rejillas y piloto. */
+function propGenerador(x, y, w) {
+  ctx.fillStyle = '#4a5361';
+  rrect(x, y, w, 40, 4); ctx.fill();
+  ctx.strokeStyle = '#232a33'; ctx.lineWidth = 2.4; ctx.stroke();
+  ctx.fillStyle = '#5d6775';
+  rrect(x + 3, y + 2, w - 6, 8, 3); ctx.fill();
+  ctx.strokeStyle = '#333c47'; ctx.lineWidth = 2;
+  for (let i = x + 14; i < x + w - 14; i += 9) {
+    ctx.beginPath(); ctx.moveTo(i, y + 16); ctx.lineTo(i, y + 34); ctx.stroke();
+  }
+  const on = Math.sin(t * 0.11 + x * 0.01) > -0.2;
+  ctx.fillStyle = on ? '#49e3a0' : '#1e5c45';
+  ctx.beginPath(); ctx.arc(x + w - 14, y + 20, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f5c518';
+  ctx.beginPath();
+  ctx.moveTo(x + 16, y + 18); ctx.lineTo(x + 26, y + 18);
+  ctx.lineTo(x + 20, y + 26); ctx.lineTo(x + 29, y + 26);
+  ctx.lineTo(x + 15, y + 36); ctx.lineTo(x + 20, y + 27);
+  ctx.closePath(); ctx.fill();
+}
+
+/** 🔐 Caja fuerte con rueda. */
+function propCajaFuerte(x, y, w) {
+  ctx.fillStyle = '#3f4854';
+  rrect(x, y, w, 46, 5); ctx.fill();
+  ctx.strokeStyle = '#1e242c'; ctx.lineWidth = 2.6; ctx.stroke();
+  ctx.fillStyle = '#525d6c';
+  rrect(x + 8, y + 8, w - 16, 32, 4); ctx.fill();
+  ctx.strokeStyle = '#2b323b'; ctx.lineWidth = 2; ctx.stroke();
+  const cx = x + w / 2, cy = y + 24;
+  ctx.fillStyle = '#8d99a6';
+  ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#2b323b'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.strokeStyle = '#cfd8e3'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  const g = t * 0.02;
+  for (let k = 0; k < 3; k++) {
+    const a = g + (k / 3) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * 3, cy + Math.sin(a) * 3);
+    ctx.lineTo(cx + Math.cos(a) * 9, cy + Math.sin(a) * 9);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#f5c518';
+  rrect(x + w - 22, y + 14, 5, 18, 2); ctx.fill();
+}
+
+/** 🛸 Dron posado: se pisa el chasis. */
+function propDron(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#39424e';
+  rrect(x + w * 0.24, y, w * 0.52, 20, 5); ctx.fill();
+  ctx.strokeStyle = '#1c222a'; ctx.lineWidth = 2.4; ctx.stroke();
+  ctx.fillStyle = '#4dd4f0';
+  ctx.beginPath(); ctx.arc(cx, y + 11, 5, 0, Math.PI * 2); ctx.fill();
+  // Brazos y rotores, dentro del ancho del apoyo
+  ctx.strokeStyle = '#39424e'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  for (const sg of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + sg * w * 0.12, y + 10);
+    ctx.lineTo(cx + sg * w * 0.42, y + 16);
+    ctx.stroke();
+    const rx = cx + sg * w * 0.42;
+    ctx.fillStyle = 'rgba(200,225,245,0.5)';
+    ctx.beginPath(); ctx.ellipse(rx, y + 12, 20, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2b323b';
+    rrect(rx - 5, y + 14, 10, 12, 3); ctx.fill();
+  }
+}
+
+/* ---- 1 · Growing Up: granja y feria ------------------------------- */
+
+/** 🎃 Calabazar: hilera de calabazas sobre la tierra. */
+function propCalabazas(x, y, w) {
+  ctx.fillStyle = '#7a5230';
+  rrect(x, y, w, 20, 3); ctx.fill();
+  ctx.fillStyle = '#4f9a3a';
+  rrect(x, y, w, 6, 3); ctx.fill();
+  ctx.strokeStyle = '#3d2a16'; ctx.lineWidth = 2; ctx.stroke();
+  const n = Math.max(2, Math.round(w / 58));
+  for (let i = 0; i < n; i++) {
+    const cx = x + (w / n) * (i + 0.5), r = 13 + h(cx) * 4;
+    ctx.fillStyle = '#f2801f';
+    ctx.beginPath(); ctx.ellipse(cx, y + 22 + r * 0.3, r, r * 0.82, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#a8500a'; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(cx, y + 22 + r * 0.3, r * 0.36, r * 0.82, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#3f7a2a';
+    rrect(cx - 3, y + 12 + r * 0.3 - r * 0.5, 6, 8, 2); ctx.fill();
+  }
+}
+
+/** 🌾 Espantapájaros apoyado en un fardo. */
+function propEspantapajaros(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#d9b25a';
+  rrect(x, y, w, 30, 4); ctx.fill();
+  ctx.strokeStyle = '#8a6a1c'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.strokeStyle = 'rgba(140,110,30,0.55)'; ctx.lineWidth = 1.6;
+  for (let i = x + 10; i < x + w - 8; i += 14) {
+    ctx.beginPath(); ctx.moveTo(i, y + 4); ctx.lineTo(i, y + 27); ctx.stroke();
+  }
+  // El muñeco se apoya EN el fardo, no en una estaca
+  ctx.fillStyle = '#3f6fa8';
+  ctx.beginPath();
+  ctx.moveTo(cx - 16, y + 2);
+  ctx.quadraticCurveTo(cx - 13, y - 20, cx, y - 22);
+  ctx.quadraticCurveTo(cx + 13, y - 20, cx + 16, y + 2);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#25446b'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#e8c98a';
+  ctx.beginPath(); ctx.arc(cx, y - 30, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#9c7a3a'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#2a1f14';
+  ctx.beginPath(); ctx.arc(cx - 4, y - 32, 1.8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 4, y - 32, 1.8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#a3402f';
+  ctx.beginPath();
+  ctx.moveTo(cx - 17, y - 36); ctx.lineTo(cx + 17, y - 36);
+  ctx.lineTo(cx + 10, y - 46); ctx.lineTo(cx - 10, y - 46);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
+/** 🪣 Abrevadero de la granja. */
+function propAbrevadero(x, y, w) {
+  ctx.fillStyle = '#8a5a3b';
+  rrect(x, y, w, 12, 3); ctx.fill();
+  ctx.fillStyle = '#6b4529';
+  rrect(x + 4, y + 12, w - 8, 26, 3); ctx.fill();
+  ctx.strokeStyle = '#3d2410'; ctx.lineWidth = 2.2;
+  rrect(x, y, w, 12, 3); ctx.stroke();
+  ctx.save();
+  rrect(x + 8, y + 4, w - 16, 12, 2); ctx.clip();
+  ctx.fillStyle = '#4aa8d8';
+  ctx.fillRect(x + 8, y + 6, w - 16, 12);
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  for (let i = 0; i < 3; i++) {
+    const ox = x + 20 + i * ((w - 40) / 3) + Math.sin(t * 0.04 + i) * 4;
+    ctx.beginPath(); ctx.ellipse(ox, y + 8, 7, 2, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  ctx.strokeStyle = '#5c3d1c'; ctx.lineWidth = 2;
+  for (const px of [x + 10, x + w - 10]) {
+    ctx.beginPath(); ctx.moveTo(px, y + 14); ctx.lineTo(px, y + 36); ctx.stroke();
+  }
+}
+
+/* ---- 5 · Frosty Peaks: nieve -------------------------------------- */
+
+/** ⛺ Tienda de montaña. */
+function propTiendaNieve(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#eef8ff';
+  rrect(x, y, w, 10, 3); ctx.fill();
+  ctx.fillStyle = '#e0543f';
+  ctx.beginPath();
+  ctx.moveTo(x + 6, y + 46); ctx.lineTo(cx, y + 4); ctx.lineTo(x + w - 6, y + 46);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#8a2f22'; ctx.lineWidth = 2.4; ctx.stroke();
+  ctx.fillStyle = '#3a1d16';
+  ctx.beginPath();
+  ctx.moveTo(cx - 12, y + 46); ctx.lineTo(cx, y + 18); ctx.lineTo(cx + 12, y + 46);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  rrect(x, y, w, 8, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,170,190,0.8)'; ctx.lineWidth = 1.8;
+  rrect(x, y, w, 8, 3); ctx.stroke();
+}
+
+/** 🔥 Hoguera de campamento. */
+function propHoguera(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#d9e8f2';
+  rrect(x, y, w, 12, 3); ctx.fill();
+  ctx.strokeStyle = '#94b0c4'; ctx.lineWidth = 2; ctx.stroke();
+  // Corro de piedras
+  ctx.fillStyle = '#8d99a6';
+  const n = Math.max(3, Math.round(w / 34));
+  for (let i = 0; i < n; i++) {
+    const px = x + 10 + (w - 20) * (i / (n - 1));
+    ctx.beginPath(); ctx.ellipse(px, y + 34, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#5f6a75'; ctx.lineWidth = 1.6; ctx.stroke();
+  }
+  // Leños cruzados
+  ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - 20, y + 32); ctx.lineTo(cx + 20, y + 20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 20, y + 32); ctx.lineTo(cx - 20, y + 20); ctx.stroke();
+  const vivo = 0.7 + 0.3 * Math.sin(t * 0.12 + x * 0.01);
+  ctx.shadowColor = '#ff8a3d'; ctx.shadowBlur = 20 * vivo;
+  ctx.fillStyle = '#ff7a2d';
+  ctx.beginPath();
+  ctx.moveTo(cx, y + 2 - 8 * vivo);
+  ctx.quadraticCurveTo(cx + 11, y + 16, cx, y + 26);
+  ctx.quadraticCurveTo(cx - 11, y + 16, cx, y + 2 - 8 * vivo);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,222,140,0.9)';
+  ctx.beginPath();
+  ctx.moveTo(cx, y + 12); ctx.quadraticCurveTo(cx + 5, y + 18, cx, y + 25);
+  ctx.quadraticCurveTo(cx - 5, y + 18, cx, y + 12);
+  ctx.fill();
+}
+
+/** 🪨 Mojón de cumbre: piedras apiladas. */
+function propMojon(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#e8f4ff';
+  rrect(x, y, w, 10, 3); ctx.fill();
+  ctx.strokeStyle = '#a9c9e0'; ctx.lineWidth = 2; ctx.stroke();
+  const anchos = [w * 0.62, w * 0.46, w * 0.30, w * 0.17];
+  let py = y + 10;
+  for (let i = 0; i < 4; i++) {
+    const an = anchos[i], alto = 15 - i * 2;
+    ctx.fillStyle = i % 2 ? '#8d99a6' : '#7b8794';
+    rrect(cx - an / 2 + (i % 2 ? 4 : -4), py, an, alto, 5); ctx.fill();
+    ctx.strokeStyle = '#4f5a66'; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    rrect(cx - an / 2 + (i % 2 ? 4 : -4), py, an, 3.5, 2); ctx.fill();
+    py += alto - 2;
+  }
+}
+
+/* ---- 7 · One Way Up: cielo y tecnología --------------------------- */
+
+/** ☀️ Panel solar orientable. */
+function propPanelSolar(x, y, w) {
+  ctx.fillStyle = '#1b3a5c';
+  rrect(x, y, w, 13, 3); ctx.fill();
+  ctx.save();
+  rrect(x + 2, y + 1, w - 4, 11, 2); ctx.clip();
+  ctx.fillStyle = '#2f6ea8';
+  ctx.fillRect(x, y, w, 13);
+  ctx.strokeStyle = 'rgba(160,215,255,0.7)'; ctx.lineWidth = 1.4;
+  for (let i = x + 12; i < x + w; i += 16) {
+    ctx.beginPath(); ctx.moveTo(i, y); ctx.lineTo(i, y + 13); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(x, y + 6.5); ctx.lineTo(x + w, y + 6.5); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = '#0f2338'; ctx.lineWidth = 2.4;
+  rrect(x, y, w, 13, 3); ctx.stroke();
+  // Cuerpo del soporte, macizo
+  ctx.fillStyle = '#5d6775';
+  rrect(x + w * 0.28, y + 13, w * 0.44, 24, 4); ctx.fill();
+  ctx.strokeStyle = '#333c47'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#8d99a6';
+  rrect(x + w * 0.36, y + 18, w * 0.28, 5, 2); ctx.fill();
+}
+
+/** ⚛️ Reactor con núcleo latiendo. */
+function propReactor(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#3a4250';
+  rrect(x, y, w, 42, 5); ctx.fill();
+  ctx.strokeStyle = '#1b212a'; ctx.lineWidth = 2.6; ctx.stroke();
+  ctx.fillStyle = '#4c5666';
+  rrect(x + 3, y + 2, w - 6, 8, 3); ctx.fill();
+  const late = 0.6 + 0.4 * Math.sin(t * 0.07 + x * 0.01);
+  ctx.shadowColor = '#4dd4f0'; ctx.shadowBlur = 22 * late;
+  ctx.fillStyle = 'rgba(77,212,240,' + (0.55 + late * 0.45).toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(cx, y + 24, 12, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#9fe8f7'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, y + 24, 15, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#2b323b';
+  for (const sg of [-1, 1]) rrect(cx + sg * (w * 0.34) - 7, y + 14, 14, 22, 3), ctx.fill();
+}
+
+/** 🌀 Portal: anillo de energía sobre su base. */
+function propPortal(x, y, w) {
+  const cx = x + w / 2;
+  peana(x, y, w, '#6c7a8e', '#414c5c', '#242c38');
+  const r = Math.min(30, w * 0.28);
+  const gira = t * 0.03;
+  ctx.save();
+  ctx.translate(cx, y + 20 + r * 0.7);
+  ctx.strokeStyle = '#8f5cf0'; ctx.lineWidth = 7;
+  ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.72, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(200,160,255,0.85)'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.ellipse(0, 0, r - 6, r * 0.72 - 5, 0, 0, Math.PI * 2); ctx.stroke();
+  const brillo = ctx.createRadialGradient(0, 0, 2, 0, 0, r);
+  brillo.addColorStop(0, 'rgba(190,150,255,0.55)');
+  brillo.addColorStop(1, 'rgba(120,80,220,0)');
+  ctx.fillStyle = brillo;
+  ctx.beginPath(); ctx.ellipse(0, 0, r - 5, r * 0.72 - 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(235,220,255,0.9)';
+  for (let k = 0; k < 3; k++) {
+    const a = gira + (k / 3) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * (r - 3), Math.sin(a) * (r * 0.72 - 2), 2.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 /** Pinta el objeto pedido por nombre. */
 function pintarObjeto(nombre, p, x, y, w, hh) {
   switch (nombre) {
+    case 'catapulta':       return propCatapulta(x, y, w);
+    case 'escudos':         return propEscudos(x, y, w);
+    case 'brasero':         return propBrasero(x, y, w);
+    case 'castilloArena':   return propCastilloArena(x, y, w);
+    case 'redPesca':        return propRedPesca(x, y, w);
+    case 'tablaSurf':       return propTablaSurf(x, y, w);
+    case 'generador':       return propGenerador(x, y, w);
+    case 'cajaFuerte':      return propCajaFuerte(x, y, w);
+    case 'dron':            return propDron(x, y, w);
+    case 'calabazas':       return propCalabazas(x, y, w);
+    case 'espantapajaros':  return propEspantapajaros(x, y, w);
+    case 'abrevadero':      return propAbrevadero(x, y, w);
+    case 'tiendaNieve':     return propTiendaNieve(x, y, w);
+    case 'hoguera':         return propHoguera(x, y, w);
+    case 'mojon':           return propMojon(x, y, w);
+    case 'panelSolar':      return propPanelSolar(x, y, w);
+    case 'reactor':         return propReactor(x, y, w);
+    case 'portal':          return propPortal(x, y, w);
     case 'tren':            return propTren(x, y, w);
     case 'refugio':         return propRefugio(x, y, w);
     case 'noria':           return propNoria(x, y, w);
@@ -8383,6 +8841,28 @@ const COLOR_MAPA = {
 let mapaAbierto = false;
 let mapaZoom = 1, mapaPanX = 0, mapaPanY = 0, mapaLim = null;
 
+/**
+ * La altura (y del mundo) a la que se está a `m` metros. Es la inversa de
+ * `metrosEnAltura`, y hace falta para poder pintar una regla de metros: las
+ * seis cumbres miden distinto, así que 100 m no son siempre los mismos píxeles.
+ */
+function alturaDeMetros(m) {
+  let acumulado = 0;
+  for (let w = 1; w <= TOTAL_WORLDS; w++) {
+    const pie = (w === 1) ? BASE_Y : (limitesMundo[w - 2] !== undefined
+                 ? limitesMundo[w - 2] : pieDeCumbre(w));
+    const techo = (w === TOTAL_WORLDS)
+      ? TOP_Y : (limitesMundo[w - 1] !== undefined ? limitesMundo[w - 1] : pieDeCumbre(w + 1));
+    const metros = METROS_CUMBRE[w - 1];
+    if (m <= acumulado + metros || w === TOTAL_WORLDS) {
+      const frac = Math.max(0, Math.min(1, (m - acumulado) / metros));
+      return pie - (pie - techo) * frac;
+    }
+    acumulado += metros;
+  }
+  return TOP_Y;
+}
+
 /** Rectángulo que ocupa todo el recorrido, calculado una vez. */
 function limitesMapa() {
   if (mapaLim) return mapaLim;
@@ -8460,11 +8940,34 @@ function dibujarMapa(lienzo, conJugador) {
       const rotulo = w + '. ' + WORLDS[w - 1].name;
       c.font = 'bold ' + cuerpo + 'px "Segoe UI", sans-serif';
       // Fondo tras el nombre: sobre el trazado del recorrido no se leía
+      // A la derecha de la regla de metros: pegados al borde se pisaban con
+      // los «200 m», «400 m»… y no se leía ninguno de los dos.
       const anchoR = c.measureText(rotulo).width;
+      const rx = (cv.width > 700) ? 60 : 8;
       c.fillStyle = 'rgba(11,20,36,0.72)';
-      c.fillRect(4, Y(techo) + 3, anchoR + 10, cuerpo + 6);
+      c.fillRect(rx - 5, Y(techo) + 3, anchoR + 10, cuerpo + 6);
       c.fillStyle = 'rgba(205,224,248,0.62)';
-      c.fillText(rotulo, 9, Y(techo) + cuerpo + 4);
+      c.fillText(rotulo, rx, Y(techo) + cuerpo + 4);
+    }
+  }
+
+  // REGLA DE METROS por el borde izquierdo. El juego va de altura y el mapa
+  // no la decía por ninguna parte: se leía como un plano, no como una subida.
+  // Sólo en el mapa grande: en la vista previa del menú, de 300 px, la regla
+  // y los nombres de las cumbres se pisaban y no se leía ninguno.
+  const conRegla = cv.width > 700;
+  const cuerpoR = Math.round(10 * (window.devicePixelRatio || 1));
+  c.font = 'bold ' + cuerpoR + 'px "Segoe UI", sans-serif';
+  for (let m = 0; conRegla && m <= 1000; m += 100) {
+    const yy = Y(alturaDeMetros(m));
+    if (yy < -20 || yy > cv.height + 20) continue;
+    const fuerte = (m % 200 === 0);
+    c.strokeStyle = fuerte ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.07)';
+    c.lineWidth = 1;
+    c.beginPath(); c.moveTo(fuerte ? 44 : 52, yy); c.lineTo(cv.width, yy); c.stroke();
+    if (fuerte) {
+      c.fillStyle = 'rgba(190,212,238,0.55)';
+      c.fillText(m + ' m', 6, yy + cuerpoR * 0.36);
     }
   }
 
@@ -8478,23 +8981,33 @@ function dibujarMapa(lienzo, conJugador) {
     c.beginPath(); c.arc(X(m.x), Y(m.y), r, 0, Math.PI * 2); c.fill();
   }
 
-  // Hilo del recorrido: une los apoyos de la cadena en orden
-  c.strokeStyle = 'rgba(255,255,255,0.22)';
-  c.lineWidth = 1.5;
-  c.beginPath();
-  let primero = true;
-  for (const p of platforms) {
-    if (p.extra) continue;
-    const px = X(p.x + p.width / 2), py = Y(p.y);
-    if (primero) { c.moveTo(px, py); primero = false; } else c.lineTo(px, py);
-  }
-  c.stroke();
+  // Hilo del recorrido, en dos tramos: lo ANDADO en dorado y lo que queda en
+  // gris. Sin esto el mapa enseñaba el nivel pero no tu progreso, que es la
+  // mitad de para lo que se abre un mapa.
+  const techoHecho = alturaDeMetros(recordMetros);
+  const hilo = (desdeHecho) => {
+    c.beginPath();
+    let primero = true;
+    for (const p of platforms) {
+      if (p.extra) continue;
+      const hecho = p.y >= techoHecho;
+      if (hecho !== desdeHecho) { primero = true; continue; }
+      const px = X(p.x + p.width / 2), py = Y(p.y);
+      if (primero) { c.moveTo(px, py); primero = false; } else c.lineTo(px, py);
+    }
+    c.stroke();
+  };
+  c.lineWidth = 1.4; c.strokeStyle = 'rgba(255,255,255,0.16)';
+  hilo(false);
+  c.lineWidth = 2.4; c.strokeStyle = 'rgba(255,215,0,0.55)';
+  hilo(true);
 
-  // Apoyos
+  // Apoyos. Los que están por encima de tu mejor altura van apagados.
   for (const p of platforms) {
     const w = Math.max(4, p.width * k), h = Math.max(3, p.height * k * 0.8);
+    const alcanzado = p.y >= techoHecho;
     c.fillStyle = colorApoyo(p);
-    c.globalAlpha = (p.ciclo && p.caido) ? 0.32 : 1;
+    c.globalAlpha = (p.ciclo && p.caido) ? 0.24 : (alcanzado ? 1 : 0.45);
     c.fillRect(X(p.x), Y(p.y), w, h);
     c.globalAlpha = 1;
     if (p.type === 'checkpoint' || p.type === 'goal') {
@@ -8502,6 +9015,18 @@ function dibujarMapa(lienzo, conJugador) {
       c.lineWidth = 1.4;
       c.strokeRect(X(p.x) - 3, Y(p.y) - 3, w + 6, h + 6);
     }
+  }
+
+  // DÓNDE VUELVES si te caes: el último checkpoint tocado, con su aro.
+  if (conJugador !== false) {
+    const cpx = X(player.spawnX + PW / 2), cpy = Y(player.spawnY + PH);
+    c.strokeStyle = '#2ed573'; c.lineWidth = 2;
+    c.setLineDash([4, 4]);
+    c.beginPath(); c.arc(cpx, cpy, 9, 0, Math.PI * 2); c.stroke();
+    c.setLineDash([]);
+    c.fillStyle = 'rgba(46,213,115,0.9)';
+    c.font = 'bold ' + Math.round(9 * (window.devicePixelRatio || 1)) + 'px "Segoe UI", sans-serif';
+    c.fillText('vuelves aquí', cpx + 13, cpy + 16);
   }
 
   // Pinchos y géiseres
@@ -8613,12 +9138,25 @@ function actualizarDondeEstoy() {
     monedasTomadas + ' de ' + monedas.length + ' monedas';
 }
 
-function zoomMapa(factor) {
+/**
+ * Acerca y aleja. Si se le pasa un punto del lienzo, ese punto se queda
+ * quieto —zoom hacia el puntero, como en cualquier mapa—; sin él, se usa el
+ * centro. Antes siempre era el centro y con la rueda se perdía lo que mirabas.
+ */
+function zoomMapa(factor, px, py) {
+  const cv = document.getElementById('mapCanvas');
+  if (!cv || !cv.width) return;
   const antes = mapaZoom;
-  mapaZoom = Math.max(1, Math.min(14, mapaZoom * factor));
-  // El zoom se hace alrededor del centro de la vista, no de la esquina
-  mapaPanX *= mapaZoom / antes;
-  mapaPanY *= mapaZoom / antes;
+  const nuevo = Math.max(1, Math.min(14, mapaZoom * factor));
+  if (nuevo === antes) return;
+  const cx = (px === undefined) ? cv.width / 2 : px;
+  const cy = (py === undefined) ? cv.height / 2 : py;
+  const a = encajeMapa(cv);
+  const mundoX = (cx - a.ox) / a.k, mundoY = (cy - a.oy) / a.k;
+  mapaZoom = nuevo;
+  const b = encajeMapa(cv);
+  mapaPanX += cx - (mundoX * b.k + b.ox);
+  mapaPanY += cy - (mundoY * b.k + b.oy);
 }
 
 function gameLoop(ahora) {
@@ -8857,14 +9395,16 @@ function refrescarPestanas() {
 function pintarVitrina() {
   const cont = document.getElementById('vitrina');
   if (!cont) return;
+  const pct = Math.max(0, Math.min(100, (marcas.altura || 0) / 10));
   const filas = [
-    ['Mejor altura', (marcas.altura || 0) + ' m'],
-    ['Mejor vuelta', marcas.completado ? reloj(marcas.tiempo) : '—'],
-    ['Menos caídas', marcas.muertes === null ? '—' : String(marcas.muertes)],
-    ['Récord pts', marcas.puntos ? String(marcas.puntos) : '—'],
+    ['Mejor altura', (marcas.altura || 0) + ' m', pct],
+    ['Mejor vuelta', marcas.completado ? reloj(marcas.tiempo) : '—', null],
+    ['Menos caídas', marcas.muertes === null ? '—' : String(marcas.muertes), null],
+    ['Récord pts', marcas.puntos ? String(marcas.puntos) : '—', null],
   ];
-  cont.innerHTML = filas.map(([t, v]) =>
-    '<div><b>' + v + '</b><span>' + t + '</span></div>').join('');
+  cont.innerHTML = filas.map(([t, v, p]) =>
+    '<div><b>' + v + '</b><span>' + t + '</span>' +
+    (p === null ? '' : '<u style="width:' + p.toFixed(1) + '%"></u>') + '</div>').join('');
 }
 
 function actualizarBotonMute() {
@@ -8945,6 +9485,59 @@ function refrescarMenu() {
 }
 
 /* Vista previa en vivo: se dibuja el personaje elegido en el menú */
+/**
+ * ESCAPARATE
+ * Era una caja con un degradado y el personaje flotando en el centro. Ahora
+ * es una escena: cielo con nubes que pasan, el apoyo que se pisa, y la sombra
+ * del personaje encima. Se dibuja con las mismas rutinas que el juego.
+ */
+function pintarEscena(cv) {
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const cielo = c.createLinearGradient(0, 0, 0, H);
+  cielo.addColorStop(0, '#a8e6fb');
+  cielo.addColorStop(0.55, '#7fd2f0');
+  cielo.addColorStop(1, '#5cbfe4');
+  c.fillStyle = cielo;
+  c.fillRect(0, 0, W, H);
+
+  // Nubes que cruzan despacio: la escena respira sin distraer
+  c.fillStyle = 'rgba(255,255,255,0.55)';
+  for (let i = 0; i < 3; i++) {
+    const vel = 0.16 + i * 0.09;
+    const cx = ((t * vel + i * 90) % (W + 90)) - 45;
+    const cy = H * (0.18 + i * 0.16);
+    const r = 12 + i * 4;
+    for (const [dx, dy, k] of [[-r, 2, 0.8], [0, -3, 1], [r, 2, 0.85], [r * 0.5, 4, 0.7]]) {
+      c.beginPath(); c.arc(cx + dx, cy + dy, r * k, 0, Math.PI * 2); c.fill();
+    }
+  }
+
+  // Montañas al fondo
+  c.fillStyle = 'rgba(255,255,255,0.30)';
+  c.beginPath();
+  c.moveTo(-10, H * 0.82);
+  c.lineTo(W * 0.28, H * 0.46); c.lineTo(W * 0.52, H * 0.74);
+  c.lineTo(W * 0.74, H * 0.40); c.lineTo(W + 10, H * 0.80);
+  c.lineTo(W + 10, H); c.lineTo(-10, H);
+  c.closePath(); c.fill();
+
+  // El apoyo sobre el que está de pie
+  const py = H - 26, pw = W * 0.62, px = (W - pw) / 2;
+  c.fillStyle = 'rgba(20,60,90,0.18)';
+  c.beginPath(); c.ellipse(W / 2, py + 2, pw * 0.42, 5, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#7a5230';
+  c.beginPath(); c.roundRect ? c.roundRect(px, py, pw, 20, 6) : c.rect(px, py, pw, 20);
+  c.fill();
+  c.fillStyle = '#4f9a3a';
+  c.beginPath(); c.roundRect ? c.roundRect(px, py, pw, 7, 6) : c.rect(px, py, pw, 7);
+  c.fill();
+  c.strokeStyle = 'rgba(35,60,25,0.7)'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect ? c.roundRect(px, py, pw, 20, 6) : c.rect(px, py, pw, 20);
+  c.stroke();
+  return py;
+}
+
 function pintarVistaPrevia() {
   const cv = document.getElementById('preview');
   // Si el lienzo aún no tiene tamaño, dibujar daría NaN y ensuciaría el canvas
@@ -8953,10 +9546,10 @@ function pintarVistaPrevia() {
   // monta antes de esa declaración y rompía el menú al arrancar.
   const ctxPrev = cv.getContext('2d');
   const guardado = ctx;
+  const sueloEscena = pintarEscena(cv);
   try {
     ctx = ctxPrev;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, cv.width, cv.height);
     const pj = { x: 0, y: 0, width: PW, height: PH, facing: 1, vx: 0, vy: 0,
                  onGround: true, saltos: 2, animTimer: t * 0.05, scaleX: 1, scaleY: 1,
                  angulo: 0, apoyo: null };
@@ -8965,9 +9558,10 @@ function pintarVistaPrevia() {
     const camX = cameraX, camY = cameraY, esc = scale;
     cameraX = 0; cameraY = 0; scale = 1;
     const alturaTotal = PH * 2.0;
-    const factor = Math.min((cv.height - 26) / alturaTotal, cv.width / (PW * 2.2));
+    const factor = Math.min((cv.height - 34) / alturaTotal, cv.width / (PW * 2.2));
     ctx.save();
-    ctx.translate(cv.width / 2 - (PW / 2) * factor, cv.height - 20 - PH * factor);
+    // Los pies, sobre el apoyo que dibuja la escena
+    ctx.translate(cv.width / 2 - (PW / 2) * factor, sueloEscena - PH * factor + 2);
     ctx.scale(factor, factor);
     modoRetrato = true;
     drawPlayer();
@@ -9061,7 +9655,10 @@ document.getElementById('map-centrar').addEventListener('click', centrarMapaEnJu
   // La rueda acerca y aleja, como en cualquier mapa
   cv.addEventListener('wheel', (ev) => {
     ev.preventDefault();
-    zoomMapa(ev.deltaY < 0 ? 1.18 : 1 / 1.18);
+    const caja = cv.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    zoomMapa(ev.deltaY < 0 ? 1.18 : 1 / 1.18,
+             (ev.clientX - caja.left) * dpr, (ev.clientY - caja.top) * dpr);
   }, { passive: false });
 })();
 

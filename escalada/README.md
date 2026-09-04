@@ -119,6 +119,53 @@ salto: si son alcanzables depende de la fase del vaivén, y eso no está
 verificado. Encenderlos sin comprobar la fase es volver a poder dejar el juego
 imposible.
 
+### Dieciocho objetos más, tres por ambiente
+
+Cada cumbre tenía entre 9 y 13 objetos y se repetían pronto. Ahora hay tres
+más por mundo, escogidos por su ambiente y no del montón común:
+
+| Cumbre | Ambiente | Nuevos |
+|---|---|---|
+| Emberwall Ascent | castillo y fragua | catapulta, panoplia de escudos, brasero con brasas vivas |
+| Coral Climb | puerto y playa | castillo de arena, red de pesca, tablas de surf |
+| Agent Adventure | base secreta | generador, caja fuerte con rueda que gira, dron posado |
+| Growing Up | granja y feria | calabazar, espantapájaros, abrevadero |
+| Frosty Peaks | nieve | tienda de montaña, hoguera, mojón de cumbre |
+| One Way Up | cielo y tecnología | panel solar, reactor, portal |
+
+Todos se apoyan en su propio volumen dentro del rectángulo que se pisa: el
+espantapájaros va apoyado en un fardo y no clavado en una estaca, el dron
+tiene los rotores dentro del ancho del apoyo, y la catapulta descansa sobre un
+bastidor en A. Cuatro llevan animación —las brasas, la hoguera, la rueda de la
+caja fuerte y el núcleo del reactor— porque son objetos que sin movimiento no
+se leen.
+
+### El mapa, con altura y progreso
+
+Enseñaba el nivel pero no decía nada de la subida. Ahora:
+
+- **Regla de metros** por el borde izquierdo, de 0 a 1000. El juego va de
+  altura y el mapa no la mencionaba por ninguna parte. Las seis cumbres miden
+  distinto, así que la regla necesita `alturaDeMetros()`, la inversa de
+  `metrosEnAltura()`.
+- **Progreso**: el recorrido hasta tu mejor altura va en dorado y el resto en
+  gris, y los apoyos que aún no has alcanzado se pintan apagados.
+- **«Vuelves aquí»**: un aro verde en el último checkpoint tocado, que es
+  adonde te manda una caída.
+- **Zoom hacia el puntero** con la rueda, en vez de hacia el centro: antes, al
+  acercar, se perdía justo lo que estabas mirando.
+
+La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
+se pisaba con los nombres de las cumbres.
+
+### El escaparate del personaje era una caja de degradado
+
+Ahora es una escena con las mismas rutinas que el juego: cielo, nubes que
+cruzan a tres velocidades, montañas al fondo y el apoyo de hierba sobre el que
+el personaje se planta de verdad —con su sombra— en vez de flotar en el
+centro. Y la tarjeta de «mejor altura» lleva debajo una barra con cuánto te
+queda de los 1000 m.
+
 ### El menú principal, rehecho
 
 El problema no era estético: con 18 colores y 16 accesorios en **dos rejillas
