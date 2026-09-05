@@ -42,6 +42,68 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### Iba lento: 26 fps en el menú y el triple de trabajo por fotograma
+
+Cuatro cosas, medidas antes de tocar nada. El reloj de JavaScript miente con
+un lienzo —los comandos se encolan y se rasterizan luego—, así que las medidas
+de dibujo se toman forzando el vaciado con un `getImageData` de un píxel
+después de cada fotograma.
+
+**1. El desenfoque del fondo del menú.** `backdrop-filter: blur()` sobre un
+lienzo que se repinta 60 veces por segundo obliga al navegador a rehacer el
+desenfoque de la pantalla entera en cada fotograma. Quitándolo, el menú pasa
+de **26 a 60 fps**. Era el único cambio de esa prueba:
+
+| | fps |
+|---|---|
+| menú tal cual | 26,0 |
+| sin repintar las tarjetas | 26,2 |
+| **sin `backdrop-filter`** | **58,4** |
+
+La legibilidad no dependía del desenfoque —el panel ya es opaco— así que se
+compensa oscureciendo un poco más la viñeta.
+
+**2. El degradado del cielo.** Pintar el fondo se llevaba el 74 % del coste
+del dibujo, y casi todo era el degradado a pantalla completa. En este
+rasterizador un degradado vale unas siete veces más por píxel que un color
+plano. Medido a 4,2 millones de píxeles:
+
+| | ms/fotograma |
+|---|---|
+| degradado + rayas (como estaba) | 9,9 |
+| sólo el degradado | 9,3 |
+| color plano | 3,7 |
+| **96 bandas planas** | **3,6** |
+| guardarlo hecho y volcarlo con `drawImage` | 16,7 |
+
+El cielo va de `#8fdcf7` a `#5cc4e8`: 51 unidades de rojo en toda la pantalla.
+Repartidas en 96 bandas planas son medias unidades por escalón, por debajo de
+lo que distingue el ojo, así que se ve igual. Guardar el cielo ya pintado en
+un lienzo aparte y volcarlo se probó y sale **peor**: volcar un mapa de bits
+del tamaño de la pantalla no es más barato que rellenarla.
+
+**3. Un relleno negro tirado.** `draw()` empezaba pintando la pantalla entera
+de negro y acto seguido el cielo la tapaba del todo. Un millón de píxeles
+escritos para nada.
+
+Las tres juntas, en una pantalla de 4,2 millones de píxeles:
+**12,1 ms → 4,1 ms por fotograma.** El fondo pasa de 9 ms a 1,5.
+
+**4. Las tarjetas de la tienda.** Se repintaban en cada fotograma del menú
+aunque no cambiara ninguna: más de veinte lienzos con un personaje entero cada
+uno, y cada uno preguntando su tamaño al DOM, que obliga a recalcular la
+disposición de la página. Ahora `refrescarMenu()` sólo hace lo que de verdad
+cambia —el paseo de la cámara y el escaparate— y `repintarTarjetas()` se llama
+cuando hay motivo: al elegir, comprar, mover el mezclador o cambiar de
+pestaña. Con red de seguridad al arrancar y al cambiar el tamaño de la
+ventana, que es cuando los lienzos aún no tienen medida.
+
+**Y un tope de densidad de pantalla.** El lienzo se dimensionaba con
+`devicePixelRatio` sin límite: un móvil de dpr 3 pinta **nueve veces** los
+píxeles de uno normal. Se corta en 2 —lo que ya usaban los lienzos del menú— y
+además se limita el total a 4,2 millones de píxeles. En una pantalla de dpr 3
+son 4,2 millones en vez de 9,4.
+
 ### Estelas: el rastro que vas dejando
 
 El personaje suelta cosas por donde pasa. Sólo mientras **anda o está en el

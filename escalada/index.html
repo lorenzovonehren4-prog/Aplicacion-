@@ -40,8 +40,13 @@
   #game-container.en-menu #bottomleft,
   #game-container.en-menu #touch { display:none !important; }
 
+  /* SIN `backdrop-filter`. Detrás de estas capas hay un lienzo que se
+     repinta 60 veces por segundo, así que desenfocarlo obliga al navegador a
+     rehacer el desenfoque de la pantalla ENTERA en cada fotograma: medido,
+     el menú bajaba de 58 a 26 fps por esto solo. La legibilidad ya la pone
+     el panel, que es opaco; aquí basta con oscurecer. */
   .overlay { position:absolute; inset:0; z-index:10; display:flex; align-items:center;
-    justify-content:center; background:rgba(5,5,12,.78); backdrop-filter:blur(3px); padding:20px; }
+    justify-content:center; background:rgba(5,5,12,.82); padding:20px; }
   .overlay.hidden { display:none; }
   .campo { display:block; margin:14px 0 6px; font-size:14px; color:#c9d6e5; text-align:left; }
   .campo input { display:block; width:100%; margin-top:6px; padding:10px 12px;
@@ -68,17 +73,15 @@
      Detrás del menú está el juego de verdad, pintándose: cielo, montañas y
      nubes que pasan. Antes iba tapado con un negro al 86 % y no se veía
      nada, así que el menú flotaba sobre un vacío oscuro y parecía una
-     ventana de sistema. Ahora se deja ver, difuminado, con una viñeta que
+     ventana de sistema. Ahora se deja ver, con una viñeta que
      oscurece sólo los bordes: el menú se apoya en el mundo al que va a
      entrar. La legibilidad la pone el panel, que es opaco. */
   #start-screen {
     background:
-      radial-gradient(120% 90% at 50% 42%, rgba(4,7,14,.30) 0%,
-                      rgba(4,7,14,.62) 52%, rgba(2,4,10,.88) 100%),
+      radial-gradient(120% 90% at 50% 42%, rgba(4,7,14,.42) 0%,
+                      rgba(4,7,14,.72) 52%, rgba(2,4,10,.93) 100%),
       radial-gradient(1100px 620px at 50% -12%, rgba(96,168,255,.22), transparent 68%),
       radial-gradient(900px 560px at 50% 116%, rgba(255,170,60,.14), transparent 66%);
-    backdrop-filter:blur(7px) saturate(1.05);
-    -webkit-backdrop-filter:blur(7px) saturate(1.05);
   }
   .menu { max-width:1180px; width:96vw; max-height:96vh; overflow:auto; text-align:left;
     position:relative;
@@ -4435,6 +4438,9 @@ function volverAlMenu() {
   startScreen.classList.remove('hidden');
   document.getElementById('game-container').classList.add('en-menu');
   actualizarMarcaMenu();
+  // Las tarjetas ya no se repintan solas en cada fotograma: al volver del
+  // juego hay que pedirlo, que el color o el accesorio pueden haber cambiado.
+  repintarTarjetas();
 }
 
 /* ====================================================================
@@ -4810,7 +4816,15 @@ function triggerWin() {
 function resizeCanvas() {
   const cont = document.getElementById('game-container');
   const w = cont.clientWidth, hh = cont.clientHeight;
-  const dpr = window.devicePixelRatio || 1;
+  // TOPE DE DENSIDAD. Sin tope, un móvil de dpr 3 pinta NUEVE veces los
+  // píxeles de uno normal y un 4K a dpr 2 pasa de ocho millones: es trabajo
+  // que no se ve y que se nota en los fotogramas. Se corta en 2 —lo que ya
+  // usan los lienzos del menú— y además se limita el total de píxeles.
+  let dpr = Math.min(2, window.devicePixelRatio || 1);
+  const TOPE_PIXELES = 4200000;                 // ~2560x1640
+  if (w * hh * dpr * dpr > TOPE_PIXELES) {
+    dpr = Math.max(1, Math.sqrt(TOPE_PIXELES / Math.max(1, w * hh)));
+  }
 
   canvas.width = w * dpr;  canvas.height = hh * dpr;
   canvas.style.width = w + 'px';  canvas.style.height = hh + 'px';
@@ -4999,6 +5013,36 @@ function fondoLejano(b, w) {
   ctx.restore();
 }
 
+/* ====================================================================
+   EL CIELO, EN BANDAS PLANAS
+   Medido con el reloj parado en cada fotograma, en una pantalla de 4,2
+   millones de píxeles: pintar el fondo se llevaba el 74 % del coste del
+   dibujo, y casi todo era **el degradado**. Un degradado a pantalla completa
+   costaba 9,3 ms; el mismo relleno en color plano, 1. En este rasterizador
+   un degradado vale siete veces más por píxel.
+
+   El cielo va de #8fdcf7 a #5cc4e8: 51 unidades de rojo en toda la pantalla.
+   Repartidas en 96 bandas planas son medias unidades por escalón —por debajo
+   de lo que distingue el ojo o de lo que puede representar la pantalla— así
+   que se ve exactamente igual y cuesta 3,6 ms en vez de 9,9.
+
+   Probado también guardar el cielo ya pintado en un lienzo aparte y volcarlo
+   con `drawImage`: sale PEOR (16 ms), porque el volcado de un mapa de bits
+   del tamaño de la pantalla no es más barato que rellenarla.
+   ==================================================================== */
+const CIELO_BANDAS = 96;
+const CIELO_TONOS = (() => {
+  const de = [143, 220, 247], a = [92, 196, 232];       // #8fdcf7 -> #5cc4e8
+  const lista = [];
+  for (let i = 0; i < CIELO_BANDAS; i++) {
+    const f = i / (CIELO_BANDAS - 1);
+    lista.push('rgb(' + Math.round(de[0] + (a[0] - de[0]) * f) + ',' +
+                        Math.round(de[1] + (a[1] - de[1]) * f) + ',' +
+                        Math.round(de[2] + (a[2] - de[2]) * f) + ')');
+  }
+  return lista;
+})();
+
 function drawBackgrounds() {
   const izq = cameraX - 200, ancho = viewWidth + 400;
 
@@ -5007,13 +5051,15 @@ function drawBackgrounds() {
   // dibujarse y el cielo salía negro.
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  // Un único cielo para todo el mapa, como en las capturas
-  const base = ctx.createLinearGradient(0, canvas.height, 0, 0);
-  base.addColorStop(0, '#8fdcf7');
-  base.addColorStop(1, '#5cc4e8');
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+  // El cielo se pinta de ARRIBA A ABAJO, así que la banda 0 es la de arriba
+  // y el tono va del claro de la cumbre al azul del suelo.
+  const altoBanda = canvas.height / CIELO_BANDAS;
+  for (let i = 0; i < CIELO_BANDAS; i++) {
+    ctx.fillStyle = CIELO_TONOS[CIELO_BANDAS - 1 - i];
+    // +1 de solape: sin él quedaban costuras de un píxel entre bandas
+    ctx.fillRect(0, Math.floor(i * altoBanda), canvas.width,
+                 Math.ceil(altoBanda) + 1);
+  }
   ctx.restore();
 
   for (let w = 0; w < 0; w++) {          // franjas por cumbre desactivadas
@@ -5056,6 +5102,7 @@ function drawBackgrounds() {
 
   // Rayas del cielo, AL FINAL: si van antes, las franjas de cada cumbre las
   // tapan por completo. Se desplazan con la cámara para no parecer pegadas.
+  // Medido: medio milisegundo, así que estas sí se pintan una a una.
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = 'rgba(0,45,80,0.09)';
@@ -8270,10 +8317,9 @@ function platMeta(p) {
    -------------------------------------------------------------------- */
 
 function draw() {
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+  // Aquí iba un relleno negro a pantalla completa antes del cielo. Era un
+  // millón de píxeles escritos para taparlos acto seguido: `drawBackgrounds`
+  // cubre la pantalla entera con bandas opacas.
   ctx.setTransform(scale, 0, 0, scale, -cameraX * scale, -cameraY * scale);
 
   drawBackgrounds();
@@ -12831,6 +12877,7 @@ function refrescarMezclador() {
     // Las tarjetas de la rejilla que estaba oculta no tienen tamaño hasta
     // que se muestran: hay que repintarlas al cambiar de pestaña.
     refrescarMenu();
+    repintarTarjetas();
     refrescarMezclador();
   };
   botones.forEach((b, k) => b.addEventListener('click', () => mostrar(k)));
@@ -12848,6 +12895,7 @@ function refrescarMezclador() {
       // Mover un mando repinta 20 tarjetas: guardar en cada paso serían
       // cientos de escrituras arrastrando el dedo. Se apunta y se escribe.
       refrescarMenu();
+      repintarTarjetas();
       refrescarMezclador();
       guardarPronto();
     });
@@ -12918,7 +12966,8 @@ cargarGuardado();
     if (gCol) pintarEstado(gCol, skinElegida, precioColor, llaveColor);
     if (gEst) pintarEstado(gEst, estelaElegida, precioEstela, llaveEstela);
     pintarHucha();
-    refrescarMenu(); refrescarPestanas(); refrescarMezclador(); guardar();
+    refrescarMenu(); repintarTarjetas(); refrescarPestanas();
+    refrescarMezclador(); guardar();
   };
 
   const tarjeta = (etiqueta) => {
@@ -13078,17 +13127,38 @@ function pasearMenu() {
   for (const v of voladores) v.x = dronX(v, tiempoJuego);
 }
 
+/**
+ * Lo que SÍ cambia en cada fotograma del menú: la cámara paseando por el
+ * nivel y el escaparate. Nada más.
+ */
 function refrescarMenu() {
   if (!startScreen.classList.contains('hidden')) pasearMenu();
   pintarVistaPrevia();
   const et = document.getElementById('nombreSkin');
   if (et && SKINS[skinElegida]) et.textContent = SKINS[skinElegida].nombre;
+}
+
+/**
+ * Las tarjetas de la tienda. Se repintaban 60 veces por segundo aunque no
+ * cambiara ninguna: son más de veinte lienzos, cada uno con un personaje
+ * entero dibujado, y cada uno preguntando su tamaño al DOM —que obliga al
+ * navegador a recalcular la disposición de la página—. Sólo se repintan
+ * cuando hay motivo: al elegir, al comprar, al mover el mezclador o al
+ * cambiar de pestaña (una rejilla oculta no tiene tamaño hasta que se ve).
+ */
+function repintarTarjetas() {
   const cs = document.getElementById('skins');
-  if (cs) Array.from(cs.children).forEach((d) => retrato(d._cv, d._skin, accesorioElegido));
+  if (cs && !cs.classList.contains('oculta')) {
+    Array.from(cs.children).forEach((d) => retrato(d._cv, d._skin, accesorioElegido));
+  }
   const ca = document.getElementById('accesorios');
-  if (ca) Array.from(ca.children).forEach((d) => retrato(d._cv, skinElegida, d._acc));
+  if (ca && !ca.classList.contains('oculta')) {
+    Array.from(ca.children).forEach((d) => retrato(d._cv, skinElegida, d._acc));
+  }
   const ce = document.getElementById('estelas-lista');
-  if (ce) Array.from(ce.children).forEach((d) => retratoEstela(d._cv, d._est));
+  if (ce && !ce.classList.contains('oculta')) {
+    Array.from(ce.children).forEach((d) => retratoEstela(d._cv, d._est));
+  }
 }
 
 /* Vista previa en vivo: se dibuja el personaje elegido en el menú */
@@ -13315,11 +13385,23 @@ window.addEventListener('blur', () => { soltarMandos(); pausar(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) { soltarMandos(); pausar(); } });
 
 window.addEventListener('resize', resizeCanvas);
+/* Los lienzos de las tarjetas se miden en píxeles: si cambia el ancho de la
+   ventana hay que volver a dibujarlas o salen estiradas. */
+let repinteVentana = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(repinteVentana);
+  repinteVentana = setTimeout(repintarTarjetas, 120);
+});
 montarTactil();
 actualizarBotonMute();
 actualizarMarcaMenu();
 
 requestAnimationFrame(gameLoop);
+/* En el primer montaje la rejilla puede no tener tamaño todavía y las
+   tarjetas saldrían en blanco. Antes lo tapaba el repintado de cada
+   fotograma; ahora se pide un par de veces al arrancar y se acabó. */
+requestAnimationFrame(() => requestAnimationFrame(repintarTarjetas));
+setTimeout(repintarTarjetas, 300);
 resizeCanvas();
 cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
 document.getElementById('game-container').classList.add('en-menu');
