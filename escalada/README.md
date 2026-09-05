@@ -42,6 +42,47 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### La pantalla de inicio: el fondo, el muro gris y las cajas vacías
+
+**El fondo era un fallo de pintado, no un fondo.** Detrás del menú se pintaba
+el nivel de verdad. La idea era buena —«el menú se apoya en el mundo al que
+vas a entrar»— pero este mundo son plataformas flotando en un cielo vacío, y
+el panel ocupa el 96 % de la ventana: del marco que queda sólo asomaban trozos
+de apoyo sueltos. Media plataforma colgando en el borde no parece un fondo,
+parece que algo se ha roto.
+
+Se prueba primero pintar ese fondo a un cuarto de resolución para que el
+estirado del navegador hiciera de desenfoque. Se ve blando, sí, pero los
+fragmentos siguen siendo fragmentos. Así que el marco pasa a ser un decorado
+hecho a propósito: noche azul, dos cordilleras en silueta y un par de
+resplandores, todo en CSS. Las nubes de encima se mueven con `transform`, que
+va por la tarjeta gráfica y no repinta nada.
+
+Y como la pantalla de inicio ya es opaca, **el bucle deja de dibujar el nivel
+mientras estás en el menú**. Era el dibujo entero del juego, sesenta veces por
+segundo, para que no lo viera nadie.
+
+**El muro gris.** Con 21 colores y casi todos por comprar, la rejilla eran
+diecisiete siluetas idénticas en gris: la parte más visible del panel y la más
+muerta. Dos cambios:
+
+- Cada ficha de color lleva **su propio color de fondo**. Lo que compras ahí es
+  el color, así que el color tiene que verse aunque el artículo esté cerrado.
+  El tono sale de la piel (`--tono`, también el del mezclador, que cambia con
+  los mandos).
+- Cerrado deja de ser roto: el velo pasa de gris total a `grayscale(.58)` con
+  algo de sombra, se sigue leyendo qué es, y un candado en la esquina libre
+  dice por qué no lo llevas puesto.
+
+**Cuatro cajas con un guion dentro.** Recién llegado no hay ninguna marca, así
+que la vitrina de la cabecera eran cuatro huecos vacíos en el sitio donde más
+se mira. Ahora, sin marcas, sale una sola ficha que además dice para qué
+sirven: «Sin marcas todavía · altura, tiempo, caídas y puntos se apuntan en
+cuanto subas». En cuanto hay una marca vuelven las cuatro.
+
+De propina, el destello que cruza el título se estrechó y bajó de opacidad:
+congelado en una captura parecía una banda gris sobre las letras.
+
 ### Iba lento: 26 fps en el menú y el triple de trabajo por fotograma
 
 Cuatro cosas, medidas antes de tocar nada. El reloj de JavaScript miente con

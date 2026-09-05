@@ -76,13 +76,38 @@
      ventana de sistema. Ahora se deja ver, con una viñeta que
      oscurece sólo los bordes: el menú se apoya en el mundo al que va a
      entrar. La legibilidad la pone el panel, que es opaco. */
+  /* EL FONDO DEL INICIO
+     Iba pintándose el nivel de verdad por detrás. La idea era buena —«el menú
+     se apoya en el mundo al que vas a entrar»— pero este mundo son
+     plataformas flotando en un cielo vacío: del marco que queda alrededor del
+     panel sólo asomaban trozos de apoyo sueltos, y media plataforma colgando
+     en el borde no parece un fondo, parece un fallo de pintado.
+
+     Ahora el marco es un decorado hecho a propósito: noche azul, dos
+     cordilleras en silueta y un par de resplandores. Es lo que el menú
+     necesitaba, cuesta cero —lo compone el navegador una vez— y de paso el
+     lienzo del juego deja de dibujarse mientras estás en el menú.
+     Las nubes de la capa de encima se mueven con `transform`, que va por la
+     tarjeta gráfica y no repinta nada. */
   #start-screen {
     background:
-      radial-gradient(120% 90% at 50% 42%, rgba(4,7,14,.42) 0%,
-                      rgba(4,7,14,.72) 52%, rgba(2,4,10,.93) 100%),
-      radial-gradient(1100px 620px at 50% -12%, rgba(96,168,255,.22), transparent 68%),
-      radial-gradient(900px 560px at 50% 116%, rgba(255,170,60,.14), transparent 66%);
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201600%20420%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20fill%3D%22%2314304d%22%20d%3D%22M0%20420V236l118-74%2096%2058%20132-96%20108%2070%20126-92%20150%20108%20118-76%20128%2084%20122-64%20130%2088%20152-96%20220%20152v122z%22%2F%3E%3Cpath%20fill%3D%22%232a5378%22%20opacity%3D%22.55%22%20d%3D%22M346%20124l52%2034-52%208-40-14zM580%2092l58%2042-58%2010-44-18zM886%20100l54%2036-54%2010-42-16z%22%2F%3E%3Cpath%20fill%3D%22%230b2036%22%20d%3D%22M0%20420V300l150-96%20132%2082%20150-108%20168%20118%20140-94%20166%20116%20148-98%20172%20116%20174-118%20200%20134v68z%22%2F%3E%3Cpath%20fill%3D%22%23000000%22%20opacity%3D%220%22%20d%3D%22M0%200h1%22%2F%3E%3C%2Fsvg%3E") bottom center / 100% auto no-repeat,
+      radial-gradient(1200px 660px at 50% -8%, rgba(96,168,255,.20), transparent 66%),
+      radial-gradient(900px 540px at 50% 116%, rgba(255,168,60,.13), transparent 64%),
+      linear-gradient(180deg, #071626 0%, #0a1e35 46%, #0c2740 100%);
+    overflow:hidden;
   }
+  #start-screen::before {
+    content:''; position:absolute; inset:-6% -50% auto -50%; height:78%;
+    background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20900%20300%22%3E%3Cg%20fill%3D%22%23ffffff%22%20opacity%3D%220.045%22%3E%3Cellipse%20cx%3D%22120%22%20cy%3D%2270%22%20rx%3D%22105%22%20ry%3D%2230%22%2F%3E%3Cellipse%20cx%3D%22190%22%20cy%3D%2258%22%20rx%3D%2270%22%20ry%3D%2224%22%2F%3E%3Cellipse%20cx%3D%22470%22%20cy%3D%22150%22%20rx%3D%22130%22%20ry%3D%2234%22%2F%3E%3Cellipse%20cx%3D%22540%22%20cy%3D%22136%22%20rx%3D%2280%22%20ry%3D%2226%22%2F%3E%3Cellipse%20cx%3D%22770%22%20cy%3D%2260%22%20rx%3D%2295%22%20ry%3D%2226%22%2F%3E%3Cellipse%20cx%3D%22300%22%20cy%3D%22235%22%20rx%3D%22120%22%20ry%3D%2230%22%2F%3E%3Cellipse%20cx%3D%22380%22%20cy%3D%22224%22%20rx%3D%2272%22%20ry%3D%2222%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") repeat-x top left / 900px auto;
+    pointer-events:none; z-index:0;
+    animation:nubesInicio 90s linear infinite;
+  }
+  @keyframes nubesInicio { from { transform:translate3d(0,0,0); }
+                           to   { transform:translate3d(900px,0,0); } }
+  @media (prefers-reduced-motion:reduce) { #start-screen::before { animation:none; } }
+  #start-screen > * { position:relative; z-index:1; }
+
   .menu { max-width:1180px; width:96vw; max-height:96vh; overflow:auto; text-align:left;
     position:relative;
     background:
@@ -125,8 +150,8 @@
     filter:drop-shadow(0 8px 24px rgba(255,180,60,.26)); }
   .menu .cabecera h1::after { content:''; position:absolute; inset:0;
     pointer-events:none; mix-blend-mode:screen;
-    background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.55) 50%,
-                               transparent 62%);
+    background:linear-gradient(105deg, transparent 44%, rgba(255,255,255,.30) 50%,
+                               transparent 56%);
     transform:translateX(-115%);
     animation:destelloTitulo 6.5s ease-in-out infinite; }
   @keyframes destelloTitulo { 0%,72% { transform:translateX(-115%); }
@@ -208,6 +233,20 @@
     border-top:1px solid rgba(255,255,255,.12); }
   .escaparate .nombreSkin::before { content:''; width:5px; height:5px; border-radius:50%;
     background:#ffd700; box-shadow:0 0 8px rgba(255,215,0,.8); }
+
+  /* Cada tarjeta de color lleva SU color de fondo. Con 21 colores y casi
+     todos por comprar, la rejilla era un muro de siluetas grises idénticas:
+     lo que se compra es el color, así que el color tiene que verse aunque el
+     artículo esté cerrado. `--tono` lo pone el JS con el tono medio de cada
+     piel (también el del mezclador, que cambia). */
+  #skins .tarjeta { background:
+    linear-gradient(180deg, rgba(var(--tono,140,160,190), .30),
+                            rgba(var(--tono,140,160,190), .07)); }
+  #skins .tarjeta.cerrada { background:
+    linear-gradient(180deg, rgba(var(--tono,140,160,190), .23),
+                            rgba(var(--tono,140,160,190), .06)); }
+  #skins .tarjeta.sel { background:
+    linear-gradient(180deg, rgba(var(--tono,140,160,190), .46), rgba(255,140,40,.08)); }
 
   /* Tarjetas de skin y accesorio, con el personaje dibujado dentro */
   #skins, #accesorios, #estelas-lista { display:grid; gap:8px; margin-bottom:0; }
@@ -445,9 +484,15 @@
   .tarjeta .precio.alcanza { color:#ffe07a; border-color:rgba(255,200,60,.55);
     box-shadow:0 0 10px rgba(255,190,50,.25); }
   .tarjeta .precio.oculta { display:none; }
-  .tarjeta.cerrada canvas { filter:grayscale(1) brightness(.55) contrast(.9); }
-  .tarjeta.cerrada span { color:#6f7f90; }
-  .tarjeta.cerrada:hover canvas { filter:grayscale(.45) brightness(.8); }
+  /* Cerrado, no roto. En gris total todas las fichas eran la misma mancha;
+     con un velo se sigue leyendo qué es y encima apetece. */
+  .tarjeta.cerrada canvas { filter:grayscale(.58) brightness(.62) contrast(.95); }
+  .tarjeta.cerrada span { color:#7d8ea0; }
+  .tarjeta.cerrada:hover canvas { filter:grayscale(.15) brightness(.92); }
+  /* Candado en la esquina libre: el precio va a la izquierda. Una ficha
+     cerrada nunca está elegida, así que no choca con la marca de elegido. */
+  .tarjeta.cerrada::after { content:'\1F512'; position:absolute; top:2px; right:4px;
+    font-size:9px; opacity:.62; filter:grayscale(1) brightness(1.6); }
 
   .pista-eleccion.falta { color:#ffb4a8; border-color:rgba(255,120,100,.35);
     background:rgba(120,30,24,.28); }
@@ -456,6 +501,13 @@
 
   .vitrina { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;
     margin:0; flex:none; }
+  /* La ficha de estreno ocupa el sitio de las cuatro y dice para qué sirven */
+  .vitrina .primera { min-width:0; padding:8px 15px 9px 14px;
+    background:linear-gradient(180deg, rgba(255,215,0,.09), rgba(255,150,20,.03));
+    border:1px solid rgba(255,200,60,.22); }
+  .vitrina .primera b { font-size:13px; color:#ffe9a8; letter-spacing:.3px; }
+  .vitrina .primera span { max-width:250px; white-space:normal; line-height:1.35;
+    letter-spacing:.2px; text-transform:none; font-size:10.5px; }
   .vitrina div { position:relative; overflow:hidden; text-align:left;
     min-width:88px; padding:7px 12px 8px 13px; border-radius:12px;
     background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.022));
@@ -636,6 +688,13 @@
     /* Cuatro fichas en rejilla de dos: en fila se partían 3 + 1 */
     .vitrina { display:grid; grid-template-columns:1fr 1fr; }
     .vitrina div { min-width:0; }
+    /* Apilado, la cabecera va a lo ancho: la hucha a la derecha y la ficha de
+       estreno pegada a la izquierda quedaban descolgadas una de otra. */
+    .cabecera-dcha { align-items:stretch; }
+    .hucha { align-self:center; }
+    .vitrina.estreno { grid-template-columns:1fr; }
+    .vitrina .primera { text-align:center; }
+    .vitrina .primera span { max-width:none; }
     #preview { height:170px; }
     /* Apilado, el degradado del pie deja ver el menú entre los dos botones */
     .pie-menu { background:#0a0e18; border-radius:14px 14px 0 0;
@@ -646,7 +705,7 @@
   /* Móvil estrecho: las tarjetas de aspecto a tres por fila se leen mejor
      que a cuatro, que dejaban los nombres en dos líneas. */
   @media (max-width:430px) {
-    #skins, #accesorios { grid-template-columns:repeat(3,1fr); }
+    #skins, #accesorios, #estelas-lista { grid-template-columns:repeat(3,1fr); }
     .menu .cabecera h1 { font-size:clamp(26px,9vw,34px); }
     .vitrina div { padding:6px 10px 7px 11px; }
     .vitrina b { font-size:15px; }
@@ -1366,6 +1425,31 @@ function hsl(h, s, l) {
   const hh = ((Math.round(h) % 360) + 360) % 360;
   return 'hsl(' + hh + ',' + Math.max(0, Math.min(100, Math.round(s))) + '%,' +
          Math.max(0, Math.min(100, Math.round(l))) + '%)';
+}
+
+/** El tono de una piel en «r,g,b», valga hex o `hsl()` (el mezclador). */
+function tripleRGB(col) {
+  if (!col) return '140,160,190';
+  if (col.charAt(0) === '#') {
+    return parseInt(col.substr(1, 2), 16) + ',' +
+           parseInt(col.substr(3, 2), 16) + ',' +
+           parseInt(col.substr(5, 2), 16);
+  }
+  const m = /hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%/.exec(col);
+  if (!m) return '140,160,190';
+  const h = +m[1] / 360, sa = +m[2] / 100, l = +m[3] / 100;
+  const c = (p2, q2, t2) => {
+    if (t2 < 0) t2 += 1;
+    if (t2 > 1) t2 -= 1;
+    if (t2 < 1 / 6) return p2 + (q2 - p2) * 6 * t2;
+    if (t2 < 1 / 2) return q2;
+    if (t2 < 2 / 3) return p2 + (q2 - p2) * (2 / 3 - t2) * 6;
+    return p2;
+  };
+  const q = l < 0.5 ? l * (1 + sa) : l + sa - l * sa;
+  const p = 2 * l - q;
+  return [c(p, q, h + 1 / 3), c(p, q, h), c(p, q, h - 1 / 3)]
+    .map((x) => Math.round(x * 255)).join(',');
 }
 
 /**
@@ -4812,6 +4896,13 @@ function triggerWin() {
 /* ====================================================================
    AJUSTE DE PANTALLA
    ==================================================================== */
+
+/** ¿Está puesta la pantalla de inicio? El fondo del menú lo pinta el CSS, y
+ *  el bucle usa esto para no dibujar el nivel que no se ve. */
+function enMenu() {
+  const c = document.getElementById('game-container');
+  return !!(c && c.classList.contains('en-menu'));
+}
 
 function resizeCanvas() {
   const cont = document.getElementById('game-container');
@@ -12477,7 +12568,9 @@ function gameLoop(ahora) {
   if (!running && !pausado && !gameOver) refrescarMenu();
   if (mapaAbierto) dibujarMapa();
   sonarMusica();
-  draw();
+  // En el menú el fondo lo pone el CSS y la pantalla de inicio es opaca:
+  // dibujar el nivel entero por detrás era trabajo que no veía nadie.
+  if (!enMenu()) draw();
 }
 
 function startGame() {
@@ -12907,6 +13000,18 @@ function pintarVitrina() {
   const cont = document.getElementById('vitrina');
   if (!cont) return;
   const pct = Math.max(0, Math.min(100, (marcas.altura || 0) / 10));
+  // SIN NADA QUE ENSEÑAR. Recién llegado no hay ni una marca, y cuatro cajas
+  // con un guion dentro son cuatro agujeros en el sitio más visible del
+  // panel. Mejor una sola línea que además dice para qué sirven.
+  const virgen = !marcas.altura && !marcas.completado &&
+                 marcas.muertes === null && !marcas.puntos;
+  if (virgen) {
+    cont.className = 'vitrina estreno';
+    cont.innerHTML = '<div class="primera"><b>Sin marcas todavía</b>' +
+      '<span>Altura, tiempo, caídas y puntos se apuntan en cuanto subas</span></div>';
+    return;
+  }
+  cont.className = 'vitrina';
   // Cada ficha lleva su color: en gris cuando no hay marca todavía, encendida
   // en cuanto se consigue. De un vistazo se ve qué falta por hacer.
   const filas = [
@@ -12951,6 +13056,11 @@ cargarGuardado();
     Array.from(cont.children).forEach((c, k) => {
       const precio = precioDe(k), mio = esMio(llaveDe(k), precio);
       c.className = 'tarjeta' + (k === elegido ? ' sel' : '') + (mio ? '' : ' cerrada');
+      // El fondo de las fichas de color lleva su propio tono. Se refresca
+      // aquí y no al montarlas porque el del mezclador cambia con los mandos.
+      if (c._skin !== undefined) {
+        c.style.setProperty('--tono', tripleRGB(pielDe(c._skin).medio));
+      }
       const eti = c._precio;
       if (!eti) return;
       if (mio) { eti.className = 'precio oculta'; eti.textContent = ''; }
@@ -13019,7 +13129,9 @@ cargarGuardado();
         skinElegida = i;
         refrescarTodo();
       });
-      gCol.appendChild(d); d._skin = i;
+      d._skin = i;
+      d.style.setProperty('--tono', tripleRGB(pielDe(i).medio));
+      gCol.appendChild(d);
     });
   }
 
@@ -13132,7 +13244,8 @@ function pasearMenu() {
  * nivel y el escaparate. Nada más.
  */
 function refrescarMenu() {
-  if (!startScreen.classList.contains('hidden')) pasearMenu();
+  // El paseo de la cámara movía el nivel por detrás del panel. Ya no se
+  // dibuja, así que aquí sólo queda el escaparate.
   pintarVistaPrevia();
   const et = document.getElementById('nombreSkin');
   if (et && SKINS[skinElegida]) et.textContent = SKINS[skinElegida].nombre;
@@ -13402,9 +13515,9 @@ requestAnimationFrame(gameLoop);
    fotograma; ahora se pide un par de veces al arrancar y se acabó. */
 requestAnimationFrame(() => requestAnimationFrame(repintarTarjetas));
 setTimeout(repintarTarjetas, 300);
+document.getElementById('game-container').classList.add('en-menu');
 resizeCanvas();
 cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
-document.getElementById('game-container').classList.add('en-menu');
 
 /* Componer el nivel entero —sembrar, verificar salto a salto y repasar— son
    varios segundos de cuentas, y hasta ahora corrían ANTES del primer pintado:
