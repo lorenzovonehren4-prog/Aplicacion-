@@ -840,6 +840,70 @@ function solapa(a, b) {
 }
 
 /**
+ * Un apoyo que se desliza puede venir A POR TI: tú estás quieto de pie y el
+ * carril de al lado te mete dentro. La física normal solo deshace los
+ * choques que provoca TU movimiento —mueve, mira si has entrado, retrocede—,
+ * así que ese caso se colaba entero y aparecías empotrado en el bloque. Aquí
+ * se saca al personaje por el lado más corto que quede libre, antes de que
+ * empiece el fotograma. Si una plataforma te embiste, te aparta; no te traga.
+ */
+function desincrustar(e, plats) {
+  // Tres vueltas: sacarte de un bloque puede meterte en el de al lado.
+  for (let vuelta = 0; vuelta < 3; vuelta++) {
+    // Este barrido corre en CADA fotograma simulado, y las pasadas de
+    // composición simulan cientos de miles: se escriben los cuatro bordes
+    // del personaje una sola vez y se recorre el array por índice.
+    const ex1 = e.x, ex2 = e.x + PW, ey1 = e.y, ey2 = e.y + PH;
+    let dentro = null, supDentro = 0;
+    for (let k = 0; k < plats.length; k++) {
+      const p = plats[k];
+      if (ex2 <= p.x || ex1 >= p.x + p.width) continue;
+      if (ey2 <= p.y || ey1 >= p.y + p.height) continue;
+      if (p.caido) continue;
+      // En una rampa los pies van POR DEBAJO del borde superior de la caja
+      // sin estar metidos en nada: eso es estar de pie, no empotrado.
+      const sup = alturaSuperficie(p, ex1 + PW / 2);
+      if (ey2 <= sup + 1) continue;
+      dentro = p; supDentro = sup; break;
+    }
+    if (!dentro) return;
+    const p = dentro;
+    const salidas = [
+      { dx: (p.x - PW) - e.x,        dy: 0 },
+      { dx: (p.x + p.width) - e.x,   dy: 0 },
+      { dx: 0, dy: (Math.min(p.y, supDentro) - PH) - e.y },
+      { dx: 0, dy: (p.y + p.height) - e.y },
+    ].sort((a, b) => (Math.abs(a.dx) + Math.abs(a.dy)) - (Math.abs(b.dx) + Math.abs(b.dy)));
+
+    let elegida = null;
+    for (const o of salidas) {
+      const nx = e.x + o.dx, ny = e.y + o.dy;
+      if (nx < 0 || nx + PW > WORLD_WIDTH) continue;
+      let choca = false;
+      for (const q of plats) {
+        if (q === p || q.caido) continue;
+        if (nx + PW <= q.x || nx >= q.x + q.width) continue;
+        if (ny + PH <= q.y || ny >= q.y + q.height) continue;
+        choca = true; break;
+      }
+      if (!choca) { elegida = o; break; }
+    }
+    // Entre dos bloques que se cierran no hay salida buena: se coge la más
+    // corta igualmente, que es mejor que quedarse dentro de la piedra.
+    if (!elegida) elegida = salidas[0];
+
+    // El empujón es movimiento FORZADO, igual que el arrastre: la colisión
+    // lateral de después tiene que saber de dónde venías de verdad.
+    if (e.xAntesArrastre === undefined) e.xAntesArrastre = e.x;
+    e.x += elegida.dx;
+    e.y += elegida.dy;
+    if (elegida.dy < 0) { e.vy = Math.min(e.vy, 0); e.onGround = true; e.saltos = 2; }
+    else if (elegida.dy > 0) e.vy = Math.max(e.vy, 0);
+    else e.vx = 0;
+  }
+}
+
+/**
  * Un fotograma de física con colisiones sólidas (lados, cabeza y suelo)
  * y DOBLE SALTO. Devuelve la plataforma donde aterrizó, o null.
  */
@@ -899,6 +963,10 @@ function pasoFisica(e, dirX, saltar, plats) {
   }
   e.arrastre = null;
 
+  // Antes de simular nada: si mientras estabas quieto se te ha echado encima
+  // un apoyo que se desliza, primero salir de dentro.
+  desincrustar(e, plats);
+
   // HIELO: sobre hielo no se cambia de dirección al instante, se patina.
   const objetivoVx = dirX * SPEED;
   if (e.enHielo && e.onGround) {
@@ -936,6 +1004,11 @@ function pasoFisica(e, dirX, saltar, plats) {
     if (e.x + PW <= p.x || e.x >= p.x + p.width) continue;
     if (xPrevio + PW <= p.x)      e.x = p.x - PW;        // venía por la izquierda
     else if (xPrevio >= p.x + p.width) e.x = p.x + p.width;
+    // Ni por un lado ni por otro: no has entrado tú, ha entrado ÉL. Es una
+    // plataforma de carril que se te ha echado encima estando tú quieto, y
+    // antes se quedaba la cosa así, contigo dentro del bloque. Sales por el
+    // lado más corto, en el mismo fotograma.
+    else e.x = (e.x + PW / 2 < p.x + p.width / 2) ? p.x - PW : p.x + p.width;
     e.vx = 0;
     break;
   }
@@ -1003,6 +1076,13 @@ function pasoFisica(e, dirX, saltar, plats) {
       break;
     }
   }
+
+  // Y otra vez al cerrar el fotograma: el escalón de 8 px que sirve para
+  // subirte a un apoyo un pelín más alto también deja pasar la ESQUINA de un
+  // ascensor que sube pegado a ti, y te quedabas con medio pie dentro. Lo que
+  // quede metido, fuera, antes de dibujar nada.
+  desincrustar(e, plats);
+
   return aterrizo;
 }
 
@@ -1786,7 +1866,7 @@ function carrilSinTecho(p) {
 /** ¿Este apoyo se puede tocar sin romper nada de lo que ya hay? */
 function apoyoLibre(p) {
   return p && !p.extra && p.type === 'normal' && !p.hielo && !p.trampa &&
-         !p.petalo && !p.ciclo && !p.movY;
+         !p.petalo && !p.ciclo && !p.movY && !p.redonda;
 }
 
 /**
@@ -1969,6 +2049,53 @@ function sembrarPrecision() {
     else { p.width = anchoPrevio; p.x = xPrevio; p.entradaX = entradaPrevia; }
   }
   return puestos;
+}
+
+/* --------------------------------------------------------------------
+   APOYOS REDONDOS
+   Pelota, salvavidas y boya son redondos, así que el apoyo es la bola: uno
+   pequeño y suelto en vez de un objeto encima de una tabla ancha. Son los
+   apoyos más estrechos del juego —del ancho del jugador más un palmo— y
+   caen en Coral Climb, que es de donde son.
+
+   Como todo lo demás, se proponen y se comprueban: si el salto de entrada o
+   el de salida deja de tener VENTANA de despegue, el apoyo vuelve a ser el
+   que era. Que sea difícil no lo hace injusto.
+   -------------------------------------------------------------------- */
+function sembrarRedondas() {
+  let puestas = 0;
+  for (let i = 2; i < platforms.length - 2; i++) {
+    const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
+    // Coral Climb las presenta, Frosty y la última cumbre las cobran
+    if (!apoyoLibre(p) || p.mov || ![2, 5, 6].includes(p.world)) continue;
+    if (p.width < 105) continue;                 // de una bola no se saca otra
+    if (rnd() > ganas(p.world, i, 0.42, 0.66)) continue;
+    // Nunca dos seguidas: encadenar dos bolas no es dificultad, es una ruleta
+    if (ant.redonda || sig.redonda) continue;
+
+    const anchoPrevio = p.width, xPrevio = p.x, entradaPrevia = p.entradaX;
+    const diametro = Math.round(68 + rnd() * 10);
+    // Se encoge alrededor del punto por donde SE CAE en ella, no del centro:
+    // encogiendo por el centro el sitio de aterrizaje desaparece.
+    const caida = (p.entradaX !== undefined) ? p.entradaX + PW / 2 : p.x + p.width / 2;
+    p.x = Math.max(p.x, Math.min(p.x + p.width - diametro, caida - diametro / 2));
+    p.width = diametro;
+    if (p.entradaX !== undefined) {
+      p.entradaX = Math.max(p.x - PW + 10, Math.min(p.x + p.width - 10, p.entradaX));
+    }
+    p.redonda = true;
+    // Se guarda el apoyo original: las pasadas que vienen después mueven
+    // geometría y pueden dejar la bola sin salto, y entonces hay que poder
+    // devolverla a lo que era.
+    p.antesDeBola = { width: anchoPrevio, x: xPrevio, entradaX: entradaPrevia };
+
+    if (saltoJusto(ant, p) && saltoJusto(p, sig)) { puestas++; }
+    else {
+      delete p.redonda; delete p.antesDeBola;
+      p.width = anchoPrevio; p.x = xPrevio; p.entradaX = entradaPrevia;
+    }
+  }
+  return puestas;
 }
 
 /* --------------------------------------------------------------------
@@ -2236,6 +2363,36 @@ function unCheckpointPorCumbre() {
 }
 
 /**
+ * REPASO FINAL DE LAS BOLAS
+ * Una bola es el apoyo más estrecho del juego, así que es la primera que se
+ * rompe cuando una pasada posterior mueve algo cerca: un atajo nuevo encima,
+ * un carril recortado al lado. Si al final del todo el salto de entrada o el
+ * de salida se ha quedado sin ventana, la bola vuelve a ser el apoyo ancho
+ * que era. Difícil sí; imposible no.
+ */
+function revisarRedondas() {
+  let deshechas = 0;
+  for (let i = 1; i < platforms.length - 1; i++) {
+    const p = platforms[i];
+    if (!p.redonda || !p.antesDeBola) continue;
+    const ant = platforms[i - 1], sig = platforms[i + 1];
+    // Con una móvil al lado no basta un instante: el salto tiene que salir en
+    // la mayoría de las fases, porque la partida ocurre en una cualquiera.
+    const conMovil = ant.mov || ant.movY || sig.mov || sig.movY;
+    const vale = conMovil
+      ? (fasesQueSalen(ant, p, 6) >= 0.6 && fasesQueSalen(p, sig, 6) >= 0.6)
+      : (saltoJusto(ant, p) && saltoJusto(p, sig));
+    if (vale) continue;
+    p.width = p.antesDeBola.width;
+    p.x = p.antesDeBola.x;
+    p.entradaX = p.antesDeBola.entradaX;
+    delete p.redonda;
+    deshechas++;
+  }
+  return deshechas;
+}
+
+/**
  * REPASO FINAL DE CARRILES
  * Cada pasada mueve geometría: precisión estrecha apoyos, los atajos añaden
  * plataformas nuevas, los suelos cambian mecánicas. Cualquiera de ellas
@@ -2304,6 +2461,7 @@ function componerNivel() {
   r.ciclicas    = sembrarCiclicas();
   r.suelos      = sembrarSuelos();
   r.precision   = sembrarPrecision();
+  r.redondas    = sembrarRedondas();
   r.atajos      = sembrarAtajos();
   r.checkpoints = unCheckpointPorCumbre();
   monedas = [];
@@ -2315,9 +2473,14 @@ function componerNivel() {
   r.voladores   = sembrarVoladores();
   // Al final del todo, cuando ya no se mueve nada más: que ningún apoyo te
   // pasee por debajo de otro, y que no quede ninguno sin sitio para estar
-  // de pie. Los dos repasos comprueban lo que tocan antes de quedárselo.
+  // de pie. Los tres repasos comprueban lo que tocan antes de quedárselo.
+  // Las móviles, a su sitio de salida ANTES de repasar: si no, se comprueba
+  // el nivel con las plataformas donde las dejó la última pasada y no donde
+  // van a estar cuando empiece la partida.
+  moverPlataformas(platforms, 0);
   r.carriles    = revisarCarriles();
   r.ratoneras   = despejarRatoneras();
+  r.bolasRotas  = revisarRedondas();
   moverPlataformas(platforms, 0);
   return r;
 }
@@ -4068,6 +4231,7 @@ function update() {
     else if (aterrizo.ciclo) avisarMecanica('ciclica', 'Va y viene: mira el parpadeo', '#ffd166');
     else if (aterrizo.mov) avisarMecanica('movil', 'Plataforma móvil', '#8fd4ff');
     else if (aterrizo.atajo) avisarMecanica('atajo', '¡Atajo! Te saltas un apoyo', '#2ed573');
+    else if (aterrizo.redonda) avisarMecanica('redonda', 'Bola suelta: cae justo encima', '#ff8fa3');
     else if (aterrizo.fino) avisarMecanica('fino', 'Apoyo estrecho: aquí hay que afinar', '#ff9f43');
   }
 
@@ -5665,9 +5829,164 @@ function propLapida(x, y, w) {
   ctx.closePath(); ctx.fill();
 }
 
+/* ====================================================================
+   APOYOS REDONDOS
+   Una pelota, un salvavidas y una boya son redondos: ponerlos encima de una
+   tabla ancha era disimular su forma. Aquí el apoyo ES la bola —pequeño y
+   suelto, sin peana— y se pisa su parte de arriba. Son los apoyos más
+   difíciles del juego, y por eso se siembran verificando salto a salto.
+   ==================================================================== */
+
+/** Sombra redonda, en vez del rectángulo que usan los demás. */
+function sombraRedonda(cx, cy, r) {
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = '#0a1a2a';
+  ctx.beginPath(); ctx.ellipse(cx + 2, cy + 6, r * 0.92, r * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** Brillo y contorno comunes: lo que hace que una bola parezca una bola. */
+function volumenBola(cx, cy, r) {
+  const luz = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r);
+  luz.addColorStop(0, 'rgba(255,255,255,0.45)');
+  luz.addColorStop(0.45, 'rgba(255,255,255,0.06)');
+  luz.addColorStop(1, 'rgba(0,20,40,0.28)');
+  ctx.fillStyle = luz;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(25,40,55,0.85)'; ctx.lineWidth = 2.6;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  // Una pizca de aplastado arriba: se lee que ahí es donde se pisa
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - r + 3, r * 0.5, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** 🏐 Pelota de playa suelta: gira despacio sobre su eje. */
+function propPelotaR(x, y, w) {
+  const r = w / 2, cx = x + r, cy = y + r;
+  sombraRedonda(cx, cy, r);
+  const gajos = ['#e74c3c', '#f7fbff', '#2e86de', '#ffd166', '#2ecc71', '#f7fbff'];
+  const giro = t * 0.008 + x * 0.01;
+  for (let k = 0; k < 6; k++) {
+    ctx.fillStyle = gajos[k % gajos.length];
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, giro + (k / 6) * Math.PI * 2, giro + ((k + 1) / 6) * Math.PI * 2);
+    ctx.closePath(); ctx.fill();
+  }
+  volumenBola(cx, cy, r);
+}
+
+/** 🛟 Salvavidas suelto: el aro, con su agujero de verdad. */
+function propSalvavidas(x, y, w) {
+  const r = w / 2, cx = x + r, cy = y + r;
+  sombraRedonda(cx, cy, r);
+  ctx.fillStyle = '#f4f7fb';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  // Los cuatro cuartos rojos, que es lo que lo hace un salvavidas
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = '#e74c3c';
+  for (let k = 0; k < 4; k += 2) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, (k / 4) * Math.PI * 2 + 0.4, ((k + 1) / 4) * Math.PI * 2 + 0.4);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  volumenBola(cx, cy, r);
+  // El agujero: se ve el cielo a través
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath(); ctx.arc(cx, cy + r * 0.12, r * 0.36, 0, Math.PI * 2); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = 'rgba(120,30,20,0.75)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy + r * 0.12, r * 0.36, 0, Math.PI * 2); ctx.stroke();
+  // Cabo atado al aro
+  ctx.strokeStyle = 'rgba(240,235,215,0.9)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.82, Math.PI * 0.15, Math.PI * 0.6);
+  ctx.stroke();
+}
+
+/** ⚓ Boya suelta: bola roja con su franja y su lucecita. */
+function propBoyaR(x, y, w) {
+  const r = w / 2, cx = x + r, cy = y + r;
+  sombraRedonda(cx, cy, r);
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - r, cy - r * 0.22, r * 2, r * 0.44);
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.fillRect(cx - r, cy + r * 0.5, r * 2, r);
+  ctx.restore();
+  volumenBola(cx, cy, r);
+  // Lucecita que parpadea, dentro del contorno
+  const on = Math.sin(t * 0.07 + x * 0.01) > 0;
+  ctx.shadowColor = '#ffd166'; ctx.shadowBlur = on ? 14 : 0;
+  ctx.fillStyle = on ? '#ffd166' : '#8a7327';
+  ctx.beginPath(); ctx.arc(cx, cy - r * 0.62, r * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+/** ❄️ Bola de nieve: la de Frosty Peaks, con su costra helada. */
+function propBolaNieve(x, y, w) {
+  const r = w / 2, cx = x + r, cy = y + r;
+  sombraRedonda(cx, cy, r);
+  const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#eaf5ff'); g.addColorStop(1, '#b6d2e6');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  // Grumos de nieve apelmazada
+  ctx.fillStyle = 'rgba(190,215,235,0.6)';
+  for (let k = 0; k < 4; k++) {
+    const a = h(x + k * 3.7) * Math.PI * 2, d = r * (0.25 + h(x + k * 5.1) * 0.4);
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, r * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  volumenBola(cx, cy, r);
+  // Costra de hielo en la coronilla, que es por donde se pisa
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - r + 4, r * 0.62, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** 🔮 Esfera de energía: la de la última cumbre, latiendo. */
+function propEsfera(x, y, w) {
+  const r = w / 2, cx = x + r, cy = y + r;
+  sombraRedonda(cx, cy, r);
+  const late = 0.55 + 0.45 * Math.sin(t * 0.05 + x * 0.01);
+  ctx.shadowColor = '#7c8cff'; ctx.shadowBlur = 18 * late;
+  const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+  g.addColorStop(0, '#c8d0ff'); g.addColorStop(0.55, '#6b7ae8'); g.addColorStop(1, '#2b3480');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Anillo que la rodea, inclinado
+  ctx.strokeStyle = 'rgba(160,200,255,' + (0.5 + late * 0.4).toFixed(2) + ')';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + r * 0.1, r * 1.12, r * 0.34, 0.35, 0, Math.PI * 2);
+  ctx.stroke();
+  volumenBola(cx, cy, r);
+  ctx.fillStyle = 'rgba(220,235,255,' + late.toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.22, 0, Math.PI * 2); ctx.fill();
+}
+
 /** Pinta el objeto pedido por nombre. */
 function pintarObjeto(nombre, p, x, y, w, hh) {
   switch (nombre) {
+    case 'bolaNieve':       return propBolaNieve(x, y, w);
+    case 'esfera':          return propEsfera(x, y, w);
+    case 'pelotaR':         return propPelotaR(x, y, w);
+    case 'salvavidas':      return propSalvavidas(x, y, w);
+    case 'boyaR':           return propBoyaR(x, y, w);
     case 'arbol':           return propArbol(x, y, w);
     case 'faro':            return propFaro(x, y, w);
     case 'pelota':          return propPelota(x, y, w);
@@ -5755,8 +6074,12 @@ function drawObjeto(p) {
   const cat = CATALOGO[arte] || CATALOGO[6];
   const { x, y, width: w, height: hh } = p;
 
-  // El tamaño del apoyo decide qué objetos caben
-  const grupo = w >= 260 ? cat.grandes : (w >= 150 ? cat.medios : cat.chicos);
+  // El tamaño del apoyo decide qué objetos caben. Los redondos van aparte:
+  // su forma es el apoyo, no un objeto puesto encima de él.
+  const REDONDOS = { 2: ['pelotaR', 'salvavidas', 'boyaR'],
+                     5: ['bolaNieve'], 6: ['esfera'] };
+  const grupo = p.redonda ? (REDONDOS[p.world] || REDONDOS[2])
+              : (w >= 260 ? cat.grandes : (w >= 150 ? cat.medios : cat.chicos));
   const semilla = h(p.x * 0.29 + p.y * 0.13);
   const nombre = grupo[Math.floor(semilla * grupo.length) % grupo.length];
 
@@ -5770,11 +6093,13 @@ function drawObjeto(p) {
   // sobre el cielo claro no se leía como sombra sino como una caja fantasma
   // detrás de la plataforma. Ahora se ciñe: menos desplazamiento, menos alto
   // y menos opacidad.
-  ctx.save();
-  ctx.globalAlpha = 0.14;
-  ctx.fillStyle = '#0a1a2a';
-  rrect(x + 2, y + 5, w - 3, Math.max(13, hh * 0.72), 6); ctx.fill();
-  ctx.restore();
+  if (!p.redonda) {
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = '#0a1a2a';
+    rrect(x + 2, y + 5, w - 3, Math.max(13, hh * 0.72), 6); ctx.fill();
+    ctx.restore();
+  }
 
   if (p.hielo) propHielo(x, y, w, hh);
   else pintarObjeto(nombre, p, x, y, w, hh);
@@ -9453,6 +9778,7 @@ const COLOR_MAPA = {
   hielo:      '#a8e6ff',
   atajo:      '#a3e635',
   fino:       '#ffb86b',
+  redonda:    '#ff8fa3',
   dron:       '#ff6b6b',
 };
 
@@ -9507,6 +9833,7 @@ function colorApoyo(p) {
   if (p.mov) return COLOR_MAPA.mov;
   if (p.trampa) return COLOR_MAPA.fragil;
   if (p.hielo) return COLOR_MAPA.hielo;
+  if (p.redonda) return COLOR_MAPA.redonda;
   if (p.fino) return COLOR_MAPA.fino;
   return COLOR_MAPA.normal;
 }
@@ -9704,12 +10031,26 @@ function pintarMeta(c, X, Y) {
  */
 function pintarRutaMenu() {
   const cv = document.getElementById('rutaPreview');
-  if (!cv || !platforms.length) return;
+  if (!cv) return;
   const caja = cv.getBoundingClientRect();
   if (!caja.width) return;
   const dpr = window.devicePixelRatio || 1;
   cv.width = Math.round(caja.width * dpr);
   cv.height = Math.round(caja.height * dpr);
+  // Mientras se compone y se verifica el nivel no hay ruta que enseñar, y el
+  // recuadro se quedaba en negro sin explicar por qué. Ahora lo dice.
+  if (!platforms.length) {
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.fillStyle = '#0b1220';
+    c.fillRect(0, 0, caja.width, caja.height);
+    c.fillStyle = '#7f92ad';
+    c.font = '600 11px system-ui, sans-serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('Trazando la ruta…', caja.width / 2, caja.height / 2);
+    return;
+  }
   const zAntes = mapaZoom, xAntes = mapaPanX, yAntes = mapaPanY;
   mapaZoom = 1; mapaPanX = 0; mapaPanY = 0;
   dibujarMapa(cv, false);
@@ -9721,7 +10062,7 @@ const LEYENDA = [
   ['normal', 'Apoyo'], ['checkpoint', 'Checkpoint'], ['spring', 'Trampolín'],
   ['mov', 'Móvil'], ['movY', 'Ascensor'], ['ciclo', 'Va y viene'],
   ['fragil', 'Se rompe'], ['hielo', 'Hielo'], ['fino', 'Estrecho'],
-  ['atajo', 'Atajo'], ['goal', 'Meta'],
+  ['atajo', 'Atajo'], ['redonda', 'Bola'], ['goal', 'Meta'],
 ];
 
 function montarLeyenda() {
@@ -10000,6 +10341,7 @@ const GUIA_MECANICAS = [
   ['hielo', 'Hielo', 'no frenas de golpe: patinas'],
   ['fino', 'Apoyos estrechos', 'aquí hay que afinar el salto'],
   ['atajo', 'Atajos', 'una ruta más corta y más arriesgada'],
+  ['redonda', 'Bolas', 'redondas, sueltas y del tamaño justo'],
   ['dron', 'Drones', 'patrullan el hueco: hay que esquivarlos'],
 ];
 
@@ -10371,13 +10713,24 @@ actualizarMarcaMenu();
 
 requestAnimationFrame(gameLoop);
 resizeCanvas();
-generateLevel();
-// La vista previa de la ruta y las tarjetas de nivel necesitan el nivel YA
-// compuesto: al arrancar, `actualizarMarcaMenu()` corre antes que esto y se
-// encontraba `platforms` vacío, así que el recuadro salía en negro y el
-// selector, sin metros que enseñar, no se pintaba.
-pintarRutaMenu();
 cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
+
+/* Componer el nivel entero —sembrar, verificar salto a salto y repasar— son
+   varios segundos de cuentas, y hasta ahora corrían ANTES del primer pintado:
+   la pantalla de inicio no aparecía hasta que terminaban y el juego se abría
+   en blanco. Ahora se pinta primero el menú y se compone después, en cuanto el
+   navegador ha enseñado algo. Si alguien le da a Empezar antes de tiempo no
+   pasa nada: `generateLevel()` compone en ese momento, que es lo que hacía
+   siempre, y el cartel de "Preparando la subida…" ya está puesto para eso.
+
+   La vista previa de la ruta necesita el nivel YA compuesto: si se pinta antes
+   se encuentra `platforms` vacío y el recuadro sale en negro. */
+function prepararNivel() {
+  generateLevel();
+  pintarRutaMenu();
+  draw();
+}
+requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(prepararNivel, 0)));
 draw();
 
 </script>

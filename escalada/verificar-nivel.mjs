@@ -13,6 +13,8 @@
  *   - ¿los atajos tienen entrada y salida?
  *   - ¿queda alguna moneda suelta, lejos de todo apoyo?
  *   - ¿algún dron bloquea el salto que vigila, o se ha metido en un apoyo?
+ *   - ¿alguna plataforma con carril se traga al jugador? Se le pone encima de
+ *     cada una y se simula quieto y andando hacia los dos lados.
  *
  * Uso:
  *   python3 -m http.server 8777        # desde la raíz del repositorio
@@ -24,8 +26,9 @@
  *   CHROMIUM  ruta a un navegador concreto
  *             (por defecto, el que traiga Playwright)
  *
- * Sale con código 1 si encuentra un salto imposible, un atajo roto o un error
- * de consola, así que sirve tal cual como comprobación previa a publicar.
+ * Sale con código 1 si encuentra un salto imposible, un atajo roto, una
+ * plataforma que traga o un error de consola, así que sirve tal cual como
+ * comprobación previa a publicar.
  */
 import { chromium } from 'playwright';
 
@@ -40,8 +43,11 @@ pagina.on('pageerror', (e) => errores.push('PAGEERROR ' + e.message));
 pagina.on('console', (m) => { if (m.type() === 'error') errores.push('CONSOLE ' + m.text()); });
 
 await pagina.goto(URL, { waitUntil: 'load' });
-// Componer el nivel bloquea el hilo un segundo y medio largo
-await pagina.waitForTimeout(3000);
+// El menú se pinta enseguida y el nivel se compone DESPUÉS, en cuanto el
+// navegador ha enseñado algo: hay que esperar a que esté, no a un reloj.
+await pagina.waitForFunction(
+  () => typeof platforms !== 'undefined' && platforms.length > 100,
+  null, { timeout: 120000 });
 await pagina.click('#start-btn');
 await pagina.waitForTimeout(600);
 
@@ -150,11 +156,43 @@ const informe = await pagina.evaluate(() => {
     if (q.type === 'checkpoint') c.checkpoint++;
   }
 
+  // MÓVILES QUE TRAGAN. Se pone al jugador encima de cada apoyo con carril y
+  // se simulan 1200 fotogramas con la física de verdad, quieto y andando
+  // hacia cada lado. Dejarlo QUIETO no vale: el fallo era justo el contrario,
+  // una plataforma que se movía hacia un jugador parado y se lo tragaba. Se
+  // mide la penetración máxima en píxeles; tiene que ser 0.
+  const movilesQueTragan = [];
+  let penetracion = 0;
+  for (const q of platforms) {
+    if (!q.mov && !q.movY) continue;
+    for (const dir of [-1, 0, 1]) {
+      const e = { x: 0, y: 0, vx: 0, vy: 0, onGround: true, coyote: 0, saltos: 2 };
+      moverPlataformas(platforms, 0);
+      e.x = q.x + q.width / 2 - PW / 2;
+      e.y = q.y - PH;
+      for (let t = 1; t <= 1200; t++) {
+        moverPlataformas(platforms, t);
+        pasoFisica(e, dir, false, platforms);
+        for (const o of platforms) {
+          if (o.caido) continue;
+          const dx = Math.min(e.x + PW, o.x + o.width) - Math.max(e.x, o.x);
+          const dy = Math.min(e.y + PH, o.y + o.height) - Math.max(e.y, o.y);
+          const d = Math.min(dx, dy);
+          if (d > penetracion) penetracion = d;
+          if (d > 2) { movilesQueTragan.push([platforms.indexOf(q), dir, platforms.indexOf(o)]); t = 1e9; break; }
+        }
+      }
+    }
+  }
+  moverPlataformas(platforms, 0);
+
   return { saltosCadena: nCadena - 1, imposibles, sinVentanaJusta, apretados,
            atajos: platforms.length - nCadena, atajosMalos,
            monedas: monedas.length, monedasSueltas, pinchos: spikes.length,
            geiseres: geysers.length, drones: voladores.length,
-           dronesMalos, dronesQueTapan, franjas };
+           dronesMalos, dronesQueTapan,
+           bolas: platforms.filter((q) => q.redonda).length,
+           movilesQueTragan, penetracion: +penetracion.toFixed(1), franjas };
 });
 
 await navegador.close();
@@ -164,8 +202,9 @@ console.log('errores de consola:', errores.length ? errores : 'ninguno');
 
 const roto = informe.imposibles.length || informe.atajosMalos.length ||
              informe.monedasSueltas || informe.dronesMalos.length ||
-             informe.dronesQueTapan.length || errores.length;
+             informe.dronesQueTapan.length || informe.movilesQueTragan.length ||
+             errores.length;
 console.log(roto
-  ? '\nFALLA: hay saltos imposibles, atajos rotos, monedas sueltas, drones que estorban o errores.'
+  ? '\nFALLA: hay saltos imposibles, atajos rotos, monedas sueltas, drones que estorban,\nplataformas que se tragan al jugador o errores.'
   : '\nEl recorrido se puede completar de principio a fin.');
 process.exit(roto ? 1 : 0);

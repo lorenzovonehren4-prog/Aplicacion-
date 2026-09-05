@@ -158,6 +158,76 @@ Enseñaba el nivel pero no decía nada de la subida. Ahora:
 La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
 se pisaba con los nombres de las cumbres.
 
+### Bolas: los objetos redondos ahora son el apoyo, y son pequeños
+
+La pelota, el salvavidas y la boya son redondos, pero estaban pintados encima
+de una plataforma rectangular de 200 px. Si la cosa es una bola, que sea una
+bola: **19 apoyos del nivel se encogen a 68–78 px y pasan a ser esferas
+sueltas**, sin caja debajo. Son los apoyos más pequeños del juego —el
+personaje mide 52 px de ancho— y están repartidos entre los metros 209 y 966.
+
+| Mundo | Qué sale |
+|---|---|
+| Coral Climb | Pelota de playa, salvavidas (con su agujero de verdad) y boya con farolito |
+| Frosty Peaks | Bola de nieve con costra de hielo arriba |
+| One Way Up | Esfera de energía con su anillo |
+
+Dibujarlas bien es la mitad del trabajo: `volumenBola()` pone la luz radial,
+el borde oscuro y el brillo aplanado de arriba que es lo que hace que se lea
+como una esfera y no como un círculo; `sombraRedonda()` sustituye la sombra
+rectangular, que en una bola cantaba.
+
+La otra mitad es que **sigan siendo jugables**. `sembrarRedondas()` no encoge
+nada a ciegas: guarda el apoyo original, lo reduce alrededor del punto donde
+caes y sólo se queda el cambio si el salto de entrada **y** el de salida
+siguen teniendo ventana de despegue con la física real. Al final de la
+composición, `revisarRedondas()` lo vuelve a mirar todo con las móviles ya en
+su sitio de salida —si la bola tiene un vecino con carril, exige que salga en
+al menos 6 de cada 10 fases del reloj— y devuelve a su tamaño la que no
+aguante. Resultado: 19 bolas, ninguna rota.
+
+En el mapa son rosas, están en la leyenda y en la guía del menú, y la primera
+que pisas se anuncia: «Bola suelta: cae justo encima».
+
+### Una plataforma que se movía hacia ti te tragaba
+
+El probador anterior ponía al jugador encima de cada móvil y lo dejaba
+**quieto**. Así salían cero fallos. Con el jugador andando —que es lo que
+hace un jugador— salían **ocho**, y todos eran el mismo fallo:
+
+> La física deshacía los choques que provocaba TU movimiento (te mueve, mira
+> si has entrado en un bloque, te devuelve). Pero si tú estabas quieto y era
+> la plataforma la que se metía en ti, no había nada que deshacer: te tragaba
+> y te quedabas dentro de la piedra.
+
+Dos arreglos, los dos en el motor compartido, así que el generador ve
+exactamente lo mismo que el juego:
+
+1. **`desincrustar()`**: si el personaje acaba dentro de un bloque, sale por
+   el lado más corto que quede libre, comprobando antes que ahí no hay otro
+   bloque. Corre al abrir y al cerrar cada fotograma. Salir por arriba te deja
+   de pie encima: si un ascensor sube pegado a ti, te sube.
+2. **La resolución lateral tenía un tercer caso sin escribir.** Sabía volver
+   si venías por la izquierda y si venías por la derecha; si no venías de
+   ninguna parte —porque no te habías movido tú— se encogía de hombros y te
+   dejaba dentro. Ahora sale por el lado más corto en el mismo fotograma.
+
+**Comprobado**: 52 móviles × 3 direcciones × 1200 fotogramas = 0 px de
+penetración en todo el nivel. Antes, con el mismo probador, se llegaba a
+meter medio cuerpo. La prueba ya no es un apaño de andar por casa: está en
+`verificar-nivel.mjs` y hace fallar la verificación si vuelve a pasar.
+
+### El menú tardaba cuatro segundos en aparecer
+
+Componer el nivel —sembrar, verificar salto a salto y repasar— son varios
+segundos de cuentas, y corrían **antes del primer pintado**: el juego se abría
+en blanco y la pantalla de inicio no salía hasta el final. Ahora se pinta
+primero el menú y se compone después, en cuanto el navegador ha enseñado algo:
+la pantalla de inicio aparece en **0,15 s** en vez de en 4. Mientras tanto el
+recuadro de la ruta lo dice —«Trazando la ruta…»— en vez de quedarse negro, y
+si alguien le da a Empezar antes de tiempo no pasa nada: el nivel se compone
+en ese momento, que es lo que hacía siempre.
+
 ### Una sola partida, música calmada y los objetos arreglados
 
 Los tres niveles y las vidas duraron una versión: **se quitan**. Vuelve la
@@ -704,6 +774,7 @@ Todo vive en `index.html`. Las piezas, por orden:
 | `NIVEL_FIJO` | El nivel entero ya generado y verificado, serializado |
 | Constantes | Gravedad, salto, cumbres, metros por cumbre |
 | Física | `pasoFisica()`, el motor **único** que comparten el juego y el generador |
+| Empotramientos | `desincrustar()`: te saca del bloque en el que se ha metido una plataforma |
 | Verificación | `costeSalida()`, `seLlega()`, `alrededor()`: replay del recorrido con el motor real |
 | Ratoneras | `despejarRatoneras()`: apoyos con techo demasiado bajo para saltar |
 | Suelos | `sembrarSuelos()`: hielo, frágiles y pinchos, verificados uno a uno |
