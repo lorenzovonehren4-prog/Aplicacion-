@@ -388,6 +388,44 @@
   @media (max-width:600px) { .pie-menu { flex-direction:column; } }
   /* Los récords, en la esquina de la cabecera: cuatro fichas con su franja
      de color, no cuatro cajas iguales en fila. */
+  /* LA HUCHA. Las monedas que se recogen escalando se gastan en la tienda,
+     así que el saldo tiene que estar donde se mira primero: en la cabecera,
+     al lado de los récords y con la misma moneda que se ve en el juego. */
+  .cabecera-dcha { display:flex; flex-direction:column; align-items:flex-end;
+    gap:8px; flex:none; }
+  .hucha { display:flex; align-items:center; gap:8px;
+    padding:5px 14px 5px 10px; border-radius:999px;
+    background:linear-gradient(180deg, rgba(255,215,0,.16), rgba(255,150,20,.07));
+    border:1px solid rgba(255,200,60,.30);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14); }
+  .hucha i { width:15px; height:15px; border-radius:50%; flex:none;
+    background:radial-gradient(circle at 34% 30%, #fff3b0, #f5c02b 55%, #b0810c);
+    box-shadow:0 0 0 1px rgba(120,84,4,.7), 0 0 9px rgba(255,200,60,.45); }
+  .hucha b { font-size:16px; font-weight:900; color:#ffe07a;
+    font-variant-numeric:tabular-nums; }
+  .hucha span { font-size:10px; letter-spacing:1.2px; text-transform:uppercase;
+    color:#b7975a; }
+
+  /* Tarjeta cerrada: se ve lo que compras, apagado, con su precio */
+  .tarjeta .precio { position:absolute; left:3px; top:3px; z-index:2;
+    font-style:normal; font-size:9.5px; font-weight:900; letter-spacing:.3px;
+    padding:1px 6px 1px 14px; border-radius:999px; color:#c2a45a;
+    background:rgba(8,12,20,.86); border:1px solid rgba(255,200,60,.22); }
+  .tarjeta .precio::before { content:''; position:absolute; left:4px; top:50%;
+    width:7px; height:7px; margin-top:-3.5px; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #fff3b0, #f5c02b 60%, #a87a0a); }
+  .tarjeta .precio.alcanza { color:#ffe07a; border-color:rgba(255,200,60,.55);
+    box-shadow:0 0 10px rgba(255,190,50,.25); }
+  .tarjeta .precio.oculta { display:none; }
+  .tarjeta.cerrada canvas { filter:grayscale(1) brightness(.55) contrast(.9); }
+  .tarjeta.cerrada span { color:#6f7f90; }
+  .tarjeta.cerrada:hover canvas { filter:grayscale(.45) brightness(.8); }
+
+  .pista-eleccion.falta { color:#ffb4a8; border-color:rgba(255,120,100,.35);
+    background:rgba(120,30,24,.28); }
+  .pista-eleccion.compra { color:#b8f0c0; border-color:rgba(90,220,130,.35);
+    background:rgba(20,90,50,.28); }
+
   .vitrina { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;
     margin:0; flex:none; }
   .vitrina div { position:relative; overflow:hidden; text-align:left;
@@ -633,7 +671,12 @@
             <h1>DON&#39;T LOOK UP</h1>
             <ul class="datos" id="datos-nivel"></ul>
           </div>
-          <div class="vitrina" id="vitrina"></div>
+          <div class="cabecera-dcha">
+            <div class="hucha" title="Monedas para gastar en la tienda">
+              <i></i><b id="hucha">0</b><span>monedas</span>
+            </div>
+            <div class="vitrina" id="vitrina"></div>
+          </div>
         </div>
 
         <div class="columnas">
@@ -662,7 +705,7 @@
           </section>
 
           <section class="bloque col-pers">
-            <h2>Aspecto</h2>
+            <h2>Tienda de escaladores</h2>
             <!-- Dos pestañas en vez de dos rejillas apiladas: con 18 colores
                  y 16 accesorios, una debajo de otra el menú medía el doble de
                  la pantalla y el botón de empezar quedaba fuera. -->
@@ -1830,11 +1873,21 @@ function despejarRatoneras() {
     for (let i = 0; i + 1 < platforms.length; i++) {
       const p = platforms[i];
       const { ancho, techos } = huecoLibre(p);
-      if (ancho >= PW) continue;                     // hay sitio para saltar
       // Antes esto se saltaba si se podía llegar al apoyo siguiente. Pero
       // poder salir no arregla que estés de pie con la cabeza METIDA en la
       // plataforma de encima, que es lo que se veía en la del metro 620. Se
       // intenta despejar siempre; si el arreglo no verifica, se deshace.
+      //
+      // Y además del hueco para ponerse de pie hay que mirar el PASEO: un
+      // apoyo puede tener 108 px libres a la izquierda y aun así dejar el
+      // sitio de despegue al otro lado de un techo, o sea inalcanzable
+      // andando. Pasaba en el del metro 760: se llegaba, pero la ventana de
+      // salida que quedaba a mano medía 15 px de los 18 que se exigen. Si el
+      // salto se puede dar pero no con ventana, también se despeja.
+      const sig = platforms[i + 1];
+      const flojo = sig && !sig.extra && !p.extra && techos.length &&
+                    seLlega(p, sig) && !saltoJusto(p, sig);
+      if (ancho >= PW && !flojo) continue;           // hay sitio para saltar
 
       const antes = techos.map(q => q.y);
       for (const q of techos) q.y = Math.min(q.y, p.y - PH - HUECO_MIN - q.height);
@@ -1850,6 +1903,9 @@ function despejarRatoneras() {
         if (k < 0 || k + 1 >= platforms.length) continue;
         if (!seLlega(platforms[k], platforms[k + 1])) { bien = false; break; }
       }
+      // Si se subió el techo por un salto sin ventana, el arreglo sólo vale
+      // si de verdad la deja: si no, se deshace y se deja como estaba.
+      if (bien && flojo && !saltoJusto(p, sig)) bien = false;
       if (bien) arreglados++;
       else { techos.forEach((q, k) => { q.y = antes[k]; }); rendidos++; }
     }
@@ -2155,6 +2211,54 @@ function sembrarCiclicas() {
     else { delete p.ciclo; p.caido = false; p.avisa = false; }
   }
   return puestos;
+}
+
+/* --------------------------------------------------------------------
+   ACLARAR: menos apoyos arriba, y por tanto saltos más largos
+
+   Medido en el recorrido incrustado, la subida media por salto era 65, 69,
+   63, 67, 47 y 45 px por cumbre. O sea que los saltos se hacían MÁS CORTOS
+   según se sube: las dos últimas cumbres son una escalerilla regular de
+   apoyos casi pegados. Justo al revés de lo que tiene que pasar.
+
+   Subir los apoyos no vale —cambiaría la altura total y el medidor de
+   metros—, así que lo que se hace es QUITAR apoyos: los que sobran, y sobre
+   todo los que están pegados al de al lado. La misma altura, menos escalones,
+   cada salto más largo. Y cada retirada se comprueba con la física de verdad:
+   si el salto que queda no tiene ventana de despegue, el apoyo vuelve.
+   -------------------------------------------------------------------- */
+function aclararApoyos() {
+  let quitados = 0, pegados = 0;
+  for (let i = platforms.length - 2; i >= 2; i--) {
+    const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
+    if (!ant || !sig || p.extra || sig.extra) continue;
+    if (p.type !== 'normal' || p.mov || p.movY || p.ciclo) continue;
+
+    // ¿Está pegado a sus vecinos? Poca subida Y poco hueco de lado
+    const dy = ant.y - p.y;
+    const dxh = Math.max(0, p.x > ant.x ? p.x - (ant.x + ant.width)
+                                        : ant.x - (p.x + p.width));
+    const pegado = (dy < 42 && dxh < 62);
+    if (!pegado && rnd() > 0.74 * dificultad(p.world)) continue;
+
+    // Fuera, y a ver si el salto que queda se sostiene
+    const trazaPrevia = sig.traza, entradaPrevia = sig.entradaX;
+    platforms.splice(i, 1);
+    const tr = saltoJusto(ant, sig)
+      ? simularSaltoConMargen(ant, sig, alrededor(ant, sig), 0)
+      : null;
+    if (tr) {
+      sig.traza = tr;
+      sig.entradaX = tr[tr.length - 1].x;
+      quitados++;
+      if (pegado) pegados++;
+    } else {
+      platforms.splice(i, 0, p);          // no salía: el apoyo se queda
+      sig.traza = trazaPrevia;
+      sig.entradaX = entradaPrevia;
+    }
+  }
+  return { quitados, pegados };
 }
 
 /* --------------------------------------------------------------------
@@ -2499,27 +2603,35 @@ function sembrarCheckpoints() {
   const cadena = platforms.filter((q) => !q.extra);
   for (const q of cadena) if (q.type === 'checkpoint') q.type = 'normal';
 
-  const cima = Math.min(...cadena.map((q) => q.y));
-  const alto = GROUND_Y - cima;
-  const N = TOTAL_WORLDS * 2;
   const puestos = [];
+  const sirve = (q) =>
+    // Un checkpoint tiene que estar QUIETO y ser ancho: reaparecer sobre una
+    // plataforma que se mueve, se rompe o resbala no es una red.
+    q.type === 'normal' && !q.mov && !q.movY && !q.ciclo && !q.trampa &&
+    !q.petalo && !q.hielo && !q.redonda && !q.ang && q.width >= 130;
 
-  for (let k = 0; k < N; k++) {
-    const objetivo = GROUND_Y - (alto * k) / N;
-    let mejor = -1, dist = Infinity;
-    for (let i = 1; i < cadena.length - 1; i++) {
-      const q = cadena[i];
-      // Un checkpoint tiene que estar QUIETO y ser ancho: reaparecer sobre
-      // una plataforma que se mueve, se rompe o resbala no es una red.
-      if (q.type !== 'normal' || q.mov || q.movY || q.ciclo || q.trampa ||
-          q.petalo || q.hielo || q.redonda || q.ang || q.width < 130) continue;
-      if (puestos.some((j) => Math.abs(j - i) < 6)) continue;
-      const d = Math.abs(q.y - objetivo);
-      if (d < dist) { dist = d; mejor = i; }
+  // DOS POR CUMBRE, y ni uno más: el de entrada y UNO intermedio, a media
+  // altura del tramo. Repartirlos por fracciones de la subida entera dejaba
+  // tres en una cumbre y uno en otra; así cada cumbre tiene exactamente su
+  // red de seguridad en el medio, que es lo que se pidió.
+  for (let w = 1; w <= TOTAL_WORLDS; w++) {
+    const tramo = [];
+    for (let i = 1; i < cadena.length - 1; i++) if (cadena[i].world === w) tramo.push(i);
+    if (!tramo.length) continue;
+    const yPie = cadena[tramo[0]].y, yTecho = cadena[tramo[tramo.length - 1]].y;
+
+    for (const objetivo of [yPie, (yPie + yTecho) / 2]) {
+      let mejor = -1, dist = Infinity;
+      for (const i of tramo) {
+        if (!sirve(cadena[i])) continue;
+        if (puestos.some((j) => Math.abs(j - i) < 5)) continue;
+        const d = Math.abs(cadena[i].y - objetivo);
+        if (d < dist) { dist = d; mejor = i; }
+      }
+      if (mejor < 0) continue;
+      cadena[mejor].type = 'checkpoint';
+      puestos.push(mejor);
     }
-    if (mejor < 0) continue;
-    cadena[mejor].type = 'checkpoint';
-    puestos.push(mejor);
   }
   return puestos.length;
 }
@@ -2567,8 +2679,14 @@ function revisarCarriles() {
   let recortados = 0, parados = 0;
   for (let i = 1; i < platforms.length - 1; i++) {
     const p = platforms[i];
-    if ((!p.mov && !p.movY) || (carrilDespejado(p) && carrilSinTecho(p))) continue;
+    if (!p.mov && !p.movY) continue;
     const ant = platforms[i - 1], sig = platforms[i + 1];
+    // Además de que quepa de pie en todo el carril, el salto de entrada y el
+    // de salida tienen que salir en unas CUANTAS fases del reloj. Uno que
+    // sólo sale en 1 de cada 6 no es un reto, es esperar a que suene la
+    // flauta: el verificador lo marcaba como «apretado» y ahí se quedaba.
+    const apretado = fasesQueSalen(ant, p, 6) < 0.34 || fasesQueSalen(p, sig, 6) < 0.34;
+    if (!apretado && carrilDespejado(p) && carrilSinTecho(p)) continue;
     const movGuardado = p.mov, movYGuardado = p.movY;
     const x0 = p.x, y0 = p.y;
     let hecho = false;
@@ -2589,8 +2707,8 @@ function revisarCarriles() {
       }
       moverPlataformas(platforms, 0);
       if (carrilDespejado(p) && carrilSinTecho(p) &&
-          fasesQueSalen(ant, p, 4) >= 0.75 &&
-          fasesQueSalen(p, sig, 4) >= 0.4) { hecho = true; recortados++; break; }
+          fasesQueSalen(ant, p, 6) >= 0.75 &&
+          fasesQueSalen(p, sig, 6) >= 0.5) { hecho = true; recortados++; break; }
     }
 
     // 2) Si no cabe de ninguna manera, se queda quieto donde estaba
@@ -2619,6 +2737,9 @@ function componerNivel() {
   reiniciarAzar();
   const r = {};
   r.checkpoints = sembrarCheckpoints();
+  // Aclarar va justo después: quita apoyos, así que todo lo demás —carriles,
+  // suelos, bolas, monedas— tiene que sembrarse sobre la cadena ya recortada.
+  r.aclarado    = aclararApoyos();
   r.moviles     = sembrarMoviles();
   r.ascensores  = sembrarAscensores();
   r.ciclicas    = sembrarCiclicas();
@@ -2647,6 +2768,9 @@ function componerNivel() {
   r.ratoneras   = despejarRatoneras();
   r.bolasRotas  = revisarRedondas();
   moverPlataformas(platforms, 0);
+  // Y el ancla de dibujo de cada apoyo, con todo ya en su sitio de salida:
+  // a partir de aquí el aspecto de un apoyo no depende de dónde esté.
+  for (const q of platforms) q.ancla = { x: q.x, y: q.y };
   return r;
 }
 
@@ -3607,11 +3731,11 @@ function generarPinchos() {
     // al que va montado: es lo que pasaba con los ascensores.
     if (p.movY || p.ciclo || p.extra) continue;
     if (p.hielo || p.trampa) continue;           // ya tienen su propia gracia
-    if (p.width < 148) continue;                 // hace falta sitio de sobra
+    if (p.width < 122) continue;                 // hace falta sitio de sobra
     // Al dejar fuera móviles, cíclicas y atajos quedaban solo cinco pinchos
     // en todo el nivel: se sube la tirada para que el obstáculo se note en
     // las cumbres altas, que es donde tiene que doler.
-    if (rnd() > (0.26 + 0.62 * Math.pow((p.world - 1) / 6, 1.2))) continue;
+    if (rnd() > (0.40 + 0.55 * Math.pow((p.world - 1) / 6, 1.2))) continue;
 
     // Punto donde se aterriza en ella y punto desde el que se despega
     const cae = p.traza ? p.traza[p.traza.length - 1].x : p.x + p.width / 2;
@@ -3637,15 +3761,20 @@ function generarPinchos() {
 
     const ancho = 30 + rnd() * 26;
     let puesto = null;
-    for (let intento = 0; intento < 24 && !puesto; intento++) {
-      const x = p.x + 52 + rnd() * Math.max(1, p.width - 104 - ancho);
+    for (let intento = 0; intento < 40 && !puesto; intento++) {
+      // Con los saltos ya aclarados —más largos— el pasillo entre donde caes
+      // y desde donde despegas se come casi toda la plataforma, y quedaban
+      // cuatro pinchos en todo el nivel. Los márgenes se afinan: 9 px de
+      // guarda en vez de 14 y 46 de canto en vez de 52. Sigue siendo
+      // imposible que un pincho toque el sitio donde el jugador se para.
+      const x = p.x + 46 + rnd() * Math.max(1, p.width - 92 - ancho);
       let libre = true;
       for (const q of paradas) {
-        if (!(x > q + PW + 14 || x + ancho < q - 14)) { libre = false; break; }
+        if (!(x > q + PW + 9 || x + ancho < q - 9)) { libre = false; break; }
       }
       // Y a cada lado tiene que quedar plataforma suficiente para aterrizar
       const margenIzq = x - p.x, margenDer = (p.x + p.width) - (x + ancho);
-      if (libre && margenIzq >= 52 && margenDer >= 52) {
+      if (libre && margenIzq >= 46 && margenDer >= 46) {
         puesto = { x, y: p.y - SPIKE_H, width: ancho, height: SPIKE_H };
       }
     }
@@ -4377,6 +4506,8 @@ function update() {
     if (Math.abs((player.y + PH / 2) - m.y) > r + 8) continue;
     m.tomada = true;
     monedasTomadas++;
+    marcas.banco = (marcas.banco || 0) + (m.bonus ? 3 : 1);
+    guardarPronto();
     cadena++; cadenaTimer = 90;
     puntos += m.valor * (1 + Math.min(9, cadena - 1) * 0.1);
     sonMoneda(m.bonus, cadena - 1);
@@ -4531,7 +4662,8 @@ function triggerWin() {
   const nuevos = anotarPartida(seg);
   winStats.textContent = 'Tiempo: ' + reloj(seg) + '  ·  Caídas: ' + deaths +
                          '  ·  ' + Math.round(puntos) + ' pts (' + monedasTomadas +
-                         ' de ' + monedas.length + ' monedas)';
+                         ' de ' + monedas.length + ' monedas)  ·  hucha: ' +
+                         (marcas.banco || 0);
   marcasEl.textContent = nuevos.length
     ? '¡Récord de ' + nuevos.join(' y de ') + '!  ' + textoMarcas()
     : textoMarcas();
@@ -4971,13 +5103,41 @@ function bgEspacio(b) {
    no del mundo en que está el jugador, para que la transición se vea.
    -------------------------------------------------------------------- */
 
+/**
+ * EL ANCLA DE CADA APOYO
+ *
+ * Todo el dibujo de un apoyo —qué objeto le toca, dónde caen las matas de
+ * hierba, los grumos de nieve, los remaches— sale de `h(p.x …)`, o sea de su
+ * posición. En un apoyo quieto eso es perfecto: cada uno sale distinto y
+ * siempre igual. En uno CON CARRIL, `p.x` cambia en cada fotograma, así que
+ * el sorteo se repetía sesenta veces por segundo: la plataforma parpadeaba y
+ * cambiaba de objeto sin parar. Era el «cambia de aspecto cada milisegundo»
+ * que se veía en las móviles.
+ *
+ * El arreglo es que el apoyo se dibuje SIEMPRE en su sitio de reposo y sea el
+ * lienzo el que se mueva hasta donde está ahora. Así el sorteo es fijo y el
+ * dibujo no se entera de que la plataforma viaja.
+ */
+function anclarApoyo(p) {
+  if (!p.ancla) p.ancla = { x: p.x, y: p.y };
+  const dx = p.x - p.ancla.x, dy = p.y - p.ancla.y;
+  ctx.save();
+  if (dx || dy) ctx.translate(dx, dy);
+  return p.ancla;
+}
+
 function drawPlatform(p) {
+  const a = anclarApoyo(p);
+  const xr = p.x, yr = p.y;
+  p.x = a.x; p.y = a.y;                 // dibujar en reposo; el lienzo ya viaja
+
   const { x, y, width: w, height: hh } = p;
+  if (p.type === 'goal')            { platMeta(p); contorno(x, y, w, hh, 3.5); }
+  else if (p.type === 'checkpoint') { platCheckpoint(p); contorno(x, y, w, hh, 3.5); }
+  else                              { drawObjeto(p); }
 
-  if (p.type === 'goal')       { platMeta(p); contorno(x, y, w, hh, 3.5); return; }
-  if (p.type === 'checkpoint') { platCheckpoint(p); contorno(x, y, w, hh, 3.5); return; }
-
-  drawObjeto(p);
+  p.x = xr; p.y = yr;
+  ctx.restore();
 }
 
 
@@ -7386,47 +7546,90 @@ function draw() {
     }
   }
 
-  // Drones patrullando. Se dibuja también su carril, en línea de puntos:
-  // saber por dónde va a venir es lo que hace que esquivarlo sea una
-  // decisión y no un susto.
+  // DRONES. Eran una cajita gris oscuro de 34x22 sobre un cielo cian, con un
+  // punto rojo: sobre el fondo claro pasaban desapercibidos hasta que te
+  // llevaban por delante. Ahora se ven de lejos: casco naranja de aviso,
+  // franjas de peligro, luz roja que late con su halo y el carril marcado en
+  // rojo con flechas que dicen hacia dónde va. Saber por dónde va a venir es
+  // lo que hace que esquivarlo sea una decisión y no un susto.
   for (const v of voladores) {
     if (v.x === undefined) v.x = dronX(v, tiempoJuego);
-    if (v.y < cameraY - 80 || v.y > cameraY + viewHeight + 80) continue;
-    if (fuera(v.min, v.max - v.min)) continue;
+    if (v.y < cameraY - 90 || v.y > cameraY + viewHeight + 90) continue;
+    if (fuera(v.min - 20, (v.max - v.min) + 40)) continue;
     const cx = v.x + DRON_W / 2, cy = v.y + DRON_H / 2;
+    const late = 0.5 + 0.5 * Math.sin(t * 0.13 + v.fase);
 
-    ctx.strokeStyle = 'rgba(255,120,120,0.22)';
-    ctx.lineWidth = 2; ctx.setLineDash([5, 7]);
+    // El carril, en rojo y con flechas: por aquí pasa y hacia allá va
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,80,80,0.5)';
+    ctx.lineWidth = 2.4; ctx.setLineDash([7, 9]);
     ctx.beginPath();
     ctx.moveTo(v.min, cy); ctx.lineTo(v.max, cy);
-    ctx.stroke(); ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,80,80,0.55)';
+    for (const bx of [v.min + 4, v.max - 4]) {
+      const sg = bx < cx ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(bx, cy); ctx.lineTo(bx + sg * 9, cy - 5); ctx.lineTo(bx + sg * 9, cy + 5);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+
+    // Halo de aviso, aditivo para que encienda sobre el cielo en vez de
+    // ensuciarlo (el mismo truco que en los pinchos)
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const halo = ctx.createRadialGradient(cx, cy, 2, cx, cy, 40 + late * 8);
+    halo.addColorStop(0, 'rgba(255,70,60,' + (0.36 + late * 0.2).toFixed(2) + ')');
+    halo.addColorStop(0.55, 'rgba(255,120,40,0.12)');
+    halo.addColorStop(1, 'rgba(255,70,60,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(cx, cy, 40 + late * 8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
 
     // Hélices: dos óvalos que giran deprisa a los lados
-    ctx.fillStyle = 'rgba(210,230,245,0.55)';
+    ctx.fillStyle = 'rgba(235,245,255,0.7)';
     const giro = Math.abs(Math.cos(t * 0.6));
     for (const sg of [-1, 1]) {
       ctx.beginPath();
-      ctx.ellipse(cx + sg * 15, v.y + 3, 11 * (0.35 + giro * 0.65), 3, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + sg * 16, v.y + 2, 12 * (0.35 + giro * 0.65), 3.2, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.strokeStyle = '#39424e'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(cx - 15, v.y + 4); ctx.lineTo(cx + 15, v.y + 4);
+    ctx.moveTo(cx - 16, v.y + 3); ctx.lineTo(cx + 16, v.y + 3);
     ctx.stroke();
+    ctx.lineCap = 'butt';
 
-    // Casco
-    ctx.fillStyle = '#3a4250';
-    rrect(v.x + 3, v.y + 5, DRON_W - 6, DRON_H - 7, 7); ctx.fill();
-    ctx.strokeStyle = '#1b212a'; ctx.lineWidth = 2; ctx.stroke();
+    // Casco naranja de aviso con franjas negras
+    const cuerpo = ctx.createLinearGradient(0, v.y + 4, 0, v.y + DRON_H);
+    cuerpo.addColorStop(0, '#ffb040'); cuerpo.addColorStop(1, '#e2621a');
+    ctx.fillStyle = cuerpo;
+    rrect(v.x + 2, v.y + 4, DRON_W - 4, DRON_H - 6, 7); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); rrect(v.x + 2, v.y + 4, DRON_W - 4, DRON_H - 6, 7); ctx.clip();
+    ctx.fillStyle = 'rgba(24,28,36,0.9)';
+    for (let bx = -10; bx < DRON_W + 10; bx += 12) {
+      ctx.beginPath();
+      ctx.moveTo(v.x + bx, v.y + DRON_H);
+      ctx.lineTo(v.x + bx + 5, v.y + DRON_H);
+      ctx.lineTo(v.x + bx + 12, v.y + 2);
+      ctx.lineTo(v.x + bx + 7, v.y + 2);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#1b212a'; ctx.lineWidth = 2.2;
+    rrect(v.x + 2, v.y + 4, DRON_W - 4, DRON_H - 6, 7); ctx.stroke();
 
-    // Ojo rojo que barre de lado a lado: el aviso de que es peligroso
-    const mira = Math.sin(t * 0.07 + v.fase) * 3;
-    ctx.shadowColor = '#ff4757'; ctx.shadowBlur = 12;
-    ctx.fillStyle = '#ff4757';
-    ctx.beginPath(); ctx.arc(cx + mira, cy + 1, 4.2, 0, Math.PI * 2); ctx.fill();
+    // Ojo rojo que barre de lado a lado, más grande y con su brillo
+    const mira = Math.sin(t * 0.07 + v.fase) * 4;
+    ctx.shadowColor = '#ff2f3f'; ctx.shadowBlur = 16 + late * 10;
+    ctx.fillStyle = '#ff2f3f';
+    ctx.beginPath(); ctx.arc(cx + mira, cy + 1, 5.4, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.beginPath(); ctx.arc(cx + mira - 1.2, cy - 0.4, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.beginPath(); ctx.arc(cx + mira - 1.6, cy - 0.6, 1.9, 0, Math.PI * 2); ctx.fill();
   }
 
   // Láseres
@@ -8138,18 +8341,30 @@ function dibujarAccesorioIlustrado(piel, contorno, dx, aire, corriendo) {
     // Las gafas van sobre los ojos, así que se desplazan igual que ellos
     ctx.save();
     ctx.translate(dx, 0);
+    // MEDIDO: los ojos están en y = -33 y ocupan de -39 a -27. Las gafas
+    // iban de -35 a -22, o sea por DEBAJO: se veían los ojos asomando por
+    // encima de la montura y las lentes tapaban la boca. Ahora la montura va
+    // centrada en el ojo, y las patillas llegan hasta la sien.
     ctx.fillStyle = '#111118';
-    rrect(-20, -35, 40, 13, 4); ctx.fill();
+    rrect(-22, -40, 44, 14, 4.5); ctx.fill();
     ctx.strokeStyle = contorno; ctx.lineWidth = 2.6; ctx.stroke();
-    const cristal = ctx.createLinearGradient(0, -34, 0, -24);
-    cristal.addColorStop(0, '#4a5570');
+    // Patillas: sin ellas las gafas flotan delante de la cara
+    ctx.strokeStyle = '#111118'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    for (const sg of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(sg * 21, -36); ctx.lineTo(sg * 29, -37.5);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+    const cristal = ctx.createLinearGradient(0, -39, 0, -28);
+    cristal.addColorStop(0, '#5a6684');
     cristal.addColorStop(1, '#12161f');
     ctx.fillStyle = cristal;
-    rrect(-18, -33.5, 16, 9.5, 3); ctx.fill();
-    rrect(2, -33.5, 16, 9.5, 3); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    rrect(-16.5, -32.5, 5, 3, 1.5); ctx.fill();
-    rrect(3.5, -32.5, 5, 3, 1.5); ctx.fill();
+    rrect(-20, -38.5, 17.5, 11, 3.5); ctx.fill();
+    rrect(2.5, -38.5, 17.5, 11, 3.5); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    rrect(-18.2, -37.2, 6, 3.4, 1.7); ctx.fill();
+    rrect(4.8, -37.2, 6, 3.4, 1.7); ctx.fill();
     ctx.restore();
     return;
   }
@@ -8293,37 +8508,88 @@ function dibujarAccesorioIlustrado(piel, contorno, dx, aire, corriendo) {
   }
 
   if (id === 'luchador') {
-    ctx.save(); ctx.translate(dx * 0.85, 0);
-    ctx.fillStyle = '#1e5fa8';
+    // Una máscara de luchador tiene AGUJEROS. Esta bajaba hasta y = -34 y
+    // tapaba los ojos (que están en -33): el personaje se quedaba ciego y
+    // parecía un casco, no una máscara. Ahora baja hasta la nariz y lleva
+    // sus dos aberturas con reborde, con los ojos dibujados dentro.
+    ctx.save(); ctx.translate(dx, 0);
+    const tela = ctx.createLinearGradient(0, -62, 0, -26);
+    tela.addColorStop(0, '#2a76c8'); tela.addColorStop(1, '#14497f');
+    ctx.fillStyle = tela;
     ctx.beginPath();
-    ctx.moveTo(-28, -38);
-    ctx.bezierCurveTo(-31, -55, -16, -60, 0, -60);
-    ctx.bezierCurveTo(16, -60, 31, -55, 28, -38);
-    ctx.bezierCurveTo(14, -34, -14, -34, -28, -38);
+    ctx.moveTo(-29, -30);
+    ctx.bezierCurveTo(-32, -52, -17, -61, 0, -61);
+    ctx.bezierCurveTo(17, -61, 32, -52, 29, -30);
+    ctx.bezierCurveTo(15, -25, -15, -25, -29, -30);
     ctx.closePath(); ctx.fill();
     ctx.strokeStyle = contorno; ctx.lineWidth = 2.8; ctx.stroke();
+
+    // Rayo amarillo en la frente
     ctx.fillStyle = '#f1c40f';
     ctx.beginPath();
-    ctx.moveTo(-4, -58); ctx.lineTo(7, -50); ctx.lineTo(1, -49);
-    ctx.lineTo(6, -38); ctx.lineTo(-7, -47); ctx.lineTo(-1, -48);
+    ctx.moveTo(-4, -57); ctx.lineTo(7, -49); ctx.lineTo(1, -48);
+    ctx.lineTo(6, -41); ctx.lineTo(-7, -47); ctx.lineTo(-1, -48);
     ctx.closePath(); ctx.fill();
+
+    // Aberturas de los ojos, justo donde están los ojos de verdad
+    for (const sg of [-1, 1]) {
+      ctx.fillStyle = '#0b1420';
+      ctx.beginPath(); ctx.ellipse(sg * 9, -33, 6.6, 7.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2.2; ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.ellipse(sg * 9, -33, 3.4, 4.6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0d0d0d';
+      ctx.beginPath(); ctx.ellipse(sg * 9 + 0.6, -33, 2.1, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // Y la abertura de la boca: la máscara acaba antes de la barbilla
+    ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-13, -28.5); ctx.quadraticCurveTo(0, -25.5, 13, -28.5);
+    ctx.stroke();
     ctx.restore();
     return;
   }
 
   if (id === 'momia') {
-    ctx.save(); ctx.translate(dx * 0.85, 0);
+    // Eran tres brochazos sueltos que sobresalían por los lados y por arriba:
+    // se leía como una equis flotando sobre la cabeza. Ahora las vendas se
+    // RECORTAN contra la silueta —así se ven pegadas al cráneo— y sólo el
+    // cabo suelto se sale, que es lo que le da la gracia.
+    ctx.save(); ctx.translate(dx * 0.5, 0);
+    const cabeza = () => {
+      ctx.beginPath();
+      ctx.moveTo(-30, -30);
+      ctx.bezierCurveTo(-33, -53, -18, -62, 0, -62);
+      ctx.bezierCurveTo(18, -62, 33, -53, 30, -30);
+      ctx.bezierCurveTo(15, -25, -15, -25, -30, -30);
+      ctx.closePath();
+    };
+    ctx.save();
+    cabeza(); ctx.clip();
     const venda = (x1, y1, cx1, cy1, x2, y2) => {
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx1, cy1, x2, y2); ctx.stroke();
     };
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#ece4cf'; ctx.lineWidth = 8;
-    venda(-30, -45, 0, -39, 28, -50);
-    venda(-27, -55, 2, -61, 27, -44);
-    venda(-24, -34, -6, -30, 6, -36);
-    ctx.strokeStyle = 'rgba(150,138,110,0.45)'; ctx.lineWidth = 1.4;
-    venda(-30, -45, 0, -39, 28, -50);
-    venda(-27, -55, 2, -61, 27, -44);
+    for (const [ancho, color] of [[10, '#f2ecdb'], [1.5, 'rgba(150,138,110,0.5)']]) {
+      ctx.strokeStyle = color; ctx.lineWidth = ancho;
+      // La banda de los ojos se deja LIBRE a propósito: vendado del todo se
+      // pierde la cara, que es de donde sale el personaje.
+      venda(-36, -60, 0, -66, 36, -54);
+      venda(-36, -51, 0, -56, 36, -47);
+      venda(-36, -43, -2, -46, 36, -40);
+      venda(-36, -25, 0, -28, 36, -23);
+    }
+    ctx.restore();
+    // Cabo suelto colgando por la sien
+    ctx.strokeStyle = '#f2ecdb'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(26, -36); ctx.quadraticCurveTo(38, -30, 34, -18);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(150,138,110,0.5)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(26, -36); ctx.quadraticCurveTo(38, -30, 34, -18);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
     ctx.restore();
     return;
   }
@@ -8361,76 +8627,118 @@ function dibujarAccesorioIlustrado(piel, contorno, dx, aire, corriendo) {
   }
 
   if (id === 'bombin') {
+    // El ala iba a y = -41 y la copa hasta -54: dentro de la cabeza, que
+    // llega hasta -60. Se veía como una banda negra cruzándole la cara, y el
+    // bigote, a -18, quedaba por DEBAJO de la boca. Sombrero arriba, bigote
+    // entre nariz y boca.
     ctx.save();
     ctx.translate(dx * 0.7, 0);
     ctx.rotate(inclina);
-    ctx.fillStyle = '#2a2a30';
-    ctx.beginPath(); ctx.ellipse(0, -41, 21, 4.6, 0, 0, Math.PI * 2); ctx.fill();
+    const fieltro = ctx.createLinearGradient(0, -70, 0, -50);
+    fieltro.addColorStop(0, '#3b3b45'); fieltro.addColorStop(1, '#1e1e25');
+    ctx.fillStyle = fieltro;
     ctx.beginPath();
-    ctx.moveTo(-10, -41);
-    ctx.bezierCurveTo(-10, -54, 10, -54, 10, -41);
+    ctx.moveTo(-12, -50);
+    ctx.bezierCurveTo(-13, -68, 13, -68, 12, -50);
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#43434c';
-    ctx.fillRect(-10, -45, 20, 3);
-    ctx.strokeStyle = contorno; ctx.lineWidth = 2.2;
-    ctx.beginPath(); ctx.ellipse(0, -41, 21, 4.6, 0, 0, Math.PI * 2); ctx.stroke();
-    // Bigote
-    ctx.fillStyle = contorno;
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.4; ctx.stroke();
+    // Cinta
+    ctx.fillStyle = '#6d1f24';
     ctx.beginPath();
-    ctx.moveTo(0, -18.5);
-    ctx.bezierCurveTo(-4, -22, -11, -21, -11, -17);
-    ctx.bezierCurveTo(-7, -15.5, -3, -16.5, 0, -18.5);
-    ctx.bezierCurveTo(3, -16.5, 7, -15.5, 11, -17);
-    ctx.bezierCurveTo(11, -21, 4, -22, 0, -18.5);
+    ctx.moveTo(-12.4, -53); ctx.lineTo(12.4, -53); ctx.lineTo(12.2, -49.5);
+    ctx.lineTo(-12.2, -49.5); ctx.closePath(); ctx.fill();
+    // Ala, por delante de la copa
+    ctx.fillStyle = '#2a2a30';
+    ctx.beginPath(); ctx.ellipse(0, -49, 23, 5.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.13)';
+    ctx.beginPath(); ctx.ellipse(-6, -60, 4, 6, -0.4, 0, Math.PI * 2); ctx.fill();
+    // Bigote: entre la nariz y la boca, no debajo
+    ctx.fillStyle = '#22222a';
+    ctx.beginPath();
+    ctx.moveTo(0, -26.5);
+    ctx.bezierCurveTo(-5, -30.5, -13, -29, -13, -24.5);
+    ctx.bezierCurveTo(-8, -23, -3, -24.5, 0, -26.5);
+    ctx.bezierCurveTo(3, -24.5, 8, -23, 13, -24.5);
+    ctx.bezierCurveTo(13, -29, 5, -30.5, 0, -26.5);
     ctx.fill();
     ctx.restore();
   } else if (id === 'demonio') {
+    // Los cuernos arrancaban en y = -39, o sea a la ALTURA DE LOS OJOS: en vez
+    // de cuernos parecían dos orejas marrones pegadas a la cara. Ahora nacen
+    // en la coronilla y se curvan hacia fuera y hacia arriba, y las alas se
+    // dibujan más grandes y por detrás del cuerpo.
     ctx.save();
     ctx.translate(dx * 0.5, 0);
     ctx.rotate(inclina * 0.8);
-    ctx.fillStyle = '#7a3a1e';
-    for (const s of [-1, 1]) {
+    for (const sg of [-1, 1]) {
+      // Ala de murciélago, detrás del hombro
+      ctx.fillStyle = '#5d2a13';
       ctx.beginPath();
-      ctx.moveTo(s * 7, -39);
-      ctx.quadraticCurveTo(s * 15, -50, s * 10, -56);
-      ctx.quadraticCurveTo(s * 13, -47, s * 12, -38);
+      ctx.moveTo(sg * 17, -34);
+      ctx.quadraticCurveTo(sg * 40, -42, sg * 38, -20);
+      ctx.quadraticCurveTo(sg * 31, -25, sg * 28, -14);
+      ctx.quadraticCurveTo(sg * 25, -22, sg * 17, -20);
       ctx.closePath(); ctx.fill();
       ctx.strokeStyle = contorno; ctx.lineWidth = 2; ctx.stroke();
-      // Alas
-      ctx.fillStyle = '#6b3218';
+
+      // Cuerno, desde la coronilla
+      const cuerno = ctx.createLinearGradient(0, -62, 0, -46);
+      cuerno.addColorStop(0, '#e8a06a'); cuerno.addColorStop(1, '#8c4520');
+      ctx.fillStyle = cuerno;
       ctx.beginPath();
-      ctx.moveTo(s * 15, -30);
-      ctx.quadraticCurveTo(s * 30, -34, s * 27, -18);
-      ctx.quadraticCurveTo(s * 22, -22, s * 15, -20);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#7a3a1e';
+      ctx.moveTo(sg * 9, -50);
+      ctx.quadraticCurveTo(sg * 20, -56, sg * 21, -70);
+      ctx.quadraticCurveTo(sg * 25, -57, sg * 18, -47);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = contorno; ctx.lineWidth = 2.2; ctx.stroke();
+      // Anillos del cuerno
+      ctx.strokeStyle = 'rgba(90,40,16,0.55)'; ctx.lineWidth = 1.4;
+      for (const u of [0.35, 0.6]) {
+        ctx.beginPath();
+        ctx.moveTo(sg * (9 + 10 * u), -50 - 12 * u);
+        ctx.lineTo(sg * (18 + 5 * u), -47 - 12 * u);
+        ctx.stroke();
+      }
     }
     ctx.restore();
   } else if (id === 'tiburon') {
+    // La capucha iba de -44 a -24: le tapaba los ojos y los dientes le
+    // salían de la boca. Una capucha de tiburón se lleva ENCIMA, con las
+    // fauces abiertas sobre la frente y la cara asomando por debajo.
     ctx.save();
     ctx.translate(dx * 0.6, 0);
     ctx.rotate(inclina * 0.6);
-    const capucha = ctx.createLinearGradient(0, -46, 0, -24);
-    capucha.addColorStop(0, '#6a7fb5');
+
+    // Aleta dorsal, primero: va detrás del morro
+    ctx.fillStyle = '#3c4d78';
+    ctx.beginPath();
+    ctx.moveTo(-2, -63); ctx.quadraticCurveTo(-5, -80, -17, -76);
+    ctx.quadraticCurveTo(-10, -70, -9, -61);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.4; ctx.stroke();
+
+    // Morro: casquete sobre la cabeza, de -68 a -44
+    const capucha = ctx.createLinearGradient(0, -70, 0, -44);
+    capucha.addColorStop(0, '#7d92c8');
     capucha.addColorStop(1, '#3c4d78');
     ctx.fillStyle = capucha;
     ctx.beginPath();
-    ctx.moveTo(-18, -24);
-    ctx.bezierCurveTo(-18, -44, 18, -44, 18, -24);
-    ctx.bezierCurveTo(10, -28, -10, -28, -18, -24);
+    ctx.moveTo(-25, -44);
+    ctx.bezierCurveTo(-27, -66, 27, -66, 25, -44);
+    ctx.bezierCurveTo(13, -48, -13, -48, -25, -44);
     ctx.closePath(); ctx.fill();
     ctx.strokeStyle = contorno; ctx.lineWidth = 2.4; ctx.stroke();
-    // Aleta
-    ctx.fillStyle = '#4a5d8c';
-    ctx.beginPath();
-    ctx.moveTo(-3, -43); ctx.quadraticCurveTo(-6, -56, -14, -54);
-    ctx.quadraticCurveTo(-10, -47, -9, -42);
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-    // Dientes
-    ctx.fillStyle = '#ffffff';
-    for (let i = -14; i <= 12; i += 5.2) {
+    // Ojillo del tiburón
+    for (const sg of [-1, 1]) {
+      ctx.fillStyle = '#0f1522';
+      ctx.beginPath(); ctx.arc(sg * 15, -57, 2.6, 0, Math.PI * 2); ctx.fill();
+    }
+    // Encía y dientes, en el borde de las fauces
+    ctx.fillStyle = '#d9e2f2';
+    for (let i = -20; i <= 16; i += 5.6) {
       ctx.beginPath();
-      ctx.moveTo(i, -25); ctx.lineTo(i + 4.4, -25); ctx.lineTo(i + 2.2, -20);
+      ctx.moveTo(i, -45.5); ctx.lineTo(i + 4.6, -45.5); ctx.lineTo(i + 2.3, -39.5);
       ctx.closePath(); ctx.fill();
     }
     ctx.restore();
@@ -10534,6 +10842,54 @@ function ajustarLienzo(cv) {
   return true;
 }
 
+/* ====================================================================
+   LA TIENDA
+   Las monedas del nivel no valían para nada más que para la puntuación. Ahora
+   se gastan aquí: los cuatro primeros colores y los tres primeros accesorios
+   vienen puestos, y el resto se compra. El precio sube con la posición en la
+   lista, así que lo llamativo cuesta más. Una partida completa deja unas 190
+   monedas (las de bonus valen 3), o sea que la colección entera son unas
+   quince subidas: suficiente para que comprar signifique algo y no tanto
+   como para que sea un trabajo.
+   ==================================================================== */
+/* Se declara AQUÍ arriba a propósito: `refrescarPestanas()` la consulta y
+   corre durante el montaje del menú, antes de llegar a la parte de la
+   tienda. Declarada abajo daba «Cannot access before initialization». */
+let mensajeTienda = false;
+
+const GRATIS_COLOR = 4;      // los cuatro primeros vienen puestos
+const GRATIS_ACC = 3;
+
+function precioColor(i) {
+  if (i < GRATIS_COLOR) return 0;
+  return 40 + (i - GRATIS_COLOR) * 20;      // 40, 60, 80 … hasta 300
+}
+function precioAcc(i) {
+  if (i < GRATIS_ACC) return 0;
+  return 60 + (i - GRATIS_ACC) * 25;        // 60, 85, 110 … hasta 360
+}
+
+/** Identificador estable de cada artículo, para guardarlo comprado. */
+function llaveColor(i) { return 'c' + i; }
+function llaveAcc(i) { return 'a' + i; }
+
+function esMio(llave, precio) {
+  return precio === 0 || (marcas.compradas || []).indexOf(llave) >= 0;
+}
+
+/**
+ * Intenta comprar. Devuelve 'comprado', 'caro' o 'ya'. No hace nada más: el
+ * que llama decide qué mensaje enseñar y cuándo repintar.
+ */
+function comprar(llave, precio) {
+  if (esMio(llave, precio)) return 'ya';
+  if ((marcas.banco || 0) < precio) return 'caro';
+  marcas.banco -= precio;
+  marcas.compradas.push(llave);
+  guardar();
+  return 'comprado';
+}
+
 function retrato(cv, iSkin, iAcc) {
   if (!cv || !ajustarLienzo(cv)) return;
   const c2 = cv.getContext('2d');
@@ -10573,13 +10929,21 @@ function retrato(cv, iSkin, iAcc) {
    ==================================================================== */
 
 const CLAVE_GUARDADO = 'dontlookup.v1';
-let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0 };
+let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0,
+               // LA HUCHA. Las monedas que se recogen escalando se guardan
+               // aquí y se gastan en la tienda del menú. Se apuntan en el
+               // momento de cogerlas: una moneda sólo se puede coger una vez
+               // por partida, así que morir a propósito no sirve para
+               // refarmear. `compradas` guarda lo que ya es tuyo.
+               banco: 0, compradas: [] };
 
 function cargarGuardado() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(CLAVE_GUARDADO) || 'null'); } catch (e) {}
   if (!d || typeof d !== 'object') return;
   if (d.marcas) Object.assign(marcas, d.marcas);
+  if (!Array.isArray(marcas.compradas)) marcas.compradas = [];
+  if (typeof marcas.banco !== 'number' || !isFinite(marcas.banco)) marcas.banco = 0;
   const p = d.prefs || {};
   if (typeof p.skin === 'number' && SKINS[p.skin]) skinElegida = p.skin;
   if (typeof p.acc === 'number' && ACCESORIOS[p.acc]) accesorioElegido = p.acc;
@@ -10600,6 +10964,16 @@ function guardar() {
                sonido: musicaOn, nombre: nombreJugador },
     }));
   } catch (e) {}
+}
+
+/**
+ * Guardar en cada moneda serían casi doscientas escrituras por partida. Se
+ * apunta que hay algo pendiente y se escribe como mucho una vez por segundo.
+ */
+let guardadoPendiente = 0;
+function guardarPronto() {
+  if (guardadoPendiente) return;
+  guardadoPendiente = setTimeout(() => { guardadoPendiente = 0; guardar(); }, 1000);
 }
 
 /** Anota lo más alto que se ha llegado, aunque la partida no se termine. */
@@ -10714,7 +11088,10 @@ function refrescarPestanas() {
   if (cc) cc.textContent = SKINS.length;
   if (ca) ca.textContent = ACCESORIOS.length;
   const pista = document.getElementById('pista-eleccion');
-  if (pista) {
+  // Mientras hay un mensaje de la tienda («te faltan 40 monedas», «¡Rosa
+  // desbloqueado!») no se pisa: es el único sitio donde se contesta al que
+  // acaba de pulsar, y cualquier repintado se lo llevaba por delante.
+  if (pista && !mensajeTienda) {
     const acc = ACCESORIOS[accesorioElegido];
     pista.innerHTML = 'Llevas <b>' + SKINS[skinElegida].nombre + '</b>' +
       (acc && acc.id !== 'ninguno' ? ' con <b>' + (acc.corto || acc.nombre) + '</b>' : ', sin accesorio') +
@@ -10784,48 +11161,127 @@ function alternarSonido() {
 cargarGuardado();
 
 (function montarSelector() {
-  const marcar = (cont, i) => Array.from(cont.children).forEach((c, k) =>
-    c.className = 'tarjeta' + (k === i ? ' sel' : ''));
+  // Cada tarjeta es a la vez escaparate y mostrador: si el artículo ya es
+  // tuyo, se pone; si no, se compra con lo que llevas en la hucha.
+  const pintarEstado = (cont, elegido, precioDe, llaveDe) => {
+    Array.from(cont.children).forEach((c, k) => {
+      const precio = precioDe(k), mio = esMio(llaveDe(k), precio);
+      c.className = 'tarjeta' + (k === elegido ? ' sel' : '') + (mio ? '' : ' cerrada');
+      const eti = c._precio;
+      if (!eti) return;
+      if (mio) { eti.className = 'precio oculta'; eti.textContent = ''; }
+      else {
+        const alcanza = (marcas.banco || 0) >= precio;
+        eti.className = 'precio' + (alcanza ? ' alcanza' : '');
+        eti.textContent = precio;
+      }
+    });
+  };
+  const refrescarTodo = () => {
+    if (gAcc) pintarEstado(gAcc, accesorioElegido, precioAcc, llaveAcc);
+    if (gCol) pintarEstado(gCol, skinElegida, precioColor, llaveColor);
+    pintarHucha();
+    refrescarMenu(); refrescarPestanas(); guardar();
+  };
 
-  const acc = document.getElementById('accesorios');
-  if (acc) {
+  const tarjeta = (etiqueta) => {
+    const d = document.createElement('div');
+    const cv = document.createElement('canvas');
+    cv.width = 96; cv.height = 76;
+    const et = document.createElement('span');
+    et.textContent = etiqueta;
+    const pr = document.createElement('i');
+    pr.className = 'precio oculta';
+    d.appendChild(cv); d.appendChild(et); d.appendChild(pr);
+    d._cv = cv; d._precio = pr;
+    return d;
+  };
+
+  const gAcc = document.getElementById('accesorios');
+  if (gAcc) {
     ACCESORIOS.forEach((a, i) => {
-      const d = document.createElement('div');
-      d.className = 'tarjeta' + (i === accesorioElegido ? ' sel' : '');
-      const cv = document.createElement('canvas');
-      cv.width = 96; cv.height = 76;
-      const et = document.createElement('span');
       // El recorte a golpe de replace() dejaba etiquetas como «tiburón», en
       // minúscula y sin sustantivo. Cada accesorio trae su nombre corto.
-      et.textContent = a.corto || a.nombre;
-      d.appendChild(cv); d.appendChild(et);
+      const d = tarjeta(a.corto || a.nombre);
       d.addEventListener('click', () => {
-        accesorioElegido = i; marcar(acc, i); refrescarMenu(); refrescarPestanas(); guardar();
+        const precio = precioAcc(i), llave = llaveAcc(i);
+        if (!esMio(llave, precio)) {
+          const r = comprar(llave, precio);
+          // El aviso va DESPUÉS de repintar: `refrescarTodo` reescribe la
+          // pista con «Llevas …» y se comía el mensaje.
+          if (r === 'caro') { refrescarTodo(); avisoTienda(precio - (marcas.banco || 0)); return; }
+          refrescarTodo(); celebrarCompra(a.corto || a.nombre);
+        }
+        accesorioElegido = i;
+        refrescarTodo();
       });
-      acc.appendChild(d);
-      d._cv = cv; d._acc = i;
+      gAcc.appendChild(d); d._acc = i;
     });
   }
 
-  const cont = document.getElementById('skins');
-  if (cont) {
-    SKINS.forEach((s, i) => {
-      const d = document.createElement('div');
-      d.className = 'tarjeta' + (i === skinElegida ? ' sel' : '');
-      const cv = document.createElement('canvas');
-      cv.width = 96; cv.height = 76;
-      const et = document.createElement('span');
-      et.textContent = s.nombre;
-      d.appendChild(cv); d.appendChild(et);
+  const gCol = document.getElementById('skins');
+  if (gCol) {
+    SKINS.forEach((sk, i) => {
+      const d = tarjeta(sk.nombre);
       d.addEventListener('click', () => {
-        skinElegida = i; marcar(cont, i); refrescarMenu(); refrescarPestanas(); guardar();
+        const precio = precioColor(i), llave = llaveColor(i);
+        if (!esMio(llave, precio)) {
+          const r = comprar(llave, precio);
+          if (r === 'caro') { refrescarTodo(); avisoTienda(precio - (marcas.banco || 0)); return; }
+          refrescarTodo(); celebrarCompra(sk.nombre);
+        }
+        skinElegida = i;
+        refrescarTodo();
       });
-      cont.appendChild(d);
-      d._cv = cv; d._skin = i;
+      gCol.appendChild(d); d._skin = i;
     });
   }
-  refrescarMenu();
+
+  // El color y el accesorio guardados pueden no estar comprados (partida
+  // vieja, o guardado a mano): se vuelve a lo primero que sí es tuyo.
+  if (!esMio(llaveColor(skinElegida), precioColor(skinElegida))) skinElegida = 0;
+  if (!esMio(llaveAcc(accesorioElegido), precioAcc(accesorioElegido))) accesorioElegido = 0;
+  refrescarTodo();
+  window.refrescarTienda = refrescarTodo;
 })();
+
+/** Aviso de que faltan monedas, sobre la pista del selector. */
+let avisoTiendaTimer = 0;
+function avisoTienda(faltan) {
+  const pista = document.getElementById('pista-eleccion');
+  if (!pista) return;
+  mensajeTienda = true;
+  pista.classList.add('falta');
+  pista.innerHTML = 'Te faltan <b>' + faltan + '</b> ' +
+    (faltan === 1 ? 'moneda' : 'monedas') + '<em>Sube y recógelas escalando</em>';
+  clearTimeout(avisoTiendaTimer);
+  avisoTiendaTimer = setTimeout(() => {
+    pista.classList.remove('falta');
+    mensajeTienda = false;
+    refrescarPestanas();
+  }, 2200);
+}
+
+function celebrarCompra(nombre) {
+  const pista = document.getElementById('pista-eleccion');
+  if (!pista) return;
+  mensajeTienda = true;
+  pista.classList.add('compra');
+  pista.innerHTML = '¡<b>' + nombre + '</b> desbloqueado!<em>Ya es tuyo para siempre</em>';
+  clearTimeout(avisoTiendaTimer);
+  avisoTiendaTimer = setTimeout(() => {
+    pista.classList.remove('compra');
+    mensajeTienda = false;
+    refrescarPestanas();
+  }, 2200);
+  efecto([523, 659, 784, 1046], 0.09, 'triangle', 0.05);
+}
+
+/** La hucha, en la cabecera del menú. */
+function pintarHucha() {
+  const el = document.getElementById('hucha');
+  if (el) el.textContent = marcas.banco || 0;
+}
 
 /** Repinta el escaparate y todas las tarjetas. */
 /* ====================================================================

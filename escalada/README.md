@@ -158,6 +158,127 @@ Enseñaba el nivel pero no decía nada de la subida. Ahora:
 La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
 se pisaba con los nombres de las cumbres.
 
+### Las móviles cambiaban de objeto sesenta veces por segundo
+
+Este era el «se bugean» de verdad, y no estaba en la física —52 móviles × 7
+guiones × 4 fases × 900 fotogramas dan cero empotramientos— sino en el dibujo:
+
+```js
+const semilla = h(p.x * 0.29 + p.y * 0.13);   // ← p.x cambia cada fotograma
+```
+
+De ahí sale QUÉ objeto le toca a cada apoyo, y también dónde caen las matas
+de hierba, los grumos de la bola de nieve o los remaches. En un apoyo quieto
+es perfecto: cada uno sale distinto y siempre igual. En uno **con carril**,
+`p.x` cambia sesenta veces por segundo, así que el sorteo se repetía sesenta
+veces por segundo: la plataforma parpadeaba y cambiaba de objeto sin parar.
+
+El arreglo no es tocar el sorteo, es **anclar el dibujo**: cada apoyo se pinta
+siempre en su sitio de reposo y es el LIENZO el que se traslada hasta donde
+está ahora (`anclarApoyo`). Así el sorteo es fijo, y de paso se arregla de
+golpe el temblor de todos los detalles, no sólo el del objeto. Comprobado:
+400 fotogramas de una móvil ancha, **un solo objeto** en vez de uno por
+fotograma.
+
+### Los drones se veían menos que los pinchos
+
+Una cajita gris oscuro de 34×22 px con un punto rojo, sobre un cielo cian.
+Ahora: casco naranja con franjas negras de peligro, hélices más marcadas, ojo
+rojo de 5,4 px con su brillo, halo de aviso que late en modo aditivo —el
+mismo truco que en los pinchos, porque un rojo translúcido sobre cian da gris
+sucio— y el carril pintado en rojo **con flechas en los dos extremos**, que
+dicen por dónde va a venir.
+
+### Seis accesorios estaban mal puestos
+
+Se vieron poniéndolos uno a uno sobre el personaje. Las coordenadas de la
+cara son fijas y conocidas: los ojos están en `y = -33` y ocupan de -39 a -27,
+la boca sobre -23, la coronilla en -60. Con eso, los fallos eran evidentes:
+
+| Accesorio | Qué pasaba | Qué se hizo |
+|---|---|---|
+| Gafas | Iban de -35 a -22: por DEBAJO de los ojos, tapando la boca | Centradas en el ojo, con patillas hasta la sien |
+| Bombín | Ala a -41 y copa a -54: dentro de la cabeza, como una banda negra en la cara. Bigote a -18, bajo la boca | Sombrero arriba con cinta, bigote entre nariz y boca |
+| Diablo | Los cuernos nacían a -39, o sea a la altura de los ojos: parecían orejas | Nacen en la coronilla, se curvan hacia fuera; alas más grandes |
+| Luchador | La máscara bajaba a -34 y le tapaba los ojos: era un casco, no una máscara | Aberturas con reborde amarillo y los ojos dentro |
+| Momia | Tres brochazos sueltos que sobresalían: una equis flotando sobre la cabeza | Vendas recortadas contra la silueta, con su cabo suelto |
+| Tiburón | La capucha iba de -44 a -24: tapaba la cara y los dientes salían de la boca | Fauces sobre la frente, aleta arriba, cara a la vista |
+
+### Menos apoyos arriba, o sea saltos más largos
+
+Medido en el recorrido: la subida media por salto era 65, 69, 63, 67, 47 y 45
+px por cumbre. Los saltos se hacían **más cortos** según se sube; las dos
+últimas cumbres eran una escalerilla regular de apoyos casi pegados. Justo al
+revés de lo que tiene que pasar.
+
+Subir los apoyos cambiaría la altura total y el medidor de metros, así que
+`aclararApoyos()` hace lo contrario: **quita** apoyos. Los que sobran, y sobre
+todo los que están pegados a su vecino (poca subida y poco hueco de lado).
+Misma altura, menos escalones, cada salto más largo. Cada retirada se
+comprueba con la física real y, si el salto que queda no tiene ventana de
+despegue, el apoyo vuelve.
+
+| | Antes | Ahora |
+|---|---|---|
+| Subida media por salto (cumbres 1→6) | 65, 69, 63, 67, 47, 45 px | 67, 69, 68, 74, 60, 73 px |
+| Hueco lateral medio en la última cumbre | 144 px | 325 px |
+| Apoyos pegados a su vecino | 4 | 2 |
+| Saltos de la cadena | 293 | 248 |
+
+Y los tamaños siguen apretando por su lado: cada cumbre menos la primera
+tiene su apoyo redondo —se suman la **bola de acero** de la base secreta y la
+**calabaza** de la feria—, así que hay 27 bolas de 70 px repartidas por las
+cinco cumbres de arriba, más los apoyos estrechados.
+
+### Un checkpoint intermedio por cumbre, exactamente
+
+Los doce estaban repartidos por fracciones de la subida entera, y eso dejaba
+tres en una cumbre y uno en otra. Ahora se colocan **por cumbre**: el de
+entrada y UNO a media altura del tramo. Dos por cumbre, doce en total, uno
+cada 83 m: 2, 80, 170, 251, 335, 426, 518, 596, 676, 753, 835 y 912 m.
+
+### Las monedas ahora se gastan: la tienda
+
+Las monedas sólo daban puntos. Ahora hay **hucha**: lo que recoges escalando
+se guarda entre partidas y se gasta en la tienda del menú. Los cuatro
+primeros colores y los tres primeros accesorios vienen puestos; el resto se
+compra, y el precio sube con la posición en la lista (40, 60, 80… hasta 300
+en colores; 60, 85, 110… en accesorios). Una subida completa deja unas 157
+monedas —las de bonus valen 3—, o sea que la colección entera son unas quince
+subidas.
+
+Detalles que importan: la moneda se apunta **al cogerla**, y como una moneda
+sólo se puede coger una vez por partida, morir a propósito no sirve para
+refarmear; el guardado se difiere a una escritura por segundo en vez de una
+por moneda; las tarjetas cerradas se ven en gris con su precio, y el precio se
+enciende cuando ya te lo puedes permitir; y si el color guardado no está
+comprado —partida vieja, guardado tocado a mano— se vuelve al primero que sí
+es tuyo.
+
+No hay selector de dificultad ni de niveles: se elige escalador y se sube.
+
+### El verificador quedó a cero por primera vez
+
+Arreglando lo anterior salieron dos defectos de fondo:
+
+- **Un apoyo cíclico se medía mientras no estaba.** `ventanaSalida` simula al
+  jugador de pie en el apoyo; si en esa fase del reloj el apoyo ha
+  desaparecido, no hay desde dónde despegar y la ventana salía nula aunque el
+  salto fuese perfecto mientras está. Ahora se mide con el apoyo puesto; que
+  dé tiempo a salir antes de que se esfume lo comprueba `sembrarCiclicas`
+  aparte, con el coste real del salto.
+- **Sitio para saltar que no se podía pisar.** `despejarRatoneras` sólo miraba
+  que quedaran 52 px libres en algún punto del apoyo. En el del metro 760
+  quedaban 108, pero al otro lado de un techo: andando sólo se llegaba a 15 de
+  los 18 px de ventana que se exigen. Ahora, si un salto se puede dar pero no
+  con ventana, también se despeja el techo, y el arreglo sólo vale si de
+  verdad la deja.
+
+**Resultado**: 248 saltos, 0 imposibles, **0 sin ventana de despegue**, 0
+apretados, 0 atajos rotos, 0 monedas sueltas, 0 drones que estorben, 0 px de
+penetración y ningún error de consola. Es la primera vez que el informe sale
+limpio entero.
+
 ### Las seis cumbres medían 275, 74, 198, 158, 109 y 186 metros
 
 Las longitudes venían copiadas del juego original —210, 63, 173, 124, 130 y
@@ -911,7 +1032,10 @@ Todo vive en `index.html`. Las piezas, por orden:
 | Verificación | `costeSalida()`, `seLlega()`, `alrededor()`: replay del recorrido con el motor real |
 | Ratoneras | `despejarRatoneras()`: apoyos con techo demasiado bajo para saltar |
 | Cumbres | `repartirCumbres()`: corta el recorrido en seis tramos de la misma altura |
-| Checkpoints | `sembrarCheckpoints()`: doce, por altura, uno cada 83 m |
+| Checkpoints | `sembrarCheckpoints()`: dos por cumbre, uno cada 83 m |
+| Aclarado | `aclararApoyos()`: quita apoyos para que los saltos sean más largos |
+| Dibujo estable | `anclarApoyo()`: la móvil se pinta en reposo y el lienzo viaja |
+| Tienda | Hucha de monedas, precios y compras guardadas en el navegador |
 | Suelos | `sembrarSuelos()`: hielo, frágiles y pinchos, verificados uno a uno |
 | Generación | Sólo se usa si no hay `NIVEL_FIJO`: coloca apoyos y verifica cada salto simulándolo |
 | Estado y lógica | Cámara, muertes, checkpoints, pausa, marcador |

@@ -68,11 +68,24 @@ const informe = await pagina.evaluate(() => {
     for (let k = 0; k < n; k++) {
       moverPlataformas(platforms, k * (600 / FASES));
       if (seLlega(a, b)) salen++;
+      // Un apoyo que aparece y desaparece se mide CON ÉL PUESTO: en las fases
+      // en que no está no hay desde dónde despegar, y la ventana salía nula
+      // aunque el salto fuese perfectamente justo mientras la plataforma está.
+      // Que dé tiempo a salir antes de que se esfume lo comprueba aparte
+      // `sembrarCiclicas`, con el coste real del salto.
+      const ca = a.caido, cb = b.caido;
+      if (a.ciclo) a.caido = false;
+      if (b.ciclo) b.caido = false;
       if (saltoJusto(a, b)) justos++;
+      a.caido = ca; b.caido = cb;
     }
     if (salen === 0) imposibles.push(i);
     else if (justos === 0) sinVentanaJusta.push(i);
-    else if (justos / n < 0.25) apretados.push([i, justos + '/' + n]);
+    // Un apoyo que APARECE Y DESAPARECE sale mal en esta cuenta por
+    // definición: en las fases en que no está no hay desde dónde despegar.
+    // Que se pueda salir a tiempo mientras está lo comprueba `sembrarCiclicas`
+    // con el coste real del salto, así que aquí no cuenta como apretado.
+    else if (!a.ciclo && !b.ciclo && justos / n < 0.25) apretados.push([i, justos + '/' + n]);
   }
   moverPlataformas(platforms, 0);
 
