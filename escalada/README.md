@@ -158,6 +158,139 @@ Enseñaba el nivel pero no decía nada de la subida. Ahora:
 La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
 se pisaba con los nombres de las cumbres.
 
+### Las seis cumbres medían 275, 74, 198, 158, 109 y 186 metros
+
+Las longitudes venían copiadas del juego original —210, 63, 173, 124, 130 y
+300 m sobre el papel— y en el recorrido real salían todavía más torcidas: la
+primera cumbre duraba **275 m** y la segunda **74**. Se nota jugando: una se
+hace larguísima y la siguiente se acaba antes de enterarte.
+
+`repartirCumbres()` vuelve a cortar el MISMO recorrido en seis tramos de la
+misma altura. No mueve un solo apoyo ni toca un salto: lo único que cambia es
+a qué cumbre pertenece cada uno. Con eso se reparten parejos el bioma, el
+checkpoint, los objetos y la curva de dificultad, que se calculan todos a
+partir de `world`.
+
+| | Antes | Ahora |
+|---|---|---|
+| Cumbre 1 · Emberwall | 4657 px (275 m) | 2812 px (167 m) |
+| Cumbre 2 · Coral | 1246 px (74 m) | 2733 px (167 m) |
+| Cumbre 3 · Agent | 3358 px (198 m) | 2752 px (167 m) |
+| Cumbre 4 · Growing Up | 2671 px (158 m) | 2779 px (167 m) |
+| Cumbre 5 · Frosty | 1845 px (109 m) | 2742 px (166 m) |
+| Cumbre 6 · One Way Up | 3150 px (186 m) | 2790 px (166 m) |
+
+De regalo, el medidor de metros pasa a ser lineal de verdad: antes podías
+estar en la cumbre 4 y leer 400 m cuando esa cumbre empezaba en 449.
+
+### Doce checkpoints, uno cada 83 metros
+
+Había uno por cumbre y se quedaba donde cayera el que ya traía el nivel: en la
+cumbre 2 estaba **al 79 % del tramo**, o sea que caerse ahí obligaba a repetir
+casi la cumbre entera. Con las cumbres repartidas parejas, cada una son 167 m:
+demasiado castigo para un fallo.
+
+`sembrarCheckpoints()` los coloca por ALTURA: uno al empezar cada cumbre y
+otro a media cumbre. Doce en total, uno cada 83 m. El del medio es justo el
+que pedía el tramo final, que es largo y va cargado de drones, apoyos
+estrechos y bolas.
+
+Se siembran **lo primero de todo**, antes que las móviles y los suelos: así se
+quedan los apoyos anchos y quietos —un checkpoint sobre algo que se mueve, se
+rompe o resbala no es una red— y las pasadas siguientes trabajan alrededor,
+porque `apoyoLibre()` no toca lo que ya es checkpoint.
+
+### Los pinchos no se veían
+
+Eran cuatro triangulitos grises de 16 px sobre un apoyo del mismo gris. Sobre
+el cielo claro, invisibles hasta que te mataban. Ahora:
+
+- **Avisan de lejos**: un resplandor rojo en modo aditivo. Pintado normal, un
+  rojo translúcido sobre cian da gris sucio —parecía una mancha, no un
+  aviso—; sumando luz sale un halo rosado que se ve sobre cualquier fondo.
+- **Zócalo a rayas amarillas y negras**, como una cinta de obra.
+- **Metal de verdad**: 23 px de alto, gradiente lateral, filo oscuro y un
+  destello blanco en la punta.
+
+Y había **cuatro en todo el nivel**. La tirada estaba en 0,10 + 0,70·dif y el
+apoyo tenía que medir 165 px; con las cumbres repartidas quedaban cuatro. Con
+0,26 + 0,62·dif y 148 px de apoyo salen **trece**, y todos siguen pasando la
+comprobación de que no se cruzan en el camino bueno: ni donde caes, ni desde
+donde despegas.
+
+### Tamaños: 31 bolas y apoyos estrechos en cinco cumbres
+
+El ancho es la palanca de dificultad más honesta que hay: no cambia las
+reglas, sólo el margen. Estaba prácticamente sin usar —el estrechador sólo
+tocaba las dos últimas cumbres, una de cada veinte veces— y el ancho medio era
+el mismo abajo que arriba.
+
+- Las **bolas** (68–78 px, el apoyo más pequeño del juego) ya no salen sólo en
+  tres cumbres: cada una tiene la suya. Se añaden dos redondos nuevos, la
+  **bola de acero** de la base secreta y la **calabaza** de la feria, y con
+  eso pasan de 19 a **31**, repartidas por las cinco cumbres de arriba. La
+  primera se queda sin ellas a propósito: es la que enseña a saltar.
+- El **estrechador** empieza en la cumbre 2 y aprieta con la altura: el apoyo
+  se queda en el 71 % de su ancho abajo y en el 52 % arriba.
+- **Orden importa**: estrechar iba ANTES que sembrar bolas y atajos, y se
+  quedaba con los apoyos anchos que necesitan los otros dos —el nivel perdía
+  dos tercios de sus bolas y de sus atajos de golpe—. Ahora va después.
+- Un apoyo **con pinchos no se encoge**: los pinchos ya están clavados en una
+  x concreta y al recortar el apoyo se quedaban flotando en el aire.
+
+### Las plataformas que se mueven, otra vez
+
+La física estaba bien: 52 móviles × 7 guiones × 4 fases del reloj × 900
+fotogramas, cero empotramientos. Lo que se veía roto era el DIBUJO.
+
+Un objeto se pinta hacia abajo desde la cara que se pisa —el apoyo es el
+tejado de la casa—, y midiéndolos uno a uno resulta que cuelgan de 18 px
+(metal) a **101** (noria), contra los 36 que mide el apoyo. Quieto queda bien.
+Montado en un carril, barre su cuerpo entero por delante de los apoyos de al
+lado, y eso es lo que se veía: la noria del metro 730 metiéndose en la
+plataforma de abajo, la casa del 690 cruzando por delante de un ascensor.
+
+Tres reglas, sacadas de medir y no de mirar:
+
+1. Los apoyos **con carril** eligen sólo entre objetos que cuelgan menos de
+   60 px (`OBJETOS_HONDOS` deja fuera noria, granero, torreón, muralla, casa,
+   tractor, roca, castillo, refugio, autobús y portal).
+2. Los apoyos **estrechos** (menos de 155 px) no llevan figuras que crecen
+   hacia ARRIBA —árbol 95 px, faro 103, pino 70, muñeco 56—. En un apoyo
+   ancho el personaje se coloca al lado; en uno estrecho no hay «al lado» y se
+   quedaba con el árbol saliéndole de la cabeza. Con bolas de 70 px eso se
+   veía constantemente.
+3. El **tractor** escalaba con el ancho sin tope: en un apoyo de 320 px bajaba
+   121 px y se metía en la plataforma de abajo. Tope y arreglado.
+
+### La pantalla de inicio
+
+Estaba completa pero plana: un panel oscuro flotando sobre un negro al 86 %.
+
+- **El fondo es el juego.** Detrás del menú se está pintando el nivel de
+  verdad, pero iba tapado y no se veía nada. Ahora se deja ver, difuminado y
+  con una viñeta que oscurece sólo los bordes, y además **la cámara pasea**:
+  sube despacio por el recorrido entero, de la salida a la meta y vuelta a
+  empezar, con las plataformas moviéndose y los drones patrullando. El fondo
+  del menú deja de ser un color y pasa a ser el sitio al que vas.
+- **Fuera el HUD del juego.** El marcador, los botones de esquina y el del
+  mapa se veían asomando por detrás del panel: cajas sueltas flotando en el
+  fondo, que es exactamente lo que hace que una pantalla parezca sin terminar.
+- **Datos reales bajo el título** en vez de una frase de folleto: 1000 metros
+  · 6 cumbres · 302 apoyos · 12 checkpoints · 191 monedas. Salen del nivel que
+  se va a jugar.
+- **Las seis cumbres, en fichas**, con su color y su tramo de metros
+  (`0–167 m`, `167–334 m`…). Antes iban escritas DENTRO del lienzo del mapa,
+  encima del trazado del recorrido, y no se leía ni una cosa ni la otra.
+- **La guía de mecánicas, a dos columnas**: diez renglones seguidos son un
+  muro de texto; en dos columnas se leen como la leyenda que son.
+- **Récords sin marca**: la ficha se apaga entera en vez de enseñar una raya
+  grande, que es lo que hacía que la cabecera pareciera a medio hacer.
+- **Un destello cruza el rótulo** cada seis segundos y medio. Es lo único que
+  se mueve en la mitad de arriba, y es lo que separa un título de un letrero.
+- El panel **cabe entero sin barra de desplazamiento** en 1920×1080,
+  1600×900, 1440×860 y 1366×768.
+
 ### Bolas: los objetos redondos ahora son el apoyo, y son pequeños
 
 La pelota, el salvavidas y la boya son redondos, pero estaban pintados encima
@@ -777,6 +910,8 @@ Todo vive en `index.html`. Las piezas, por orden:
 | Empotramientos | `desincrustar()`: te saca del bloque en el que se ha metido una plataforma |
 | Verificación | `costeSalida()`, `seLlega()`, `alrededor()`: replay del recorrido con el motor real |
 | Ratoneras | `despejarRatoneras()`: apoyos con techo demasiado bajo para saltar |
+| Cumbres | `repartirCumbres()`: corta el recorrido en seis tramos de la misma altura |
+| Checkpoints | `sembrarCheckpoints()`: doce, por altura, uno cada 83 m |
 | Suelos | `sembrarSuelos()`: hielo, frágiles y pinchos, verificados uno a uno |
 | Generación | Sólo se usa si no hay `NIVEL_FIJO`: coloca apoyos y verifica cada salto simulándolo |
 | Estado y lógica | Cámara, muertes, checkpoints, pausa, marcador |

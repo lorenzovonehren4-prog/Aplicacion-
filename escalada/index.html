@@ -30,6 +30,16 @@
     opacity:0; transition:opacity .3s ease; }
   #message.show { opacity:1; }
 
+  /* Con el menú abierto el juego no está corriendo, así que su marcador, sus
+     botones de esquina y el del mapa no pintan nada: se veían asomando por
+     detrás del panel —cajas sueltas flotando en el fondo— y eso es
+     exactamente lo que hace que una pantalla parezca sin terminar. */
+  #game-container.en-menu #height-badge,
+  #game-container.en-menu #hud,
+  #game-container.en-menu #topright,
+  #game-container.en-menu #bottomleft,
+  #game-container.en-menu #touch { display:none !important; }
+
   .overlay { position:absolute; inset:0; z-index:10; display:flex; align-items:center;
     justify-content:center; background:rgba(5,5,12,.78); backdrop-filter:blur(3px); padding:20px; }
   .overlay.hidden { display:none; }
@@ -54,22 +64,36 @@
   /* --- Menú organizado en dos columnas --- */
   /* Pensado para pantallas anchas y BAJAS, tipo Chromebook 1366x768: el
      menú crece a lo ancho, nunca a lo alto. */
-  /* El fondo del inicio: dos halos de color detrás del panel, para que el
-     menú se despegue del mundo borroso en vez de fundirse con él. */
+  /* EL FONDO DEL INICIO
+     Detrás del menú está el juego de verdad, pintándose: cielo, montañas y
+     nubes que pasan. Antes iba tapado con un negro al 86 % y no se veía
+     nada, así que el menú flotaba sobre un vacío oscuro y parecía una
+     ventana de sistema. Ahora se deja ver, difuminado, con una viñeta que
+     oscurece sólo los bordes: el menú se apoya en el mundo al que va a
+     entrar. La legibilidad la pone el panel, que es opaco. */
   #start-screen {
     background:
-      radial-gradient(1100px 620px at 50% -12%, rgba(96,168,255,.20), transparent 68%),
-      radial-gradient(900px 560px at 50% 116%, rgba(255,170,60,.13), transparent 66%),
-      rgba(4,7,14,.86);
+      radial-gradient(120% 90% at 50% 42%, rgba(4,7,14,.30) 0%,
+                      rgba(4,7,14,.62) 52%, rgba(2,4,10,.88) 100%),
+      radial-gradient(1100px 620px at 50% -12%, rgba(96,168,255,.22), transparent 68%),
+      radial-gradient(900px 560px at 50% 116%, rgba(255,170,60,.14), transparent 66%);
+    backdrop-filter:blur(7px) saturate(1.05);
+    -webkit-backdrop-filter:blur(7px) saturate(1.05);
   }
   .menu { max-width:1180px; width:96vw; max-height:96vh; overflow:auto; text-align:left;
+    position:relative;
     background:
-      radial-gradient(660px 320px at 10% -10%, rgba(120,190,255,.13), transparent 62%),
-      radial-gradient(560px 300px at 94% 112%, rgba(255,180,70,.10), transparent 62%),
-      linear-gradient(168deg, rgba(18,27,46,.965), rgba(8,12,22,.985));
-    border:1px solid rgba(255,255,255,.10);
-    box-shadow:0 40px 90px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.10);
-    border-radius:20px; padding:15px 20px 9px; }
+      radial-gradient(660px 320px at 10% -10%, rgba(120,190,255,.15), transparent 62%),
+      radial-gradient(560px 300px at 94% 112%, rgba(255,180,70,.11), transparent 62%),
+      linear-gradient(168deg, rgba(19,28,48,.975), rgba(7,11,20,.99));
+    border:1px solid rgba(255,255,255,.11);
+    box-shadow:0 50px 110px rgba(0,0,0,.68), 0 2px 0 rgba(255,255,255,.05) inset,
+               0 0 0 1px rgba(0,0,0,.35);
+    border-radius:22px; padding:15px 20px 9px; }
+  /* Filo de luz en el borde de arriba: es lo que separa un panel de una caja */
+  .menu::before { content:''; position:absolute; left:14%; right:14%; top:0; height:1px;
+    border-radius:1px; pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,225,150,.55), transparent); }
 
   /* Cabecera en dos piezas: el rótulo a la izquierda y los récords a la
      derecha. Antes iban uno debajo de otro y se comían 90 px de alto. */
@@ -88,11 +112,23 @@
   /* `.panel h1` se declara después y su `color:#ffd700` ganaba por cascada:
      el degradado del rótulo no se veía nunca. Con `.menu .cabecera h1` la
      especificidad es mayor y el título sale como estaba pensado. */
-  .menu .cabecera h1 { margin:0 0 3px; letter-spacing:.5px; line-height:.95;
+  /* Un destello que cruza el rótulo cada pocos segundos. Es lo único que se
+     mueve en la mitad de arriba y es lo que separa un título de un letrero. */
+  .menu .cabecera h1 { position:relative; overflow:hidden;
+    margin:0 0 3px; letter-spacing:.5px; line-height:.95;
     font-size:clamp(26px,2.9vw,39px); font-weight:900;
     background:linear-gradient(178deg,#ffffff 6%,#ffeaad 48%,#f0ac22 100%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
     filter:drop-shadow(0 8px 24px rgba(255,180,60,.26)); }
+  .menu .cabecera h1::after { content:''; position:absolute; inset:0;
+    pointer-events:none; mix-blend-mode:screen;
+    background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.55) 50%,
+                               transparent 62%);
+    transform:translateX(-115%);
+    animation:destelloTitulo 6.5s ease-in-out infinite; }
+  @keyframes destelloTitulo { 0%,72% { transform:translateX(-115%); }
+                              92%,100% { transform:translateX(115%); } }
+  @media (prefers-reduced-motion:reduce) { .menu .cabecera h1::after { animation:none; opacity:0; } }
   .lema { margin:0; color:#93a8bd; font-size:13px; letter-spacing:.2px; }
 
   /* Tres tarjetas de verdad, no tres huecos: con fondo propio y a la misma
@@ -313,9 +349,14 @@
     padding:6px 10px; border-radius:10px; background:rgba(0,0,0,.22);
     border:1px solid rgba(255,255,255,.05); }
   .pista-eleccion b { color:#ffd700; }
+  .pista-eleccion em { display:block; font-style:normal; margin-top:3px;
+    font-size:10px; letter-spacing:1.1px; text-transform:uppercase; color:#657a8f; }
 
-  .mecanicas { list-style:none; margin:0; padding:0; display:flex;
-    flex-direction:column; gap:4px; }
+  /* Diez renglones seguidos son un muro de texto. En dos columnas se leen
+     como una leyenda, que es lo que son. */
+  .mecanicas { list-style:none; margin:0; padding:0; display:grid;
+    grid-template-columns:1fr 1fr; gap:4px 8px; align-content:start; }
+  @media (max-width:1180px) { .mecanicas { grid-template-columns:1fr; } }
   .mecanicas li { display:flex; align-items:flex-start; gap:9px; font-size:11.5px;
     color:#9fb2c6; line-height:1.35; text-align:left;
     padding:4px 8px; border-radius:9px; background:rgba(255,255,255,.028); }
@@ -359,6 +400,12 @@
   .vitrina b { display:block; font-size:17px; color:#f4f8fd; font-weight:900;
     line-height:1.1; font-variant-numeric:tabular-nums; }
   .vitrina div.puesto b { color:var(--acento,#ffd700); }
+  /* Sin marca todavía: la ficha se apaga entera en vez de enseñar una raya
+     grande, que es lo que hacía que la cabecera pareciera a medio hacer. */
+  .vitrina div:not(.puesto) { background:rgba(255,255,255,.022);
+    border-color:rgba(255,255,255,.055); }
+  .vitrina div:not(.puesto) b { color:#3f4d5e; font-size:14px; }
+  .vitrina div:not(.puesto) span { color:#67788c; }
   .vitrina span { display:block; font-size:9.5px; color:#8fa8c0;
     text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
   /* Barra bajo «mejor altura»: cuánto queda de los 1000 m */
@@ -368,8 +415,32 @@
     border:1px solid rgba(255,255,255,.09);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
   #rutaPreview { display:block; width:100%; height:168px; }
-  .ruta-pie { margin:7px 0 11px; font-size:11px; color:#8fa8c0; line-height:1.4; }
-  .ruta-pie b { color:#c9d6e5; }
+  /* Las seis cumbres, en fichas. Antes iban ESCRITAS DENTRO del lienzo del
+     mapa, encima del trazado del recorrido, y no se leía ni una cosa ni la
+     otra. Fuera del lienzo son texto de verdad: nítido, alineado y con los
+     metros de cada tramo, que es el dato que se quiere ver. */
+  .cumbres-chips { list-style:none; margin:8px 0 11px; padding:0;
+    display:grid; grid-template-columns:1fr 1fr; gap:4px 8px; counter-reset:cc; }
+  .cumbres-chips li { counter-increment:cc; display:flex; align-items:center; gap:7px;
+    font-size:11px; color:#a8bccf; padding:3px 8px; border-radius:8px;
+    background:rgba(255,255,255,.032); border:1px solid rgba(255,255,255,.05); }
+  .cumbres-chips li::before { content:counter(cc); flex:none;
+    width:15px; height:15px; border-radius:5px; font-size:9px; font-weight:900;
+    display:flex; align-items:center; justify-content:center;
+    color:#0b1424; background:var(--tono,#8fa8c0); }
+  .cumbres-chips b { color:#e6eef7; font-weight:600; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .cumbres-chips span { margin-left:auto; color:#7f95ab; font-size:10px;
+    font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  /* Pastillas de datos bajo el título: números reales del nivel que se va a
+     jugar, no una frase de folleto. */
+  .datos { list-style:none; display:flex; flex-wrap:wrap; gap:6px; margin:7px 0 0; padding:0; }
+  .datos li { display:flex; align-items:baseline; gap:5px;
+    font-size:11px; color:#93a8bd; padding:3px 10px; border-radius:999px;
+    background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.07); }
+  .datos b { color:#ffd977; font-weight:800; font-size:12px;
+    font-variant-numeric:tabular-nums; }
   @media (max-height:700px) { #rutaPreview { height:158px; } }
 
   /* ---- Botón de mapa, abajo a la izquierda ---- */
@@ -433,28 +504,32 @@
      cosas que se declaran más abajo (el pie, la vitrina, la ruta) y
      desde arriba perdían la cascada y no hacían nada.
      ==================================================================== */
-  @media (max-height:830px) {
-    #preview { height:136px; }
-    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:42px; }
-    #rutaPreview { height:152px; }
+  @media (max-height:880px) {
+    #preview { height:128px; }
+    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:40px; }
+    #rutaPreview { height:138px; }
     .menu .cabecera h1 { font-size:29px; }
     .panel.menu { padding:12px 17px 8px; }
     .cabecera { margin-bottom:10px; padding-bottom:8px; }
     .kicker { font-size:10px; margin-bottom:2px; }
     .lema { font-size:12px; }
-    .ruta-pie { margin:6px 0 9px; }
+    .cumbres-chips { margin:6px 0 9px; gap:3px 7px; }
     .pie-menu { padding:7px 0 6px; }
     .vitrina div { min-width:80px; padding:5px 10px 6px 11px; }
     .vitrina b { font-size:15px; }
     .bloque { padding:10px 12px 11px; }
     .bloque h2 { margin-bottom:8px; }
-    .mecanicas li { font-size:11px; padding:3px 8px; }
-    .mecanicas { gap:3px; }
+    .mecanicas li { font-size:11px; padding:3px 7px; }
+    .mecanicas { gap:3px 7px; }
     .keys { gap:4px; }
+    .datos li { padding:2px 8px; font-size:10.5px; }
+    .cumbres-chips li { padding:2px 7px; font-size:10.5px; }
+    .cumbres-chips { margin:6px 0 8px; }
+    .pista-eleccion { margin-top:7px; }
   }
-  @media (max-height:720px) {
-    #preview { height:118px; }
-    #rutaPreview { height:126px; }
+  @media (max-height:790px) {
+    #preview { height:114px; }
+    #rutaPreview { height:120px; }
     .escaparate .nombreSkin { height:28px; }
     .escaparate::before { bottom:28px; }
     .menu .cabecera h1 { font-size:25px; }
@@ -465,6 +540,8 @@
     .pista-eleccion { padding:5px 9px; }
     #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:36px; }
     .tarjeta span { font-size:9px; padding:2px 2px 4px; }
+    .cumbres-chips li, .mecanicas li { font-size:10px; }
+    .bloque { padding:9px 11px 10px; }
   }
   /* Dos columnas: la ruta pasa a lo ancho debajo, que es donde mejor se lee */
   @media (max-width:980px) {
@@ -554,7 +631,7 @@
           <div class="titulo">
             <p class="kicker"><i></i>Ascenso vertical</p>
             <h1>DON&#39;T LOOK UP</h1>
-            <p class="lema">1000 metros · 6 cumbres · sube o cae</p>
+            <ul class="datos" id="datos-nivel"></ul>
           </div>
           <div class="vitrina" id="vitrina"></div>
         </div>
@@ -603,8 +680,7 @@
           <section class="bloque col-ruta">
             <h2>La ruta</h2>
             <div class="ruta"><canvas id="rutaPreview"></canvas></div>
-            <p class="ruta-pie">Las 6 cumbres, de abajo arriba.
-              En partida, <b>Tab</b> la abre con tu posición.</p>
+            <ol class="cumbres-chips" id="cumbres-chips"></ol>
             <h2>Lo que te vas a encontrar</h2>
             <ul class="mecanicas" id="mecanicas"></ul>
           </section>
@@ -693,7 +769,7 @@ function apoyosDeCumbre(mundo) {
 const PX_POR_METRO = 16.8; // ajustado para que la cima marque 1000 m      // para el medidor de altura
 
 const SPRING_FORCE = -18.5;   // impulso del trampolín
-const SPIKE_H = 16;           // alto de los pinchos
+const SPIKE_H = 23;           // alto de los pinchos: a 16 no se veían
 const COYOTE = 6;             // gracia tras salirse del borde (Celeste usa 5)
 const BUFFER_SALTO = 7;       // se recuerda el salto pulsado antes de aterrizar
 const FRAMES_TRAMPA = 60;     // 1 segundo antes de que caiga una trampa
@@ -718,8 +794,12 @@ const APLASTE = 0.24;         // cuánto se achata al aterrizar fuerte
 const ESTIRE = 0.17;          // cuánto se estira subiendo o cayendo
 
 /* ====================================================================
-   LAS 6 CUMBRES, con los nombres y las longitudes del juego original.
-   Son MUY desiguales: la segunda dura 63 m y la última 300.
+   LAS 6 CUMBRES
+   Los nombres son los del juego original; las longitudes ya NO. Las de
+   origen eran 210, 63, 173, 124, 130 y 300 m, y jugarlas así es raro: la
+   segunda se pasa en veinte segundos y la última se hace eterna. Ahora las
+   seis miden lo mismo, y `repartirCumbres()` vuelve a cortar el recorrido
+   incrustado por esas alturas sin mover un solo apoyo.
    ==================================================================== */
 const WORLDS = [
   { name: 'Emberwall Ascent', skyTop: '#5bc8e8', skyBot: '#7ad4ee', arte: 6, nubes: true },
@@ -730,7 +810,7 @@ const WORLDS = [
   { name: 'One Way Up',       skyTop: '#5bc8e8', skyBot: '#7ad4ee', arte: 7, nubes: true },
 ];
 
-const METROS_CUMBRE = [210, 63, 173, 124, 130, 300];   // suman 1000 m
+const METROS_CUMBRE = [167, 167, 167, 167, 166, 166];  // suman 1000 m
 const SUBIDA = METROS_CUMBRE.map(v => v * 21);         // ~70 px de subida por apoyo
 
 /** Altura a la que empieza cada cumbre. */
@@ -1518,6 +1598,59 @@ function cargarNivelFijo() {
   return true;
 }
 
+/**
+ * REPARTO DE LAS CUMBRES
+ * El recorrido incrustado venía cortado con las longitudes del juego
+ * original: la cumbre 1 medía 275 m reales y la 2, setenta y cuatro. Se
+ * nota jugando —una se hace larguísima y la siguiente se acaba antes de
+ * enterarte—, así que aquí se vuelve a cortar el MISMO recorrido en seis
+ * tramos de la misma altura.
+ *
+ * No se mueve ni un apoyo ni se toca un salto: lo único que cambia es a qué
+ * cumbre pertenece cada uno. Con eso se reparten parejos el bioma, el
+ * checkpoint, los objetos y la curva de dificultad, que se calcula a partir
+ * de `world`. Y como los límites quedan a alturas proporcionales, el
+ * medidor de metros pasa a ser lineal de verdad de 0 a 1000.
+ */
+function repartirCumbres() {
+  const cadena = platforms.filter((q) => !q.extra);
+  if (cadena.length < TOTAL_WORLDS * 4) return 0;
+  const cima = Math.min(...cadena.map((q) => q.y));
+  const alto = GROUND_Y - cima;
+  if (alto <= 0) return 0;
+
+  // Un corte por cumbre, en el primer apoyo de la cadena que pasa de la
+  // altura objetivo. Se busca por orden de cadena, no por altura suelta: el
+  // recorrido zigzaguea y hay apoyos que bajan un poco antes de seguir.
+  const cortes = [];
+  let desde = 1;
+  for (let w = 1; w < TOTAL_WORLDS; w++) {
+    const objetivo = GROUND_Y - (alto * w) / TOTAL_WORLDS;
+    let k = -1;
+    for (let i = desde; i < cadena.length; i++) {
+      if (cadena[i].y <= objetivo) { k = i; break; }
+    }
+    if (k < 0) k = Math.min(cadena.length - 1, desde);
+    cortes.push(k);
+    desde = k + 1;
+  }
+
+  for (let i = 0; i < cadena.length; i++) {
+    let w = 1;
+    while (w < TOTAL_WORLDS && i >= cortes[w - 1]) w++;
+    cadena[i].world = w;
+  }
+  // El límite va ENTRE el último apoyo de una cumbre y el primero de la
+  // siguiente: así `mundoEnAltura()` clasifica bien los dos.
+  limitesMundo = cortes.map((k) => (cadena[k].y + cadena[k - 1].y) / 2);
+
+  // Los atajos todavía no existen —se siembran después—, pero por si acaso
+  for (const q of platforms) {
+    if (q.extra) q.world = mundoEnAltura(q.y);
+  }
+  return cortes.length + 1;
+}
+
 /* ====================================================================
    RATONERAS
    Un apoyo con OTRO justo encima, a menos altura de la que mide el salto,
@@ -2025,17 +2158,34 @@ function sembrarCiclicas() {
 }
 
 /* --------------------------------------------------------------------
-   PRECISIÓN: apoyos estrechos donde ya se sabe saltar
+   PRECISIÓN: apoyos estrechos, y cada vez más arriba
+   El ancho es la palanca de dificultad más honesta que tiene un juego de
+   saltos: no cambia las reglas, sólo el margen. Antes esto sólo tocaba las
+   dos últimas cumbres y una de cada veinte veces, así que el ancho medio era
+   prácticamente el mismo abajo que arriba. Ahora empieza en la cumbre 3 y va
+   apretando: el apoyo se encoge más cuanto más alto está.
    -------------------------------------------------------------------- */
+/** ¿Este apoyo lleva pinchos clavados? */
+function tienePinchos(p) {
+  for (const s of spikes) {
+    if (s.x + s.width > p.x && s.x < p.x + p.width &&
+        Math.abs((s.y + s.height) - p.y) < 4) return true;
+  }
+  return false;
+}
+
 function sembrarPrecision() {
   let puestos = 0;
   for (let i = 2; i < platforms.length - 2; i++) {
     const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
-    if (!apoyoLibre(p) || p.mov || p.world < 5 || p.width < 150) continue;
-    if (rnd() > ganas(p.world, i, 0.06, 0.26)) continue;
+    if (!apoyoLibre(p) || p.mov || p.world < 2 || p.width < 128) continue;
+    // Un apoyo con pinchos NO se encoge: los pinchos ya están clavados en una
+    // x concreta y al recortar el apoyo se quedaban flotando en el aire.
+    if (tienePinchos(p)) continue;
+    if (rnd() > ganas(p.world, i, 0.27, 1.10)) continue;
 
     const anchoPrevio = p.width, xPrevio = p.x, entradaPrevia = p.entradaX;
-    const nuevo = Math.max(76, Math.round(p.width * (0.66 - dificultad(p.world) * 0.06)));
+    const nuevo = Math.max(76, Math.round(p.width * (0.72 - dificultad(p.world) * 0.20)));
     // Se estrecha alrededor del punto por donde SE CAE en ella, no del
     // centro: encogiendo por el centro el sitio de aterrizaje desaparecía.
     const caida = (p.entradaX !== undefined) ? p.entradaX + PW / 2 : p.x + p.width / 2;
@@ -2066,8 +2216,12 @@ function sembrarRedondas() {
   let puestas = 0;
   for (let i = 2; i < platforms.length - 2; i++) {
     const p = platforms[i], ant = platforms[i - 1], sig = platforms[i + 1];
-    // Coral Climb las presenta, Frosty y la última cumbre las cobran
-    if (!apoyoLibre(p) || p.mov || ![2, 5, 6].includes(p.world)) continue;
+    // Coral Climb las presenta y a partir de ahí no se van: cada cumbre
+    // tiene la suya —bola de acero, calabaza, bola de nieve, esfera—, así el
+    // apoyo más pequeño del juego aparece en las cinco cumbres de arriba y
+    // no sólo en tres. La primera se queda sin ellas a propósito: es la que
+    // enseña a saltar.
+    if (!apoyoLibre(p) || p.mov || p.world < 2) continue;
     if (p.width < 105) continue;                 // de una bola no se saca otra
     if (rnd() > ganas(p.world, i, 0.42, 0.66)) continue;
     // Nunca dos seguidas: encadenar dos bolas no es dificultad, es una ruleta
@@ -2327,39 +2481,47 @@ function dureza(i) {
 }
 
 /**
- * UN checkpoint por cumbre, y ni uno más.
+ * CHECKPOINTS
+ * Antes había uno por cumbre y se colocaba donde cayera el que ya venía en
+ * el nivel: en la cumbre 2 quedaba al 79 % del tramo, o sea que casi todo el
+ * tramo se repetía entero al caerse. Y con las cumbres repartidas parejas
+ * (ver `repartirCumbres`), cada una son 167 m: mucho castigo para un fallo.
  *
- * La versión anterior sembraba uno antes de cada tramo duro y salían 27 en
- * total: con un punto de guardado cada diez apoyos, caerse dejaba de tener
- * consecuencias y la subida perdía la tensión que es su gracia. Ahora se
- * conserva el PRIMERO de cada cumbre —que es donde el nivel original los
- * puso, justo al empezar cada tramo— y el resto vuelve a ser apoyo normal.
+ * Ahora son DOCE, repartidos por altura: uno al empezar cada cumbre y otro a
+ * media cumbre. Uno cada 83 m. El del medio es el que pedía el tramo final,
+ * que es largo y va cargado de drones y apoyos estrechos.
  *
- * Si alguna cumbre se quedara sin ninguno, se asciende el apoyo ancho más
- * cercano a su inicio: nadie puede empezar una cumbre sin sitio al que volver.
+ * Se siembra lo PRIMERO de todo: así los checkpoints se quedan los apoyos
+ * anchos y quietos, y las pasadas siguientes —móviles, hielo, frágiles—
+ * trabajan alrededor, porque `apoyoLibre()` no toca lo que ya es checkpoint.
  */
-function unCheckpointPorCumbre() {
-  const primero = {};          // cumbre → índice del checkpoint que se queda
-  for (let i = 0; i < platforms.length; i++) {
-    const p = platforms[i];
-    if (p.type !== 'checkpoint' || p.extra) continue;
-    if (primero[p.world] === undefined) primero[p.world] = i;
-    else p.type = 'normal';    // sobra: vuelve a ser un apoyo cualquiera
-  }
+function sembrarCheckpoints() {
+  const cadena = platforms.filter((q) => !q.extra);
+  for (const q of cadena) if (q.type === 'checkpoint') q.type = 'normal';
 
-  for (let w = 1; w <= TOTAL_WORLDS; w++) {
-    if (primero[w] !== undefined) continue;
-    const inicio = platforms.findIndex((p) => p.world === w && !p.extra);
-    if (inicio < 0) continue;
-    for (let i = inicio; i < Math.min(platforms.length, inicio + 14); i++) {
-      const p = platforms[i];
-      if (!apoyoLibre(p) || p.mov || p.width < 120) continue;
-      p.type = 'checkpoint';
-      primero[w] = i;
-      break;
+  const cima = Math.min(...cadena.map((q) => q.y));
+  const alto = GROUND_Y - cima;
+  const N = TOTAL_WORLDS * 2;
+  const puestos = [];
+
+  for (let k = 0; k < N; k++) {
+    const objetivo = GROUND_Y - (alto * k) / N;
+    let mejor = -1, dist = Infinity;
+    for (let i = 1; i < cadena.length - 1; i++) {
+      const q = cadena[i];
+      // Un checkpoint tiene que estar QUIETO y ser ancho: reaparecer sobre
+      // una plataforma que se mueve, se rompe o resbala no es una red.
+      if (q.type !== 'normal' || q.mov || q.movY || q.ciclo || q.trampa ||
+          q.petalo || q.hielo || q.redonda || q.ang || q.width < 130) continue;
+      if (puestos.some((j) => Math.abs(j - i) < 6)) continue;
+      const d = Math.abs(q.y - objetivo);
+      if (d < dist) { dist = d; mejor = i; }
     }
+    if (mejor < 0) continue;
+    cadena[mejor].type = 'checkpoint';
+    puestos.push(mejor);
   }
-  return Object.keys(primero).length;
+  return puestos.length;
 }
 
 /**
@@ -2456,14 +2618,17 @@ function componerNivel() {
   // que se mueve no debe además resbalar ni romperse.
   reiniciarAzar();
   const r = {};
+  r.checkpoints = sembrarCheckpoints();
   r.moviles     = sembrarMoviles();
   r.ascensores  = sembrarAscensores();
   r.ciclicas    = sembrarCiclicas();
   r.suelos      = sembrarSuelos();
-  r.precision   = sembrarPrecision();
+  // Las bolas y los atajos eligen PRIMERO. Estrechar apoyos va después: si
+  // se hace antes se queda con los anchos que necesitan los otros dos, y el
+  // nivel perdía dos tercios de sus bolas y de sus atajos de golpe.
   r.redondas    = sembrarRedondas();
   r.atajos      = sembrarAtajos();
-  r.checkpoints = unCheckpointPorCumbre();
+  r.precision   = sembrarPrecision();
   monedas = [];
   sembrarMonedas();
   r.monedas = monedas.length;
@@ -2502,7 +2667,15 @@ function reiniciarNivel() {
 
 function generateLevel() {
   if (nivelCompuesto) { reiniciarNivel(); return; }
-  if (cargarNivelFijo()) { despejarRatoneras(); componerNivel(); nivelCompuesto = true; return; }
+  if (cargarNivelFijo()) {
+    // El reparto va ANTES que nada: las pasadas de composición miran
+    // `p.world` para decidir dificultad, objetos y biomas.
+    repartirCumbres();
+    despejarRatoneras();
+    componerNivel();
+    nivelCompuesto = true;
+    return;
+  }
   inicioGen = Date.now();
   reiniciarAzar();          // mismo mapa en cada partida
   platforms = [];
@@ -3434,11 +3607,11 @@ function generarPinchos() {
     // al que va montado: es lo que pasaba con los ascensores.
     if (p.movY || p.ciclo || p.extra) continue;
     if (p.hielo || p.trampa) continue;           // ya tienen su propia gracia
-    if (p.width < 165) continue;                 // hace falta sitio de sobra
+    if (p.width < 148) continue;                 // hace falta sitio de sobra
     // Al dejar fuera móviles, cíclicas y atajos quedaban solo cinco pinchos
     // en todo el nivel: se sube la tirada para que el obstáculo se note en
     // las cumbres altas, que es donde tiene que doler.
-    if (rnd() > (0.10 + 0.70 * Math.pow((p.world - 1) / 6, 1.5))) continue;
+    if (rnd() > (0.26 + 0.62 * Math.pow((p.world - 1) / 6, 1.2))) continue;
 
     // Punto donde se aterriza en ella y punto desde el que se despega
     const cae = p.traza ? p.traza[p.traza.length - 1].x : p.x + p.width / 2;
@@ -4003,6 +4176,7 @@ function volverAlMenu() {
   pauseScreen.classList.add('hidden');
   winScreen.classList.add('hidden');
   startScreen.classList.remove('hidden');
+  document.getElementById('game-container').classList.add('en-menu');
   actualizarMarcaMenu();
 }
 
@@ -5957,6 +6131,55 @@ function propBolaNieve(x, y, w) {
   ctx.fill();
 }
 
+/** ⚫ Bola de acero: la de la base secreta. Pulida, con su costura. */
+function propBolaAcero(x, y, w) {
+  const r = w / 2, cx = x + r, cy = y + r;
+  sombraRedonda(cx, cy, r);
+  const g = ctx.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.08, cx, cy, r);
+  g.addColorStop(0, '#dfe6ef'); g.addColorStop(0.42, '#8d99a9');
+  g.addColorStop(0.78, '#4d5765'); g.addColorStop(1, '#2b323c');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  // Costura de fundición: dos arcos que la parten en dos mitades
+  ctx.strokeStyle = 'rgba(20,26,34,0.55)'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.ellipse(cx, cy, r * 0.94, r * 0.3, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx, cy, r * 0.28, r * 0.94, 0, 0, Math.PI * 2); ctx.stroke();
+  // Cuatro remaches, que es lo que la hace de taller y no una canica
+  ctx.fillStyle = 'rgba(230,240,250,0.5)';
+  for (let k = 0; k < 4; k++) {
+    const a = (k / 4) * Math.PI * 2 + 0.6;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a) * r * 0.62, cy + Math.sin(a) * r * 0.62, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  volumenBola(cx, cy, r);
+}
+
+/** 🎃 Calabaza redonda: la bola de la cumbre de granja. */
+function propCalabazaR(x, y, w) {
+  const r = w / 2, cx = x + r, cy = y + r;
+  sombraRedonda(cx, cy, r);
+  const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+  g.addColorStop(0, '#ffb648'); g.addColorStop(0.55, '#f08a1d'); g.addColorStop(1, '#bf5f0d');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  // Gajos: cuatro arcos verticales, que es lo que la hace calabaza
+  ctx.strokeStyle = 'rgba(150,72,10,0.55)'; ctx.lineWidth = 2.4;
+  for (const k of [-0.62, -0.21, 0.21, 0.62]) {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.abs(k) * r, r * 0.98, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  volumenBola(cx, cy, r);
+  // Rabito, en la coronilla
+  ctx.strokeStyle = '#4f7d2a'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r + 2);
+  ctx.quadraticCurveTo(cx + 5, cy - r - 7, cx - 2, cy - r - 11);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
 /** 🔮 Esfera de energía: la de la última cumbre, latiendo. */
 function propEsfera(x, y, w) {
   const r = w / 2, cx = x + r, cy = y + r;
@@ -5984,6 +6207,8 @@ function pintarObjeto(nombre, p, x, y, w, hh) {
   switch (nombre) {
     case 'bolaNieve':       return propBolaNieve(x, y, w);
     case 'esfera':          return propEsfera(x, y, w);
+    case 'bolaAcero':       return propBolaAcero(x, y, w);
+    case 'calabazaR':       return propCalabazaR(x, y, w);
     case 'pelotaR':         return propPelotaR(x, y, w);
     case 'salvavidas':      return propSalvavidas(x, y, w);
     case 'boyaR':           return propBoyaR(x, y, w);
@@ -6069,6 +6294,23 @@ function pintarObjeto(nombre, p, x, y, w, hh) {
   }
 }
 
+/* Lo que cada objeto cuelga POR DEBAJO de la cara que se pisa, medido
+   dibujándolos uno a uno y leyendo el rectángulo de tinta: de 18 px (metal)
+   a 101 px (noria), contra los 36 que mide el apoyo. Estos son los que pasan
+   de 60, o sea los que se salen del hueco que queda hasta el apoyo de abajo. */
+const OBJETOS_HONDOS = new Set(['noria', 'granero', 'torreon', 'muralla', 'casa',
+  'tractor', 'roca', 'castillo', 'refugio', 'autobus', 'portal']);
+
+/* Y los que crecen hacia ARRIBA, por encima de lo que se pisa: el árbol sube
+   95 px, el faro 103, el pino 70, el muñeco 56. En un apoyo ancho el
+   personaje se coloca al lado y queda bien; en uno estrecho no hay «al lado»
+   y se queda con el árbol saliéndole de la cabeza. Ahora que hay apoyos de
+   76 px —y bolas de 70— eso se ve constantemente, así que las figuras altas
+   sólo salen donde hay sitio de verdad. */
+const OBJETOS_ALTOS = new Set(['arbol', 'pinoNevado', 'munieco', 'faro',
+  'espantapajaros', 'velero', 'estatua']);
+const ANCHO_FIGURA_ALTA = 155;
+
 function drawObjeto(p) {
   const arte = WORLDS[Math.max(0, Math.min(TOTAL_WORLDS - 1, p.world - 1))].arte;
   const cat = CATALOGO[arte] || CATALOGO[6];
@@ -6077,9 +6319,24 @@ function drawObjeto(p) {
   // El tamaño del apoyo decide qué objetos caben. Los redondos van aparte:
   // su forma es el apoyo, no un objeto puesto encima de él.
   const REDONDOS = { 2: ['pelotaR', 'salvavidas', 'boyaR'],
+                     3: ['bolaAcero'], 4: ['calabazaR'],
                      5: ['bolaNieve'], 6: ['esfera'] };
-  const grupo = p.redonda ? (REDONDOS[p.world] || REDONDOS[2])
-              : (w >= 260 ? cat.grandes : (w >= 150 ? cat.medios : cat.chicos));
+  let grupo = p.redonda ? (REDONDOS[p.world] || REDONDOS[2])
+            : (w >= 260 ? cat.grandes : (w >= 150 ? cat.medios : cat.chicos));
+
+  // Los apoyos con CARRIL no pueden llevar un objeto que cuelgue medio metro
+  // por debajo: quieto queda bien —el apoyo es el tejado de la casa— pero
+  // moviéndose barre su cuerpo entero por delante de los apoyos de al lado y
+  // se ve roto. Es lo que pasaba con la noria y con la casa del metro 690.
+  if (p.mov || p.movY) {
+    let corto = grupo.filter((n) => !OBJETOS_HONDOS.has(n));
+    if (!corto.length) corto = cat.chicos.filter((n) => !OBJETOS_HONDOS.has(n));
+    if (corto.length) grupo = corto;
+  }
+  if (!p.redonda && w < ANCHO_FIGURA_ALTA) {
+    const bajo = grupo.filter((n) => !OBJETOS_ALTOS.has(n));
+    if (bajo.length) grupo = bajo;
+  }
   const semilla = h(p.x * 0.29 + p.y * 0.13);
   const nombre = grupo[Math.floor(semilla * grupo.length) % grupo.length];
 
@@ -6272,7 +6529,9 @@ function propMuralla(x, y, w) {
 
 /** 🚜 Tractor: se pisa el capó y la cabina. */
 function propTractor(x, y, w) {
-  const k = w / 150;
+  // Escalaba con el ancho SIN tope: en un apoyo de 320 px el tractor bajaba
+  // 121 px por debajo de lo que se pisa y se metía en la plataforma de abajo.
+  const k = Math.min(1.15, w / 150);
   ctx.fillStyle = '#2e7d32';
   rrect(x, y, w * 0.62, 26 * k, 5); ctx.fill();
   rrect(x + w * 0.58, y, w * 0.42, 42 * k, 5); ctx.fill();   // cabina AL nivel
@@ -7060,23 +7319,71 @@ function draw() {
     ctx.stroke();
   }
 
-  // Pinchos
+  // PINCHOS. Eran cuatro triangulitos grises de 16 px sobre un apoyo del
+  // mismo gris: sobre el cielo claro, invisibles hasta que te mataban. Ahora
+  // avisan de lejos —resplandor rojo y zócalo a rayas de peligro— y de cerca
+  // se leen como metal: gradiente, filo claro y punta que brilla.
   for (const s of spikes) {
-    if (s.y < cameraY - 60 || s.y > cameraY + viewHeight + 60) continue;
-    if (fuera(s.x, s.width)) continue;
-    ctx.fillStyle = '#c9ccd4';
-    const n = Math.max(2, Math.round(s.width / 14));
-    for (let i = 0; i < n; i++) {
-      const px = s.x + (s.width / n) * i;
+    if (s.y < cameraY - 80 || s.y > cameraY + viewHeight + 80) continue;
+    if (fuera(s.x - 10, s.width + 20)) continue;
+    const base = s.y + s.height;
+    const n = Math.max(2, Math.round(s.width / 15));
+    const paso = s.width / n;
+
+    // Aviso: un halo rojo detrás, para que el ojo lo pille antes de saltar
+    // El halo va en modo ADITIVO. Pintado normal, un rojo translúcido sobre
+    // el cielo cian da gris sucio —parecía una mancha, no un aviso—; sumando
+    // luz sale un resplandor rosado que se ve sobre cualquier fondo.
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const cxh = s.x + s.width / 2, cyh = s.y + 5;
+    const rad = s.width * 0.6 + 15;
+    const halo = ctx.createRadialGradient(cxh, cyh, 1, cxh, cyh, rad);
+    halo.addColorStop(0, 'rgba(255,52,58,0.55)');
+    halo.addColorStop(0.5, 'rgba(255,52,58,0.18)');
+    halo.addColorStop(1, 'rgba(255,52,58,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(cxh, cyh, rad, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Zócalo a rayas amarillas y negras, como una cinta de obra
+    ctx.save();
+    ctx.beginPath(); rrect(s.x - 3, base - 7, s.width + 6, 8, 3); ctx.clip();
+    ctx.fillStyle = '#f0b429';
+    ctx.fillRect(s.x - 3, base - 7, s.width + 6, 8);
+    ctx.fillStyle = '#20242e';
+    for (let bx = -10; bx < s.width + 12; bx += 11) {
       ctx.beginPath();
-      ctx.moveTo(px, s.y + s.height);
-      ctx.lineTo(px + (s.width / n) / 2, s.y);
-      ctx.lineTo(px + (s.width / n), s.y + s.height);
+      ctx.moveTo(s.x + bx, base + 1); ctx.lineTo(s.x + bx + 5, base + 1);
+      ctx.lineTo(s.x + bx + 11, base - 7); ctx.lineTo(s.x + bx + 6, base - 7);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(16,20,28,0.85)'; ctx.lineWidth = 1.6;
+    rrect(s.x - 3, base - 7, s.width + 6, 8, 3); ctx.stroke();
+
+    for (let i = 0; i < n; i++) {
+      const px = s.x + paso * i, cx = px + paso / 2;
+      const g = ctx.createLinearGradient(px, 0, px + paso, 0);
+      g.addColorStop(0, '#5d6474');
+      g.addColorStop(0.42, '#eef2f8');
+      g.addColorStop(1, '#8b94a6');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(px + 1, base - 4);
+      ctx.lineTo(cx, s.y);
+      ctx.lineTo(px + paso - 1, base - 4);
       ctx.closePath();
       ctx.fill();
+      ctx.strokeStyle = 'rgba(18,22,30,0.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+      // Punta: un destello claro, que es lo que hace que parezca afilado
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath();
+      ctx.moveTo(cx, s.y);
+      ctx.lineTo(cx - 2.6, s.y + 8);
+      ctx.lineTo(cx + 2.6, s.y + 8);
+      ctx.closePath(); ctx.fill();
     }
-    ctx.fillStyle = '#6b7080';
-    ctx.fillRect(s.x, s.y + s.height - 3, s.width, 3);
   }
 
   // Drones patrullando. Se dibuja también su carril, en línea de puntos:
@@ -9869,6 +10176,10 @@ function dibujarMapa(lienzo, conJugador) {
   c.fillStyle = '#0b1424';
   c.fillRect(0, 0, cv.width, cv.height);
 
+  // El mapa grande y la vista previa del menú son el mismo dibujo a dos
+  // tamaños. Lo que distingue a uno del otro es el ANCHO, no quién lo pide.
+  const grande = anchoCSS(cv) > 700;
+
   // Franjas de cada cumbre, con su nombre: dan la escala de un vistazo
   for (let w = 1; w <= TOTAL_WORLDS; w++) {
     const pie = (w === 1) ? BASE_Y : (limitesMundo[w - 2] !== undefined
@@ -9878,10 +10189,11 @@ function dibujarMapa(lienzo, conJugador) {
     const altoBanda = Y(pie) - Y(techo);
     c.fillStyle = (w % 2 ? 'rgba(255,255,255,0.030)' : 'rgba(255,255,255,0.012)');
     c.fillRect(0, Y(techo), cv.width, altoBanda);
-    // Sin sitio, no se escribe: en la vista previa del menú las cumbres
-    // cortas quedaban a dos píxeles y sus nombres se pisaban entre sí.
+    // Los nombres SOLO en el mapa grande. En la vista previa del menú se
+    // escribían encima del trazado del recorrido y no se leía ni una cosa ni
+    // la otra; ahí van fuera del lienzo, en fichas de HTML (`pintarCumbres`).
     const cuerpo = Math.round(11 * (window.devicePixelRatio || 1));
-    if (altoBanda > cuerpo * 1.7) {
+    if (grande && altoBanda > cuerpo * 1.7) {
       const rotulo = w + '. ' + WORLDS[w - 1].name;
       c.font = 'bold ' + cuerpo + 'px "Segoe UI", sans-serif';
       // Fondo tras el nombre: sobre el trazado del recorrido no se leía
@@ -9900,7 +10212,7 @@ function dibujarMapa(lienzo, conJugador) {
   // no la decía por ninguna parte: se leía como un plano, no como una subida.
   // Sólo en el mapa grande: en la vista previa del menú, de 300 px, la regla
   // y los nombres de las cumbres se pisaban y no se leía ninguno.
-  const conRegla = anchoCSS(cv) > 700;
+  const conRegla = grande;
   const cuerpoR = Math.round(10 * (window.devicePixelRatio || 1));
   c.font = 'bold ' + cuerpoR + 'px "Segoe UI", sans-serif';
   for (let m = 0; conRegla && m <= 1000; m += 100) {
@@ -10019,9 +10331,14 @@ function pintarMeta(c, X, Y) {
   // El ancho del rótulo va en píxeles del lienzo, que en retina son el doble:
   // con un margen fijo de 44 la palabra se seguía saliendo por la derecha.
   const ancho = c.measureText('META').width;
-  const mx = Math.max(4, Math.min(c.canvas.width - ancho - 4,
+  const mx = Math.max(8, Math.min(c.canvas.width - ancho - 8,
                                   X(meta.x + meta.width / 2) - ancho / 2));
-  const my = Math.max(cuerpo + 2, Y(meta.y) - 8);
+  const my = Math.max(cuerpo + 8, Y(meta.y) - 10);
+  // Chapa oscura detrás: sobre el trazado dorado del final, la palabra en
+  // amarillo sobre amarillo no se leía.
+  c.fillStyle = 'rgba(11,20,36,0.8)';
+  c.fillRect(mx - 6, my - cuerpo - 1, ancho + 12, cuerpo + 7);
+  c.fillStyle = '#ffd700';
   c.fillText('META', mx, my);
 }
 
@@ -10166,6 +10483,7 @@ function startGame() {
   // Generar y verificar 460 apoyos lleva unos segundos. Se avisa y se deja
   // pintar la pantalla antes de bloquear el hilo con el cálculo.
   startScreen.classList.add('hidden');
+  document.getElementById('game-container').classList.remove('en-menu');
   winScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
   document.getElementById('map-screen').classList.add('hidden');
@@ -10323,6 +10641,8 @@ function actualizarMarcaMenu() {
   if (el) el.textContent = textoMarcas();
   pintarVitrina();
   pintarRutaMenu();
+  pintarCumbres();
+  pintarDatosNivel();
   pintarMecanicas();
   refrescarPestanas();
 }
@@ -10345,6 +10665,40 @@ const GUIA_MECANICAS = [
   ['dron', 'Drones', 'patrullan el hueco: hay que esquivarlos'],
 ];
 
+/* Colores de cada cumbre para las fichas de la ruta: los mismos del cielo
+   de cada una, así la ficha y el bioma se reconocen a la vez. */
+const TONO_CUMBRE = ['#ff9f43', '#4bc0e8', '#7f8cff', '#6fd67f', '#a8e4fb', '#c88bff'];
+
+/** Las seis cumbres con su tramo de metros, sacado del nivel de verdad. */
+function pintarCumbres() {
+  const cont = document.getElementById('cumbres-chips');
+  if (!cont) return;
+  let acum = 0;
+  cont.innerHTML = WORLDS.map((w, k) => {
+    const desde = acum;
+    acum += METROS_CUMBRE[k];
+    return '<li style="--tono:' + TONO_CUMBRE[k] + '"><b>' + w.name + '</b>' +
+           '<span>' + desde + '–' + acum + ' m</span></li>';
+  }).join('');
+}
+
+/** Pastillas de datos del nivel. Se rellenan cuando el nivel ya está. */
+function pintarDatosNivel() {
+  const cont = document.getElementById('datos-nivel');
+  if (!cont) return;
+  if (!platforms.length) {
+    cont.innerHTML = '<li>Trazando la ruta…</li>';
+    return;
+  }
+  const chk = platforms.filter((q) => q.type === 'checkpoint').length;
+  const filas = [
+    ['1000', 'metros'], [String(TOTAL_WORLDS), 'cumbres'],
+    [String(platforms.length), 'apoyos'], [String(chk), 'checkpoints'],
+    [String(monedas.length), 'monedas'],
+  ];
+  cont.innerHTML = filas.map(([n, t]) => '<li><b>' + n + '</b>' + t + '</li>').join('');
+}
+
 function pintarMecanicas() {
   const cont = document.getElementById('mecanicas');
   if (!cont || cont.children.length) return;
@@ -10363,7 +10717,8 @@ function refrescarPestanas() {
   if (pista) {
     const acc = ACCESORIOS[accesorioElegido];
     pista.innerHTML = 'Llevas <b>' + SKINS[skinElegida].nombre + '</b>' +
-      (acc && acc.id !== 'ninguno' ? ' con <b>' + (acc.corto || acc.nombre) + '</b>' : ', sin accesorio');
+      (acc && acc.id !== 'ninguno' ? ' con <b>' + (acc.corto || acc.nombre) + '</b>' : ', sin accesorio') +
+      '<em>' + (SKINS.length * ACCESORIOS.length) + ' escaladores distintos</em>';
   }
 }
 
@@ -10473,7 +10828,45 @@ cargarGuardado();
 })();
 
 /** Repinta el escaparate y todas las tarjetas. */
+/* ====================================================================
+   EL PASEO DEL MENÚ
+   Detrás del panel se está pintando el nivel de verdad. Estaba clavado en la
+   plataforma de salida —cielo vacío— y por eso daba igual que se viera. Ahora
+   la cámara sube despacio por el recorrido entero, de la salida a la meta y
+   vuelta a empezar, con las plataformas moviéndose y los drones patrullando.
+   El fondo del menú deja de ser un color y pasa a ser el sitio al que vas.
+   ==================================================================== */
+let paseoMenu = 0;
+let cadenaPaseo = null;                 // se calcula una vez, no en cada fotograma
+
+function pasearMenu() {
+  if (!platforms.length) return;
+  paseoMenu += 0.00019;                 // una vuelta entera cada ~90 segundos
+  if (paseoMenu >= 1) paseoMenu -= 1;
+
+  if (!cadenaPaseo || cadenaPaseo.total !== platforms.length) {
+    cadenaPaseo = platforms.filter((q) => !q.extra);
+    cadenaPaseo.total = platforms.length;
+  }
+  const cadena = cadenaPaseo;
+  if (cadena.length < 2) return;
+  const u = paseoMenu * (cadena.length - 1);
+  const i = Math.floor(u), f = u - i;
+  const a = cadena[i], b = cadena[Math.min(cadena.length - 1, i + 1)];
+  const ax = a.x + a.width / 2, bx = b.x + b.width / 2;
+  cameraX = ax + (bx - ax) * f - viewWidth / 2;
+  cameraY = a.y + (b.y - a.y) * f - viewHeight * 0.5;
+
+  // Que el mundo del fondo esté VIVO: carriles andando y drones patrullando.
+  // `moverPlataformas` coloca por tiempo absoluto, así que empezar la partida
+  // con `tiempoJuego = 0` las devuelve a su sitio sin arrastrar nada de aquí.
+  tiempoJuego++;
+  moverPlataformas(platforms, tiempoJuego);
+  for (const v of voladores) v.x = dronX(v, tiempoJuego);
+}
+
 function refrescarMenu() {
+  if (!startScreen.classList.contains('hidden')) pasearMenu();
   pintarVistaPrevia();
   const et = document.getElementById('nombreSkin');
   if (et && SKINS[skinElegida]) et.textContent = SKINS[skinElegida].nombre;
@@ -10714,6 +11107,7 @@ actualizarMarcaMenu();
 requestAnimationFrame(gameLoop);
 resizeCanvas();
 cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
+document.getElementById('game-container').classList.add('en-menu');
 
 /* Componer el nivel entero —sembrar, verificar salto a salto y repasar— son
    varios segundos de cuentas, y hasta ahora corrían ANTES del primer pintado:
@@ -10728,6 +11122,7 @@ cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
 function prepararNivel() {
   generateLevel();
   pintarRutaMenu();
+  pintarDatosNivel();
   draw();
 }
 requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(prepararNivel, 0)));
