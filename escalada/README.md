@@ -42,6 +42,88 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### Estelas: el rastro que vas dejando
+
+El personaje suelta cosas por donde pasa. Sólo mientras **anda o está en el
+aire**: parado no suelta nada, porque si no se acumulaba un charco de adornos
+bajo los pies. Nacen por detrás —a la altura de los pies andando, a media
+espalda saltando—, viven poco más de un segundo y se apagan.
+
+Catorce estelas, de lo más sencillo a lo más exclusivo: polvo, chispas,
+burbujas, pétalos, copos, hojas, estrellas, bits, fuego, peces, monedas,
+arcoíris y **Del mundo**, que es la cara: no tiene forma propia, sino que
+suelta lo de la cumbre en la que estés —chispas de fragua, peces, carpetas,
+trigo, copos o bits—, así que cambia seis veces a lo largo de la subida.
+
+Tres decisiones que importan:
+
+- Se pintan **por detrás del personaje**. Un rastro es por dónde has pasado,
+  no algo que se te ponga delante de la cara.
+- No tocan la física. Hay un techo duro de 140 partículas vivas: es adorno, y
+  el nivel está verificado contra `pasoFisica()`, que no las conoce.
+- La ficha de la tienda pinta con `dibujoEstela()`, **la misma función** que
+  usa el juego. Lo que ves en la tarjeta es exactamente lo que sale al jugar,
+  y la de «Del mundo» enseña las seis a la vez.
+
+### El mezclador de color
+
+Los 20 colores de la lista se quedaban cortos. El último, **«A tu gusto»**, no
+es un color: son todos. Cuatro mandos —tono, viveza, brillo y tono de las
+patas— y de ahí salen los **cinco tonos** del personaje derivados de una sola
+base, que es lo que hace que el brillo, la sombra y las patas peguen entre sí
+sin tener que elegirlos uno a uno.
+
+El panel sólo asoma cuando llevas ese color puesto y estás en la pestaña de
+color: cuatro mandos sueltos bajo una rejilla de colores fijos no se entendían
+y ocupaban sitio para nada. Va **encima** de la rejilla, no debajo, porque
+abajo se lo comía la barra del botón de empezar.
+
+Mover un mando repinta veinte tarjetas, así que el guardado va con el retardo
+de un segundo que ya usaban las monedas, no en cada paso del dedo.
+
+### Precios de peor a mejor, y llaves por nombre
+
+El precio salía de una **fórmula sobre la posición** en la lista. Reordenar el
+catálogo movía los precios sin querer, y la llave de «comprado» era el número
+de la posición: reordenar te cambiaba lo que tenías pagado.
+
+Ahora cada ficha trae su precio escrito y su identificador propio
+(`c:dorado`, `a:corona`, `e:mundo`). Los catálogos van ordenados de lo más
+sencillo a lo más exclusivo y el número acompaña:
+
+| | Gratis | Más caro | Lo más exclusivo |
+|---|---|---|---|
+| Colores | 4 | Dino, 275 | **A tu gusto**, 330 |
+| Accesorios | 3 | Corona, 350 | **Aureola**, 450 |
+| Estelas | 3 | Arcoíris, 280 | **Del mundo**, 400 |
+
+Los guardados viejos se traducen al cargar: las llaves numéricas se convierten
+a las de nombre con el orden que tenían los catálogos antes, así que nadie
+pierde lo que había comprado.
+
+### Más catálogo, y más claro
+
+Dos disfraces nuevos —**Buzo** (máscara, tubo y botella a la espalda, que va a
+±53 para que asome por fuera de la silueta) y **Dino** (cresta, manchas, panza
+a placas y cola con púas)— y seis accesorios nuevos: antifaz de héroe, corona
+de flores, gorro de cocinero, casco vikingo, visor de combate y la aureola.
+
+Tres cosas que estaban mal dibujadas y se arreglaron mirándolas de cerca:
+
+- El **antifaz** se pinta encima de la cara, así que lleva los dos huecos
+  recortados de verdad (regla par-impar) y los ojos se ven por dentro.
+- El **gorro de cocinero** era tres bollos sueltos y dejaba costuras negras
+  cruzándolo. Ahora el copete es una sola silueta.
+- Los **cuernos del vikingo** se dibujaban después del casco y su arranque
+  quedaba pintado encima: parecía que le cruzaban la frente. Ahora van primero
+  y el casco los tapa.
+
+La panza del dino iba de −30 a +4 y le tapaba media cara: bajada a −18.
+
+Con 21 colores y 22 accesorios, cuatro columnas eran seis filas de tarjetas.
+La rejilla pasa a **cinco columnas** y la pestaña de accesorios se llama
+«Gorros», que es lo que son.
+
 ### La partida no se podía terminar
 
 Dos apoyos del nivel incrustado (metros 830 y 930) tenían **otro apoyo justo
@@ -1120,7 +1202,8 @@ Todo vive en `index.html`. Las piezas, por orden:
 | Verificación | `costeSalida()`, `seLlega()`, `alrededor()`: replay del recorrido con el motor real |
 | Ratoneras | `despejarRatoneras()`: apoyos con techo demasiado bajo para saltar |
 | Cumbres | `repartirCumbres()`: corta el recorrido en seis tramos de la misma altura |
-| Checkpoints | `sembrarCheckpoints()`: uno por cumbre, en la mitad exacta |
+| Checkpoints | `sembrarCheckpoints()`: dos por cumbre, uno al entrar y otro en la mitad |
+| Estelas | `ESTELAS`, `emitirEstela()`, `dibujoEstela()`: el rastro, compartido entre juego y tienda |
 | Temas | `CATALOGO`: seis catálogos cerrados, uno por cumbre |
 | Aclarado | `aclararApoyos()`: quita apoyos para que los saltos sean más largos |
 | Dibujo estable | `anclarApoyo()`: la móvil se pinta en reposo y el lienzo viaja |
@@ -1130,7 +1213,7 @@ Todo vive en `index.html`. Las piezas, por orden:
 | Estado y lógica | Cámara, muertes, checkpoints, pausa, marcador |
 | Sonido | Notas generadas con Web Audio, sin archivos |
 | Dibujo | Fondos por bioma, apoyos ilustrados, personaje y accesorios |
-| Menú | Selector de color y accesorio, con el personaje dibujado en cada tarjeta |
+| Menú | Tienda de color, accesorio y estela, con el personaje dibujado en cada tarjeta, y el mezclador |
 
 Que el generador use el **mismo** `pasoFisica()` que el juego es lo que hace
 imposible que se genere un salto que luego no se pueda dar. Por eso la

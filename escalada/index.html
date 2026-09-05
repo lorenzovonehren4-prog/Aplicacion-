@@ -207,9 +207,34 @@
     background:#ffd700; box-shadow:0 0 8px rgba(255,215,0,.8); }
 
   /* Tarjetas de skin y accesorio, con el personaje dibujado dentro */
-  #skins, #accesorios { display:grid; gap:8px; margin-bottom:0; }
-  #skins { grid-template-columns:repeat(4,1fr); }
-  #accesorios { grid-template-columns:repeat(4,1fr); }
+  #skins, #accesorios, #estelas-lista { display:grid; gap:8px; margin-bottom:0; }
+  #skins { grid-template-columns:repeat(5,1fr); }
+  #accesorios { grid-template-columns:repeat(5,1fr); }
+  #estelas-lista { grid-template-columns:repeat(4,1fr); }
+
+  /* ---- Mezclador de color ---- */
+  .mezclador { margin:0 0 9px; padding:9px 11px 10px; border-radius:12px;
+    background:rgba(0,0,0,.26); border:1px solid rgba(255,255,255,.07); }
+  .mezclador h3 { margin:0 0 7px; font-size:10.5px; letter-spacing:1.4px;
+    text-transform:uppercase; color:#ffd700; display:flex; justify-content:space-between;
+    align-items:baseline; gap:8px; }
+  .mezclador h3 span { font-size:9.5px; letter-spacing:.5px; text-transform:none;
+    color:#7d90a6; font-weight:600; }
+  .mezclador label { display:flex; align-items:center; gap:9px; font-size:10.5px;
+    color:#9fb2c6; letter-spacing:.6px; margin-bottom:5px; }
+  .mezclador label:last-of-type { margin-bottom:0; }
+  .mezclador input[type=range] { flex:1; height:5px; -webkit-appearance:none;
+    appearance:none; border-radius:99px; background:#26303f; outline:none; cursor:pointer; }
+  .mezclador input#mz-tono, .mezclador input#mz-patas {
+    background:linear-gradient(90deg,#f44,#fd0,#4f4,#0ff,#44f,#f4f,#f44); }
+  .mezclador input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;
+    width:14px; height:14px; border-radius:50%; background:#fff; cursor:pointer;
+    border:2px solid #10202e; box-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .mezclador input[type=range]::-moz-range-thumb { width:12px; height:12px;
+    border-radius:50%; background:#fff; border:2px solid #10202e; cursor:pointer; }
+  .mz-muestras { display:flex; gap:4px; margin-top:8px; }
+  .mz-muestras i { flex:1; height:11px; border-radius:5px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
   .tarjeta { position:relative; border-radius:12px; cursor:pointer; overflow:hidden;
     border:1px solid rgba(255,255,255,.09);
     background:linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.02));
@@ -550,7 +575,8 @@
      ==================================================================== */
   @media (max-height:880px) {
     #preview { height:128px; }
-    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:40px; }
+    #skins .tarjeta canvas, #accesorios .tarjeta canvas,
+    #estelas-lista .tarjeta canvas { height:40px; }
     #rutaPreview { height:138px; }
     .menu .cabecera h1 { font-size:29px; }
     .panel.menu { padding:12px 17px 8px; }
@@ -582,7 +608,10 @@
     .menu .btn { padding:10px; font-size:16px; }
     .pestana { padding:6px 10px; }
     .pista-eleccion { padding:5px 9px; }
-    #skins .tarjeta canvas, #accesorios .tarjeta canvas { height:36px; }
+    #skins .tarjeta canvas, #accesorios .tarjeta canvas,
+    #estelas-lista .tarjeta canvas { height:36px; }
+    .mezclador { padding:7px 9px 8px; }
+    .mezclador label { font-size:10px; margin-bottom:4px; }
     .tarjeta span { font-size:9px; padding:2px 2px 4px; }
     .cumbres-chips li, .mecanicas li { font-size:10px; }
     .bloque { padding:9px 11px 10px; }
@@ -718,11 +747,25 @@
             <div class="pestanas" role="tablist">
               <button class="pestana activa" id="tab-color" role="tab">Color
                 <em id="cuenta-color"></em></button>
-              <button class="pestana" id="tab-acc" role="tab">Accesorio
+              <button class="pestana" id="tab-acc" role="tab">Gorros
                 <em id="cuenta-acc"></em></button>
+              <button class="pestana" id="tab-est" role="tab">Estela
+                <em id="cuenta-est"></em></button>
+            </div>
+            <!-- El mezclador sólo asoma cuando llevas puesto «A tu gusto»:
+                 cuatro mandos sueltos bajo una rejilla de colores fijos no
+                 se entendían, y ocupaban sitio para nada. -->
+            <div id="mezclador" class="mezclador oculta">
+              <h3>Mezclador<span>los cinco tonos salen de aquí</span></h3>
+              <label>Tono<input type="range" id="mz-tono" min="0" max="359" step="1"></label>
+              <label>Viveza<input type="range" id="mz-viveza" min="10" max="100" step="1"></label>
+              <label>Brillo<input type="range" id="mz-brillo" min="26" max="82" step="1"></label>
+              <label>Patas<input type="range" id="mz-patas" min="0" max="359" step="1"></label>
+              <div class="mz-muestras" id="mz-muestras"><i></i><i></i><i></i><i></i></div>
             </div>
             <div id="skins"></div>
             <div id="accesorios" class="oculta"></div>
+            <div id="estelas-lista" class="oculta"></div>
             <p class="pista-eleccion" id="pista-eleccion"></p>
           </section>
 
@@ -850,13 +893,19 @@ const ESTIRE = 0.17;          // cuánto se estira subiendo o cayendo
    seis miden lo mismo, y `repartirCumbres()` vuelve a cortar el recorrido
    incrustado por esas alturas sin mover un solo apoyo.
    ==================================================================== */
+/* Los nombres venían del juego de referencia y ya no decían lo que hay: la
+   cuarta se llamaba «Growing Up» y es una granja, y la sexta «One Way Up» sin
+   una sola pista de que va de circuitos. Ahora cada nombre nombra su tema, y
+   el cielo de cada una tira hacia su color: piedra caliente abajo, turquesa de
+   arrecife, gris corporativo, cielo de campo, blanco de glaciar y violeta de
+   red al final. */
 const WORLDS = [
-  { name: 'Emberwall Ascent', skyTop: '#5bc8e8', skyBot: '#7ad4ee', arte: 6, nubes: true },
-  { name: 'Coral Climb',      skyTop: '#66d0f0', skyBot: '#8fdcff', arte: 2, nubes: true },
+  { name: 'Emberwall Ascent', skyTop: '#6fb9d6', skyBot: '#9ed3e2', arte: 6, nubes: true },
+  { name: 'Coral Reef Climb', skyTop: '#4fc7d8', skyBot: '#8ae3ea', arte: 2, nubes: true },
   { name: 'Nine to Five',     skyTop: '#7fc4d8', skyBot: '#a9d8e4', arte: 4, nubes: true },
-  { name: 'Growing Up',       skyTop: '#68cfee', skyBot: '#86daf6', arte: 1, nubes: true },
-  { name: 'Frosty Peaks',     skyTop: '#7fd6f2', skyBot: '#a8e4fb', arte: 5, nubes: true },
-  { name: 'One Way Up',       skyTop: '#5bc8e8', skyBot: '#7ad4ee', arte: 7, nubes: true },
+  { name: 'Harvest Heights',  skyTop: '#68cfee', skyBot: '#9ce0c8', arte: 1, nubes: true },
+  { name: 'Frostpeak Glacier',skyTop: '#8ddcf5', skyBot: '#c4ecfb', arte: 5, nubes: true },
+  { name: 'Neon Circuit',     skyTop: '#5f7ad8', skyBot: '#8f9ff0', arte: 7, nubes: true },
 ];
 
 const METROS_CUMBRE = [167, 167, 167, 167, 166, 166];  // suman 1000 m
@@ -1268,29 +1317,73 @@ function rnd() {
 let nombreJugador = 'ESCALADOR';
 /* Cada skin lleva color de CUERPO y color de PATAS: en el modelo las patas
    son de un tono distinto, no del mismo color más oscuro. */
+/* ====================================================================
+   COLORES Y DISFRACES
+   Cada ficha lleva su PRECIO escrito. Antes salía de una fórmula sobre la
+   posición, así que reordenar la lista movía los precios sin querer; ahora
+   la lista va de lo más sencillo a lo más exclusivo y el número acompaña.
+   Los de 0 vienen puestos de salida.
+   ==================================================================== */
 const SKINS = [
-  { nombre: 'Cian',    claro: '#7df3f5', medio: '#3fd4dd', oscuro: '#1f9fb0', pata: '#4a4ad8', pataOsc: '#2b2b9c' },
-  { nombre: 'Verde',   claro: '#8cf76a', medio: '#4ccf35', oscuro: '#2a8f1c', pata: '#1f8f4a', pataOsc: '#116030' },
-  { nombre: 'Naranja', claro: '#ffb266', medio: '#f2801f', oscuro: '#b05408', pata: '#c0392b', pataOsc: '#822418' },
-  { nombre: 'Morado',  claro: '#c39bff', medio: '#8f5cf0', oscuro: '#5b2eb0', pata: '#3f2b96', pataOsc: '#271a63' },
-  { nombre: 'Rosa',    claro: '#ffa5cd', medio: '#f2609e', oscuro: '#b32e6b', pata: '#8e2f7a', pataOsc: '#5e1d51' },
-  { nombre: 'Dorado',  claro: '#ffe27a', medio: '#f5c02b', oscuro: '#b08a08', pata: '#8a6a1c', pataOsc: '#5c4610' },
-  { nombre: 'Rojo',    claro: '#ff9a8a', medio: '#ef4136', oscuro: '#a3160f', pata: '#8e2b22', pataOsc: '#5c1712' },
-  { nombre: 'Azul',    claro: '#8ec5ff', medio: '#3b82f6', oscuro: '#1d4ed8', pata: '#1e3a8a', pataOsc: '#12245c' },
-  { nombre: 'Blanco',  claro: '#ffffff', medio: '#e7edf5', oscuro: '#b3c0d1', pata: '#8b9ab0', pataOsc: '#5d6b80' },
-  { nombre: 'Grafito', claro: '#7b8493', medio: '#4a5261', oscuro: '#262c38', pata: '#1d2028', pataOsc: '#0f1218' },
-  { nombre: 'Lima',    claro: '#e8ff8a', medio: '#c3ea2c', oscuro: '#89a80c', pata: '#6f8f14', pataOsc: '#465c08' },
-  { nombre: 'Choco',   claro: '#c98c5a', medio: '#9c5f31', oscuro: '#63381a', pata: '#4a2913', pataOsc: '#2d180b' },
+  { id: 'cian',    nombre: 'Cian',    precio: 0,  claro: '#7df3f5', medio: '#3fd4dd', oscuro: '#1f9fb0', pata: '#4a4ad8', pataOsc: '#2b2b9c' },
+  { id: 'verde',   nombre: 'Verde',   precio: 0,  claro: '#8cf76a', medio: '#4ccf35', oscuro: '#2a8f1c', pata: '#1f8f4a', pataOsc: '#116030' },
+  { id: 'naranja', nombre: 'Naranja', precio: 0,  claro: '#ffb266', medio: '#f2801f', oscuro: '#b05408', pata: '#c0392b', pataOsc: '#822418' },
+  { id: 'morado',  nombre: 'Morado',  precio: 0,  claro: '#c39bff', medio: '#8f5cf0', oscuro: '#5b2eb0', pata: '#3f2b96', pataOsc: '#271a63' },
+  { id: 'rosa',    nombre: 'Rosa',    precio: 30, claro: '#ffa5cd', medio: '#f2609e', oscuro: '#b32e6b', pata: '#8e2f7a', pataOsc: '#5e1d51' },
+  { id: 'dorado',  nombre: 'Dorado',  precio: 40, claro: '#ffe27a', medio: '#f5c02b', oscuro: '#b08a08', pata: '#8a6a1c', pataOsc: '#5c4610' },
+  { id: 'rojo',    nombre: 'Rojo',    precio: 45, claro: '#ff9a8a', medio: '#ef4136', oscuro: '#a3160f', pata: '#8e2b22', pataOsc: '#5c1712' },
+  { id: 'azul',    nombre: 'Azul',    precio: 50, claro: '#8ec5ff', medio: '#3b82f6', oscuro: '#1d4ed8', pata: '#1e3a8a', pataOsc: '#12245c' },
+  { id: 'blanco',  nombre: 'Blanco',  precio: 55, claro: '#ffffff', medio: '#e7edf5', oscuro: '#b3c0d1', pata: '#8b9ab0', pataOsc: '#5d6b80' },
+  { id: 'grafito', nombre: 'Grafito', precio: 60, claro: '#7b8493', medio: '#4a5261', oscuro: '#262c38', pata: '#1d2028', pataOsc: '#0f1218' },
+  { id: 'lima',    nombre: 'Lima',    precio: 65, claro: '#e8ff8a', medio: '#c3ea2c', oscuro: '#89a80c', pata: '#6f8f14', pataOsc: '#465c08' },
+  { id: 'choco',   nombre: 'Choco',   precio: 75, claro: '#c98c5a', medio: '#9c5f31', oscuro: '#63381a', pata: '#4a2913', pataOsc: '#2d180b' },
   /* Disfraces: además del color pintan algo sobre el cuerpo y, algunos,
      apéndices por delante o por detrás. El color de base sigue mandando,
-     así que el brillo y la sombra del cuerpo les caen igual que al resto. */
-  { nombre: 'Abeja',   traje: 'abeja',    claro: '#ffe27a', medio: '#f5b71f', oscuro: '#b07f08', pata: '#3a3126', pataOsc: '#221c14' },
-  { nombre: 'Fantasma', traje: 'fantasma', claro: '#ffffff', medio: '#eef3fb', oscuro: '#c2cede', pata: '#dbe4f0', pataOsc: '#aab8cc' },
-  { nombre: 'Calabaza', traje: 'calabaza', claro: '#ffb15c', medio: '#f2801f', oscuro: '#a8500a', pata: '#3f7a2a', pataOsc: '#255016' },
-  { nombre: 'Robot',   traje: 'robot',    claro: '#cfd8e6', medio: '#93a1b5', oscuro: '#5b6779', pata: '#3d4654', pataOsc: '#242b36' },
-  { nombre: 'Sandía',  traje: 'sandia',   claro: '#7fd96a', medio: '#46ad3a', oscuro: '#25701f', pata: '#2f6b24', pataOsc: '#1a4415' },
-  { nombre: 'Gato',    traje: 'gato',     claro: '#ffcf8a', medio: '#f0983a', oscuro: '#ad6112', pata: '#8a4a10', pataOsc: '#59300a' },
+     así que el brillo y la sombra del cuerpo les caen igual que al resto.
+     Cuestan bastante más que un color liso porque son mucho más dibujo. */
+  { id: 'abeja',    nombre: 'Abeja',    traje: 'abeja',    precio: 120, claro: '#ffe27a', medio: '#f5b71f', oscuro: '#b07f08', pata: '#3a3126', pataOsc: '#221c14' },
+  { id: 'sandia',   nombre: 'Sandía',   traje: 'sandia',   precio: 135, claro: '#7fd96a', medio: '#46ad3a', oscuro: '#25701f', pata: '#2f6b24', pataOsc: '#1a4415' },
+  { id: 'calabaza', nombre: 'Calabaza', traje: 'calabaza', precio: 150, claro: '#ffb15c', medio: '#f2801f', oscuro: '#a8500a', pata: '#3f7a2a', pataOsc: '#255016' },
+  { id: 'gato',     nombre: 'Gato',     traje: 'gato',     precio: 170, claro: '#ffcf8a', medio: '#f0983a', oscuro: '#ad6112', pata: '#8a4a10', pataOsc: '#59300a' },
+  { id: 'fantasma', nombre: 'Fantasma', traje: 'fantasma', precio: 190, claro: '#ffffff', medio: '#eef3fb', oscuro: '#c2cede', pata: '#dbe4f0', pataOsc: '#aab8cc' },
+  { id: 'robot',    nombre: 'Robot',    traje: 'robot',    precio: 215, claro: '#cfd8e6', medio: '#93a1b5', oscuro: '#5b6779', pata: '#3d4654', pataOsc: '#242b36' },
+  { id: 'buzo',     nombre: 'Buzo',     traje: 'buzo',     precio: 245, claro: '#8fd8ff', medio: '#39a4dc', oscuro: '#186a99', pata: '#f2a93b', pataOsc: '#a86a12' },
+  { id: 'dino',     nombre: 'Dino',     traje: 'dino',     precio: 275, claro: '#a6ee76', medio: '#54b532', oscuro: '#2c7317', pata: '#e2c65a', pataOsc: '#9b8320' },
+  /* EL MEZCLADOR. No es un color: es TODOS. Los tonos salen de los mandos
+     del menú, así que es lo único de la tienda que no se acaba nunca. Por
+     eso es lo más caro de la pestaña. */
+  { id: 'mezcla',   nombre: 'A tu gusto', mezcla: true,    precio: 330, claro: '#ffffff', medio: '#c9d3e2', oscuro: '#8d97a8', pata: '#5c6474', pataOsc: '#343a46' },
 ];
+
+/* Los cuatro tonos del mezclador. Se guardan con las preferencias, así que
+   el escalador que te has hecho sigue ahí al volver. */
+let mezclaColor = { tono: 268, viveza: 74, brillo: 62, patas: 206 };
+
+function hsl(h, s, l) {
+  const hh = ((Math.round(h) % 360) + 360) % 360;
+  return 'hsl(' + hh + ',' + Math.max(0, Math.min(100, Math.round(s))) + '%,' +
+         Math.max(0, Math.min(100, Math.round(l))) + '%)';
+}
+
+/**
+ * La piel con la que se pinta. Para los colores de la lista es la ficha tal
+ * cual; para el mezclador se derivan los cinco tonos de una sola base, que
+ * es lo que hace que el brillo, la sombra y las patas peguen entre sí sin
+ * tener que elegirlos uno a uno.
+ */
+function pielDe(i) {
+  const s = SKINS[Math.max(0, Math.min(SKINS.length - 1, i))];
+  if (!s || !s.mezcla) return s;
+  const m = mezclaColor;
+  return {
+    id: s.id, nombre: s.nombre, mezcla: true,
+    claro:   hsl(m.tono, Math.min(100, m.viveza + 6), Math.min(93, m.brillo + 19)),
+    medio:   hsl(m.tono, m.viveza, m.brillo),
+    oscuro:  hsl(m.tono - 6, Math.min(100, m.viveza + 10), Math.max(12, m.brillo - 23)),
+    pata:    hsl(m.patas, Math.max(20, m.viveza - 14), Math.max(17, m.brillo - 27)),
+    pataOsc: hsl(m.patas, Math.max(20, m.viveza - 14), Math.max(9, m.brillo - 41)),
+  };
+}
 let skinElegida = 0;
 let modoRetrato = false;   // cuando se dibuja en el menú, sin etiqueta de nombre
 
@@ -2624,7 +2717,10 @@ function dureza(i) {
  */
 function sembrarCheckpoints() {
   const cadena = platforms.filter((q) => !q.extra);
-  for (const q of cadena) if (q.type === 'checkpoint') q.type = 'normal';
+  for (const q of cadena) {
+    if (q.type === 'checkpoint') q.type = 'normal';
+    delete q.puerta;
+  }
 
   const puestos = [];
   const sirve = (q) =>
@@ -2633,28 +2729,37 @@ function sembrarCheckpoints() {
     q.type === 'normal' && !q.mov && !q.movY && !q.ciclo && !q.trampa &&
     !q.petalo && !q.hielo && !q.redonda && !q.ang && q.width >= 130;
 
-  // UNO POR CUMBRE, y ni uno más, en la MITAD EXACTA del tramo. Empezó
-  // siendo uno por cumbre donde cayera —en la cumbre 2 quedaba al 79 % y
-  // caerse obligaba a repetirla casi entera—, luego fueron doce repartidos
-  // por altura. Lo que se quiere es esto: media cumbre de riesgo, un punto
-  // de control, media cumbre más. Se marca con bandera y haz de luz para que
-  // se vea desde lejos que ahí se guarda la partida.
+  // DOS POR CUMBRE: uno al ENTRAR y otro en la MITAD EXACTA del tramo.
+  //
+  // El de la mitad es la red de seguridad de siempre: media cumbre de riesgo,
+  // punto de control, media cumbre más. El de entrada es de comodidad: sin él,
+  // caerse en el primer tercio de una cumbre te devolvía al centro de la
+  // ANTERIOR y te obligaba a repetir su segunda mitad entera —un tramo que ya
+  // habías superado— sólo para volver al sitio donde fallaste.
+  //
+  // El de entrada se marca `puerta` y se dibuja algo más discreto: el de la
+  // mitad es el que hay que ver desde lejos.
   for (let w = 1; w <= TOTAL_WORLDS; w++) {
     const tramo = [];
     for (let i = 1; i < cadena.length - 1; i++) if (cadena[i].world === w) tramo.push(i);
     if (!tramo.length) continue;
     const yPie = cadena[tramo[0]].y, yTecho = cadena[tramo[tramo.length - 1]].y;
-    const objetivo = (yPie + yTecho) / 2;
 
-    let mejor = -1, dist = Infinity;
-    for (const i of tramo) {
-      if (!sirve(cadena[i])) continue;
-      const d = Math.abs(cadena[i].y - objetivo);
-      if (d < dist) { dist = d; mejor = i; }
+    // [altura objetivo, ¿es el de entrada?]
+    for (const [objetivo, puerta] of [[yPie, true], [(yPie + yTecho) / 2, false]]) {
+      let mejor = -1, dist = Infinity;
+      for (const i of tramo) {
+        if (!sirve(cadena[i])) continue;
+        // Ni pegados entre sí: dos banderas a cuatro apoyos no son dos redes
+        if (puestos.some((j) => Math.abs(j - i) < 5)) continue;
+        const d = Math.abs(cadena[i].y - objetivo);
+        if (d < dist) { dist = d; mejor = i; }
+      }
+      if (mejor < 0) continue;
+      cadena[mejor].type = 'checkpoint';
+      cadena[mejor].puerta = puerta;
+      puestos.push(mejor);
     }
-    if (mejor < 0) continue;
-    cadena[mejor].type = 'checkpoint';
-    puestos.push(mejor);
   }
   return puestos.length;
 }
@@ -4451,6 +4556,9 @@ function update() {
   }
   player.dirPrev = dir;
 
+  // La estela va aquí, con la dirección de este fotograma ya decidida.
+  emitirEstela();
+
   // Polvillo de carrera, una motita cada seis fotogramas
   if (player.onGround && dir !== 0 && tiempoJuego % 6 === 0) polvoCarrera();
 
@@ -4597,6 +4705,8 @@ function update() {
       break;
     }
   }
+
+  moverEstelas();
 
   for (let i = particles.length - 1; i >= 0; i--) {
     const q = particles[i];
@@ -5435,11 +5545,13 @@ const CATALOGO = {
     medios:  ['espadas', 'antorcha', 'yunque', 'barriles', 'escudos', 'andamio', 'roca'],
     chicos:  ['antorcha', 'roca', 'cajas', 'espadas', 'brasero'],
   },
-  // 2 · PLAYA — puerto, arena y tabla
+  // 2 · ARRECIFE — se llamaba «Coral Climb» y no había un solo coral a la
+  // vista: era un puerto con tablas de surf y sombrillas. Ahora el nombre y
+  // lo que se ve dicen lo mismo, y lo marino manda sobre lo de playa.
   2: {
-    grandes: ['yate', 'velero', 'faro', 'barca', 'castilloArena'],
-    medios:  ['tablaSurf', 'sombrilla', 'faro', 'coral', 'pelota', 'redPesca'],
-    chicos:  ['tablaSurf', 'boya', 'flotador', 'pelota', 'arena'],
+    grandes: ['coralGrande', 'yate', 'velero', 'barca', 'castilloArena'],
+    medios:  ['coralGrande', 'algas', 'estrellaMar', 'ancla', 'tablaSurf', 'sombrilla'],
+    chicos:  ['estrellaMar', 'algas', 'boya', 'flotador', 'arena'],
   },
   // 3 · OFICINA — la planta corporativa. Antes esta cumbre era una «base
   // secreta» que compartía objetos con la granja y con la última: contenedor,
@@ -6464,6 +6576,201 @@ function propEspadas(x, y, w) {
   }
 }
 
+/* ---------------- ARRECIFE ---------------- */
+
+/** 🪸 Cabeza de coral: el arrecife de verdad, no una tabla con nombre. */
+function propCoralGrande(x, y, w) {
+  const cx = x + w / 2;
+  // Roca de arrecife, que es lo que se pisa
+  const roca = ctx.createLinearGradient(0, y, 0, y + 40);
+  roca.addColorStop(0, '#e6c9a0'); roca.addColorStop(1, '#a67f52');
+  ctx.fillStyle = roca;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 8);
+  ctx.quadraticCurveTo(cx, y - 3, x + w, y + 8);
+  ctx.lineTo(x + w - 7, y + 40);
+  ctx.quadraticCurveTo(cx, y + 48, x + 7, y + 40);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,64,36,0.85)'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  rrect(x + 6, y + 1, w - 12, 5, 3); ctx.fill();
+
+  // Ramas de coral, hacia arriba. Tres tonos de arrecife.
+  const tonos = ['#ff7f9c', '#ff9f5a', '#c46bd8'];
+  const n = Math.max(2, Math.round(w / 62));
+  for (let k = 0; k < n; k++) {
+    const bx = x + w * (0.18 + 0.64 * (n === 1 ? 0.5 : k / (n - 1)));
+    const alto = 24 + h(x + k * 4.7) * 22;
+    const tono = tonos[k % tonos.length];
+    ctx.strokeStyle = tono; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bx, y + 4);
+    ctx.lineTo(bx, y - alto * 0.55);
+    ctx.stroke();
+    for (const sg of [-1, 1]) {
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.moveTo(bx, y - alto * 0.42);
+      ctx.quadraticCurveTo(bx + sg * 9, y - alto * 0.72, bx + sg * 8, y - alto);
+      ctx.stroke();
+    }
+    // Puntas más claras
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    for (const sg of [-1, 1]) {
+      ctx.beginPath(); ctx.arc(bx + sg * 8, y - alto, 2.6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(bx, y - alto * 0.55, 2.6, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.lineCap = 'butt';
+}
+
+/** ⭐ Estrella de mar y conchas sobre un banco de arena mojada. */
+function propEstrellaMar(x, y, w) {
+  const cx = x + w / 2;
+  const g = ctx.createLinearGradient(0, y, 0, y + 36);
+  g.addColorStop(0, '#f4dfb4'); g.addColorStop(1, '#c19a63');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 9);
+  ctx.quadraticCurveTo(cx, y - 2, x + w, y + 9);
+  ctx.lineTo(x + w - 5, y + 36);
+  ctx.quadraticCurveTo(cx, y + 44, x + 5, y + 36);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,88,44,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+  // Ondas de la marea
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.6;
+  for (let k = 0; k < 2; k++) {
+    ctx.beginPath();
+    for (let i = 0; i <= w; i += 10) {
+      const py = y + 16 + k * 8 + Math.sin((x + i) * 0.06) * 2;
+      i ? ctx.lineTo(x + i, py) : ctx.moveTo(x + i, py);
+    }
+    ctx.stroke();
+  }
+  // Estrella de mar, encima de la arena
+  const r = 11, ex = cx - w * 0.16;
+  ctx.save();
+  ctx.translate(ex, y - 3);
+  ctx.rotate(Math.sin(t * 0.01 + x * 0.01) * 0.12);
+  ctx.fillStyle = '#f2803c';
+  ctx.beginPath();
+  for (let k = 0; k < 10; k++) {
+    const ang = (k / 10) * Math.PI * 2 - Math.PI / 2;
+    const rad = k % 2 ? r * 0.44 : r;
+    const px = Math.cos(ang) * rad, py = Math.sin(ang) * rad * 0.92;
+    k ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(150,60,16,0.9)'; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,220,180,0.75)';
+  for (let k = 0; k < 5; k++) {
+    const ang = (k / 5) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.arc(Math.cos(ang) * r * 0.5, Math.sin(ang) * r * 0.46, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  // Concha de abanico al otro lado
+  const sx = cx + w * 0.2;
+  ctx.fillStyle = '#ffe3ea';
+  ctx.beginPath();
+  ctx.moveTo(sx, y - 1);
+  ctx.arc(sx, y - 1, 9, Math.PI, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(180,110,130,0.85)'; ctx.lineWidth = 1.6; ctx.stroke();
+  for (let k = -2; k <= 2; k++) {
+    ctx.beginPath();
+    ctx.moveTo(sx, y - 1);
+    ctx.lineTo(sx + k * 3.4, y - 9.6);
+    ctx.stroke();
+  }
+}
+
+/** 🌿 Algas y un pez que asoma entre ellas. */
+function propAlgas(x, y, w) {
+  const cx = x + w / 2;
+  // Algas ondeando, por detrás
+  for (let k = 0; k < Math.max(3, Math.round(w / 26)); k++) {
+    const bx = x + 8 + (w - 16) * (k / Math.max(1, Math.round(w / 26)));
+    const alto = 22 + h(x + k * 3.3) * 26;
+    const vaiv = Math.sin(t * 0.035 + k * 0.8 + x * 0.01) * 6;
+    ctx.strokeStyle = k % 2 ? '#2f9e6a' : '#47bd7d';
+    ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bx, y + 3);
+    ctx.quadraticCurveTo(bx + vaiv * 0.5, y - alto * 0.55, bx + vaiv, y - alto);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  // Roca de arrecife
+  const g = ctx.createLinearGradient(0, y, 0, y + 34);
+  g.addColorStop(0, '#8fbfa8'); g.addColorStop(1, '#4d7d6b');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 7);
+  ctx.quadraticCurveTo(cx, y - 2, x + w, y + 7);
+  ctx.lineTo(x + w - 6, y + 34);
+  ctx.quadraticCurveTo(cx, y + 42, x + 6, y + 34);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,72,60,0.85)'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  rrect(x + 6, y + 1, w - 12, 4, 2); ctx.fill();
+  // Pececillo nadando por delante de la roca
+  const px = cx + Math.sin(t * 0.02 + x * 0.01) * (w * 0.22);
+  const py = y + 20 + Math.sin(t * 0.05 + x) * 2;
+  const mira = Math.cos(t * 0.02 + x * 0.01) >= 0 ? 1 : -1;
+  ctx.save(); ctx.translate(px, py); ctx.scale(mira, 1);
+  ctx.fillStyle = '#ffb03a';
+  ctx.beginPath(); ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-7, 0); ctx.lineTo(-13, -4.5); ctx.lineTo(-13, 4.5);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,70,10,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#12202c';
+  ctx.beginPath(); ctx.arc(3.4, -1.2, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+/** ⚓ Ancla vieja medio enterrada en la arena. */
+function propAncla(x, y, w) {
+  const cx = x + w / 2;
+  const g = ctx.createLinearGradient(0, y, 0, y + 34);
+  g.addColorStop(0, '#efd9ae'); g.addColorStop(1, '#bb9459');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 9);
+  ctx.quadraticCurveTo(cx, y - 1, x + w, y + 9);
+  ctx.lineTo(x + w - 5, y + 34);
+  ctx.quadraticCurveTo(cx, y + 42, x + 5, y + 34);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,88,44,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Ancla, hacia arriba, con óxido
+  ctx.save();
+  ctx.translate(cx, y);
+  ctx.rotate(-0.22);
+  ctx.strokeStyle = '#6d7a86'; ctx.lineWidth = 5.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(0, -34); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-11, -26); ctx.lineTo(11, -26); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-13, -6);
+  ctx.quadraticCurveTo(-13, 6, 0, 6);
+  ctx.quadraticCurveTo(13, 6, 13, -6);
+  ctx.stroke();
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-13, -6); ctx.lineTo(-18, -11); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(13, -6); ctx.lineTo(18, -11); ctx.stroke();
+  ctx.strokeStyle = '#96a3ae'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, -36, 4.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.restore();
+  // Un poco de óxido
+  ctx.fillStyle = 'rgba(170,90,40,0.5)';
+  ctx.beginPath(); ctx.arc(cx + 5, y - 14, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx - 7, y - 4, 2.4, 0, Math.PI * 2); ctx.fill();
+}
+
 /* ---------------- OFICINA ---------------- */
 
 /** 🪑 Escritorio: el tablero es lo que se pisa. */
@@ -6894,6 +7201,10 @@ function pintarObjeto(nombre, p, x, y, w, hh) {
     case 'bolaNieve':       return propBolaNieve(x, y, w);
     case 'esfera':          return propEsfera(x, y, w);
     case 'antorcha':        return propAntorcha(x, y, w);
+    case 'coralGrande':     return propCoralGrande(x, y, w);
+    case 'estrellaMar':     return propEstrellaMar(x, y, w);
+    case 'algas':           return propAlgas(x, y, w);
+    case 'ancla':           return propAncla(x, y, w);
     case 'espadas':         return propEspadas(x, y, w);
     case 'escritorio':      return propEscritorio(x, y, w);
     case 'sillaOficina':    return propSillaOficina(x, y, w);
@@ -7011,7 +7322,7 @@ const OBJETOS_HONDOS = new Set(['noria', 'granero', 'torreon', 'muralla', 'casa'
    sólo salen donde hay sitio de verdad. */
 const OBJETOS_ALTOS = new Set(['arbol', 'pinoNevado', 'munieco', 'faro',
   'espantapajaros', 'velero', 'estatua', 'antorcha', 'plantaOficina', 'pizarra',
-  'veleta', 'cristalHielo', 'pantalla', 'sillaOficina']);
+  'veleta', 'cristalHielo', 'pantalla', 'sillaOficina', 'coralGrande', 'algas', 'ancla']);
 const ANCHO_FIGURA_ALTA = 155;
 
 function drawObjeto(p) {
@@ -7806,6 +8117,9 @@ function platCheckpoint(p) {
   const cx = x + w / 2;
   const tocado = (typeof player !== 'undefined' && player &&
                   Math.abs((player.spawnY || 0) - (y - PH)) < 1);
+  // El de ENTRADA de cada cumbre va más discreto: media bandera y medio haz.
+  // El que hay que ver desde lejos es el de la mitad del tramo.
+  const puerta = !!p.puerta;
 
   // HAZ DE LUZ. Es lo que hace que se vea desde lejos que ahí hay algo, y no
   // un apoyo más. Va en modo aditivo para que encienda sobre el cielo claro
@@ -7813,15 +8127,17 @@ function platCheckpoint(p) {
   const late = 0.5 + 0.5 * Math.sin(t * 0.045 + x * 0.01);
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const haz = ctx.createLinearGradient(0, y - 250, 0, y + 6);
+  const largoHaz = puerta ? 150 : 250;
+  const haz = ctx.createLinearGradient(0, y - largoHaz, 0, y + 6);
   const tono = tocado ? '80,255,140' : '255,220,120';
   haz.addColorStop(0, 'rgba(' + tono + ',0)');
-  haz.addColorStop(0.72, 'rgba(' + tono + ',' + (0.10 + late * 0.06).toFixed(3) + ')');
-  haz.addColorStop(1, 'rgba(' + tono + ',' + (0.34 + late * 0.14).toFixed(3) + ')');
+  const fuerza = puerta ? 0.55 : 1;
+  haz.addColorStop(0.72, 'rgba(' + tono + ',' + (fuerza * (0.10 + late * 0.06)).toFixed(3) + ')');
+  haz.addColorStop(1, 'rgba(' + tono + ',' + (fuerza * (0.34 + late * 0.14)).toFixed(3) + ')');
   ctx.fillStyle = haz;
   ctx.beginPath();
-  ctx.moveTo(cx - 15, y + 4); ctx.lineTo(cx - 46, y - 250);
-  ctx.lineTo(cx + 46, y - 250); ctx.lineTo(cx + 15, y + 4);
+  ctx.moveTo(cx - 13, y + 4); ctx.lineTo(cx - (puerta ? 32 : 46), y - largoHaz);
+  ctx.lineTo(cx + (puerta ? 32 : 46), y - largoHaz); ctx.lineTo(cx + 13, y + 4);
   ctx.closePath(); ctx.fill();
   ctx.restore();
 
@@ -7881,7 +8197,8 @@ function platCheckpoint(p) {
   // BANDERA. Mástil con base, y el paño ondeando: verde cuando ya es tuyo,
   // dorado mientras no lo has tocado.
   const mastil = cx - Math.min(46, w * 0.30);
-  const altoMastil = 66;
+  const altoMastil = puerta ? 46 : 66;
+  const anchoPano = puerta ? 27 : 40;
   ctx.fillStyle = '#6d7280';
   rrect(mastil - 7, y - 5, 14, 9, 3); ctx.fill();
   ctx.strokeStyle = 'rgba(30,36,46,0.9)'; ctx.lineWidth = 1.8; ctx.stroke();
@@ -7896,16 +8213,18 @@ function platCheckpoint(p) {
 
   // El paño: dos ondas que se mueven, con muesca en el extremo
   const onda = Math.sin(t * 0.09 + x * 0.02) * 4;
-  const pano = ctx.createLinearGradient(mastil, 0, mastil + 40, 0);
+  const pano = ctx.createLinearGradient(mastil, 0, mastil + anchoPano, 0);
   if (tocado) { pano.addColorStop(0, '#7bff5c'); pano.addColorStop(1, '#2fa845'); }
   else        { pano.addColorStop(0, '#ffe27a'); pano.addColorStop(1, '#e8a01c'); }
   ctx.fillStyle = pano;
   ctx.beginPath();
   ctx.moveTo(mastil + 1, y - altoMastil + 3);
-  ctx.quadraticCurveTo(mastil + 20, y - altoMastil - 2 + onda, mastil + 40, y - altoMastil + 5 + onda);
-  ctx.lineTo(mastil + 31, y - altoMastil + 15 + onda * 0.6);
-  ctx.lineTo(mastil + 40, y - altoMastil + 25 + onda);
-  ctx.quadraticCurveTo(mastil + 20, y - altoMastil + 20 + onda, mastil + 1, y - altoMastil + 23);
+  ctx.quadraticCurveTo(mastil + anchoPano * 0.5, y - altoMastil - 2 + onda,
+                       mastil + anchoPano, y - altoMastil + 5 + onda);
+  ctx.lineTo(mastil + anchoPano * 0.78, y - altoMastil + 15 + onda * 0.6);
+  ctx.lineTo(mastil + anchoPano, y - altoMastil + 25 + onda);
+  ctx.quadraticCurveTo(mastil + anchoPano * 0.5, y - altoMastil + 20 + onda,
+                       mastil + 1, y - altoMastil + 23);
   ctx.closePath(); ctx.fill();
   ctx.strokeStyle = 'rgba(40,30,10,0.75)'; ctx.lineWidth = 1.8; ctx.stroke();
 
@@ -7915,7 +8234,8 @@ function platCheckpoint(p) {
   ctx.textAlign = 'center';
   ctx.font = 'bold 11px "Segoe UI", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillText('CUMBRE ' + p.world + '/' + TOTAL_WORLDS, cx, y - 34);
+  ctx.fillText((puerta ? 'ENTRAS EN LA CUMBRE ' : 'CUMBRE ') + p.world + '/' + TOTAL_WORLDS,
+               cx, y - 34);
   ctx.font = 'bold 17px "Segoe UI", sans-serif';
   ctx.lineWidth = 3.5;
   ctx.strokeStyle = 'rgba(20,40,20,0.8)';
@@ -8344,6 +8664,10 @@ function draw() {
   // Jugador: el dibujo bueno está en drawPlayer(). Aquí quedaba pegado el
   // cuadro antiguo, y como nunca se llamaba a drawPlayer el personaje no
   // cambiaba por mucho que se editara aquella función.
+  // La estela, POR DETRÁS del personaje: es un rastro de por dónde has
+  // pasado, no algo que se te ponga delante de la cara.
+  pintarEstelas();
+
   drawPlayer();
 
   // Polvo y destello del doble salto, por encima del personaje
@@ -8512,12 +8836,22 @@ const GIM_PATAS = {
    indica dónde empieza; los valores negativos quedan por encima de la cabeza.
    O negro | H tela oscura | S plata | W blanco | R rojo | M marrón
    ==================================================================== */
+/* ====================================================================
+   ACCESORIOS
+   Ordenados de lo más sencillo a lo más exclusivo, y con el precio escrito
+   en la ficha. Los tres primeros vienen puestos; el último, la aureola, es
+   lo más caro de la tienda entera y late con luz propia.
+   `corto` es el nombre que va en la tarjeta y `nombre` el de la ficha larga:
+   recortar el nombre a golpe de replace() dejaba etiquetas ilegibles.
+   ==================================================================== */
 const ACCESORIOS = [
-  { id: 'ninguno', corto: 'Ninguno', nombre: 'Sin accesorio', fila: 0, px: [] },
+  { id: 'ninguno', corto: 'Ninguno', nombre: 'Sin accesorio', precio: 0, fila: 0, px: [] },
 
-  { id: 'gafas', corto: 'Gafas', nombre: 'Gafas de sol', fila: 0, px: [] },
-  { id: 'gorra', corto: 'Gorra', nombre: 'Gorra', fila: 0, px: [] },
-  { id: 'bombin', corto: 'Bombín', nombre: 'Bombín y bigote', fila: -5, px: [
+  { id: 'gafas',  corto: 'Gafas',  nombre: 'Gafas de sol', precio: 0, fila: 0, px: [] },
+  { id: 'gorra',  corto: 'Gorra',  nombre: 'Gorra', precio: 0, fila: 0, px: [] },
+  { id: 'antifaz', corto: 'Antifaz', nombre: 'Antifaz de héroe', precio: 35, fila: 0, px: [] },
+  { id: 'flores', corto: 'Flores', nombre: 'Corona de flores', precio: 45, fila: 0, px: [] },
+  { id: 'bombin', corto: 'Bombín', nombre: 'Bombín y bigote', precio: 55, fila: -5, px: [
       '......OOOO......',
       '.....OHHHHO.....',
       '.....OHHHHO.....',
@@ -8528,8 +8862,25 @@ const ACCESORIOS = [
       '...OOOO..OOOO...',
       '.....OOOOOO.....',
     ] } },
+  { id: 'chef',   corto: 'Chef',   nombre: 'Gorro de cocinero', precio: 65, fila: 0, px: [] },
+  { id: 'obrero', corto: 'Obra',   nombre: 'Casco de obra',  precio: 75, fila: 0, px: [] },
+  { id: 'fiesta', corto: 'Fiesta', nombre: 'Gorro de fiesta', precio: 85, fila: 0, px: [] },
+  { id: 'auriculares', corto: 'Cascos', nombre: 'Auriculares', precio: 95, fila: 0, px: [] },
+  { id: 'momia',  corto: 'Momia',  nombre: 'Vendas de momia', precio: 110, fila: 0, px: [] },
+  { id: 'reno',   corto: 'Reno',   nombre: 'Cuernos de reno', precio: 125, fila: 0, px: [] },
+  { id: 'bruja',  corto: 'Bruja',  nombre: 'Sombrero de bruja', precio: 140, fila: 0, px: [] },
+  { id: 'mexicano', corto: 'Charro', nombre: 'Sombrero charro', precio: 155, fila: 0, px: [] },
+  { id: 'vikingo', corto: 'Vikingo', nombre: 'Casco vikingo', precio: 175, fila: 0, px: [] },
+  { id: 'luchador', corto: 'Luchador', nombre: 'Máscara de luchador', precio: 190, fila: 0, px: [] },
+  { id: 'visor',  corto: 'Visor',  nombre: 'Visor de combate', precio: 210, fila: 0, px: [] },
+  { id: 'tiburon', corto: 'Tiburón', nombre: 'Capucha de tiburón', precio: 235, fila: -4, px: [
+      '.....OOOOOO.....',
+      '...OOSSSSSSOO...',
+      '..OSSSSSSSSSSO..',
+      '.OSSSSSSSSSSSSO.',
+    ], aleta: true, dientes: true },
 
-  { id: 'demonio', corto: 'Diablo', nombre: 'Cuernos y alas', fila: -5, px: [
+  { id: 'demonio', corto: 'Diablo', nombre: 'Cuernos y alas', precio: 265, fila: -5, px: [
       '..OO........OO..',
       '..OMO......OMO..',
       '...OMO....OMO...',
@@ -8537,24 +8888,309 @@ const ACCESORIOS = [
       '....OMOOOOMO....',
     ], alas: true },
 
-  { id: 'corona', corto: 'Corona',      nombre: 'Corona',        fila: 0, px: [] },
-  { id: 'obrero', corto: 'Obra',      nombre: 'Casco de obra',  fila: 0, px: [] },
-  { id: 'fiesta', corto: 'Fiesta',      nombre: 'Gorro de fiesta', fila: 0, px: [] },
-  { id: 'bruja', corto: 'Bruja',       nombre: 'Sombrero de bruja', fila: 0, px: [] },
-  { id: 'mexicano', corto: 'Charro',    nombre: 'Sombrero charro', fila: 0, px: [] },
-  { id: 'reno', corto: 'Reno',        nombre: 'Cuernos de reno', fila: 0, px: [] },
-  { id: 'luchador', corto: 'Luchador',    nombre: 'Máscara luchador', fila: 0, px: [] },
-  { id: 'momia', corto: 'Momia',       nombre: 'Vendas de momia', fila: 0, px: [] },
-  { id: 'auriculares', corto: 'Cascos', nombre: 'Auriculares',    fila: 0, px: [] },
-  { id: 'espacial', corto: 'Espacial',    nombre: 'Casco espacial',  fila: 0, px: [] },
-  { id: 'tiburon', corto: 'Tiburón', nombre: 'Capucha de tiburón', fila: -4, px: [
-      '.....OOOOOO.....',
-      '...OOSSSSSSOO...',
-      '..OSSSSSSSSSSO..',
-      '.OSSSSSSSSSSSSO.',
-    ], aleta: true, dientes: true },
+  { id: 'espacial', corto: 'Espacial', nombre: 'Casco espacial', precio: 300, fila: 0, px: [] },
+  { id: 'corona', corto: 'Corona', nombre: 'Corona de oro', precio: 350, fila: 0, px: [] },
+  { id: 'halo',   corto: 'Aureola', nombre: 'Aureola de luz', precio: 450, fila: 0, px: [] },
 ];
 let accesorioElegido = 0;
+
+/* ====================================================================
+   ESTELAS
+   El personaje va dejando cosas por donde pasa: al andar salen de los pies
+   y al saltar del cuerpo, viven poco más de un segundo y se apagan. No
+   afectan a la física ni a las colisiones —son puro adorno— y se dibujan
+   POR DETRÁS del personaje para que nunca le tapen la cara.
+
+   La última de la lista, «Del mundo», es la exclusiva: no tiene forma
+   propia, sino que suelta lo de la cumbre en la que estés —chispas de
+   fragua, peces, carpetas, trigo, copos o bits—, así que cambia seis veces
+   a lo largo de la subida.
+   ==================================================================== */
+const ESTELAS = [
+  { id: 'ninguna',  corto: 'Ninguna',  nombre: 'Sin estela',        tipo: 'ninguna',  precio: 0,   color: '#8fa8c0' },
+  { id: 'polvo',    corto: 'Polvo',    nombre: 'Polvo de camino',   tipo: 'polvo',    precio: 0,   color: '#e4eefa' },
+  { id: 'chispas',  corto: 'Chispas',  nombre: 'Chispas',           tipo: 'chispa',   precio: 0,   color: '#ffd166' },
+  { id: 'burbujas', corto: 'Burbujas', nombre: 'Burbujas',          tipo: 'burbuja',  precio: 40,  color: '#8fe6ff' },
+  { id: 'petalos',  corto: 'Pétalos',  nombre: 'Pétalos',           tipo: 'petalo',   precio: 55,  color: '#ff9ec7' },
+  { id: 'copos',    corto: 'Copos',    nombre: 'Copos de nieve',    tipo: 'copo',     precio: 70,  color: '#e8f6ff' },
+  { id: 'hojas',    corto: 'Hojas',    nombre: 'Hojas al viento',   tipo: 'hoja',     precio: 85,  color: '#8fd45c' },
+  { id: 'estrellas',corto: 'Estrellas',nombre: 'Estrellitas',       tipo: 'estrella', precio: 110, color: '#ffe27a' },
+  { id: 'bits',     corto: 'Bits',     nombre: 'Bits',              tipo: 'bit',      precio: 130, color: '#5ce1a0' },
+  { id: 'fuego',    corto: 'Fuego',    nombre: 'Rastro de fuego',   tipo: 'fuego',    precio: 155, color: '#ff7a2f' },
+  { id: 'peces',    corto: 'Peces',    nombre: 'Banco de peces',    tipo: 'pez',      precio: 180, color: '#ff9b52' },
+  { id: 'monedas',  corto: 'Monedas',  nombre: 'Lluvia de monedas', tipo: 'moneda',   precio: 220, color: '#ffd447' },
+  { id: 'arcoiris', corto: 'Arcoíris', nombre: 'Arcoíris',          tipo: 'arcoiris', precio: 280, color: '#ff6ec7' },
+  { id: 'mundo',    corto: 'Del mundo',nombre: 'Estela de la cumbre', tipo: 'mundo',  precio: 400, color: '#c39bff' },
+];
+let estelaElegida = 0;
+
+/* Qué suelta la estela exclusiva en cada cumbre, en el orden de WORLDS. */
+const ESTELA_DE_MUNDO = ['chispa', 'pez', 'papel', 'trigo', 'copo', 'bit'];
+
+let estelas = [];          // partículas vivas de la estela
+let ritmoEstela = 0;       // contador para no soltar una por fotograma
+
+function tipoDeEstela(est, mundo) {
+  if (!est) return 'ninguna';
+  if (est.tipo !== 'mundo') return est.tipo;
+  return ESTELA_DE_MUNDO[Math.max(0, Math.min(ESTELA_DE_MUNDO.length - 1, (mundo || 1) - 1))];
+}
+
+/** Una partícula de estela recién nacida, con el capricho propio de su tipo. */
+function nacerEstela(tipo, x, y, dir, aire) {
+  const q = { tipo, x, y, giro: (rnd() - 0.5) * 3, vgiro: (rnd() - 0.5) * 0.14,
+              vx: -dir * (0.5 + rnd() * 0.9), vy: -0.3 - rnd() * 0.7,
+              size: 4 + rnd() * 2.5, life: 62, vida0: 62,
+              peso: 0.012, roce: 0.955, tono: rnd() * 360 };
+  if (tipo === 'burbuja') { q.vy = -0.9 - rnd() * 0.8; q.peso = -0.016; q.size = 3.4 + rnd() * 3.4; q.life = q.vida0 = 76; }
+  else if (tipo === 'copo') { q.vy = -0.15 + rnd() * 0.35; q.peso = 0.008; q.size = 3.6 + rnd() * 2.4; q.life = q.vida0 = 92; }
+  else if (tipo === 'petalo' || tipo === 'hoja') { q.peso = 0.02; q.vgiro = (rnd() - 0.5) * 0.22; q.life = q.vida0 = 84; }
+  else if (tipo === 'moneda') { q.vy = -1.6 - rnd() * 0.9; q.peso = 0.09; q.size = 6.5; q.life = q.vida0 = 54; }
+  else if (tipo === 'chispa') { q.vy = -0.8 - rnd() * 1.3; q.peso = 0.055; q.size = 2.4 + rnd() * 2; q.life = q.vida0 = 34; }
+  else if (tipo === 'fuego') { q.vy = -0.5 - rnd() * 0.9; q.peso = -0.01; q.size = 5.5 + rnd() * 3; q.life = q.vida0 = 30; }
+  else if (tipo === 'pez') { q.vx = -dir * (1.1 + rnd() * 1.1); q.vy = (rnd() - 0.5) * 0.5; q.peso = 0; q.roce = 0.995; q.size = 6 + rnd() * 2.5; q.life = q.vida0 = 80; q.dir = -dir; }
+  else if (tipo === 'papel') { q.peso = 0.03; q.vgiro = (rnd() - 0.5) * 0.3; q.size = 6.5; q.life = q.vida0 = 70; }
+  else if (tipo === 'trigo') { q.peso = 0.02; q.size = 7; q.life = q.vida0 = 78; }
+  else if (tipo === 'bit') { q.vy = -0.6 - rnd() * 0.6; q.peso = 0.006; q.size = 4.4; q.life = q.vida0 = 58; q.uno = rnd() < 0.5; }
+  else if (tipo === 'estrella') { q.peso = 0.006; q.size = 5 + rnd() * 2.5; q.life = q.vida0 = 70; }
+  else if (tipo === 'arcoiris') { q.peso = -0.004; q.size = 6 + rnd() * 3; q.life = q.vida0 = 66; }
+  if (aire) { q.vx *= 0.6; q.vy -= 0.25; }
+  return q;
+}
+
+/**
+ * Suelta estela mientras el personaje ANDA o está EN EL AIRE. Parado no
+ * suelta nada: si no, se acumulaba un charco de adornos bajo los pies.
+ */
+function emitirEstela() {
+  const est = ESTELAS[Math.max(0, Math.min(ESTELAS.length - 1, estelaElegida))];
+  if (!est || est.tipo === 'ninguna') return;
+  const anda = player.onGround && Math.abs(player.vx) > 0.9;
+  const vuela = !player.onGround;
+  if (!anda && !vuela) { ritmoEstela = 0; return; }
+  ritmoEstela++;
+  if (ritmoEstela % (anda ? 5 : 4) !== 0) return;
+  if (estelas.length > 140) return;          // techo duro: es adorno, no física
+  const tipo = tipoDeEstela(est, mundoEnAltura(player.y));
+  const dir = player.facing || 1;
+  // Detrás del personaje: en el suelo a la altura de los pies, en el aire a
+  // media espalda, que es de donde parece que sale al saltar.
+  const x = player.x + PW / 2 - dir * (8 + rnd() * 7) + (rnd() - 0.5) * 6;
+  const y = anda ? player.y + PH - 4 - rnd() * 7
+                 : player.y + PH * (0.35 + rnd() * 0.45);
+  estelas.push(nacerEstela(tipo, x, y, dir, vuela));
+}
+
+function moverEstelas() {
+  for (let i = estelas.length - 1; i >= 0; i--) {
+    const q = estelas[i];
+    q.x += q.vx; q.y += q.vy;
+    q.vx *= q.roce;
+    q.vy = q.vy * 0.97 + q.peso;
+    q.giro += q.vgiro;
+    q.life--;
+    if (q.life <= 0) estelas.splice(i, 1);
+  }
+}
+
+/**
+ * El dibujo de UNA partícula, ya centrada en el origen. Está separado del
+ * bucle a propósito: las tarjetas de la tienda pintan con esto mismo, así
+ * que lo que ves en la ficha es exactamente lo que sale al jugar.
+ */
+function dibujoEstela(q, s) {
+    if (q.tipo === 'polvo') {
+      ctx.fillStyle = 'rgba(226,238,252,0.8)';
+      ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.fill();
+
+    } else if (q.tipo === 'chispa') {
+      ctx.shadowColor = '#ffb02e'; ctx.shadowBlur = 10;
+      ctx.rotate(q.giro);
+      ctx.fillStyle = '#ffe08a';
+      ctx.fillRect(-s * 0.35, -s, s * 0.7, s * 2);
+      ctx.fillStyle = '#fff6d0';
+      ctx.fillRect(-s * 0.2, -s * 0.5, s * 0.4, s);
+
+    } else if (q.tipo === 'burbuja') {
+      ctx.strokeStyle = 'rgba(190,240,255,0.95)'; ctx.lineWidth = 1.6;
+      ctx.fillStyle = 'rgba(130,220,255,0.22)';
+      ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath(); ctx.arc(-s * 0.34, -s * 0.36, s * 0.24, 0, Math.PI * 2); ctx.fill();
+
+    } else if (q.tipo === 'petalo') {
+      ctx.rotate(q.giro);
+      ctx.fillStyle = '#ff9ec7';
+      ctx.beginPath(); ctx.ellipse(0, 0, s * 0.95, s * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(190,60,120,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-s * 0.8, 0); ctx.lineTo(s * 0.8, 0); ctx.stroke();
+
+    } else if (q.tipo === 'hoja') {
+      ctx.rotate(q.giro);
+      ctx.fillStyle = '#7bc74a';
+      ctx.beginPath();
+      ctx.moveTo(-s, 0);
+      ctx.quadraticCurveTo(0, -s * 0.75, s, 0);
+      ctx.quadraticCurveTo(0, s * 0.75, -s, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(35,90,20,0.6)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-s, 0); ctx.lineTo(s, 0); ctx.stroke();
+
+    } else if (q.tipo === 'copo') {
+      ctx.rotate(q.giro);
+      ctx.strokeStyle = 'rgba(235,248,255,0.95)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+      for (let k = 0; k < 3; k++) {
+        const ang = (k / 3) * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(-Math.cos(ang) * s, -Math.sin(ang) * s);
+        ctx.lineTo(Math.cos(ang) * s, Math.sin(ang) * s);
+        ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+
+    } else if (q.tipo === 'fuego') {
+      const c = ctx.createRadialGradient(0, 0, 0, 0, 0, s);
+      c.addColorStop(0, 'rgba(255,246,190,0.95)');
+      c.addColorStop(0.45, 'rgba(255,150,40,0.8)');
+      c.addColorStop(1, 'rgba(190,40,10,0)');
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.fill();
+
+    } else if (q.tipo === 'moneda') {
+      const gir = Math.abs(Math.cos(q.giro * 2.4));
+      ctx.fillStyle = '#c98f10';
+      ctx.beginPath(); ctx.ellipse(0, 0, Math.max(1, s * gir), s, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffd447';
+      ctx.beginPath(); ctx.ellipse(0, 0, Math.max(0.7, s * gir * 0.72), s * 0.76, 0, 0, Math.PI * 2); ctx.fill();
+
+    } else if (q.tipo === 'pez') {
+      ctx.scale(q.dir || 1, 1);
+      const nada = Math.sin(q.life * 0.35) * 0.35;
+      ctx.rotate(nada * 0.3);
+      ctx.fillStyle = '#ff9b52';
+      ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.9, 0);
+      ctx.lineTo(-s * 1.7, -s * 0.55 + nada * 2);
+      ctx.lineTo(-s * 1.7, s * 0.55 + nada * 2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(s * 0.45, -s * 0.14, s * 0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#20303f';
+      ctx.beginPath(); ctx.arc(s * 0.48, -s * 0.14, s * 0.1, 0, Math.PI * 2); ctx.fill();
+
+    } else if (q.tipo === 'papel') {
+      ctx.rotate(q.giro);
+      ctx.fillStyle = '#f2f5fa';
+      ctx.fillRect(-s * 0.7, -s * 0.9, s * 1.4, s * 1.8);
+      ctx.strokeStyle = 'rgba(90,110,140,0.75)'; ctx.lineWidth = 1;
+      ctx.strokeRect(-s * 0.7, -s * 0.9, s * 1.4, s * 1.8);
+      ctx.fillStyle = 'rgba(90,110,140,0.6)';
+      for (let k = 0; k < 3; k++) ctx.fillRect(-s * 0.45, -s * 0.5 + k * s * 0.45, s * 0.9, 1.2);
+
+    } else if (q.tipo === 'trigo') {
+      ctx.rotate(q.giro * 0.4);
+      ctx.strokeStyle = '#c9a23a'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(0, s); ctx.lineTo(0, -s); ctx.stroke();
+      ctx.fillStyle = '#f0cd5e';
+      for (let k = 0; k < 4; k++) {
+        const yy = -s + k * s * 0.5;
+        for (const sg of [-1, 1]) {
+          ctx.beginPath();
+          ctx.ellipse(sg * s * 0.35, yy, s * 0.3, s * 0.16, sg * 0.7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+    } else if (q.tipo === 'bit') {
+      ctx.shadowColor = '#3ef0a0'; ctx.shadowBlur = 9;
+      ctx.fillStyle = '#7cffc4';
+      ctx.font = 'bold ' + (s * 2.1).toFixed(1) + 'px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(q.uno ? '1' : '0', 0, s * 0.75);
+      ctx.textAlign = 'left';
+
+    } else if (q.tipo === 'estrella') {
+      ctx.rotate(q.giro);
+      ctx.shadowColor = '#ffe27a'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#fff2b8';
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const r = k % 2 === 0 ? s : s * 0.38;
+        const ang = (k / 8) * Math.PI * 2;
+        const fx = Math.cos(ang) * r, fy = Math.sin(ang) * r;
+        if (k === 0) ctx.moveTo(fx, fy); else ctx.lineTo(fx, fy);
+      }
+      ctx.closePath(); ctx.fill();
+
+    } else if (q.tipo === 'arcoiris') {
+      const h = (q.tono + (q.vida0 - q.life) * 5) % 360;
+      ctx.shadowColor = hsl(h, 95, 62); ctx.shadowBlur = 12;
+      ctx.fillStyle = hsl(h, 95, 62);
+      ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+/** La estela viva, JUSTO ANTES del personaje. */
+function pintarEstelas() {
+  for (const q of estelas) {
+    if (q.x < cameraX - 80 || q.x > cameraX + viewWidth + 80) continue;
+    if (q.y < cameraY - 80 || q.y > cameraY + viewHeight + 80) continue;
+    const a = Math.max(0, Math.min(1, q.life / q.vida0));
+    ctx.save();
+    ctx.translate(q.x, q.y);
+    ctx.globalAlpha = a;
+    dibujoEstela(q, q.size * (0.45 + a * 0.55));
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+}
+
+/**
+ * Ficha de la tienda: media docena de partículas del tipo, en diagonal y
+ * apagándose, que es la forma de contar «esto te va dejando un rastro».
+ */
+function retratoEstela(cv, i) {
+  if (!cv || !ajustarLienzo(cv)) return;
+  const c2 = cv.getContext('2d');
+  const antes = ctx;
+  try {
+    ctx = c2;
+    c2.setTransform(1, 0, 0, 1, 0, 0);
+    c2.clearRect(0, 0, cv.width, cv.height);
+    const est = ESTELAS[i];
+    // Se trabaja en píxeles del LIENZO (en retina son el doble): así los
+    // tamaños salen nítidos sin escalar nada a mano.
+    const w = cv.width, h = cv.height;
+    c2.save();
+    if (!est || est.tipo === 'ninguna') {
+      c2.strokeStyle = 'rgba(150,170,195,0.5)';
+      c2.lineWidth = 2; c2.lineCap = 'round';
+      c2.beginPath();
+      c2.moveTo(w * 0.32, h * 0.34); c2.lineTo(w * 0.68, h * 0.66);
+      c2.moveTo(w * 0.68, h * 0.34); c2.lineTo(w * 0.32, h * 0.66);
+      c2.stroke();
+      c2.restore(); ctx = antes; return;
+    }
+    // La exclusiva enseña las seis a la vez: es justo lo que hace.
+    const seis = est.tipo === 'mundo';
+    const n = seis ? 6 : 6;
+    for (let k = 0; k < n; k++) {
+      const f = k / (n - 1);
+      const tipo = seis ? ESTELA_DE_MUNDO[k] : est.tipo;
+      const q = { tipo, giro: 0.6 + k * 0.5, tono: 20 + k * 55, uno: k % 2 === 0,
+                  dir: 1, life: 40 - k * 4, vida0: 40 };
+      c2.save();
+      c2.translate(w * (0.14 + f * 0.72), h * (0.70 - f * 0.42));
+      c2.globalAlpha = 1 - f * 0.62;
+      dibujoEstela(q, (h * 0.17) * (1 - f * 0.35));
+      c2.restore();
+    }
+    c2.restore();
+  } catch (e) { /* una ficha nunca debe romper el menú */ }
+  ctx = antes;
+}
 
 /** Dibuja el accesorio elegido sobre la rejilla del personaje. */
 function dibujarAccesorio(px, py, COLS, FILAS, paleta) {
@@ -8648,6 +9284,47 @@ function trajeDetras(piel, reloj, aire) {
     ctx.stroke();
     return;
   }
+
+  if (id === 'dino') {
+    // Cola gruesa con púas, que se mece con el paso
+    const mece = Math.sin(reloj * 1.5) * 0.2;
+    ctx.fillStyle = piel.medio;
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(-24, -10);
+    ctx.quadraticCurveTo(-46, -6 + mece * 14, -56, -22 + mece * 18);
+    ctx.quadraticCurveTo(-44, -14 + mece * 12, -24, -24);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = piel.claro;
+    for (let i = 0; i < 3; i++) {
+      const f = 0.30 + i * 0.24;
+      // Sobre el LOMO de la cola, no debajo: puestas en la línea recta
+      // entre extremos quedaban colgando por fuera del dibujo.
+      const px2 = -24 - 30 * f, py2 = -21 - 8 * f + mece * 17 * f;
+      ctx.beginPath();
+      ctx.moveTo(px2 - 4.5, py2); ctx.lineTo(px2, py2 - 9 - i); ctx.lineTo(px2 + 4.5, py2);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    return;
+  }
+
+  if (id === 'buzo') {
+    // Botella de aire a la espalda, con su cincha y su manómetro
+    ctx.fillStyle = '#c9d6e5';
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.4;
+    // A la ESPALDA de verdad: pegada al cuerpo quedaba dentro de la
+    // silueta (que llega a ±34) y no se veía la botella por ninguna parte.
+    rrect(-53, -50, 16, 36, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#f2a93b';
+    rrect(-51.5, -46, 13, 7, 3); ctx.fill();
+    ctx.strokeStyle = '#8fa3bd'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-45, -51);
+    ctx.quadraticCurveTo(-40, -63, -24, -50);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    return;
+  }
 }
 
 /** Lo que se pinta sobre el cuerpo, recortado por su silueta. */
@@ -8730,6 +9407,45 @@ function trajeDentro(piel) {
       ctx.lineTo(-16, yy + 5); ctx.quadraticCurveTo(-25, yy + 6.5, -34, yy + 4.5);
       ctx.closePath(); ctx.fill();
     }
+    return;
+  }
+
+  if (id === 'dino') {
+    // Panza clara a placas: es lo que hace que se lea como bicho y no color
+    // La panza va por DEBAJO de la boca: subiéndola tapaba media cara.
+    ctx.fillStyle = 'rgba(255,246,205,0.92)';
+    ctx.beginPath();
+    ctx.moveTo(-17, -18);
+    ctx.quadraticCurveTo(0, -22, 17, -18);
+    ctx.lineTo(17, 4); ctx.lineTo(-17, 4);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,96,20,0.5)'; ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const yy = -13 + i * 6;
+      ctx.beginPath(); ctx.moveTo(-16, yy); ctx.lineTo(16, yy); ctx.stroke();
+    }
+    // Manchas del lomo
+    ctx.fillStyle = 'rgba(30,86,14,0.42)';
+    for (const [sx, sy, r] of [[-26, -44, 5], [24, -40, 4.4], [-18, -52, 3.6], [17, -51, 3.2]]) {
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+    }
+    return;
+  }
+
+  if (id === 'buzo') {
+    // Neopreno oscuro con cremallera y cinturón de lastre
+    ctx.fillStyle = 'rgba(18,30,48,0.86)';
+    ctx.beginPath();
+    ctx.moveTo(-40, -24);
+    ctx.quadraticCurveTo(0, -30, 40, -24);
+    ctx.lineTo(40, 6); ctx.lineTo(-40, 6);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(180,214,240,0.65)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -27); ctx.lineTo(0, 2); ctx.stroke();
+    ctx.fillStyle = '#f2a93b';
+    ctx.fillRect(-40, -8, 80, 6);
+    ctx.fillStyle = '#8a5c10';
+    ctx.fillRect(-6, -9.5, 12, 9);
     return;
   }
 }
@@ -8821,6 +9537,40 @@ function trajeDelante(piel, reloj) {
     ctx.strokeStyle = '#000000'; ctx.lineWidth = 3.4; ctx.stroke();
     return;
   }
+
+  if (id === 'dino') {
+    // Cresta de púas por la coronilla, de perfil hacia atrás
+    ctx.fillStyle = piel.claro;
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.4;
+    for (const [px2, py2, h] of [[-16, -50, 9], [-6, -56, 12], [5, -57, 12], [15, -52, 9]]) {
+      ctx.beginPath();
+      ctx.moveTo(px2 - 5, py2); ctx.lineTo(px2, py2 - h); ctx.lineTo(px2 + 5, py2);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    return;
+  }
+
+  if (id === 'buzo') {
+    // Máscara de buceo. Va ANTES que los ojos a propósito: el cristal queda
+    // detrás y los ojos se ven dentro, que es como se lleva una máscara.
+    ctx.fillStyle = 'rgba(120,205,235,0.42)';
+    ctx.strokeStyle = '#0f1522'; ctx.lineWidth = 3;
+    rrect(-25, -42, 50, 20, 8); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-19, -38); ctx.lineTo(-11, -40); ctx.stroke();
+    // Cincha de la máscara
+    ctx.strokeStyle = '#f2a93b'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-25, -35); ctx.lineTo(-33, -34); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(25, -35); ctx.lineTo(33, -34); ctx.stroke();
+    // Tubo del respirador, a un lado
+    ctx.strokeStyle = '#e6ecf5'; ctx.lineWidth = 4.4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(27, -30);
+    ctx.quadraticCurveTo(35, -44, 30, -58);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    return;
+  }
 }
 
 function drawPlayer() {
@@ -8832,7 +9582,7 @@ function drawPlayer() {
   // Lo que está haciendo, para que la cara lo cuente
   const cayendo = player.vy > 7;
   const subiendo = player.vy < -3;
-  const piel = SKINS[Math.max(0, Math.min(SKINS.length - 1, skinElegida))];
+  const piel = pielDe(skinElegida);
   // La escala se calcula sobre el ancho REAL del dibujo (58 unidades), no
   // sobre un valor antiguo: si no, el personaje se sale de su caja.
   // El dibujo mide 64 de ancho. ESCALA_PJ lo agranda SIN tocar la caja de
@@ -9067,6 +9817,172 @@ function dibujarAccesorioIlustrado(piel, contorno, dx, aire, corriendo) {
   dx = dx || 0;
   // Los sombreros se inclinan un poco hacia donde se avanza, y más al saltar
   const inclina = (corriendo ? 0.07 : 0.03) + (aire ? 0.05 : 0);
+
+  if (id === 'antifaz') {
+    // Antifaz de héroe: se pinta ENCIMA de la cara, así que lleva los dos
+    // huecos recortados de verdad (regla par-impar) y los ojos siguen ahí.
+    ctx.save();
+    ctx.translate(dx, 0);
+    ctx.beginPath();
+    ctx.moveTo(-26, -41);
+    ctx.quadraticCurveTo(0, -46, 26, -41);
+    ctx.quadraticCurveTo(25, -30, 15, -26);
+    ctx.quadraticCurveTo(0, -23, -15, -26);
+    ctx.quadraticCurveTo(-25, -30, -26, -41);
+    ctx.closePath();
+    ctx.moveTo(-5, -33.5); ctx.arc(-11, -33.5, 6, 0, Math.PI * 2, true);
+    ctx.moveTo(17, -33.5); ctx.arc(11, -33.5, 6, 0, Math.PI * 2, true);
+    const anti = ctx.createLinearGradient(0, -45, 0, -25);
+    anti.addColorStop(0, '#4f7dff'); anti.addColorStop(1, '#17287e');
+    ctx.fillStyle = anti;
+    ctx.fill('evenodd');
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.6;
+    ctx.stroke();
+    // Un filo claro arriba para que no sea una mancha plana
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-22, -41); ctx.quadraticCurveTo(0, -45, 22, -41);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'flores') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    // Aro de mimbre y encima las flores, cada una con su tono
+    ctx.strokeStyle = '#7a5a2a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-21, -45); ctx.quadraticCurveTo(0, -55, 21, -45);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    const tonos = ['#ff8fbd', '#ffe27a', '#b8a1ff', '#8fe0a8', '#ff9f6b'];
+    const sitios = [[-19, -46], [-10, -51], [0, -53], [10, -51], [19, -46]];
+    for (let i = 0; i < sitios.length; i++) {
+      const [fx, fy] = sitios[i];
+      ctx.fillStyle = tonos[i];
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2 + i;
+        ctx.beginPath();
+        ctx.ellipse(fx + Math.cos(a) * 3.1, fy + Math.sin(a) * 3.1, 2.5, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#ffd34d';
+      ctx.beginPath(); ctx.arc(fx, fy, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'chef') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    // El copete va de UNA pieza: tres bollos sueltos dejaban costuras
+    // negras cruzando el gorro.
+    ctx.fillStyle = '#f7f9fc';
+    ctx.strokeStyle = contorno; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-16, -54);
+    ctx.bezierCurveTo(-28, -54, -27, -71, -12, -69);
+    ctx.bezierCurveTo(-10, -80, 10, -80, 12, -69);
+    ctx.bezierCurveTo(27, -71, 28, -54, 16, -54);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Banda de la base, encima del copete
+    ctx.fillStyle = '#ffffff';
+    rrect(-18, -56, 36, 12, 3.5); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(150,168,190,0.55)'; ctx.lineWidth = 1.4;
+    for (const lx of [-9, 0, 9]) {
+      ctx.beginPath(); ctx.moveTo(lx, -54.5); ctx.lineTo(lx, -45.5); ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'vikingo') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    // Los cuernos van PRIMERO: dibujados después, su arranque quedaba
+    // pintado por encima del casco y parecía que le cruzaban la frente.
+    ctx.fillStyle = '#efe3c8';
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.8;
+    for (const sg of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(sg * 14, -55);
+      ctx.quadraticCurveTo(sg * 36, -63, sg * 31, -78);
+      ctx.quadraticCurveTo(sg * 31, -62, sg * 13, -49);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    const met = ctx.createLinearGradient(0, -60, 0, -42);
+    met.addColorStop(0, '#c6cfdb'); met.addColorStop(1, '#6d7789');
+    ctx.fillStyle = met;
+    ctx.beginPath();
+    ctx.moveTo(-21, -43);
+    ctx.bezierCurveTo(-22, -63, 22, -63, 21, -43);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 3; ctx.stroke();
+    // Nasal y remaches
+    ctx.fillStyle = '#8b95a6';
+    rrect(-3.5, -50, 7, 15, 2.5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#4e5766';
+    for (const rx of [-14, 14]) { ctx.beginPath(); ctx.arc(rx, -48, 2.2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'visor') {
+    // Visor de una pieza con barrido: se lee de lejos, que es de lo que se
+    // trataba con los accesorios que no se distinguían.
+    ctx.save();
+    ctx.translate(dx, 0);
+    ctx.fillStyle = '#12161f';
+    ctx.beginPath();
+    ctx.moveTo(-30, -41);
+    ctx.quadraticCurveTo(0, -46, 30, -41);
+    ctx.quadraticCurveTo(28, -26, 0, -24);
+    ctx.quadraticCurveTo(-28, -26, -30, -41);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.save();
+    ctx.clip();
+    const bar = ctx.createLinearGradient(0, -42, 0, -25);
+    bar.addColorStop(0, 'rgba(90,255,232,0.85)');
+    bar.addColorStop(1, 'rgba(20,90,150,0.55)');
+    ctx.fillStyle = bar;
+    ctx.fillRect(-30, -42, 60, 18);
+    // El punto de mira barre de lado a lado
+    const bx = Math.sin(t * 0.06) * 20;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(bx - 2, -42, 4, 18);
+    ctx.restore();
+    ctx.strokeStyle = '#5affe8'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(-26, -33); ctx.lineTo(26, -33); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'halo') {
+    // LO MÁS CARO DE LA TIENDA: tiene que notarse en movimiento, no solo en
+    // la tarjeta. El aro late, gira en perspectiva y suelta chispas de luz.
+    ctx.save(); ctx.translate(dx * 0.5, 0);
+    const late = 1 + Math.sin(t * 0.07) * 0.12;
+    const flota = Math.sin(t * 0.045) * 2.2;
+    ctx.shadowColor = 'rgba(255,226,122,0.95)';
+    ctx.shadowBlur = 22 * late;
+    ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(0, -70 + flota, 17 * late, 5.4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, -70 + flota, 17 * late, 5.4, 0, Math.PI * 0.9, Math.PI * 1.9);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    for (let i = 0; i < 4; i++) {
+      const a = t * 0.03 + i * (Math.PI / 2);
+      const px2 = Math.cos(a) * 22, py2 = -66 + Math.sin(a * 1.3) * 6 + flota;
+      ctx.fillStyle = 'rgba(255,240,190,' + (0.35 + 0.4 * Math.abs(Math.sin(a))).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(px2, py2, 2.1, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
 
   if (id === 'gafas') {
     // Las gafas van sobre los ojos, así que se desplazan igual que ellos
@@ -11540,6 +12456,7 @@ function arrancarPartida() {
   cameraX = 0; cameraY = player.y + PH / 2 - viewHeight / 2;
   currentWorld = 1; deaths = 0; tiempoJuego = 0; gameOver = false;
   alturaMetros = 0; recordMetros = 0; particles = []; pedirSalto = false;
+  estelas = []; ritmoEstela = 0;
   tiempoAcumulado = 0; avisado = {};
   puntos = 0; monedasTomadas = 0; cadena = 0; cadenaTimer = 0;
   for (const m of monedas) m.tomada = false;
@@ -11588,21 +12505,33 @@ function ajustarLienzo(cv) {
    tienda. Declarada abajo daba «Cannot access before initialization». */
 let mensajeTienda = false;
 
-const GRATIS_COLOR = 4;      // los cuatro primeros vienen puestos
-const GRATIS_ACC = 3;
+/* El precio ya no sale de una fórmula sobre la posición: cada ficha lo trae
+   escrito. Así se puede reordenar el catálogo de lo más sencillo a lo más
+   exclusivo sin que los números se muevan solos. */
+function precioColor(i)  { const x = SKINS[i];      return (x && x.precio) || 0; }
+function precioAcc(i)    { const x = ACCESORIOS[i]; return (x && x.precio) || 0; }
+function precioEstela(i) { const x = ESTELAS[i];    return (x && x.precio) || 0; }
 
-function precioColor(i) {
-  if (i < GRATIS_COLOR) return 0;
-  return 40 + (i - GRATIS_COLOR) * 20;      // 40, 60, 80 … hasta 300
-}
-function precioAcc(i) {
-  if (i < GRATIS_ACC) return 0;
-  return 60 + (i - GRATIS_ACC) * 25;        // 60, 85, 110 … hasta 360
-}
+/* Identificador estable de cada artículo. Va por NOMBRE, no por posición:
+   con la llave numérica de antes, reordenar el catálogo le cambiaba a la
+   gente lo que tenía comprado. */
+function llaveColor(i)  { return 'c:' + ((SKINS[i] || {}).id || i); }
+function llaveAcc(i)    { return 'a:' + ((ACCESORIOS[i] || {}).id || i); }
+function llaveEstela(i) { return 'e:' + ((ESTELAS[i] || {}).id || i); }
 
-/** Identificador estable de cada artículo, para guardarlo comprado. */
-function llaveColor(i) { return 'c' + i; }
-function llaveAcc(i) { return 'a' + i; }
+/* El orden que tenían los catálogos cuando las llaves eran números, para
+   poder traducir un guardado viejo sin que nadie pierda sus compras. */
+const ORDEN_VIEJO_COLOR = ['cian', 'verde', 'naranja', 'morado', 'rosa', 'dorado',
+  'rojo', 'azul', 'blanco', 'grafito', 'lima', 'choco', 'abeja', 'fantasma',
+  'calabaza', 'robot', 'sandia', 'gato'];
+const ORDEN_VIEJO_ACC = ['ninguno', 'gafas', 'gorra', 'bombin', 'demonio', 'corona',
+  'obrero', 'fiesta', 'bruja', 'mexicano', 'reno', 'luchador', 'momia',
+  'auriculares', 'espacial', 'tiburon'];
+
+function indicePorId(lista, id, porDefecto) {
+  for (let i = 0; i < lista.length; i++) if (lista[i].id === id) return i;
+  return porDefecto || 0;
+}
 
 function esMio(llave, precio) {
   return precio === 0 || (marcas.compradas || []).indexOf(llave) >= 0;
@@ -11675,9 +12604,31 @@ function cargarGuardado() {
   if (d.marcas) Object.assign(marcas, d.marcas);
   if (!Array.isArray(marcas.compradas)) marcas.compradas = [];
   if (typeof marcas.banco !== 'number' || !isFinite(marcas.banco)) marcas.banco = 0;
+  // Guardados viejos: las llaves eran la POSICIÓN en el catálogo. Se
+  // traducen a la llave por nombre para que nadie pierda lo comprado al
+  // reordenar la tienda.
+  const trad = [];
+  for (const k of marcas.compradas) {
+    let m = /^c(\d+)$/.exec(k);
+    if (m && ORDEN_VIEJO_COLOR[+m[1]]) { trad.push('c:' + ORDEN_VIEJO_COLOR[+m[1]]); continue; }
+    m = /^a(\d+)$/.exec(k);
+    if (m && ORDEN_VIEJO_ACC[+m[1]]) { trad.push('a:' + ORDEN_VIEJO_ACC[+m[1]]); continue; }
+    trad.push(k);
+  }
+  marcas.compradas = trad.filter((k, i) => trad.indexOf(k) === i);
+
   const p = d.prefs || {};
-  if (typeof p.skin === 'number' && SKINS[p.skin]) skinElegida = p.skin;
-  if (typeof p.acc === 'number' && ACCESORIOS[p.acc]) accesorioElegido = p.acc;
+  // Las preferencias también pasan de número a nombre; se aceptan las dos.
+  if (typeof p.skin === 'string') skinElegida = indicePorId(SKINS, p.skin, 0);
+  else if (typeof p.skin === 'number' && ORDEN_VIEJO_COLOR[p.skin]) skinElegida = indicePorId(SKINS, ORDEN_VIEJO_COLOR[p.skin], 0);
+  if (typeof p.acc === 'string') accesorioElegido = indicePorId(ACCESORIOS, p.acc, 0);
+  else if (typeof p.acc === 'number' && ORDEN_VIEJO_ACC[p.acc]) accesorioElegido = indicePorId(ACCESORIOS, ORDEN_VIEJO_ACC[p.acc], 0);
+  if (typeof p.estela === 'string') estelaElegida = indicePorId(ESTELAS, p.estela, 0);
+  if (p.mezcla && typeof p.mezcla === 'object') {
+    for (const k of ['tono', 'viveza', 'brillo', 'patas']) {
+      if (typeof p.mezcla[k] === 'number' && isFinite(p.mezcla[k])) mezclaColor[k] = p.mezcla[k];
+    }
+  }
   if (typeof p.sonido === 'boolean') musicaOn = p.sonido;
   if (typeof p.nombre === 'string' && p.nombre) {
     nombreJugador = p.nombre;
@@ -11691,7 +12642,10 @@ function guardar() {
   try {
     localStorage.setItem(CLAVE_GUARDADO, JSON.stringify({
       marcas,
-      prefs: { skin: skinElegida, acc: accesorioElegido,
+      prefs: { skin: (SKINS[skinElegida] || {}).id,
+               acc: (ACCESORIOS[accesorioElegido] || {}).id,
+               estela: (ESTELAS[estelaElegida] || {}).id,
+               mezcla: mezclaColor,
                sonido: musicaOn, nombre: nombreJugador },
     }));
   } catch (e) {}
@@ -11775,7 +12729,7 @@ const GUIA_MECANICAS = [
 const TONO_CUMBRE = ['#ff9f43', '#4bc0e8', '#7f8cff', '#6fd67f', '#a8e4fb', '#c88bff'];
 /* El tema de cada cumbre. Está en el menú porque saber que la tercera es una
    oficina y la quinta un glaciar es la mitad de la gracia de subir. */
-const TEMA_CUMBRE = ['Medieval', 'Playa', 'Oficina', 'Granja', 'Nieve', 'Tecnológico'];
+const TEMA_CUMBRE = ['Medieval', 'Arrecife', 'Oficina', 'Granja', 'Glaciar', 'Ciberespacio'];
 
 /** Las seis cumbres con su tramo de metros, sacado del nivel de verdad. */
 function pintarCumbres() {
@@ -11819,37 +12773,85 @@ function pintarMecanicas() {
 function refrescarPestanas() {
   const cc = document.getElementById('cuenta-color');
   const ca = document.getElementById('cuenta-acc');
+  const ce = document.getElementById('cuenta-est');
   if (cc) cc.textContent = SKINS.length;
   if (ca) ca.textContent = ACCESORIOS.length;
+  if (ce) ce.textContent = ESTELAS.length;
   const pista = document.getElementById('pista-eleccion');
   // Mientras hay un mensaje de la tienda («te faltan 40 monedas», «¡Rosa
   // desbloqueado!») no se pisa: es el único sitio donde se contesta al que
   // acaba de pulsar, y cualquier repintado se lo llevaba por delante.
   if (pista && !mensajeTienda) {
     const acc = ACCESORIOS[accesorioElegido];
+    const est = ESTELAS[estelaElegida];
     pista.innerHTML = 'Llevas <b>' + SKINS[skinElegida].nombre + '</b>' +
       (acc && acc.id !== 'ninguno' ? ' con <b>' + (acc.corto || acc.nombre) + '</b>' : ', sin accesorio') +
-      '<em>' + (SKINS.length * ACCESORIOS.length) + ' escaladores distintos</em>';
+      (est && est.tipo !== 'ninguna' ? ' y estela de <b>' + est.corto + '</b>' : '') +
+      '<em>' + (SKINS.length * ACCESORIOS.length * ESTELAS.length).toLocaleString('es-ES') +
+      ' escaladores distintos</em>';
+  }
+}
+
+/** El mezclador sólo tiene sentido con el color «A tu gusto» puesto. */
+function refrescarMezclador() {
+  const caja = document.getElementById('mezclador');
+  if (!caja) return;
+  const puesto = !!(SKINS[skinElegida] || {}).mezcla;
+  const enColor = !document.getElementById('skins').classList.contains('oculta');
+  caja.classList.toggle('oculta', !(puesto && enColor));
+  if (!puesto) return;
+  // Los mandos se montan ANTES de leer el guardado, así que aquí se ponen
+  // al día: si no, al recargar salían en su valor de fábrica aunque el
+  // personaje se pintara con el color guardado.
+  for (const [id, campo] of [['mz-tono', 'tono'], ['mz-viveza', 'viveza'],
+                             ['mz-brillo', 'brillo'], ['mz-patas', 'patas']]) {
+    const el = document.getElementById(id);
+    if (el && +el.value !== mezclaColor[campo]) el.value = mezclaColor[campo];
+  }
+  const piel = pielDe(skinElegida);
+  const muestras = document.getElementById('mz-muestras');
+  if (muestras) {
+    const tonos = [piel.claro, piel.medio, piel.oscuro, piel.pata];
+    Array.from(muestras.children).forEach((el, k) => { el.style.background = tonos[k]; });
   }
 }
 
 (function montarPestanas() {
-  const tColor = document.getElementById('tab-color');
-  const tAcc = document.getElementById('tab-acc');
-  const gColor = document.getElementById('skins');
-  const gAcc = document.getElementById('accesorios');
-  if (!tColor || !tAcc) return;
-  const mostrar = (esColor) => {
-    tColor.classList.toggle('activa', esColor);
-    tAcc.classList.toggle('activa', !esColor);
-    gColor.classList.toggle('oculta', !esColor);
-    gAcc.classList.toggle('oculta', esColor);
+  const tabs = [
+    ['tab-color', 'skins'],
+    ['tab-acc',   'accesorios'],
+    ['tab-est',   'estelas-lista'],
+  ];
+  const botones = tabs.map(([b]) => document.getElementById(b));
+  const rejillas = tabs.map(([, g]) => document.getElementById(g));
+  if (botones.some((b) => !b) || rejillas.some((g) => !g)) return;
+  const mostrar = (n) => {
+    botones.forEach((b, k) => b.classList.toggle('activa', k === n));
+    rejillas.forEach((g, k) => g.classList.toggle('oculta', k !== n));
     // Las tarjetas de la rejilla que estaba oculta no tienen tamaño hasta
     // que se muestran: hay que repintarlas al cambiar de pestaña.
     refrescarMenu();
+    refrescarMezclador();
   };
-  tColor.addEventListener('click', () => mostrar(true));
-  tAcc.addEventListener('click', () => mostrar(false));
+  botones.forEach((b, k) => b.addEventListener('click', () => mostrar(k)));
+})();
+
+(function montarMezclador() {
+  const mandos = [['mz-tono', 'tono'], ['mz-viveza', 'viveza'],
+                  ['mz-brillo', 'brillo'], ['mz-patas', 'patas']];
+  for (const [id, campo] of mandos) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.value = mezclaColor[campo];
+    el.addEventListener('input', () => {
+      mezclaColor[campo] = +el.value;
+      // Mover un mando repinta 20 tarjetas: guardar en cada paso serían
+      // cientos de escrituras arrastrando el dedo. Se apunta y se escribe.
+      refrescarMenu();
+      refrescarMezclador();
+      guardarPronto();
+    });
+  }
 })();
 
 /** Los récords en la cabecera del menú, en tarjetas legibles de un vistazo. */
@@ -11914,8 +12916,9 @@ cargarGuardado();
   const refrescarTodo = () => {
     if (gAcc) pintarEstado(gAcc, accesorioElegido, precioAcc, llaveAcc);
     if (gCol) pintarEstado(gCol, skinElegida, precioColor, llaveColor);
+    if (gEst) pintarEstado(gEst, estelaElegida, precioEstela, llaveEstela);
     pintarHucha();
-    refrescarMenu(); refrescarPestanas(); guardar();
+    refrescarMenu(); refrescarPestanas(); refrescarMezclador(); guardar();
   };
 
   const tarjeta = (etiqueta) => {
@@ -11971,10 +12974,30 @@ cargarGuardado();
     });
   }
 
-  // El color y el accesorio guardados pueden no estar comprados (partida
-  // vieja, o guardado a mano): se vuelve a lo primero que sí es tuyo.
+  const gEst = document.getElementById('estelas-lista');
+  if (gEst) {
+    ESTELAS.forEach((e, i) => {
+      const d = tarjeta(e.corto);
+      d.title = e.nombre;
+      d.addEventListener('click', () => {
+        const precio = precioEstela(i), llave = llaveEstela(i);
+        if (!esMio(llave, precio)) {
+          const r = comprar(llave, precio);
+          if (r === 'caro') { refrescarTodo(); avisoTienda(precio - (marcas.banco || 0)); return; }
+          refrescarTodo(); celebrarCompra(e.corto);
+        }
+        estelaElegida = i;
+        refrescarTodo();
+      });
+      gEst.appendChild(d); d._est = i;
+    });
+  }
+
+  // El color, el accesorio y la estela guardados pueden no estar comprados
+  // (partida vieja, o guardado a mano): se vuelve a lo primero que sí es tuyo.
   if (!esMio(llaveColor(skinElegida), precioColor(skinElegida))) skinElegida = 0;
   if (!esMio(llaveAcc(accesorioElegido), precioAcc(accesorioElegido))) accesorioElegido = 0;
+  if (!esMio(llaveEstela(estelaElegida), precioEstela(estelaElegida))) estelaElegida = 0;
   refrescarTodo();
   window.refrescarTienda = refrescarTodo;
 })();
@@ -12064,6 +13087,8 @@ function refrescarMenu() {
   if (cs) Array.from(cs.children).forEach((d) => retrato(d._cv, d._skin, accesorioElegido));
   const ca = document.getElementById('accesorios');
   if (ca) Array.from(ca.children).forEach((d) => retrato(d._cv, skinElegida, d._acc));
+  const ce = document.getElementById('estelas-lista');
+  if (ce) Array.from(ce.children).forEach((d) => retratoEstela(d._cv, d._est));
 }
 
 /* Vista previa en vivo: se dibuja el personaje elegido en el menú */
