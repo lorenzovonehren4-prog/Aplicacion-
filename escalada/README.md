@@ -158,6 +158,83 @@ Enseñaba el nivel pero no decía nada de la subida. Ahora:
 La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
 se pisaba con los nombres de las cumbres.
 
+### Una sola partida, música calmada y los objetos arreglados
+
+Los tres niveles y las vidas duraron una versión: **se quitan**. Vuelve la
+partida única de 0 a 1000 m, sin límite de caídas y con el checkpoint de cada
+cumbre como única red. Los drones se quedan: no eran un «modo de juego» sino
+un obstáculo del mundo, y están verificados.
+
+**La música metía prisa.** Eran dieciocho notas a seis por segundo que además
+*aceleraban* en cada cumbre: en un juego donde te caes cada dos por tres, eso
+es lo contrario de lo que hace falta. Ahora son cuatro acordes lentos —segundo
+y medio cada uno— con las notas entrando despacio (`nota()` acepta el tiempo
+de ataque) y a un tercio del volumen. De 9 notas por segundo a 2,4.
+
+**Los objetos.** El repaso empezó por mirarlos: una hoja de contactos que
+dibuja cada uno sobre una línea roja que marca dónde acaba el apoyo. Lo que
+salió:
+
+| Objeto | Qué le pasaba | Qué es ahora |
+|---|---|---|
+| Farol | Un rectángulo amarillo | Farol con tapa a dos aguas, cristales y llama |
+| Roca | Una lenteja plana | Peñasco con caras, grietas y repisa con musgo |
+| Lancha | El casco colgaba, la cabina flotaba | Cubierta de teca, casco debajo, cabina empotrada |
+| Boya | Un aro pinchado en una barra | Boya cónica maciza con su farolito |
+| Flotador | Un aro pequeño bajo una tabla | La rosquilla ES el apoyo, tumbada |
+| Reja | Los postes colgaban por debajo | Marco con los barrotes dentro |
+| Sombrilla | Una raya roja sin volumen | Lona con gajos sobre un montón de arena |
+| Panel | El soporte colgaba | La placa es el apoyo, con bastidor macizo |
+| Árbol, muñeco, faro | Se estiraban al ancho del apoyo | Proporción fija sobre una base ancha |
+
+Esa última fila es la regla que faltaba. Un árbol estirado a los 240 px de un
+apoyo es un trapecio; un muñeco de nieve, una tortita. Ahora la figura
+conserva su tamaño y se planta sobre una **base que sí llena el apoyo**
+(`baseAncha()`), que es lo que se pisa.
+
+**Objetos nuevos**: faro, pelota, castillo, casa, lápida y árbol de hoja.
+
+**Y los decorados se van.** Casa, lápida, iglú, muñeco y árboles eran fondo
+*y* objeto a la vez. Ahora son sólo objeto, del catálogo, y se pisan. El
+resto del decorado se retira entero: plantaba farolas e iglús al lado de los
+apoyos, y en un juego donde TODO flota, un decorado de pie sobre nada se ve
+roto —había farolas clavadas en el cielo—.
+
+### Las plataformas que se mueven te metían en el techo
+
+No se buscó a ojo: un probador pone al jugador encima de **cada una de las 55
+plataformas móviles** y simula 420 fotogramas con la física de verdad,
+comprobando que no acabe dentro de ningún apoyo ni caiga al vacío. Salió una:
+la del metro 620, un apoyo con carril que pasaba justo por debajo del de
+arriba y te llevaba él solo a meter la cabeza en el techo.
+
+Tres arreglos:
+
+1. **El arrastre no se comprobaba contra nada.** Lo que te empuja una
+   plataforma móvil se sumaba a tu posición *después* de tomar el punto de
+   partida para las colisiones laterales, así que se colaba sin revisar.
+   Ahora el punto de partida es de antes del arrastre y la resolución lateral
+   que ya existía deshace lo que te empuje contra un muro.
+2. **Un ascensor que sube contra un techo te empotraba en él.** Ahora el
+   arrastre vertical te deja justo debajo: el ascensor sigue, tú no.
+3. **Cada pasada de composición mueve geometría** y puede invalidar la
+   comprobación de la anterior —precisión estrecha apoyos, los atajos añaden
+   plataformas—. Se añade un **repaso final**, cuando ya no se mueve nada:
+   `revisarCarriles()` encoge el carril del que no cabe y, si ni así, le quita
+   el movimiento; y `despejarRatoneras()` se ejecuta otra vez al final.
+
+Los ascensores llevan además una regla más dura que los deslizantes
+(`carrilSinTecho`): de una plataforma que se desliza te apartas, de una que
+sube no. Resultado: **0 de 52 móviles** dejan al jugador dentro de nada, y
+ningún apoyo del nivel se queda sin sitio donde ponerse de pie.
+
+El reparador de ratoneras también deja de perdonar: antes se saltaba las que
+se podían abandonar, pero poder salir no arregla estar de pie con la cabeza
+metida en la plataforma de encima.
+
+**Comprobado**: 293 saltos, 0 imposibles, 14 atajos, 191 monedas, 9 drones,
+60 pasos/s y ningún error de consola.
+
 ### Tres niveles, vidas y drones
 
 La idea era un `LevelManager` con tres niveles progresivos. Casi todas las

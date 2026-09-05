@@ -150,17 +150,11 @@ const informe = await pagina.evaluate(() => {
     if (q.type === 'checkpoint') c.checkpoint++;
   }
 
-  // Los tramos que cubre cada nivel, para ver que ninguno queda vacío
-  const niveles = NIVELES.map((n) => {
-    const r = rangoNivel(n.id), m = metrosNivel(n.id);
-    return { id: n.id, apoyos: r.fin - r.ini + 1, metros: m.desde + '-' + m.hasta };
-  });
-
   return { saltosCadena: nCadena - 1, imposibles, sinVentanaJusta, apretados,
            atajos: platforms.length - nCadena, atajosMalos,
            monedas: monedas.length, monedasSueltas, pinchos: spikes.length,
            geiseres: geysers.length, drones: voladores.length,
-           dronesMalos, dronesQueTapan, niveles, franjas };
+           dronesMalos, dronesQueTapan, franjas };
 });
 
 await navegador.close();
@@ -170,9 +164,8 @@ console.log('errores de consola:', errores.length ? errores : 'ninguno');
 
 const roto = informe.imposibles.length || informe.atajosMalos.length ||
              informe.monedasSueltas || informe.dronesMalos.length ||
-             informe.dronesQueTapan.length ||
-             informe.niveles.some((n) => n.apoyos < 10) || errores.length;
+             informe.dronesQueTapan.length || errores.length;
 console.log(roto
   ? '\nFALLA: hay saltos imposibles, atajos rotos, monedas sueltas, drones que estorban o errores.'
-  : '\nEl recorrido se puede completar de principio a fin, y los tres niveles también.');
+  : '\nEl recorrido se puede completar de principio a fin.');
 process.exit(roto ? 1 : 0);
