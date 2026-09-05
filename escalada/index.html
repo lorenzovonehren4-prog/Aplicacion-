@@ -459,17 +459,23 @@
      metros de cada tramo, que es el dato que se quiere ver. */
   .cumbres-chips { list-style:none; margin:8px 0 11px; padding:0;
     display:grid; grid-template-columns:1fr 1fr; gap:4px 8px; counter-reset:cc; }
-  .cumbres-chips li { counter-increment:cc; display:flex; align-items:center; gap:7px;
-    font-size:11px; color:#a8bccf; padding:3px 8px; border-radius:8px;
+  /* Dos líneas por ficha: arriba el nombre, abajo el tema y los metros. En
+     una sola línea, con seis nombres largos, el tema se salía del recuadro. */
+  .cumbres-chips li { counter-increment:cc; display:grid; align-items:center;
+    grid-template-columns:16px 1fr; gap:0 7px;
+    font-size:11px; color:#a8bccf; padding:4px 8px; border-radius:8px;
     background:rgba(255,255,255,.032); border:1px solid rgba(255,255,255,.05); }
-  .cumbres-chips li::before { content:counter(cc); flex:none;
-    width:15px; height:15px; border-radius:5px; font-size:9px; font-weight:900;
+  .cumbres-chips li::before { content:counter(cc); grid-row:1 / span 2; align-self:center;
+    width:16px; height:16px; border-radius:5px; font-size:9px; font-weight:900;
     display:flex; align-items:center; justify-content:center;
     color:#0b1424; background:var(--tono,#8fa8c0); }
-  .cumbres-chips b { color:#e6eef7; font-weight:600; white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis; }
-  .cumbres-chips span { margin-left:auto; color:#7f95ab; font-size:10px;
+  .cumbres-chips b { grid-column:2; color:#e6eef7; font-weight:600; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; line-height:1.25; }
+  .cumbres-chips span { grid-column:2; display:flex; align-items:center; gap:6px;
+    color:#7f95ab; font-size:9.5px; line-height:1.25;
     font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .cumbres-chips i { font-style:normal; flex:none; font-size:8.5px; font-weight:800;
+    letter-spacing:.7px; text-transform:uppercase; color:var(--tono,#8fa8c0); }
 
   /* Pastillas de datos bajo el título: números reales del nivel que se va a
      jugar, no una frase de folleto. */
@@ -847,7 +853,7 @@ const ESTIRE = 0.17;          // cuánto se estira subiendo o cayendo
 const WORLDS = [
   { name: 'Emberwall Ascent', skyTop: '#5bc8e8', skyBot: '#7ad4ee', arte: 6, nubes: true },
   { name: 'Coral Climb',      skyTop: '#66d0f0', skyBot: '#8fdcff', arte: 2, nubes: true },
-  { name: 'Agent Adventure',  skyTop: '#4fbcdd', skyBot: '#6fcbe8', arte: 4, nubes: true },
+  { name: 'Nine to Five',     skyTop: '#7fc4d8', skyBot: '#a9d8e4', arte: 4, nubes: true },
   { name: 'Growing Up',       skyTop: '#68cfee', skyBot: '#86daf6', arte: 1, nubes: true },
   { name: 'Frosty Peaks',     skyTop: '#7fd6f2', skyBot: '#a8e4fb', arte: 5, nubes: true },
   { name: 'One Way Up',       skyTop: '#5bc8e8', skyBot: '#7ad4ee', arte: 7, nubes: true },
@@ -1045,6 +1051,14 @@ function pasoFisica(e, dirX, saltar, plats) {
 
   if (e.buffer > 0 && e.saltos > 0) {
     e.vy = JUMP_FORCE;
+    // IMPULSO DE LA PLATAFORMA. Al saltar desde un apoyo que se desliza te
+    // llevas su velocidad, como en cualquier vehículo en marcha. Antes no:
+    // `e.vx = dirX * SPEED` borraba de golpe lo que te estaba arrastrando la
+    // plataforma, así que un salto dado a favor del carril salía corto y uno
+    // dado en contra salía largo, sin que nada en pantalla lo explicara. Es
+    // el «el impulso falla al despegar». Sólo cuenta en el salto de SUELO:
+    // el segundo salto se da ya en el aire y ahí no hay nada que te arrastre.
+    if (e.saltos === 2 && e.velApoyo) e.impulso = e.velApoyo;
     e.saltos--;
     e.coyote = 0;
     e.buffer = 0;
@@ -1057,7 +1071,11 @@ function pasoFisica(e, dirX, saltar, plats) {
   if (e.arrastre && e.onGround) {
     const p = e.arrastre;
     e.xAntesArrastre = e.x;
-    if (e.arrastreX !== undefined) e.x += (p.x - e.arrastreX);
+    if (e.arrastreX !== undefined) {
+      const empuje = p.x - e.arrastreX;
+      e.x += empuje;
+      e.velApoyo = empuje;         // lo que te llevarás si saltas ahora
+    }
     e.arrastreX = p.x;
     if (p.movY) {
       if (e.arrastreY !== undefined) {
@@ -1083,6 +1101,7 @@ function pasoFisica(e, dirX, saltar, plats) {
     e.arrastreX = undefined;
     e.arrastreY = undefined;
     e.xAntesArrastre = undefined;
+    if (e.onGround) e.velApoyo = 0;   // en suelo firme no hay nada que herede
   }
   e.arrastre = null;
 
@@ -1115,7 +1134,11 @@ function pasoFisica(e, dirX, saltar, plats) {
   // dentro del apoyo de al lado.
   const xPrevio = (e.xAntesArrastre !== undefined) ? e.xAntesArrastre : e.x;
   e.xAntesArrastre = undefined;
-  e.x += e.vx;
+  // El impulso heredado se conserva mientras vuelas y se pierde al pisar: es
+  // velocidad tuya, así que la colisión lateral la resuelve como cualquier
+  // otra y no te mete de lado en el apoyo de al lado.
+  if (e.onGround) e.impulso = 0;
+  e.x += e.vx + (e.impulso || 0);
   if (e.x < 0) e.x = 0;
   if (e.x + PW > WORLD_WIDTH) e.x = WORLD_WIDTH - PW;
 
@@ -2238,8 +2261,8 @@ function aclararApoyos() {
     const dy = ant.y - p.y;
     const dxh = Math.max(0, p.x > ant.x ? p.x - (ant.x + ant.width)
                                         : ant.x - (p.x + p.width));
-    const pegado = (dy < 42 && dxh < 62);
-    if (!pegado && rnd() > 0.74 * dificultad(p.world)) continue;
+    const pegado = (dy < 46 && dxh < 70);
+    if (!pegado && rnd() > 0.80 * dificultad(p.world)) continue;
 
     // Fuera, y a ver si el salto que queda se sostiene
     const trazaPrevia = sig.traza, entradaPrevia = sig.entradaX;
@@ -2610,28 +2633,28 @@ function sembrarCheckpoints() {
     q.type === 'normal' && !q.mov && !q.movY && !q.ciclo && !q.trampa &&
     !q.petalo && !q.hielo && !q.redonda && !q.ang && q.width >= 130;
 
-  // DOS POR CUMBRE, y ni uno más: el de entrada y UNO intermedio, a media
-  // altura del tramo. Repartirlos por fracciones de la subida entera dejaba
-  // tres en una cumbre y uno en otra; así cada cumbre tiene exactamente su
-  // red de seguridad en el medio, que es lo que se pidió.
+  // UNO POR CUMBRE, y ni uno más, en la MITAD EXACTA del tramo. Empezó
+  // siendo uno por cumbre donde cayera —en la cumbre 2 quedaba al 79 % y
+  // caerse obligaba a repetirla casi entera—, luego fueron doce repartidos
+  // por altura. Lo que se quiere es esto: media cumbre de riesgo, un punto
+  // de control, media cumbre más. Se marca con bandera y haz de luz para que
+  // se vea desde lejos que ahí se guarda la partida.
   for (let w = 1; w <= TOTAL_WORLDS; w++) {
     const tramo = [];
     for (let i = 1; i < cadena.length - 1; i++) if (cadena[i].world === w) tramo.push(i);
     if (!tramo.length) continue;
     const yPie = cadena[tramo[0]].y, yTecho = cadena[tramo[tramo.length - 1]].y;
+    const objetivo = (yPie + yTecho) / 2;
 
-    for (const objetivo of [yPie, (yPie + yTecho) / 2]) {
-      let mejor = -1, dist = Infinity;
-      for (const i of tramo) {
-        if (!sirve(cadena[i])) continue;
-        if (puestos.some((j) => Math.abs(j - i) < 5)) continue;
-        const d = Math.abs(cadena[i].y - objetivo);
-        if (d < dist) { dist = d; mejor = i; }
-      }
-      if (mejor < 0) continue;
-      cadena[mejor].type = 'checkpoint';
-      puestos.push(mejor);
+    let mejor = -1, dist = Infinity;
+    for (const i of tramo) {
+      if (!sirve(cadena[i])) continue;
+      const d = Math.abs(cadena[i].y - objetivo);
+      if (d < dist) { dist = d; mejor = i; }
     }
+    if (mejor < 0) continue;
+    cadena[mejor].type = 'checkpoint';
+    puestos.push(mejor);
   }
   return puestos.length;
 }
@@ -5392,42 +5415,57 @@ const MATERIALES = {
 
 /* Catálogo por cumbre: la MAYORÍA de los apoyos son objetos reconocibles.
    El bloque de material queda como excepción, no como norma. */
+/* ====================================================================
+   EL CATÁLOGO DE CADA CUMBRE
+   Seis mundos, seis temas cerrados. La regla es que un objeto sólo aparece
+   donde pega: nada de norias en la nieve ni de iglús en la fragua. Con las
+   cumbres repartidas parejas, cada tema dura lo mismo que los demás.
+
+     1 Emberwall Ascent  MEDIEVAL     piedra, antorchas, espadas, muralla
+     2 Coral Climb       PLAYA        arena, tablas de surf, sombrillas, cocos
+     3 Nine to Five      OFICINA      escritorios, sillas, conos, carpetas
+     4 Growing Up        GRANJA       heno, madera, vallas, veletas
+     5 Frosty Peaks      NIEVE        bloques de hielo, cristales, carámbanos
+     6 One Way Up        TECNOLÓGICO  circuitos, neón, pantallas, drones
+   ==================================================================== */
 const CATALOGO = {
-  // Emberwall Ascent — castillo y fragua. Nada de ferias ni trenes.
+  // 1 · MEDIEVAL — castillo y fragua. Nada de ferias ni trenes.
   6: {
     grandes: ['torreon', 'muralla', 'castillo', 'horno', 'estatua', 'catapulta'],
-    medios:  ['andamio', 'yunque', 'barriles', 'arbol', 'roca', 'escudos', 'lapida'],
-    chicos:  ['farola', 'roca', 'cajas', 'lapida', 'brasero'],
+    medios:  ['espadas', 'antorcha', 'yunque', 'barriles', 'escudos', 'andamio', 'roca'],
+    chicos:  ['antorcha', 'roca', 'cajas', 'espadas', 'brasero'],
   },
-  // Coral Climb — puerto y playa
+  // 2 · PLAYA — puerto, arena y tabla
   2: {
     grandes: ['yate', 'velero', 'faro', 'barca', 'castilloArena'],
-    medios:  ['sombrilla', 'faro', 'coral', 'pelota', 'redPesca', 'tablaSurf'],
-    chicos:  ['boya', 'flotador', 'pelota', 'arena', 'tablaSurf'],
+    medios:  ['tablaSurf', 'sombrilla', 'faro', 'coral', 'pelota', 'redPesca'],
+    chicos:  ['tablaSurf', 'boya', 'flotador', 'pelota', 'arena'],
   },
-  // Agent Adventure — base secreta. Fuera la noria y la locomotora.
+  // 3 · OFICINA — la planta corporativa. Antes esta cumbre era una «base
+  // secreta» que compartía objetos con la granja y con la última: contenedor,
+  // vagoneta, neumáticos. Ahora tiene los suyos y no se parece a ninguna.
   4: {
-    grandes: ['contenedor', 'helipuerto', 'autobus', 'generador'],
-    medios:  ['vagoneta', 'andamio', 'neumaticos', 'valla', 'dron', 'cajaFuerte'],
-    chicos:  ['conos', 'baul', 'valla', 'neumaticos', 'cajaFuerte'],
+    grandes: ['escritorio', 'archivador', 'pizarra', 'dispensador'],
+    medios:  ['escritorio', 'sillaOficina', 'impresora', 'plantaOficina', 'archivador', 'cajaFuerte'],
+    chicos:  ['carpetas', 'conos', 'sillaOficina', 'impresora', 'carpetas'],
   },
-  // Growing Up — granja y feria de pueblo: aquí la carpa y la noria sí pegan
+  // 4 · GRANJA — heno, madera y feria de pueblo
   1: {
     grandes: ['granero', 'casa', 'carpa', 'noria', 'puesto', 'espantapajaros'],
-    medios:  ['tractor', 'pozo', 'arbol', 'banco', 'casa', 'abrevadero', 'calabazas'],
-    chicos:  ['valla', 'sacos', 'arbol', 'hierba', 'calabazas'],
+    medios:  ['balaHeno', 'tractor', 'pozo', 'veleta', 'abrevadero', 'calabazas'],
+    chicos:  ['balaHeno', 'valla', 'sacos', 'hierba', 'calabazas'],
   },
-  // Frosty Peaks — solo nieve y hielo. Fuera torreón, carpa y estatua.
+  // 5 · NIEVE — sólo nieve y hielo. Fuera torreón, carpa y estatua.
   5: {
     grandes: ['iglu', 'refugio', 'ventisquero', 'tiendaNieve'],
-    medios:  ['iglu', 'pinoNevado', 'carambano', 'munieco', 'hoguera', 'mojon'],
-    chicos:  ['munieco', 'pinguino', 'pinoNevado', 'nieve', 'mojon'],
+    medios:  ['bloqueHielo', 'cristalHielo', 'iglu', 'carambano', 'munieco', 'hoguera'],
+    chicos:  ['bloqueHielo', 'pinguino', 'nieve', 'mojon', 'cristalHielo'],
   },
-  // One Way Up — cielo y tecnología. Fuera la cama.
+  // 6 · TECNOLÓGICO — circuitos, neón y pantallas
   7: {
-    grandes: ['plataformaOVNI', 'moduloOrbital', 'helipuerto', 'portal'],
-    medios:  ['antena', 'andamio', 'burbuja', 'moduloOrbital', 'reactor', 'panelSolar'],
-    chicos:  ['burbuja', 'metal', 'antena', 'baul', 'panelSolar'],
+    grandes: ['plataformaOVNI', 'moduloOrbital', 'pantalla', 'portal'],
+    medios:  ['circuito', 'pantalla', 'antena', 'reactor', 'panelSolar', 'moduloOrbital'],
+    chicos:  ['circuito', 'burbuja', 'metal', 'antena', 'panelSolar'],
   },
 };
 
@@ -6340,6 +6378,494 @@ function propCalabazaR(x, y, w) {
   ctx.lineCap = 'butt';
 }
 
+/* ====================================================================
+   OBJETOS DE TEMA
+   Cada cumbre tiene su mundo y sus cosas: piedra y antorchas abajo, arena y
+   tablas en la playa, mesas y sillas en la oficina, heno y vallas en la
+   granja, hielo arriba y circuitos en la última. Todos siguen la misma regla
+   que el resto: la cara que se pisa es `y`, y el cuerpo cuelga hacia abajo.
+   ==================================================================== */
+
+/* ---------------- MEDIEVAL ---------------- */
+
+/** 🔥 Antorcha de muro: la repisa de piedra es lo que se pisa. */
+function propAntorcha(x, y, w) {
+  const cx = x + w / 2;
+  const piedra = ctx.createLinearGradient(0, y, 0, y + 40);
+  piedra.addColorStop(0, '#a9a49b'); piedra.addColorStop(1, '#5f5a53');
+  ctx.fillStyle = piedra;
+  rrect(x, y, w, 15, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(38,34,30,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#6f6a62';
+  rrect(x + w * 0.16, y + 14, w * 0.68, 24, 3); ctx.fill(); ctx.stroke();
+  // Juntas de sillería
+  ctx.strokeStyle = 'rgba(48,44,40,0.5)'; ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(cx, y + 15); ctx.lineTo(cx, y + 38);
+  ctx.moveTo(x + w * 0.16, y + 26); ctx.lineTo(x + w * 0.84, y + 26);
+  ctx.stroke();
+
+  // Palo y llama, hacia arriba
+  ctx.fillStyle = '#6b4a26';
+  rrect(cx - 3.4, y - 26, 6.8, 28, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,26,12,0.9)'; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.fillStyle = '#3a2b1a';
+  rrect(cx - 7, y - 30, 14, 7, 3); ctx.fill(); ctx.stroke();
+  const vivo = 0.72 + 0.28 * Math.sin(t * 0.22 + x * 0.05);
+  ctx.save();
+  ctx.shadowColor = '#ff9d2e'; ctx.shadowBlur = 20 * vivo;
+  const llama = ctx.createLinearGradient(0, y - 62, 0, y - 28);
+  llama.addColorStop(0, 'rgba(255,244,180,0.95)');
+  llama.addColorStop(0.5, '#ffb238');
+  llama.addColorStop(1, '#e2521a');
+  ctx.fillStyle = llama;
+  ctx.beginPath();
+  ctx.moveTo(cx, y - 30 - 26 * vivo);
+  ctx.bezierCurveTo(cx + 11, y - 44, cx + 9, y - 30, cx, y - 28);
+  ctx.bezierCurveTo(cx - 9, y - 30, cx - 11, y - 44, cx, y - 30 - 26 * vivo);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+/** ⚔️ Espadas cruzadas clavadas en un bloque de piedra. */
+function propEspadas(x, y, w) {
+  const cx = x + w / 2;
+  const piedra = ctx.createLinearGradient(0, y, 0, y + 44);
+  piedra.addColorStop(0, '#9c968c'); piedra.addColorStop(1, '#534f49');
+  ctx.fillStyle = piedra;
+  rrect(x, y, w, 42, 4); ctx.fill();
+  ctx.strokeStyle = 'rgba(36,32,28,0.9)'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  rrect(x + 4, y + 2, w - 8, 5, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(50,46,42,0.45)'; ctx.lineWidth = 1.3;
+  for (let i = 1; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(x + (w * i) / 3, y + 10); ctx.lineTo(x + (w * i) / 3, y + 40);
+    ctx.stroke();
+  }
+  // Dos espadas en aspa, clavadas
+  for (const sg of [-1, 1]) {
+    ctx.save();
+    ctx.translate(cx, y + 4);
+    ctx.rotate(sg * 0.42);
+    const hoja = ctx.createLinearGradient(-4, 0, 4, 0);
+    hoja.addColorStop(0, '#f2f6fb'); hoja.addColorStop(0.5, '#c6cfdb'); hoja.addColorStop(1, '#8d97a6');
+    ctx.fillStyle = hoja;
+    ctx.beginPath();
+    ctx.moveTo(-3.6, 0); ctx.lineTo(-3.6, -40); ctx.lineTo(0, -48);
+    ctx.lineTo(3.6, -40); ctx.lineTo(3.6, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,48,60,0.85)'; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.fillStyle = '#c9922e';
+    rrect(-12, -4, 24, 5, 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#7a4a1c';
+    rrect(-3, 1, 6, 13, 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/* ---------------- OFICINA ---------------- */
+
+/** 🪑 Escritorio: el tablero es lo que se pisa. */
+function propEscritorio(x, y, w) {
+  const tablero = ctx.createLinearGradient(0, y, 0, y + 11);
+  tablero.addColorStop(0, '#d8b98c'); tablero.addColorStop(1, '#a88161');
+  ctx.fillStyle = tablero;
+  rrect(x - 3, y, w + 6, 11, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(60,42,26,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  // Cajonera a un lado
+  ctx.fillStyle = '#8b96a5';
+  rrect(x + w * 0.58, y + 10, w * 0.36, 34, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,50,62,0.9)'; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  for (let k = 0; k < 3; k++) {
+    rrect(x + w * 0.62, y + 14 + k * 10, w * 0.28, 7, 2); ctx.fill();
+  }
+  // Patas
+  ctx.fillStyle = '#6f7a89';
+  rrect(x + 6, y + 10, 6, 34, 2); ctx.fill(); ctx.stroke();
+  rrect(x + w * 0.4, y + 10, 6, 34, 2); ctx.fill(); ctx.stroke();
+}
+
+/** 💺 Silla ergonómica: se pisa el asiento, el respaldo va detrás. */
+function propSillaOficina(x, y, w) {
+  const cx = x + w / 2;
+  // Respaldo, por detrás
+  ctx.fillStyle = '#39424f';
+  rrect(cx - w * 0.22, y - 38, w * 0.44, 40, 8); ctx.fill();
+  ctx.strokeStyle = 'rgba(20,26,34,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.10)';
+  rrect(cx - w * 0.17, y - 33, w * 0.34, 14, 5); ctx.fill();
+  // Asiento
+  const tela = ctx.createLinearGradient(0, y, 0, y + 13);
+  tela.addColorStop(0, '#57616f'); tela.addColorStop(1, '#333b46');
+  ctx.fillStyle = tela;
+  rrect(x, y, w, 13, 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(20,26,34,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  // Columna y estrella de cinco patas con ruedas
+  ctx.fillStyle = '#8f99a6';
+  rrect(cx - 4, y + 12, 8, 18, 3); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#8f99a6'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  for (const sg of [-1, -0.45, 0.45, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(cx, y + 30); ctx.lineTo(cx + sg * w * 0.34, y + 40);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  ctx.fillStyle = '#2c333d';
+  for (const sg of [-1, -0.45, 0.45, 1]) {
+    ctx.beginPath(); ctx.arc(cx + sg * w * 0.34, y + 42, 3.6, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+/** 🗄️ Archivador metálico de tres cajones. */
+function propArchivador(x, y, w) {
+  const cuerpo = ctx.createLinearGradient(0, y, 0, y + 46);
+  cuerpo.addColorStop(0, '#b9c2cd'); cuerpo.addColorStop(1, '#78828f');
+  ctx.fillStyle = cuerpo;
+  rrect(x, y, w, 46, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,50,62,0.9)'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.30)';
+  rrect(x + 4, y + 2, w - 8, 4, 2); ctx.fill();
+  for (let k = 0; k < 3; k++) {
+    const cy = y + 9 + k * 12;
+    ctx.strokeStyle = 'rgba(50,60,74,0.75)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x + 3, cy + 11); ctx.lineTo(x + w - 3, cy + 11); ctx.stroke();
+    ctx.fillStyle = '#3d4855';
+    rrect(x + w / 2 - 11, cy + 2, 22, 4, 2); ctx.fill();
+  }
+}
+
+/** 📁 Pila de carpetas de colores. */
+function propCarpetas(x, y, w) {
+  const colores = ['#e05c5c', '#e8a33d', '#4d9be0', '#5ec27a'];
+  for (let k = 0; k < 4; k++) {
+    const cy = y + k * 10, dent = k * 2;
+    ctx.fillStyle = colores[k % colores.length];
+    rrect(x + dent, cy, w - dent * 2, 12, 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,32,20,0.75)'; ctx.lineWidth = 1.6; ctx.stroke();
+    // Pestaña de la carpeta
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    rrect(x + dent + w * 0.12 + k * 9, cy + 2.5, w * 0.16, 3.5, 1.5); ctx.fill();
+  }
+}
+
+/** 🖨️ Impresora con su bandeja de papel. */
+function propImpresora(x, y, w) {
+  ctx.fillStyle = '#dfe4ea';
+  rrect(x, y, w, 10, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(50,58,70,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#9aa4b1';
+  rrect(x + 3, y + 9, w - 6, 26, 3); ctx.fill(); ctx.stroke();
+  // Ranura y hoja saliendo
+  ctx.fillStyle = '#3b4452';
+  rrect(x + w * 0.18, y + 14, w * 0.64, 4, 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  rrect(x + w * 0.22, y + 17, w * 0.56, 14, 1.5); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,100,115,0.8)'; ctx.lineWidth = 1.3; ctx.stroke();
+  ctx.strokeStyle = 'rgba(140,150,165,0.9)';
+  for (let k = 0; k < 3; k++) {
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.27, y + 21 + k * 4); ctx.lineTo(x + w * 0.62, y + 21 + k * 4);
+    ctx.stroke();
+  }
+  // Piloto
+  ctx.fillStyle = (Math.sin(t * 0.1 + x) > 0) ? '#5ec27a' : '#2f6f45';
+  ctx.beginPath(); ctx.arc(x + w - 10, y + 5, 2.4, 0, Math.PI * 2); ctx.fill();
+}
+
+/** 🪴 Planta de oficina: la maceta es lo que se pisa. */
+function propPlantaOficina(x, y, w) {
+  const cx = x + w / 2;
+  // Hojas, hacia arriba
+  ctx.strokeStyle = '#2f7d3e'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  for (const [ang, largo] of [[-1.5, 46], [-1.05, 38], [-1.95, 38], [-0.7, 28], [-2.35, 28]]) {
+    ctx.beginPath();
+    ctx.moveTo(cx, y);
+    ctx.quadraticCurveTo(cx + Math.cos(ang) * largo * 0.6, y + Math.sin(ang) * largo * 0.7,
+                         cx + Math.cos(ang) * largo, y + Math.sin(ang) * largo);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  ctx.fillStyle = '#49a85a';
+  for (const [ang, largo] of [[-1.5, 46], [-1.05, 38], [-1.95, 38], [-0.7, 28], [-2.35, 28]]) {
+    const hx = cx + Math.cos(ang) * largo, hy = y + Math.sin(ang) * largo;
+    ctx.save(); ctx.translate(hx, hy); ctx.rotate(ang + Math.PI / 2);
+    ctx.beginPath(); ctx.ellipse(0, 0, 7, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,60,28,0.7)'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.restore();
+  }
+  // Maceta
+  const barro = ctx.createLinearGradient(0, y, 0, y + 34);
+  barro.addColorStop(0, '#d08a5c'); barro.addColorStop(1, '#8a4f2c');
+  ctx.fillStyle = barro;
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w - w * 0.16, y + 34); ctx.lineTo(x + w * 0.16, y + 34);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(70,38,18,0.9)'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = '#e0a072';
+  rrect(x - 2, y - 1, w + 4, 8, 2); ctx.fill(); ctx.stroke();
+}
+
+/** 🚰 Dispensador de agua. */
+function propDispensador(x, y, w) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#e6ecf3';
+  rrect(x, y, w, 9, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(50,60,72,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  // Garrafa azul translúcida sobre el mueble... va DEBAJO: el mueble es lo que se pisa
+  ctx.fillStyle = '#c3cbd6';
+  rrect(x + w * 0.16, y + 8, w * 0.68, 34, 3); ctx.fill(); ctx.stroke();
+  const agua = ctx.createLinearGradient(0, y + 10, 0, y + 30);
+  agua.addColorStop(0, 'rgba(120,200,240,0.85)'); agua.addColorStop(1, 'rgba(60,150,205,0.9)');
+  ctx.fillStyle = agua;
+  rrect(x + w * 0.24, y + 11, w * 0.52, 18, 4); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,90,130,0.7)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  rrect(x + w * 0.28, y + 13, w * 0.1, 12, 2); ctx.fill();
+  // Grifos
+  ctx.fillStyle = '#4a5563';
+  rrect(cx - 8, y + 31, 6, 6, 1.5); ctx.fill();
+  rrect(cx + 2, y + 31, 6, 6, 1.5); ctx.fill();
+}
+
+/** 📋 Pizarra de reuniones sobre caballete. */
+function propPizarra(x, y, w) {
+  const cx = x + w / 2;
+  const an = Math.min(w * 0.92, 96);
+  // Tablero, hacia arriba
+  ctx.fillStyle = '#f7fafc';
+  rrect(cx - an / 2, y - 52, an, 46, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(60,70,84,0.9)'; ctx.lineWidth = 2.4; ctx.stroke();
+  ctx.strokeStyle = '#3d78d8'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - an * 0.34, y - 40);
+  ctx.lineTo(cx - an * 0.1, y - 22); ctx.lineTo(cx + an * 0.08, y - 32);
+  ctx.lineTo(cx + an * 0.34, y - 14);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(200,80,80,0.85)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - an * 0.3, y - 13); ctx.lineTo(cx - an * 0.02, y - 13); ctx.stroke();
+  ctx.lineCap = 'butt';
+  // Repisa que se pisa y patas
+  ctx.fillStyle = '#9aa4b1';
+  rrect(x, y, w, 9, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(50,60,72,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = '#7b8795'; ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, y + 8); ctx.lineTo(cx - an * 0.3, y + 36);
+  ctx.moveTo(cx + 8, y + 8); ctx.lineTo(cx + an * 0.3, y + 36);
+  ctx.stroke();
+}
+
+/* ---------------- GRANJA ---------------- */
+
+/** 🌾 Bala de heno: se pisa la cara de arriba. */
+function propBalaHeno(x, y, w) {
+  const g = ctx.createLinearGradient(0, y, 0, y + 44);
+  g.addColorStop(0, '#e8ce7a'); g.addColorStop(0.55, '#cfa842'); g.addColorStop(1, '#9c7a22');
+  ctx.fillStyle = g;
+  rrect(x, y, w, 44, 8); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,66,16,0.9)'; ctx.lineWidth = 2.2; ctx.stroke();
+  // Pajas
+  ctx.strokeStyle = 'rgba(140,106,30,0.55)'; ctx.lineWidth = 1.3;
+  for (let i = 5; i < w - 4; i += 7) {
+    const a = 4 + h(x + i) * 9;
+    ctx.beginPath();
+    ctx.moveTo(x + i, y + 8 + h(x + i * 1.7) * 22);
+    ctx.lineTo(x + i + a, y + 10 + h(x + i * 2.3) * 22);
+    ctx.stroke();
+  }
+  // Cuerdas de atar
+  ctx.strokeStyle = '#6f5a2a'; ctx.lineWidth = 3;
+  for (const u of [0.3, 0.7]) {
+    ctx.beginPath();
+    ctx.moveTo(x + w * u, y + 1); ctx.lineTo(x + w * u, y + 43);
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  rrect(x + 5, y + 2, w - 10, 5, 3); ctx.fill();
+}
+
+/** 🐓 Veleta de gallo sobre su poste. */
+function propVeleta(x, y, w) {
+  const cx = x + w / 2;
+  const giro = Math.sin(t * 0.012 + x * 0.01);
+  // Base de tejado
+  ctx.fillStyle = '#8a5a35';
+  rrect(x, y, w, 12, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(56,34,16,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#6f4527';
+  rrect(x + w * 0.2, y + 11, w * 0.6, 26, 3); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(56,34,16,0.5)'; ctx.lineWidth = 1.3;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(x + 4, y + 12 + i * 7); ctx.lineTo(x + w - 4, y + 12 + i * 7); ctx.stroke();
+  }
+  // Poste
+  ctx.fillStyle = '#4d5563';
+  rrect(cx - 2.4, y - 46, 4.8, 48, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(25,30,38,0.9)'; ctx.lineWidth = 1.6; ctx.stroke();
+  // Cruz N-S-E-O
+  ctx.strokeStyle = '#4d5563'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(cx - 15, y - 26); ctx.lineTo(cx + 15, y - 26); ctx.stroke();
+  // Gallo, girando despacio
+  ctx.save();
+  ctx.translate(cx, y - 50);
+  ctx.scale(giro >= 0 ? 1 : -1, 1);
+  ctx.fillStyle = '#3d4550';
+  ctx.beginPath();
+  ctx.moveTo(-13, 4); ctx.quadraticCurveTo(-4, -8, 6, -6);
+  ctx.quadraticCurveTo(12, -6, 12, -12);
+  ctx.lineTo(16, -6); ctx.quadraticCurveTo(14, 2, 6, 3);
+  ctx.quadraticCurveTo(2, 9, -5, 8);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(18,22,28,0.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#c0392b';
+  ctx.beginPath(); ctx.arc(12, -14, 2.6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+/* ---------------- NIEVE ---------------- */
+
+/** 🧊 Bloque de hielo tallado. */
+function propBloqueHielo(x, y, w) {
+  const g = ctx.createLinearGradient(0, y, 0, y + 44);
+  g.addColorStop(0, 'rgba(238,250,255,0.96)');
+  g.addColorStop(0.5, 'rgba(174,220,240,0.92)');
+  g.addColorStop(1, 'rgba(116,176,208,0.95)');
+  ctx.fillStyle = g;
+  rrect(x, y, w, 44, 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(70,120,150,0.85)'; ctx.lineWidth = 2.2; ctx.stroke();
+  // Caras internas del hielo
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.2, y + 4); ctx.lineTo(x + w * 0.36, y + 26);
+  ctx.lineTo(x + w * 0.2, y + 40);
+  ctx.moveTo(x + w * 0.62, y + 5); ctx.lineTo(x + w * 0.78, y + 22);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  rrect(x + 5, y + 2, w - 10, 6, 3); ctx.fill();
+  // Nieve posada arriba
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(x, y + 4);
+  for (let i = 0; i <= w; i += 12) ctx.lineTo(x + i, y - 1 - h(x + i) * 4);
+  ctx.lineTo(x + w, y + 4);
+  ctx.closePath(); ctx.fill();
+}
+
+/** 💎 Cristales de hielo: brotan hacia arriba de una base helada. */
+function propCristalHielo(x, y, w) {
+  const cx = x + w / 2;
+  const brillo = 0.6 + 0.4 * Math.sin(t * 0.05 + x * 0.02);
+  ctx.save();
+  ctx.shadowColor = 'rgba(150,225,255,0.9)'; ctx.shadowBlur = 14 * brillo;
+  for (const [dx2, alto, an] of [[-w * 0.24, 44, 11], [0, 62, 14], [w * 0.24, 36, 10]]) {
+    const g = ctx.createLinearGradient(cx + dx2, y - alto, cx + dx2, y + 6);
+    g.addColorStop(0, 'rgba(240,252,255,0.98)');
+    g.addColorStop(0.55, 'rgba(150,215,245,0.92)');
+    g.addColorStop(1, 'rgba(90,165,205,0.95)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cx + dx2, y - alto);
+    ctx.lineTo(cx + dx2 + an, y - alto * 0.44);
+    ctx.lineTo(cx + dx2 + an * 0.6, y + 4);
+    ctx.lineTo(cx + dx2 - an * 0.6, y + 4);
+    ctx.lineTo(cx + dx2 - an, y - alto * 0.44);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(70,130,170,0.8)'; ctx.lineWidth = 1.8; ctx.stroke();
+  }
+  ctx.restore();
+  // Base de hielo, que es lo que se pisa
+  const base = ctx.createLinearGradient(0, y, 0, y + 32);
+  base.addColorStop(0, 'rgba(232,248,255,0.96)'); base.addColorStop(1, 'rgba(120,180,212,0.95)');
+  ctx.fillStyle = base;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 6);
+  ctx.quadraticCurveTo(cx, y - 3, x + w, y + 6);
+  ctx.lineTo(x + w - 6, y + 32);
+  ctx.quadraticCurveTo(cx, y + 40, x + 6, y + 32);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(70,120,150,0.85)'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+/* ---------------- TECNOLÓGICO ---------------- */
+
+/** 🖥️ Placa de circuito con pistas y nodos que laten. */
+function propCircuito(x, y, w) {
+  const g = ctx.createLinearGradient(0, y, 0, y + 34);
+  g.addColorStop(0, '#1c4a3c'); g.addColorStop(1, '#0e2b23');
+  ctx.fillStyle = g;
+  rrect(x, y, w, 34, 4); ctx.fill();
+  ctx.strokeStyle = 'rgba(10,26,20,0.95)'; ctx.lineWidth = 2.2; ctx.stroke();
+  // Pistas de cobre
+  ctx.strokeStyle = 'rgba(120,220,180,0.75)'; ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  for (let k = 0; k < 3; k++) {
+    const py = y + 8 + k * 9;
+    ctx.beginPath();
+    ctx.moveTo(x + 4, py);
+    ctx.lineTo(x + w * 0.3, py);
+    ctx.lineTo(x + w * 0.38, py + (k % 2 ? 6 : -5));
+    ctx.lineTo(x + w - 5, py + (k % 2 ? 6 : -5));
+    ctx.stroke();
+  }
+  // Nodos que laten
+  for (let k = 0; k < Math.max(2, Math.round(w / 55)); k++) {
+    const nx = x + 12 + (w - 24) * (k / Math.max(1, Math.round(w / 55)));
+    const vivo = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.07 + k * 1.7 + x * 0.01));
+    ctx.save();
+    ctx.shadowColor = '#5cf2c0'; ctx.shadowBlur = 10 * vivo;
+    ctx.fillStyle = 'rgba(140,255,215,' + (0.5 + vivo * 0.5).toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(nx, y + 26, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  // Chip
+  ctx.fillStyle = '#20262e';
+  rrect(x + w * 0.42, y + 14, Math.min(34, w * 0.24), 14, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,120,110,0.8)'; ctx.lineWidth = 1.4; ctx.stroke();
+  // Filo de neón arriba
+  ctx.fillStyle = 'rgba(140,255,215,0.55)';
+  rrect(x + 3, y + 1, w - 6, 3, 1.5); ctx.fill();
+}
+
+/** 📺 Pantalla flotante con su pie. */
+function propPantalla(x, y, w) {
+  const cx = x + w / 2;
+  const an = Math.min(w * 0.9, 104), al = 42;
+  // Pantalla, hacia arriba
+  ctx.fillStyle = '#161c26';
+  rrect(cx - an / 2, y - al - 8, an, al, 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,200,255,0.55)'; ctx.lineWidth = 2.2; ctx.stroke();
+  const luz = ctx.createLinearGradient(0, y - al - 6, 0, y - 10);
+  luz.addColorStop(0, 'rgba(90,200,255,0.45)');
+  luz.addColorStop(1, 'rgba(40,110,190,0.25)');
+  ctx.fillStyle = luz;
+  rrect(cx - an / 2 + 4, y - al - 4, an - 8, al - 8, 3); ctx.fill();
+  // Gráfica que se mueve
+  ctx.strokeStyle = 'rgba(150,245,255,0.9)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i <= 6; i++) {
+    const px = cx - an / 2 + 8 + (an - 16) * (i / 6);
+    const py = y - al + 12 + Math.sin(t * 0.06 + i * 0.9 + x * 0.01) * 9;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.stroke();
+  // Pie y peana que se pisa
+  ctx.fillStyle = '#39434f';
+  rrect(cx - 5, y - 10, 10, 12, 2); ctx.fill();
+  ctx.fillStyle = '#4a5563';
+  rrect(x, y, w, 10, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(20,26,34,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = 'rgba(120,220,255,0.5)';
+  rrect(x + 4, y + 2, w - 8, 3, 1.5); ctx.fill();
+  ctx.fillStyle = '#2c333d';
+  rrect(x + w * 0.2, y + 9, w * 0.6, 16, 3); ctx.fill(); ctx.stroke();
+}
+
 /** 🔮 Esfera de energía: la de la última cumbre, latiendo. */
 function propEsfera(x, y, w) {
   const r = w / 2, cx = x + r, cy = y + r;
@@ -6367,6 +6893,22 @@ function pintarObjeto(nombre, p, x, y, w, hh) {
   switch (nombre) {
     case 'bolaNieve':       return propBolaNieve(x, y, w);
     case 'esfera':          return propEsfera(x, y, w);
+    case 'antorcha':        return propAntorcha(x, y, w);
+    case 'espadas':         return propEspadas(x, y, w);
+    case 'escritorio':      return propEscritorio(x, y, w);
+    case 'sillaOficina':    return propSillaOficina(x, y, w);
+    case 'archivador':      return propArchivador(x, y, w);
+    case 'carpetas':        return propCarpetas(x, y, w);
+    case 'impresora':       return propImpresora(x, y, w);
+    case 'plantaOficina':   return propPlantaOficina(x, y, w);
+    case 'dispensador':     return propDispensador(x, y, w);
+    case 'pizarra':         return propPizarra(x, y, w);
+    case 'balaHeno':        return propBalaHeno(x, y, w);
+    case 'veleta':          return propVeleta(x, y, w);
+    case 'bloqueHielo':     return propBloqueHielo(x, y, w);
+    case 'cristalHielo':    return propCristalHielo(x, y, w);
+    case 'circuito':        return propCircuito(x, y, w);
+    case 'pantalla':        return propPantalla(x, y, w);
     case 'bolaAcero':       return propBolaAcero(x, y, w);
     case 'calabazaR':       return propCalabazaR(x, y, w);
     case 'pelotaR':         return propPelotaR(x, y, w);
@@ -6468,7 +7010,8 @@ const OBJETOS_HONDOS = new Set(['noria', 'granero', 'torreon', 'muralla', 'casa'
    76 px —y bolas de 70— eso se ve constantemente, así que las figuras altas
    sólo salen donde hay sitio de verdad. */
 const OBJETOS_ALTOS = new Set(['arbol', 'pinoNevado', 'munieco', 'faro',
-  'espantapajaros', 'velero', 'estatua']);
+  'espantapajaros', 'velero', 'estatua', 'antorcha', 'plantaOficina', 'pizarra',
+  'veleta', 'cristalHielo', 'pantalla', 'sillaOficina']);
 const ANCHO_FIGURA_ALTA = 155;
 
 function drawObjeto(p) {
@@ -7260,38 +7803,115 @@ function objAsteroide(x, y, w, hh, P) {
 function platCheckpoint(p) {
   const w = p.width, x = p.x, y = p.y;
   const alto = p.height + 16;
+  const cx = x + w / 2;
+  const tocado = (typeof player !== 'undefined' && player &&
+                  Math.abs((player.spawnY || 0) - (y - PH)) < 1);
 
-  // Tierra
-  ctx.fillStyle = '#8a5a35';
+  // HAZ DE LUZ. Es lo que hace que se vea desde lejos que ahí hay algo, y no
+  // un apoyo más. Va en modo aditivo para que encienda sobre el cielo claro
+  // en vez de ensuciarlo, igual que el aviso de los pinchos.
+  const late = 0.5 + 0.5 * Math.sin(t * 0.045 + x * 0.01);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const haz = ctx.createLinearGradient(0, y - 250, 0, y + 6);
+  const tono = tocado ? '80,255,140' : '255,220,120';
+  haz.addColorStop(0, 'rgba(' + tono + ',0)');
+  haz.addColorStop(0.72, 'rgba(' + tono + ',' + (0.10 + late * 0.06).toFixed(3) + ')');
+  haz.addColorStop(1, 'rgba(' + tono + ',' + (0.34 + late * 0.14).toFixed(3) + ')');
+  ctx.fillStyle = haz;
+  ctx.beginPath();
+  ctx.moveTo(cx - 15, y + 4); ctx.lineTo(cx - 46, y - 250);
+  ctx.lineTo(cx + 46, y - 250); ctx.lineTo(cx + 15, y + 4);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  // EL SUELO DEL CHECKPOINT, CON EL MATERIAL DE SU CUMBRE. Era siempre
+  // hierba y tierra: en el glaciar y en la última cumbre, de circuitos,
+  // aparecía un trozo de pradera en mitad de la nada. Ahora cada cumbre
+  // pone el suyo —piedra, arena, moqueta, tierra, hielo o metal—, que es lo
+  // que hace que el punto de control pertenezca al sitio donde está.
+  const M = {
+    6: { cuerpo: '#6d6760', cuerpoOsc: '#4a453f', tapa: '#9c968c', tapa2: '#b6afa4', borde: 'rgba(40,36,32,0.9)', mota: '#5c5750' },
+    2: { cuerpo: '#c9a468', cuerpoOsc: '#a6813f', tapa: '#f0dcae', tapa2: '#f7ebcd', borde: 'rgba(110,82,34,0.85)', mota: '#b08f4f' },
+    4: { cuerpo: '#5a6472', cuerpoOsc: '#3f4854', tapa: '#3f6f9c', tapa2: '#5a8cbb', borde: 'rgba(24,32,42,0.9)', mota: '#4c5563' },
+    1: { cuerpo: '#8a5a35', cuerpoOsc: '#6f4527', tapa: '#4fae3c', tapa2: '#68d14e', borde: 'rgba(55,38,20,0.85)', mota: '#6f4527' },
+    5: { cuerpo: '#a8cfe4', cuerpoOsc: '#7fb0cc', tapa: '#ffffff', tapa2: '#eaf6ff', borde: 'rgba(70,120,150,0.85)', mota: '#8fbdd6' },
+    7: { cuerpo: '#2b323d', cuerpoOsc: '#1b212a', tapa: '#1f6f80', tapa2: '#39c9d8', borde: 'rgba(12,18,24,0.95)', mota: '#39424f' },
+  };
+  const arte = WORLDS[Math.max(0, Math.min(TOTAL_WORLDS - 1, p.world - 1))].arte;
+  const mat = M[arte] || M[1];
+
+  // Cuerpo
+  ctx.fillStyle = mat.cuerpo;
   rrect(x, y + 9, w, alto - 9, 7); ctx.fill();
-  ctx.fillStyle = '#6f4527';
+  ctx.fillStyle = mat.cuerpoOsc;
   for (let i = 14; i < w - 10; i += 34) {
     ctx.beginPath();
     ctx.ellipse(x + i, y + alto * 0.62, 10, 3.5, 0, 0, Math.PI * 2);
     ctx.fill();
   }
-  // Hierba
-  ctx.fillStyle = '#4fae3c';
+  // Tapa que se pisa
+  ctx.fillStyle = mat.tapa;
   rrect(x, y, w, 13, 6); ctx.fill();
-  ctx.fillStyle = '#68d14e';
+  ctx.fillStyle = mat.tapa2;
   rrect(x, y, w, 6, 5); ctx.fill();
-  // Briznas asomando
-  ctx.fillStyle = '#68d14e';
-  for (let i = 6; i < w - 4; i += 11) {
-    const a = 3 + h(x + i) * 4;
-    ctx.beginPath();
-    ctx.moveTo(x + i, y);
-    ctx.lineTo(x + i + 2, y - a);
-    ctx.lineTo(x + i + 4, y);
-    ctx.closePath(); ctx.fill();
+  // Remate de arriba: briznas de hierba, cresta de nieve o filo de neón
+  ctx.fillStyle = mat.tapa2;
+  if (arte === 7) {
+    ctx.save();
+    ctx.shadowColor = mat.tapa2; ctx.shadowBlur = 10;
+    rrect(x + 3, y - 1.5, w - 6, 3, 1.5); ctx.fill();
+    ctx.restore();
+  } else if (arte === 6 || arte === 2 || arte === 4) {
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    rrect(x + 4, y + 1, w - 8, 3, 1.5); ctx.fill();
+  } else {
+    for (let i = 6; i < w - 4; i += 11) {
+      const a = 3 + h(x + i) * 4;
+      ctx.beginPath();
+      ctx.moveTo(x + i, y);
+      ctx.lineTo(x + i + 2, y - a);
+      ctx.lineTo(x + i + 4, y);
+      ctx.closePath(); ctx.fill();
+    }
   }
-  ctx.strokeStyle = 'rgba(55,38,20,0.85)'; ctx.lineWidth = 1.9;
+  ctx.strokeStyle = mat.borde; ctx.lineWidth = 1.9;
   rrect(x, y, w, alto, 7); ctx.stroke();
+
+  // BANDERA. Mástil con base, y el paño ondeando: verde cuando ya es tuyo,
+  // dorado mientras no lo has tocado.
+  const mastil = cx - Math.min(46, w * 0.30);
+  const altoMastil = 66;
+  ctx.fillStyle = '#6d7280';
+  rrect(mastil - 7, y - 5, 14, 9, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,36,46,0.9)'; ctx.lineWidth = 1.8; ctx.stroke();
+  const palo = ctx.createLinearGradient(mastil - 2, 0, mastil + 2, 0);
+  palo.addColorStop(0, '#e8edf5'); palo.addColorStop(1, '#98a2b3');
+  ctx.fillStyle = palo;
+  rrect(mastil - 2.2, y - altoMastil, 4.4, altoMastil + 2, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,36,46,0.85)'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.fillStyle = '#ffd76a';
+  ctx.beginPath(); ctx.arc(mastil, y - altoMastil - 1, 3.4, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,36,46,0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // El paño: dos ondas que se mueven, con muesca en el extremo
+  const onda = Math.sin(t * 0.09 + x * 0.02) * 4;
+  const pano = ctx.createLinearGradient(mastil, 0, mastil + 40, 0);
+  if (tocado) { pano.addColorStop(0, '#7bff5c'); pano.addColorStop(1, '#2fa845'); }
+  else        { pano.addColorStop(0, '#ffe27a'); pano.addColorStop(1, '#e8a01c'); }
+  ctx.fillStyle = pano;
+  ctx.beginPath();
+  ctx.moveTo(mastil + 1, y - altoMastil + 3);
+  ctx.quadraticCurveTo(mastil + 20, y - altoMastil - 2 + onda, mastil + 40, y - altoMastil + 5 + onda);
+  ctx.lineTo(mastil + 31, y - altoMastil + 15 + onda * 0.6);
+  ctx.lineTo(mastil + 40, y - altoMastil + 25 + onda);
+  ctx.quadraticCurveTo(mastil + 20, y - altoMastil + 20 + onda, mastil + 1, y - altoMastil + 23);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,30,10,0.75)'; ctx.lineWidth = 1.8; ctx.stroke();
 
   // Rótulo de la cumbre
   const idx = Math.max(0, Math.min(TOTAL_WORLDS - 1, p.world - 1));
   const nombre = WORLDS[idx].name.toUpperCase();
-  const cx = x + w / 2;
   ctx.textAlign = 'center';
   ctx.font = 'bold 11px "Segoe UI", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
@@ -7300,7 +7920,7 @@ function platCheckpoint(p) {
   ctx.lineWidth = 3.5;
   ctx.strokeStyle = 'rgba(20,40,20,0.8)';
   ctx.strokeText(nombre, cx, y - 17);
-  ctx.fillStyle = '#7bff5c';
+  ctx.fillStyle = tocado ? '#7bff5c' : '#ffd76a';
   ctx.fillText(nombre, cx, y - 17);
   ctx.textAlign = 'left';
 }
@@ -7365,9 +7985,15 @@ function draw() {
       ctx.setLineDash([]);
     }
 
-    // Las trampas tiemblan mientras cuentan atrás
+    // Las trampas tiemblan mientras cuentan atrás, y el temblor CRECE: al
+    // principio se mueve un pelo, al final casi salta. Es la primera señal
+    // de que queda poco, antes incluso de mirar la grieta.
     let tembl = 0;
-    if (plat.tocada !== undefined) tembl = Math.sin(plat.tocada * 1.5) * 3;
+    const cuenta = plat.tocada !== undefined
+      ? Math.min(1, plat.tocada / (plat.petalo ? FRAMES_PETALO : FRAMES_TRAMPA)) : 0;
+    if (plat.tocada !== undefined) {
+      tembl = Math.sin(plat.tocada * (1.3 + cuenta * 1.6)) * (1.4 + cuenta * 4.2);
+    }
 
     // Un apoyo cíclico ausente deja su HUECO marcado: así se ve dónde va a
     // volver y se puede esperar en su sitio en vez de adivinar.
@@ -7389,22 +8015,66 @@ function draw() {
     // La grieta de un apoyo frágil va con reborde oscuro: sin él se perdía
     // sobre los apoyos claros, y un suelo que no se ve no es una mecánica,
     // es una encerrona.
-    if (plat.trampa) {
+    // APOYO FRÁGIL. La grieta era una sola, siempre igual, pisada o no: no
+    // decía cuánto queda. Ahora la rotura CRECE con la cuenta atrás —una
+    // grieta madre, luego dos ramas, luego cuatro— el color pasa de ámbar a
+    // rojo, y en el último tercio suelta cascotes y da destellos cada vez más
+    // seguidos. Sin pisar se ve sólo la fisura fina: sabes que es frágil
+    // antes de poner el pie.
+    if (plat.trampa || plat.petalo) {
+      const x0 = plat.x, y0 = plat.y, an = plat.width, al = plat.height;
+      const u = plat.tocada !== undefined ? cuenta : 0;
+      const ramas = plat.tocada === undefined ? 1 : (u < 0.34 ? 2 : (u < 0.67 ? 3 : 5));
       const grieta = () => {
         ctx.beginPath();
-        ctx.moveTo(plat.x + 8, plat.y + 5);
-        ctx.lineTo(plat.x + plat.width * 0.4, plat.y + plat.height - 3);
-        ctx.lineTo(plat.x + plat.width * 0.62, plat.y + 6);
-        ctx.lineTo(plat.x + plat.width - 8, plat.y + plat.height - 4);
+        // Grieta madre: siempre la misma, para que se reconozca el apoyo
+        ctx.moveTo(x0 + 8, y0 + 4);
+        ctx.lineTo(x0 + an * 0.38, y0 + al - 3);
+        ctx.lineTo(x0 + an * 0.61, y0 + 5);
+        ctx.lineTo(x0 + an - 8, y0 + al - 4);
+        // Ramas que van saliendo según se agota el tiempo
+        for (let k = 1; k < ramas; k++) {
+          const bx = x0 + an * (0.16 + 0.7 * (k / ramas));
+          const arriba = k % 2 === 0;
+          ctx.moveTo(bx, arriba ? y0 + 2 : y0 + al - 2);
+          ctx.lineTo(bx + an * 0.07, y0 + al * 0.5);
+          ctx.lineTo(bx - an * 0.05 + 6, arriba ? y0 + al - 2 : y0 + 2);
+        }
         ctx.stroke();
       };
       ctx.lineCap = 'round';
       ctx.strokeStyle = 'rgba(28,10,14,0.55)';
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 4.4 + u * 2.6;
       grieta();
-      ctx.strokeStyle = '#ff5a5a';
-      ctx.lineWidth = 3;
+      // De ámbar a rojo según se acaba el tiempo
+      const rojo = Math.round(255), verde = Math.round(190 - 150 * u);
+      ctx.strokeStyle = 'rgb(' + rojo + ',' + verde + ',70)';
+      ctx.lineWidth = 1.8 + u * 1.8;
       grieta();
+
+      if (plat.tocada !== undefined) {
+        // Destello de aviso: parpadea más deprisa cuanto menos queda
+        const ritmo = 0.18 + u * 0.55;
+        const flash = Math.max(0, Math.sin(plat.tocada * ritmo)) * (0.18 + u * 0.55);
+        if (flash > 0.01) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = 'rgba(255,' + verde + ',60,' + flash.toFixed(3) + ')';
+          rrect(x0, y0, an, al, 6); ctx.fill();
+          ctx.restore();
+        }
+        // Cascotes cayendo en el último tercio
+        if (u > 0.62) {
+          ctx.fillStyle = 'rgba(70,40,30,0.75)';
+          for (let k = 0; k < 4; k++) {
+            const cx2 = x0 + an * (0.15 + 0.7 * h(x0 + k * 7.3));
+            const caida = ((plat.tocada * 2.4 + k * 13) % 34);
+            ctx.beginPath();
+            ctx.arc(cx2, y0 + al + caida, 2.4 - caida * 0.04, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
     }
 
     // El hielo resbala, pero en Frosty Peaks TODO es blanco y azul: sin una
@@ -7489,6 +8159,9 @@ function draw() {
     const base = s.y + s.height;
     const n = Math.max(2, Math.round(s.width / 15));
     const paso = s.width / n;
+    // EN FROSTY PEAKS LOS PINCHOS SON CARÁMBANOS. El acero de obra no pinta
+    // nada en un glaciar, y el hielo pincha igual.
+    const helado = mundoEnAltura(s.y) === 5;
 
     // Aviso: un halo rojo detrás, para que el ojo lo pille antes de saltar
     // El halo va en modo ADITIVO. Pintado normal, un rojo translúcido sobre
@@ -7499,43 +8172,67 @@ function draw() {
     const cxh = s.x + s.width / 2, cyh = s.y + 5;
     const rad = s.width * 0.6 + 15;
     const halo = ctx.createRadialGradient(cxh, cyh, 1, cxh, cyh, rad);
-    halo.addColorStop(0, 'rgba(255,52,58,0.55)');
-    halo.addColorStop(0.5, 'rgba(255,52,58,0.18)');
-    halo.addColorStop(1, 'rgba(255,52,58,0)');
+    const tinte = helado ? '90,200,255' : '255,52,58';
+    halo.addColorStop(0, 'rgba(' + tinte + ',0.55)');
+    halo.addColorStop(0.5, 'rgba(' + tinte + ',0.18)');
+    halo.addColorStop(1, 'rgba(' + tinte + ',0)');
     ctx.fillStyle = halo;
     ctx.beginPath(); ctx.arc(cxh, cyh, rad, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
-    // Zócalo a rayas amarillas y negras, como una cinta de obra
+    // Zócalo: cinta de obra, o costra de hielo si son carámbanos
     ctx.save();
     ctx.beginPath(); rrect(s.x - 3, base - 7, s.width + 6, 8, 3); ctx.clip();
-    ctx.fillStyle = '#f0b429';
-    ctx.fillRect(s.x - 3, base - 7, s.width + 6, 8);
-    ctx.fillStyle = '#20242e';
-    for (let bx = -10; bx < s.width + 12; bx += 11) {
-      ctx.beginPath();
-      ctx.moveTo(s.x + bx, base + 1); ctx.lineTo(s.x + bx + 5, base + 1);
-      ctx.lineTo(s.x + bx + 11, base - 7); ctx.lineTo(s.x + bx + 6, base - 7);
-      ctx.closePath(); ctx.fill();
+    if (helado) {
+      const cost = ctx.createLinearGradient(0, base - 7, 0, base + 1);
+      cost.addColorStop(0, '#ffffff'); cost.addColorStop(1, '#a8d6ea');
+      ctx.fillStyle = cost;
+      ctx.fillRect(s.x - 3, base - 7, s.width + 6, 8);
+    } else {
+      ctx.fillStyle = '#f0b429';
+      ctx.fillRect(s.x - 3, base - 7, s.width + 6, 8);
+      ctx.fillStyle = '#20242e';
+      for (let bx = -10; bx < s.width + 12; bx += 11) {
+        ctx.beginPath();
+        ctx.moveTo(s.x + bx, base + 1); ctx.lineTo(s.x + bx + 5, base + 1);
+        ctx.lineTo(s.x + bx + 11, base - 7); ctx.lineTo(s.x + bx + 6, base - 7);
+        ctx.closePath(); ctx.fill();
+      }
     }
     ctx.restore();
-    ctx.strokeStyle = 'rgba(16,20,28,0.85)'; ctx.lineWidth = 1.6;
+    ctx.strokeStyle = helado ? 'rgba(70,120,150,0.8)' : 'rgba(16,20,28,0.85)';
+    ctx.lineWidth = 1.6;
     rrect(s.x - 3, base - 7, s.width + 6, 8, 3); ctx.stroke();
 
     for (let i = 0; i < n; i++) {
       const px = s.x + paso * i, cx = px + paso / 2;
       const g = ctx.createLinearGradient(px, 0, px + paso, 0);
-      g.addColorStop(0, '#5d6474');
-      g.addColorStop(0.42, '#eef2f8');
-      g.addColorStop(1, '#8b94a6');
+      if (helado) {
+        g.addColorStop(0, 'rgba(120,185,215,0.95)');
+        g.addColorStop(0.4, 'rgba(240,252,255,0.98)');
+        g.addColorStop(1, 'rgba(140,200,228,0.95)');
+      } else {
+        g.addColorStop(0, '#5d6474');
+        g.addColorStop(0.42, '#eef2f8');
+        g.addColorStop(1, '#8b94a6');
+      }
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(px + 1, base - 4);
-      ctx.lineTo(cx, s.y);
+      // El carámbano no es un triángulo simétrico: se estrecha de golpe y
+      // acaba en una aguja fina, que es lo que lo distingue del pincho.
+      if (helado) {
+        ctx.lineTo(px + paso * 0.34, s.y + 9);
+        ctx.lineTo(cx, s.y);
+        ctx.lineTo(px + paso * 0.66, s.y + 9);
+      } else {
+        ctx.lineTo(cx, s.y);
+      }
       ctx.lineTo(px + paso - 1, base - 4);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = 'rgba(18,22,30,0.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = helado ? 'rgba(60,110,142,0.85)' : 'rgba(18,22,30,0.9)';
+      ctx.lineWidth = 1.5; ctx.stroke();
       // Punta: un destello claro, que es lo que hace que parezca afilado
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.beginPath();
@@ -7661,6 +8358,40 @@ function draw() {
     const r = m.bonus ? 13 : 10;
     const cy = m.y + flota;
     ctx.save();
+
+    // EN LA PLAYA SE RECOGEN COCOS. Es lo que hace que una cumbre se sienta
+    // suya: hasta lo que recoges es de allí. El coco no gira sobre su eje
+    // —no es una moneda— así que se balancea un poco y ya.
+    if (mundoEnAltura(m.y) === 2) {
+      const rc = m.bonus ? 13 : 11;
+      const bal = Math.sin(t * 0.05 + m.fase) * 0.18;
+      ctx.translate(m.x, cy); ctx.rotate(bal);
+      if (m.bonus) { ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 14; }
+      const cas = ctx.createRadialGradient(-rc * 0.3, -rc * 0.35, rc * 0.15, 0, 0, rc);
+      cas.addColorStop(0, '#a9713f'); cas.addColorStop(0.6, '#7a4a24'); cas.addColorStop(1, '#4e2d12');
+      ctx.fillStyle = cas;
+      ctx.beginPath(); ctx.arc(0, 0, rc, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#3a2210'; ctx.lineWidth = 2; ctx.stroke();
+      // Fibra
+      ctx.strokeStyle = 'rgba(180,130,80,0.45)'; ctx.lineWidth = 1.2;
+      for (let k = -1; k <= 1; k++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, rc * 0.72, -0.9 + k * 0.5, -0.2 + k * 0.5);
+        ctx.stroke();
+      }
+      // Los tres ojos del coco
+      ctx.fillStyle = '#2c1a0b';
+      for (const [ox, oy] of [[-3.4, -2.6], [3.4, -2.6], [0, 2.2]]) {
+        ctx.beginPath(); ctx.arc(ox, oy, 1.9, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(255,235,200,0.35)';
+      ctx.beginPath(); ctx.ellipse(-rc * 0.34, -rc * 0.4, rc * 0.22, rc * 0.14, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      continue;
+    }
+
     if (m.bonus) { ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 14; }
     ctx.fillStyle = m.bonus ? '#ffd166' : '#f5c518';
     ctx.beginPath();
@@ -11042,6 +11773,9 @@ const GUIA_MECANICAS = [
 /* Colores de cada cumbre para las fichas de la ruta: los mismos del cielo
    de cada una, así la ficha y el bioma se reconocen a la vez. */
 const TONO_CUMBRE = ['#ff9f43', '#4bc0e8', '#7f8cff', '#6fd67f', '#a8e4fb', '#c88bff'];
+/* El tema de cada cumbre. Está en el menú porque saber que la tercera es una
+   oficina y la quinta un glaciar es la mitad de la gracia de subir. */
+const TEMA_CUMBRE = ['Medieval', 'Playa', 'Oficina', 'Granja', 'Nieve', 'Tecnológico'];
 
 /** Las seis cumbres con su tramo de metros, sacado del nivel de verdad. */
 function pintarCumbres() {
@@ -11052,7 +11786,7 @@ function pintarCumbres() {
     const desde = acum;
     acum += METROS_CUMBRE[k];
     return '<li style="--tono:' + TONO_CUMBRE[k] + '"><b>' + w.name + '</b>' +
-           '<span>' + desde + '–' + acum + ' m</span></li>';
+           '<span><i>' + TEMA_CUMBRE[k] + '</i>' + desde + '–' + acum + ' m</span></li>';
   }).join('');
 }
 

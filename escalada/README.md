@@ -158,6 +158,94 @@ Enseñaba el nivel pero no decía nada de la subida. Ahora:
 La regla sólo sale en el mapa grande: en la vista previa del menú, de 300 px,
 se pisaba con los nombres de las cumbres.
 
+### Seis cumbres, seis temas cerrados
+
+Las cumbres tenían nombre pero no identidad: la tercera era una «base
+secreta» que compartía objetos con la granja y con la última —contenedor,
+vagoneta, neumáticos— y ninguna se distinguía de la de al lado por lo que
+había en ella. Ahora cada una tiene su catálogo y no aparece un objeto donde
+no pega:
+
+| Cumbre | Tema | Lo que hay |
+|---|---|---|
+| 1 · Emberwall Ascent | **Medieval** | Muralla, torreón, antorchas, espadas cruzadas, yunque, barriles |
+| 2 · Coral Climb | **Playa** | Arena, tablas de surf, sombrillas, boyas, flotadores |
+| 3 · Nine to Five | **Oficina** | Escritorios, sillas ergonómicas, archivadores, carpetas, impresora, conos |
+| 4 · Growing Up | **Granja** | Balas de heno, vallas, veletas, calabazas, pozo, tractor |
+| 5 · Frosty Peaks | **Nieve** | Bloques de hielo, cristales, carámbanos, iglús, pingüinos |
+| 6 · One Way Up | **Tecnológico** | Circuitos con nodos que laten, pantallas, neón, reactores |
+
+La cumbre 3 se llamaba «Agent Adventure»; con la planta corporativa dentro,
+ahora es **Nine to Five**. Se añaden quince objetos nuevos —antorcha, espadas,
+escritorio, silla, archivador, carpetas, impresora, planta, dispensador,
+pizarra, bala de heno, veleta, bloque de hielo, cristal y circuito— y el menú
+enseña el tema de cada cumbre junto a su tramo de metros.
+
+El tema llega a lo que se recoge y a lo que pincha:
+
+- **En la playa se recogen cocos**, no monedas. Cáscara, fibra y los tres
+  ojos; no gira sobre su eje como una moneda, se balancea.
+- **En Frosty Peaks los pinchos son carámbanos**: hielo translúcido que se
+  estrecha de golpe y acaba en aguja, con costra de nieve en la base y el
+  halo de aviso en azul en vez de rojo.
+- **El suelo del checkpoint es el de su cumbre**: piedra, arena, moqueta,
+  tierra, hielo o metal con filo de neón. Antes era hierba y tierra siempre,
+  y en el glaciar aparecía un trozo de pradera en mitad de la nada.
+
+### Un checkpoint por cumbre, en la mitad exacta, con bandera
+
+Empezó siendo uno por cumbre donde cayera —en la cumbre 2 quedaba al 79 % del
+tramo y caerse obligaba a repetirla casi entera—, luego fueron doce
+repartidos por altura. Lo que hacía falta era esto: media cumbre de riesgo,
+un punto de control, media cumbre más.
+
+Son **seis, uno por cumbre**, colocados en la mitad exacta del tramo (entre el
+47 % y el 56 %, según dónde haya un apoyo ancho y quieto). Y se ven: **bandera
+con mástil, base y paño ondeando** —dorada mientras no la has tocado, verde
+en cuanto es tuya— y un **haz de luz** en modo aditivo que sube desde el apoyo
+y late despacio.
+
+### El impulso de la plataforma al saltar
+
+Al saltar desde un apoyo que se desliza te llevas su velocidad, como en
+cualquier vehículo en marcha. Antes no: `e.vx = dirX * SPEED` borraba de golpe
+lo que te estaba arrastrando la plataforma, así que un salto dado a favor del
+carril salía corto y uno dado en contra salía largo, sin que nada en pantalla
+lo explicara.
+
+Ahora el arrastre guarda cuánto te movió la plataforma en el último fotograma
+y, si saltas desde el suelo, eso se conserva mientras vuelas y se pierde al
+pisar. Medido en la misma plataforma: saltando a la derecha con el carril en
+contra se llegaba a 202 px; a favor, a 330. Los 128 px de diferencia son
+exactamente el doble de la velocidad del carril por los fotogramas de vuelo.
+El segundo salto no hereda nada: se da en el aire, y ahí no hay nada que te
+arrastre.
+
+### El apoyo frágil ahora avisa
+
+La grieta era una sola, siempre igual, pisada o no: no decía cuánto quedaba.
+Ahora la rotura **crece con la cuenta atrás** —una grieta madre, luego dos
+ramas, luego cuatro—, el color pasa de ámbar a rojo, el temblor va de un pelo
+a un salto, y en el último tercio suelta cascotes y da destellos cada vez más
+seguidos. Sin pisar se ve sólo la fisura fina: sabes que es frágil antes de
+poner el pie.
+
+### Aún menos aglomeración, aún más salto
+
+Se aprieta un poco más el aclarado de apoyos (`aclararApoyos`, ver más abajo):
+
+| | Origen | Ahora |
+|---|---|---|
+| Subida media por salto (cumbres 1→6) | 65, 69, 63, 67, 47, 45 px | 67, 71, 70, 78, 63, 73 px |
+| Hueco lateral medio en la última cumbre | 144 px | 325 px |
+| Apoyos pegados a su vecino | 4 | 4 (de 242 saltos) |
+| Saltos de la cadena | 293 | 242 |
+
+Y con la física del impulso cambiada hubo que recomponer y reverificar el
+nivel entero: **242 saltos, 0 imposibles, 0 sin ventana de despegue, 0
+apretados, 0 atajos rotos, 0 monedas sueltas, 0 drones que estorben, 0 px de
+penetración y ningún error de consola.**
+
 ### Las móviles cambiaban de objeto sesenta veces por segundo
 
 Este era el «se bugean» de verdad, y no estaba en la física —52 móviles × 7
@@ -1032,7 +1120,8 @@ Todo vive en `index.html`. Las piezas, por orden:
 | Verificación | `costeSalida()`, `seLlega()`, `alrededor()`: replay del recorrido con el motor real |
 | Ratoneras | `despejarRatoneras()`: apoyos con techo demasiado bajo para saltar |
 | Cumbres | `repartirCumbres()`: corta el recorrido en seis tramos de la misma altura |
-| Checkpoints | `sembrarCheckpoints()`: dos por cumbre, uno cada 83 m |
+| Checkpoints | `sembrarCheckpoints()`: uno por cumbre, en la mitad exacta |
+| Temas | `CATALOGO`: seis catálogos cerrados, uno por cumbre |
 | Aclarado | `aclararApoyos()`: quita apoyos para que los saltos sean más largos |
 | Dibujo estable | `anclarApoyo()`: la móvil se pinta en reposo y el lienzo viaja |
 | Tienda | Hucha de monedas, precios y compras guardadas en el navegador |
