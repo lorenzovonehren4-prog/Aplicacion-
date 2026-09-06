@@ -394,19 +394,6 @@
   /* Sin marcas todavía, el párrafo vacío se comía 23 px al final del panel */
   .marca-menu:empty { display:none; }
 
-  /* EL DISFRAZ. Vuelca el juego en una pestaña de about:blank: la barra de
-     direcciones deja de decir de dónde salió y se juega exactamente igual,
-     porque lo que se copia es el archivo entero. Va discreto y al final del
-     menú a propósito: es un extra, no la forma normal de entrar. */
-  .disfraz { display:block; margin:7px auto 0; padding:6px 14px;
-    font-size:11.5px; font-weight:700; letter-spacing:.6px; cursor:pointer;
-    color:#8fa8c0; background:transparent;
-    border:1px solid rgba(255,255,255,.09); border-radius:9px;
-    transition:color .13s, border-color .13s, background .13s; }
-  .disfraz:hover { color:#dbe6f2; border-color:rgba(255,255,255,.2);
-    background:rgba(255,255,255,.05); }
-  .disfraz.falla { color:#ffb4a8; border-color:rgba(255,120,100,.35);
-    background:rgba(120,30,24,.28); }
 
   /* ---- Pantalla de inicio ---- */
   /* Las dos pestañas van dentro de un raíl hundido: se lee como un
@@ -471,6 +458,18 @@
   .pie-menu #start-btn { flex:2; }
   .pie-menu #sala-btn { flex:1.5; font-size:15px; }
   .pie-menu .js-mute { flex:1; }
+  /* EL DISFRAZ. Vuelca el juego en una pestaña de about:blank: la barra de
+     direcciones deja de decir de dónde salió y se juega igual, porque lo que
+     se copia es el archivo entero.
+     Va DENTRO del pie y no debajo, que es donde estaba: el pie es `sticky` y
+     en cuanto el panel se desplaza —o sea, en cualquier pantalla que no sea
+     muy alta— se quedaba encima y lo tapaba. Medido: a 1920x1080 se veía; a
+     1366x768, 1280x720, 900x640 y en móvil, no. */
+  .pie-menu #disfraz-btn { flex:1; font-size:13px; letter-spacing:.4px; padding:10px; }
+  .pie-menu .disfraz.falla { color:#ffb4a8;
+    background:linear-gradient(180deg, rgba(120,30,24,.5), rgba(90,22,18,.5));
+    border-color:rgba(255,120,100,.45); }
+  @media (max-width:900px) { .pie-menu #disfraz-btn { font-size:12px; } }
   @media (max-width:900px) { .pie-menu #sala-btn { font-size:13.5px; } }
   @media (max-width:600px) { .pie-menu { flex-direction:column; } }
   /* Los récords, en la esquina de la cabecera: cuatro fichas con su franja
@@ -1056,9 +1055,10 @@
           <button id="start-btn" class="btn"><span>Jugar solo &nbsp;→</span></button>
           <button id="sala-btn" class="btn ghost">👥  Jugar con amigos</button>
           <button class="btn ghost js-mute">🔊  Sonido activado</button>
+          <button id="disfraz-btn" class="btn ghost disfraz" type="button"
+                  title="Abre el juego en una pestaña nueva de about:blank">◱  about:blank</button>
         </div>
         <p class="marca-menu" id="marca-menu"></p>
-        <button id="disfraz-btn" class="disfraz" type="button">◱  Abrir en about:blank</button>
       </div>
     </div>
 
