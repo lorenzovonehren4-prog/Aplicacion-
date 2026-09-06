@@ -42,6 +42,45 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### Dos monedas, la realeza y tu nombre en la carrera
+
+**Dos cosas se llamaban «monedas».** En la cabecera del menú salía «0 monedas»
+(lo que llevas en la hucha) y a dos dedos «156 monedas» (las que hay
+repartidas por la subida). Mismo nombre, números distintos, ninguna pista de
+cuál era cuál. Ahora la hucha dice **«en la hucha»** y el dato del nivel,
+**«monedas por recoger»**.
+
+**Y ahora hay una segunda moneda de verdad: las CORONAS.** No se recogen: se
+ganan. Una por victoria, en cualquiera de los dos modos. No se pueden cambiar
+por monedas ni al revés, y es lo único con lo que se compra la realeza:
+
+| | Cuesta |
+|---|---|
+| **Realeza** (corona de rey rico, accesorio) | 4 coronas |
+| **Dinero** (estela que va tirando billetes) | 6 coronas |
+| **Rey Rico** (el disfraz, lo mejor de la tienda) | **10 coronas** |
+
+Si se pudieran cambiar unas por otras, subir mucho valdría lo mismo que ganar,
+y la idea es justo la contraria. La cabecera lleva las dos huchas, con icono y
+color distintos; la etiqueta de precio de las fichas de realeza es una corona
+en vez de una moneda, y el aviso de «te faltan…» dice en qué moneda.
+
+El **Rey Rico** es cuerpo de oro con manto granate por detrás, ribete de
+armiño en los cantos, cadena con medallón y monedas cosidas al traje. No lleva
+corona propia a propósito: para eso está el accesorio de Realeza, y así se
+pueden llevar los dos.
+
+Un fallo que sólo se ve mirando el dibujo: el manto dejaba el pincel en blanco
+y, como se pinta **antes** que las patas y el cuerpo, el contorno del muñeco
+entero salía perfilado de blanco —parecía que llevaba un flotador—. El manto
+devuelve ahora el pincel a negro antes de salir.
+
+**Tu nombre y tus victorias, en la carrera.** El marcador de la sala abre con
+tu nombre y tus carreras ganadas, y cada fila lleva el trofeo del que sea, que
+viaja en su presencia como todo lo demás. Y el nombre se leía **sólo** al
+pulsar Empezar: cambiarlo y entrar en una sala dejaba puesto el de antes. Ahora
+se apunta según escribes y la ficha de la sala se actualiza sola.
+
 ### El pasillo de entrenamiento
 
 La partida empezaba con el personaje de pie en una plataforma de 320 px

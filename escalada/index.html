@@ -250,8 +250,8 @@
 
   /* Tarjetas de skin y accesorio, con el personaje dibujado dentro */
   #skins, #accesorios, #estelas-lista { display:grid; gap:8px; margin-bottom:0; }
-  #skins { grid-template-columns:repeat(5,1fr); }
-  #accesorios { grid-template-columns:repeat(5,1fr); }
+  #skins { grid-template-columns:repeat(6,1fr); }
+  #accesorios { grid-template-columns:repeat(6,1fr); }
   #estelas-lista { grid-template-columns:repeat(4,1fr); }
 
   /* ---- Mezclador de color ---- */
@@ -478,6 +478,19 @@
     font-variant-numeric:tabular-nums; }
   .hucha span { font-size:10px; letter-spacing:1.2px; text-transform:uppercase;
     color:#b7975a; }
+  .huchas { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+  /* La hucha de coronas se distingue de la de monedas por el color y por la
+     forma del icono: son dos monedas distintas y tienen que parecerlo. */
+  .hucha.coronas { background:linear-gradient(180deg, rgba(140,200,255,.15), rgba(90,140,255,.06));
+    border-color:rgba(140,200,255,.32); }
+  .hucha.coronas b { color:#cfe6ff; }
+  .hucha.coronas span { color:#8ba6c4; }
+  .hucha.coronas i { border-radius:2px 2px 0 0; background:none; box-shadow:none;
+    position:relative; height:13px; }
+  .hucha.coronas i::before { content:''; position:absolute; inset:0;
+    background:linear-gradient(180deg,#ffe9a8,#e8b52c);
+    clip-path:polygon(0 100%,0 32%,25% 60%,50% 8%,75% 60%,100% 32%,100% 100%);
+    filter:drop-shadow(0 0 5px rgba(255,210,110,.5)); }
 
   /* Tarjeta cerrada: se ve lo que compras, apagado, con su precio */
   .tarjeta .precio { position:absolute; left:3px; top:3px; z-index:2;
@@ -489,6 +502,13 @@
     background:radial-gradient(circle at 34% 30%, #fff3b0, #f5c02b 60%, #a87a0a); }
   .tarjeta .precio.alcanza { color:#ffe07a; border-color:rgba(255,200,60,.55);
     box-shadow:0 0 10px rgba(255,190,50,.25); }
+  /* Precio en CORONAS: otra moneda, otro color y otro icono. */
+  .tarjeta .precio.real { color:#cfe6ff; border-color:rgba(140,200,255,.4); }
+  .tarjeta .precio.real::before { border-radius:1px 1px 0 0;
+    background:linear-gradient(180deg,#ffe9a8,#e8b52c); box-shadow:none;
+    clip-path:polygon(0 100%,0 30%,25% 62%,50% 6%,75% 62%,100% 30%,100% 100%); }
+  .tarjeta .precio.real.alcanza { color:#eaf5ff; border-color:rgba(160,215,255,.75);
+    background:rgba(40,80,130,.55); }
   .tarjeta .precio.oculta { display:none; }
   /* Cerrado, no roto. En gris total todas las fichas eran la misma mancha;
      con un velo se sigue leyendo qué es y encima apetece. */
@@ -685,9 +705,11 @@
   #sala-screen .btn.ghost#sala-cerrar { margin-top:14px; }
 
   /* PALMARÉS. Dos cuentas, una por modo. */
-  .palmares { display:flex; gap:8px; margin-top:12px; }
-  .palmares div { flex:1; min-width:0; display:flex; align-items:center; gap:9px;
-    padding:8px 11px; border-radius:12px; text-align:left;
+  /* Tres fichas: en fila libre la del medio se estrujaba y los rótulos salían
+     en tres renglones. En rejilla de tres iguales caben las tres. */
+  .palmares { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:12px; }
+  .palmares div { min-width:0; display:flex; align-items:center; gap:7px;
+    padding:8px 9px; border-radius:12px; text-align:left;
     background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07); }
   .palmares div.tiene { background:linear-gradient(180deg,
       rgba(var(--tinte,255,215,0),.15), rgba(var(--tinte,255,215,0),.04));
@@ -698,8 +720,9 @@
   .palmares b { display:block; font-size:19px; font-weight:900; color:#4d5c6e;
     line-height:1; font-variant-numeric:tabular-nums; }
   .palmares div.tiene b { color:#f4f8fd; }
-  .palmares span { display:block; font-size:9px; letter-spacing:1.1px;
-    text-transform:uppercase; color:#7d90a6; margin-top:3px; }
+  .palmares span { display:block; font-size:8.5px; letter-spacing:.8px;
+    text-transform:uppercase; color:#7d90a6; margin-top:3px; line-height:1.25; }
+  .palmares b { font-size:17px; }
   .palmares u { text-decoration:none; min-width:0; }
 
   /* El cartel del puesto, lo primero que se lee al ganar */
@@ -747,6 +770,20 @@
     white-space:nowrap; }
   #tabla-sala u { text-decoration:none; font-variant-numeric:tabular-nums;
     font-size:11px; color:#ffd700; font-weight:700; }
+  /* El trofeo de cada uno, pequeño y antes del dato */
+  #tabla-sala em { font-style:normal; font-size:10px; font-weight:800; flex:none;
+    color:#9fd8ff; display:flex; align-items:center; gap:2px; }
+  #tabla-sala em::before { content:'🏆'; font-size:9px; filter:saturate(.8); }
+  /* Tu nombre y tus victorias, en la cabecera del marcador */
+  .tabla-yo { display:flex; align-items:center; gap:7px; padding:4px 7px 7px;
+    margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,.1); }
+  .tabla-yo span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; font-size:12.5px; font-weight:800; letter-spacing:.6px;
+    color:#ffe9a8; }
+  .tabla-yo i { font-style:normal; display:flex; align-items:center; gap:3px;
+    font-size:11.5px; font-weight:900; color:#0f1a12; padding:2px 7px;
+    border-radius:999px; background:linear-gradient(180deg,#ffe9a8,#e8b52c); }
+  .tabla-yo i::before { content:'👑'; font-size:9px; }
   #game-container.en-menu #tabla-sala { display:none !important; }
 
   /* Cuenta atrás de la salida */
@@ -919,8 +956,16 @@
             <ul class="datos" id="datos-nivel"></ul>
           </div>
           <div class="cabecera-dcha">
-            <div class="hucha" title="Monedas para gastar en la tienda">
-              <i></i><b id="hucha">0</b><span>monedas</span>
+            <!-- Dos huchas: las monedas se recogen escalando y las coronas
+                 se ganan ganando. En la cabecera decían las dos «monedas»
+                 con números distintos y no se entendía cuál era cuál. -->
+            <div class="huchas">
+              <div class="hucha" title="Monedas recogidas escalando, para la tienda">
+                <i></i><b id="hucha">0</b><span>en la hucha</span>
+              </div>
+              <div class="hucha coronas" title="Coronas: una por cada victoria">
+                <i></i><b id="hucha-coronas">0</b><span>coronas</span>
+              </div>
             </div>
             <div class="vitrina" id="vitrina"></div>
           </div>
@@ -1594,6 +1639,9 @@ const SKINS = [
      del menú, así que es lo único de la tienda que no se acaba nunca. Por
      eso es lo más caro de la pestaña. */
   { id: 'mezcla',   nombre: 'A tu gusto', mezcla: true,    precio: 380, claro: '#ffffff', medio: '#c9d3e2', oscuro: '#8d97a8', pata: '#5c6474', pataOsc: '#343a46' },
+  /* LA REALEZA. No se compra con monedas: se compra con CORONAS, y las
+     coronas sólo salen de ganar. Diez victorias, el rey. */
+  { id: 'rey',      nombre: 'Rey Rico',   traje: 'rey',    corona: 10, claro: '#ffe9a0', medio: '#f0c33c', oscuro: '#a8790c', pata: '#7c1f2e', pataOsc: '#4c101c' },
 ];
 
 /* Los cuatro tonos del mezclador. Se guardan con las preferencias, así que
@@ -5438,6 +5486,7 @@ function miFicha() {
     acc: (ACCESORIOS[accesorioElegido] || {}).id || 'ninguno',
     est: (ESTELAS[estelaElegida] || {}).id || 'ninguna',
     host: soyHost ? 1 : 0,
+    vic: marcas.ganadasSala || 0,      // el palmarés viaja con la ficha
   };
 }
 
@@ -5696,10 +5745,20 @@ function refrescarTablaSala() {
   const html = gente.map((p, i) => {
     const nom = limpiarNombre(p.pres.nom);
     const dato = p.pres.fin ? reloj(p.pres.fin) : (p.pres.m || 0) + ' m';
+    const vic = p.pres.vic || 0;
     return '<li class="' + (p.soyYo ? 'yo' : '') + (p.pres.fin ? ' meta' : '') + '">' +
-      '<b>' + (i + 1) + '</b><span>' + nom + '</span><u>' + dato + '</u></li>';
+      '<b>' + (i + 1) + '</b><span>' + nom + '</span>' +
+      (vic ? '<em title="carreras ganadas">' + vic + '</em>' : '') +
+      '<u>' + dato + '</u></li>';
   }).join('');
-  if (html !== _tablaSala) { _tablaSala = html; el.innerHTML = '<ol>' + html + '</ol>'; }
+  // Arriba del todo, quién eres y cuántas llevas ganadas: en una carrera es
+  // lo que se mira, y hasta ahora tu nombre sólo estaba bajo tus pies.
+  const yo = gente.find((p) => p.soyYo);
+  const cab = '<div class="tabla-yo"><span>' +
+    limpiarNombre(yo ? yo.pres.nom : nombreJugador) + '</span><i>' +
+    (marcas.ganadasSala || 0) + '</i></div>';
+  const todo = cab + '<ol>' + html + '</ol>';
+  if (todo !== _tablaSala) { _tablaSala = todo; el.innerHTML = todo; }
 
   // La misma clasificación, dentro de la pantalla de victoria: el que llega
   // primero se queda mirando cómo acaban los demás en vez de un panel muerto.
@@ -10085,6 +10144,7 @@ const ACCESORIOS = [
   { id: 'espacial', corto: 'Espacial', nombre: 'Casco espacial', precio: 300, fila: 0, px: [] },
   { id: 'corona', corto: 'Corona', nombre: 'Corona de oro', precio: 350, fila: 0, px: [] },
   { id: 'halo',   corto: 'Aureola', nombre: 'Aureola de luz', precio: 450, fila: 0, px: [] },
+  { id: 'realeza', corto: 'Realeza', nombre: 'Corona de rey rico', corona: 4, fila: 0, px: [] },
 ];
 let accesorioElegido = 0;
 
@@ -10120,6 +10180,7 @@ const ESTELAS = [
   { id: 'arcoiris', corto: 'Arcoíris', nombre: 'Arcoíris',          tipo: 'arcoiris', precio: 280, color: '#ff6ec7' },
   { id: 'pintura',  corto: 'Pintura',  nombre: 'Pintura de tu color', tipo: 'pintura', precio: 320, color: '#7df3f5' },
   { id: 'mundo',    corto: 'Del mundo',nombre: 'Estela de la cumbre', tipo: 'mundo',  precio: 450, color: '#c39bff' },
+  { id: 'dinero',   corto: 'Dinero',   nombre: 'Lluvia de billetes', tipo: 'dinero', corona: 6,  color: '#6fd08a' },
 ];
 let estelaElegida = 0;
 
@@ -10162,6 +10223,9 @@ function nacerEstela(tipo, x, y, dir, aire) {
                               q.life = q.vida0 = 80; q.alta = rnd() < 0.5; }
   else if (tipo === 'rayo') { q.vy = -0.4 - rnd() * 0.8; q.peso = 0.02;
                               q.size = 7 + rnd() * 3; q.life = q.vida0 = 40; }
+  else if (tipo === 'dinero') { q.vy = -1.4 - rnd() * 1.1; q.peso = 0.075; q.roce = 0.94;
+                                q.size = 7 + rnd() * 3; q.life = q.vida0 = 66;
+                                q.vgiro = (rnd() - 0.5) * 0.26; q.billete = rnd() < 0.55; }
   else if (tipo === 'pintura') { q.peso = 0.05; q.roce = 0.9; q.size = 6.5 + rnd() * 4.5;
                                  q.life = q.vida0 = 88; q.vgiro = (rnd() - 0.5) * 0.3;
                                  q.mio = q.halo = pielDe(skinElegida).medio; }
@@ -10400,6 +10464,29 @@ function dibujoEstela(q, s) {
       ctx.lineTo(-s * 0.08, -s * 0.02);
       ctx.closePath(); ctx.fill();
 
+    } else if (q.tipo === 'dinero') {
+      // Mitad billetes, mitad monedas: sólo monedas parecía la estela de
+      // monedas que ya existe, y el chiste es que vas tirando dinero.
+      ctx.rotate(q.giro);
+      if (q.billete) {
+        ctx.fillStyle = '#5fbf7d';
+        ctx.fillRect(-s * 1.15, -s * 0.6, s * 2.3, s * 1.2);
+        ctx.strokeStyle = 'rgba(20,70,40,0.65)'; ctx.lineWidth = 1.2;
+        ctx.strokeRect(-s * 1.15, -s * 0.6, s * 2.3, s * 1.2);
+        ctx.fillStyle = 'rgba(230,255,238,0.75)';
+        ctx.beginPath(); ctx.ellipse(0, 0, s * 0.5, s * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(20,80,45,0.8)';
+        ctx.fillRect(-s * 1.0, -s * 0.45, s * 0.22, s * 0.9);
+        ctx.fillRect(s * 0.78, -s * 0.45, s * 0.22, s * 0.9);
+      } else {
+        const gir = Math.abs(Math.cos(q.giro * 2.2));
+        ctx.shadowColor = '#ffd447'; ctx.shadowBlur = 9;
+        ctx.fillStyle = '#c98f10';
+        ctx.beginPath(); ctx.ellipse(0, 0, Math.max(1, s * gir), s * 0.92, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffd447';
+        ctx.beginPath(); ctx.ellipse(0, 0, Math.max(0.7, s * gir * 0.7), s * 0.68, 0, 0, Math.PI * 2); ctx.fill();
+      }
+
     } else if (q.tipo === 'pintura') {
       // Salpicón DE TU COLOR: la estela más personal de la tienda
       ctx.rotate(q.giro);
@@ -10426,7 +10513,7 @@ const TINTA_ESTELA = {
   hoja: '#7bc74a', copo: '#dff0ff', fuego: '#ff7a2f', moneda: '#ffd447',
   pez: '#ff9b52', papel: '#c8d6ea', trigo: '#f0cd5e', bit: '#3ef0a0',
   estrella: '#ffe27a', arcoiris: '#ff6ec7', humo: '#b9c9de', corazon: '#ff5f92',
-  nota: '#93a9ff', rayo: '#ffe14d', pintura: '#ffffff',
+  nota: '#93a9ff', rayo: '#ffe14d', pintura: '#ffffff', dinero: '#8ee6a6',
 };
 function tintaEstela(tipo) { return TINTA_ESTELA[tipo] || '#dce9fb'; }
 
@@ -10656,6 +10743,51 @@ function trajeDetras(piel, reloj, aire) {
     ctx.lineCap = 'butt'; ctx.lineWidth = 2.6;
     return;
   }
+
+  if (id === 'rey') {
+    // Manto de armiño: paño granate con el borde blanco moteado. Ondea con
+    // el paso, y en el aire se abre más.
+    const onda = Math.sin(reloj * 1.5) * (aire ? 7 : 4);
+    const pano = ctx.createLinearGradient(0, -52, 0, 6);
+    pano.addColorStop(0, '#a3243c'); pano.addColorStop(1, '#5d0f20');
+    ctx.fillStyle = pano;
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(-22, -50);
+    ctx.quadraticCurveTo(-50 - onda, -32, -42 - onda * 1.3, -6);
+    ctx.quadraticCurveTo(0, 2, 42 + onda * 1.3, -6);
+    ctx.quadraticCurveTo(50 + onda, -32, 22, -50);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    /* ARMIÑO EN LOS BORDES, no en el bajo. Una franja horizontal cruzando
+       el bajo del manto quedaba por delante del cuerpo como una tarima
+       blanca —el manto va DETRÁS, así que del bajo sólo asoma lo que sobra
+       por debajo— y encima tapaba el medallón. En los cantos, que es justo
+       donde el manto se ve, se lee lo que es. */
+    for (const sg of [-1, 1]) {
+      const traza = () => {
+        ctx.beginPath();
+        ctx.moveTo(sg * 27, -45);
+        ctx.quadraticCurveTo(sg * (46 + onda), -31, sg * (38 + onda), -13);
+        ctx.stroke();
+      };
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#000000'; ctx.lineWidth = 7.5; traza();
+      ctx.strokeStyle = '#f4f2ea'; ctx.lineWidth = 5; traza();
+      ctx.fillStyle = '#2a2a2e';
+      for (const f of [0.3, 0.62]) {
+        const mx = sg * (27 + (38 + onda - 27) * f);
+        const my = -45 + 32 * f;
+        ctx.beginPath(); ctx.ellipse(mx, my, 1.2, 1.9, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    /* EL PINCEL SE DEVUELVE COMO ESTABA. Esto se pinta ANTES que las patas y
+       el cuerpo, y el contorno del personaje se traza con el `strokeStyle`
+       que haya puesto: dejándolo en blanco, el muñeco entero salía perfilado
+       de blanco y parecía que llevaba un flotador. */
+    ctx.lineCap = 'butt';
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.8;
+    return;
+  }
 }
 
 /** Lo que se pinta sobre el cuerpo, recortado por su silueta. */
@@ -10828,6 +10960,31 @@ function trajeDentro(piel) {
         ctx.arc(c * 11 + (f % 2 ? 5.5 : 0), yy, 5.5, Math.PI * 0.15, Math.PI * 0.85);
         ctx.stroke();
       }
+    }
+    return;
+  }
+
+  if (id === 'rey') {
+    // Cadena de oro con medallón, y monedas cosidas al traje
+    ctx.strokeStyle = '#c99a12'; ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(-20, -26); ctx.quadraticCurveTo(0, -12, 20, -26);
+    ctx.stroke();
+    ctx.fillStyle = '#ffd94d';
+    ctx.strokeStyle = '#8a6208'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, -11, 8.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    ctx.moveTo(0, -16); ctx.lineTo(4.5, -11); ctx.lineTo(0, -6); ctx.lineTo(-4.5, -11);
+    ctx.closePath(); ctx.fill();
+    // Monedas sueltas por el traje
+    ctx.fillStyle = 'rgba(255,225,120,0.85)';
+    for (const [mx, my] of [[-27, -40], [24, -44], [-31, -18], [29, -20], [16, -34]]) {
+      ctx.beginPath(); ctx.ellipse(mx, my, 4.4, 5.4, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(160,110,10,0.6)';
+    for (const [mx, my] of [[-27, -40], [24, -44], [-31, -18], [29, -20], [16, -34]]) {
+      ctx.beginPath(); ctx.ellipse(mx, my, 2.1, 2.8, 0, 0, Math.PI * 2); ctx.fill();
     }
     return;
   }
@@ -11043,6 +11200,11 @@ function trajeDelante(piel, reloj) {
     ctx.beginPath(); ctx.arc(0, -58, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     return;
   }
+
+  /* El rey no pinta nada por delante. Llevaba una gorguera de armiño al
+     cuello y tapaba el medallón, que es lo que de verdad dice «rico»: el
+     manto por detrás y la cadena por delante del cuerpo bastan, y así la
+     corona de Realeza se puede llevar encima sin amontonar. */
 }
 
 function drawPlayer() {
@@ -11452,6 +11614,68 @@ function dibujarAccesorioIlustrado(piel, contorno, dx, aire, corriendo) {
     ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#14171d';
     ctx.beginPath(); ctx.arc(36, -29 + bal, 1.9, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'realeza') {
+    // La corona buena: aro de oro con pedrería, casquete de terciopelo,
+    // perlas en las puntas y un brillo que gira. Es lo más caro del juego y
+    // se nota de lejos.
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    const late = 1 + Math.sin(t * 0.06) * 0.06;
+
+    // Casquete de terciopelo asomando entre las puntas
+    ctx.fillStyle = '#8e1b33';
+    ctx.beginPath();
+    ctx.moveTo(-19, -50); ctx.quadraticCurveTo(0, -66, 19, -50);
+    ctx.lineTo(19, -46); ctx.lineTo(-19, -46);
+    ctx.closePath(); ctx.fill();
+
+    // Aro
+    const oro = ctx.createLinearGradient(0, -70, 0, -42);
+    oro.addColorStop(0, '#fff3b8'); oro.addColorStop(0.5, '#f5c62b'); oro.addColorStop(1, '#a87708');
+    ctx.fillStyle = oro;
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.6;
+    rrect(-21, -52, 42, 11, 3); ctx.fill(); ctx.stroke();
+
+    // Cinco puntas con su perla
+    ctx.fillStyle = oro;
+    const puntas = [[-18, -60], [-9, -68], [0, -73], [9, -68], [18, -60]];
+    ctx.beginPath();
+    ctx.moveTo(-21, -51);
+    for (let k = 0; k < puntas.length; k++) {
+      const [px2, py2] = puntas[k];
+      ctx.lineTo(px2, py2 * late);
+      if (k < puntas.length - 1) ctx.lineTo((px2 + puntas[k + 1][0]) / 2, -54);
+    }
+    ctx.lineTo(21, -51);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fffdf2';
+    for (const [px2, py2] of puntas) {
+      ctx.beginPath(); ctx.arc(px2, py2 * late - 3, 3.1, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = contorno; ctx.lineWidth = 1.6; ctx.stroke();
+    }
+
+    // Pedrería del aro
+    const gemas = [['#e0344e', -13], ['#3fa9f5', -4.5], ['#2ecc71', 4.5], ['#b06fff', 13]];
+    for (const [col, gx] of gemas) {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(gx, -50.5); ctx.lineTo(gx + 3.2, -46.5); ctx.lineTo(gx, -42.5);
+      ctx.lineTo(gx - 3.2, -46.5);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath(); ctx.arc(gx - 0.8, -48, 0.9, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // El destello que recorre el oro
+    const bx = Math.sin(t * 0.045) * 17;
+    ctx.save();
+    ctx.beginPath(); rrect(-21, -52, 42, 11, 3); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillRect(bx - 3, -53, 6, 13);
+    ctx.restore();
     ctx.restore();
     return;
   }
@@ -14154,9 +14378,19 @@ let mensajeTienda = false;
 /* El precio ya no sale de una fórmula sobre la posición: cada ficha lo trae
    escrito. Así se puede reordenar el catálogo de lo más sencillo a lo más
    exclusivo sin que los números se muevan solos. */
-function precioColor(i)  { const x = SKINS[i];      return (x && x.precio) || 0; }
-function precioAcc(i)    { const x = ACCESORIOS[i]; return (x && x.precio) || 0; }
-function precioEstela(i) { const x = ESTELAS[i];    return (x && x.precio) || 0; }
+/* DOS MONEDAS. Las normales se recogen escalando; las CORONAS sólo se ganan
+   ganando —una por victoria, en cualquiera de los dos modos— y son lo único
+   con lo que se compran las tres piezas de realeza. No se pueden cambiar unas
+   por otras: si se pudiera, subir mucho valdría lo mismo que ganar, y la idea
+   es justo la contraria. Cada ficha dice qué cuesta y en qué. */
+function costeDe(f) {
+  if (!f) return { n: 0, corona: false };
+  if (f.corona) return { n: f.corona, corona: true };
+  return { n: f.precio || 0, corona: false };
+}
+function precioColor(i)  { return costeDe(SKINS[i]); }
+function precioAcc(i)    { return costeDe(ACCESORIOS[i]); }
+function precioEstela(i) { return costeDe(ESTELAS[i]); }
 
 /* Identificador estable de cada artículo. Va por NOMBRE, no por posición:
    con la llave numérica de antes, reordenar el catálogo le cambiaba a la
@@ -14179,18 +14413,26 @@ function indicePorId(lista, id, porDefecto) {
   return porDefecto || 0;
 }
 
-function esMio(llave, precio) {
-  return precio === 0 || (marcas.compradas || []).indexOf(llave) >= 0;
+function esMio(llave, coste) {
+  const c = (coste && typeof coste === 'object') ? coste : { n: coste || 0 };
+  return !c.n || (marcas.compradas || []).indexOf(llave) >= 0;
+}
+
+/** Lo que hay en la hucha de la moneda que pide un artículo. */
+function saldoDe(coste) {
+  return (coste && coste.corona) ? (marcas.coronas || 0) : (marcas.banco || 0);
 }
 
 /**
  * Intenta comprar. Devuelve 'comprado', 'caro' o 'ya'. No hace nada más: el
  * que llama decide qué mensaje enseñar y cuándo repintar.
  */
-function comprar(llave, precio) {
-  if (esMio(llave, precio)) return 'ya';
-  if ((marcas.banco || 0) < precio) return 'caro';
-  marcas.banco -= precio;
+function comprar(llave, coste) {
+  const c = (coste && typeof coste === 'object') ? coste : { n: coste || 0, corona: false };
+  if (esMio(llave, c)) return 'ya';
+  if (saldoDe(c) < c.n) return 'caro';
+  if (c.corona) marcas.coronas = (marcas.coronas || 0) - c.n;
+  else marcas.banco -= c.n;
   marcas.compradas.push(llave);
   guardar();
   return 'comprado';
@@ -14244,7 +14486,10 @@ let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0
                banco: 0, compradas: [],
                // VICTORIAS. Dos cuentas separadas a propósito: terminar la
                // subida tú solo y ganar una carrera no son la misma proeza.
-               ganadasSolo: 0, ganadasSala: 0 };
+               ganadasSolo: 0, ganadasSala: 0,
+               // CORONAS: una por victoria, de cualquiera de los dos modos.
+               // Es la única moneda que compra la realeza.
+               coronas: 0 };
 
 function cargarGuardado() {
   let d = null;
@@ -14253,7 +14498,7 @@ function cargarGuardado() {
   if (d.marcas) Object.assign(marcas, d.marcas);
   if (!Array.isArray(marcas.compradas)) marcas.compradas = [];
   if (typeof marcas.banco !== 'number' || !isFinite(marcas.banco)) marcas.banco = 0;
-  for (const k of ['ganadasSolo', 'ganadasSala']) {
+  for (const k of ['ganadasSolo', 'ganadasSala', 'coronas']) {
     if (typeof marcas[k] !== 'number' || !isFinite(marcas[k]) || marcas[k] < 0) marcas[k] = 0;
   }
   // Guardados viejos: las llaves eran la POSICIÓN en el catálogo. Se
@@ -14335,8 +14580,10 @@ function anotarPartida(seg) {
 function anotarVictoria(cual) {
   const k = cual === 'sala' ? 'ganadasSala' : 'ganadasSolo';
   marcas[k] = (marcas[k] || 0) + 1;
+  marcas.coronas = (marcas.coronas || 0) + 1;    // una corona por victoria
   guardar();
   pintarPalmares();
+  pintarHucha();
   return marcas[k];
 }
 
@@ -14344,8 +14591,9 @@ function pintarPalmares() {
   const el = document.getElementById('palmares');
   if (!el) return;
   const filas = [
-    ['🏁', marcas.ganadasSolo || 0, 'Cumbres en solitario', '255,215,0'],
-    ['🏆', marcas.ganadasSala || 0, 'Carreras ganadas', '122,222,255'],
+    ['🏁', marcas.ganadasSolo || 0, 'En solitario', '255,215,0'],
+    ['🏆', marcas.ganadasSala || 0, 'Carreras', '122,222,255'],
+    ['👑', marcas.coronas || 0, 'Coronas', '255,196,90'],
   ];
   el.innerHTML = filas.map(([ico, n, txt, tinte]) =>
     '<div class="' + (n ? 'tiene' : '') + '" style="--tinte:' + tinte + '">' +
@@ -14434,7 +14682,7 @@ function pintarDatosNivel() {
   const filas = [
     ['1000', 'metros'], [String(TOTAL_WORLDS), 'cumbres'],
     [String(apoyos), 'apoyos'], [String(chk), 'checkpoints'],
-    [String(monedas.length), 'monedas'],
+    [String(monedas.length), 'monedas por recoger'],
   ];
   cont.innerHTML = filas.map(([n, t]) => '<li><b>' + n + '</b>' + t + '</li>').join('');
 }
@@ -14604,9 +14852,10 @@ cargarGuardado();
       if (!eti) return;
       if (mio) { eti.className = 'precio oculta'; eti.textContent = ''; }
       else {
-        const alcanza = (marcas.banco || 0) >= precio;
-        eti.className = 'precio' + (alcanza ? ' alcanza' : '');
-        eti.textContent = precio;
+        const alcanza = saldoDe(precio) >= precio.n;
+        eti.className = 'precio' + (alcanza ? ' alcanza' : '') +
+                        (precio.corona ? ' real' : '');
+        eti.textContent = precio.n;
       }
     });
   };
@@ -14644,7 +14893,7 @@ cargarGuardado();
           const r = comprar(llave, precio);
           // El aviso va DESPUÉS de repintar: `refrescarTodo` reescribe la
           // pista con «Llevas …» y se comía el mensaje.
-          if (r === 'caro') { refrescarTodo(); avisoTienda(precio - (marcas.banco || 0)); return; }
+          if (r === 'caro') { refrescarTodo(); avisoTienda(precio.n - saldoDe(precio), precio.corona); return; }
           refrescarTodo(); celebrarCompra(a.corto || a.nombre);
         }
         accesorioElegido = i;
@@ -14662,7 +14911,7 @@ cargarGuardado();
         const precio = precioColor(i), llave = llaveColor(i);
         if (!esMio(llave, precio)) {
           const r = comprar(llave, precio);
-          if (r === 'caro') { refrescarTodo(); avisoTienda(precio - (marcas.banco || 0)); return; }
+          if (r === 'caro') { refrescarTodo(); avisoTienda(precio.n - saldoDe(precio), precio.corona); return; }
           refrescarTodo(); celebrarCompra(sk.nombre);
         }
         skinElegida = i;
@@ -14683,7 +14932,7 @@ cargarGuardado();
         const precio = precioEstela(i), llave = llaveEstela(i);
         if (!esMio(llave, precio)) {
           const r = comprar(llave, precio);
-          if (r === 'caro') { refrescarTodo(); avisoTienda(precio - (marcas.banco || 0)); return; }
+          if (r === 'caro') { refrescarTodo(); avisoTienda(precio.n - saldoDe(precio), precio.corona); return; }
           refrescarTodo(); celebrarCompra(e.corto);
         }
         estelaElegida = i;
@@ -14704,13 +14953,15 @@ cargarGuardado();
 
 /** Aviso de que faltan monedas, sobre la pista del selector. */
 let avisoTiendaTimer = 0;
-function avisoTienda(faltan) {
+function avisoTienda(faltan, corona) {
   const pista = document.getElementById('pista-eleccion');
   if (!pista) return;
   mensajeTienda = true;
   pista.classList.add('falta');
   pista.innerHTML = 'Te faltan <b>' + faltan + '</b> ' +
-    (faltan === 1 ? 'moneda' : 'monedas') + '<em>Sube y recógelas escalando</em>';
+    (corona ? (faltan === 1 ? 'corona' : 'coronas') : (faltan === 1 ? 'moneda' : 'monedas')) +
+    '<em>' + (corona ? 'Las coronas sólo se ganan: una por victoria'
+                     : 'Sube y recógelas escalando') + '</em>';
   clearTimeout(avisoTiendaTimer);
   avisoTiendaTimer = setTimeout(() => {
     pista.classList.remove('falta');
@@ -14738,6 +14989,8 @@ function celebrarCompra(nombre) {
 function pintarHucha() {
   const el = document.getElementById('hucha');
   if (el) el.textContent = marcas.banco || 0;
+  const co = document.getElementById('hucha-coronas');
+  if (co) co.textContent = marcas.coronas || 0;
 }
 
 /** Repinta el escaparate y todas las tarjetas. */
@@ -14934,8 +15187,29 @@ function pintarVistaPrevia() {
 function leerPersonalizacion() {
   const inp = document.getElementById('nombre-input');
   const v = inp && inp.value ? inp.value.trim().toUpperCase() : '';
-  nombreJugador = v || 'ESCALADOR';
+  nombreJugador = limpiarNombre(v || 'ESCALADOR');
   guardar();
+}
+
+/* El nombre se leía SÓLO al pulsar Empezar. Cambiarlo y volver al menú, o
+   cambiarlo y entrar en una sala, dejaba el de antes puesto. Ahora se apunta
+   según escribes —con el retardo de siempre para no escribir en el disco en
+   cada tecla— y la ficha de la sala se actualiza sola. */
+(function montarNombre() {
+  const inp = document.getElementById('nombre-input');
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    leerPersonalizacionSuave();
+  });
+  inp.addEventListener('blur', () => { leerPersonalizacion(); });
+})();
+
+function leerPersonalizacionSuave() {
+  const inp = document.getElementById('nombre-input');
+  const v = inp && inp.value ? inp.value.trim().toUpperCase() : '';
+  nombreJugador = limpiarNombre(v || 'ESCALADOR');
+  if (miSala) SALA.presencia({ nom: nombreJugador });
+  guardarPronto();
 }
 
 /* ====================================================================
