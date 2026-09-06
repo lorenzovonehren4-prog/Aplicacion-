@@ -684,6 +684,35 @@
   .sala-aviso.visible { opacity:1; }
   #sala-screen .btn.ghost#sala-cerrar { margin-top:14px; }
 
+  /* PALMARÉS. Dos cuentas, una por modo. */
+  .palmares { display:flex; gap:8px; margin-top:12px; }
+  .palmares div { flex:1; min-width:0; display:flex; align-items:center; gap:9px;
+    padding:8px 11px; border-radius:12px; text-align:left;
+    background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07); }
+  .palmares div.tiene { background:linear-gradient(180deg,
+      rgba(var(--tinte,255,215,0),.15), rgba(var(--tinte,255,215,0),.04));
+    border-color:rgba(var(--tinte,255,215,0),.3); }
+  .palmares i { font-style:normal; font-size:17px; line-height:1; flex:none;
+    filter:grayscale(1) opacity(.45); }
+  .palmares div.tiene i { filter:none; }
+  .palmares b { display:block; font-size:19px; font-weight:900; color:#4d5c6e;
+    line-height:1; font-variant-numeric:tabular-nums; }
+  .palmares div.tiene b { color:#f4f8fd; }
+  .palmares span { display:block; font-size:9px; letter-spacing:1.1px;
+    text-transform:uppercase; color:#7d90a6; margin-top:3px; }
+  .palmares u { text-decoration:none; min-width:0; }
+
+  /* El cartel del puesto, lo primero que se lee al ganar */
+  .win-puesto { margin:10px 0 4px; padding:10px 14px; border-radius:12px;
+    font-size:15px; font-weight:800; letter-spacing:.3px; }
+  .win-puesto.gano { color:#0f1a12;
+    background:linear-gradient(180deg,#a6f07a,#5fc93f);
+    box-shadow:0 4px 16px rgba(95,201,63,.28); }
+  .win-puesto.pierdo { color:#dbe6f2; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12); }
+  .win-puesto.solo { color:#9fb2c6; background:rgba(255,255,255,.04);
+    border:1px dashed rgba(255,255,255,.12); font-size:12.5px; font-weight:700; }
+
   /* La clasificación repetida dentro de la pantalla de victoria */
   #win-sala { margin:14px 0 4px; padding:11px 13px 9px; border-radius:14px;
     background:rgba(0,0,0,.26); border:1px solid rgba(255,255,255,.08); text-align:left; }
@@ -777,6 +806,10 @@
     .pista-eleccion { padding:5px 9px; }
     #skins .tarjeta canvas, #accesorios .tarjeta canvas,
     #estelas-lista .tarjeta canvas { height:36px; }
+    /* Con 30 colores y 28 gorros, cinco columnas son seis filas y en una
+       pantalla baja el pie se come la última. A seis columnas caben en cinco. */
+    #skins, #accesorios { grid-template-columns:repeat(6,1fr); }
+    #estelas-lista { grid-template-columns:repeat(5,1fr); }
     .mezclador { padding:7px 9px 8px; }
     .mezclador label { font-size:10px; margin-bottom:4px; }
     .tarjeta span { font-size:9px; padding:2px 2px 4px; }
@@ -904,6 +937,9 @@
               <span>Nombre</span>
               <input id="nombre-input" maxlength="12" placeholder="ESCALADOR" autocomplete="off">
             </label>
+            <!-- Las dos cuentas de victorias: una por modo, porque ganar una
+                 carrera y terminar una contrarreloj no son lo mismo. -->
+            <div class="palmares" id="palmares"></div>
           </section>
 
           <section class="bloque col-ctrl">
@@ -1009,6 +1045,7 @@
       <div class="panel">
         <h1 class="win">¡LO LOGRASTE!</h1>
         <p>1000 metros y las 6 cumbres, de punta a punta.</p>
+        <p id="win-puesto" class="win-puesto oculta"></p>
         <p id="win-stats"></p>
         <!-- En sala, la clasificación de la carrera. Sigue viva mientras los
              demás terminan: no se cierra el marcador cuando llegas tú. -->
@@ -1532,6 +1569,12 @@ const SKINS = [
   { id: 'grafito', nombre: 'Grafito', precio: 60, claro: '#7b8493', medio: '#4a5261', oscuro: '#262c38', pata: '#1d2028', pataOsc: '#0f1218' },
   { id: 'lima',    nombre: 'Lima',    precio: 65, claro: '#e8ff8a', medio: '#c3ea2c', oscuro: '#89a80c', pata: '#6f8f14', pataOsc: '#465c08' },
   { id: 'choco',   nombre: 'Choco',   precio: 75, claro: '#c98c5a', medio: '#9c5f31', oscuro: '#63381a', pata: '#4a2913', pataOsc: '#2d180b' },
+  { id: 'coral',   nombre: 'Coral',   precio: 80, claro: '#ffb3a0', medio: '#ff6f5e', oscuro: '#b83a2c', pata: '#7d3a34', pataOsc: '#4e221e' },
+  { id: 'menta',   nombre: 'Menta',   precio: 85, claro: '#b6ffe0', medio: '#5fdcb2', oscuro: '#25987a', pata: '#2c7d68', pataOsc: '#164e40' },
+  { id: 'lavanda', nombre: 'Lavanda', precio: 90, claro: '#dcc8ff', medio: '#b295ec', oscuro: '#7355b4', pata: '#5b4a8a', pataOsc: '#382c58' },
+  { id: 'arena',   nombre: 'Arena',   precio: 95, claro: '#f6e0b0', medio: '#dcb96f', oscuro: '#9c7c33', pata: '#8a6b3a', pataOsc: '#584322' },
+  { id: 'indigo',  nombre: 'Índigo',  precio: 100, claro: '#8f9bff', medio: '#4a55d6', oscuro: '#242c8c', pata: '#1c2160', pataOsc: '#10133a' },
+  { id: 'vino',    nombre: 'Vino',    precio: 110, claro: '#d47a9a', medio: '#9b2f52', oscuro: '#5f1730', pata: '#4a1526', pataOsc: '#2c0c17' },
   /* Disfraces: además del color pintan algo sobre el cuerpo y, algunos,
      apéndices por delante o por detrás. El color de base sigue mandando,
      así que el brillo y la sombra del cuerpo les caen igual que al resto.
@@ -1544,10 +1587,13 @@ const SKINS = [
   { id: 'robot',    nombre: 'Robot',    traje: 'robot',    precio: 215, claro: '#cfd8e6', medio: '#93a1b5', oscuro: '#5b6779', pata: '#3d4654', pataOsc: '#242b36' },
   { id: 'buzo',     nombre: 'Buzo',     traje: 'buzo',     precio: 245, claro: '#8fd8ff', medio: '#39a4dc', oscuro: '#186a99', pata: '#f2a93b', pataOsc: '#a86a12' },
   { id: 'dino',     nombre: 'Dino',     traje: 'dino',     precio: 275, claro: '#a6ee76', medio: '#54b532', oscuro: '#2c7317', pata: '#e2c65a', pataOsc: '#9b8320' },
+  { id: 'panda',    nombre: 'Panda',    traje: 'panda',    precio: 285, claro: '#ffffff', medio: '#eef1f6', oscuro: '#c2c8d2', pata: '#23262c', pataOsc: '#121418' },
+  { id: 'cactus',   nombre: 'Cactus',   traje: 'cactus',   precio: 295, claro: '#a9e88a', medio: '#5aa843', oscuro: '#2f6b22', pata: '#a8703a', pataOsc: '#6b451f' },
+  { id: 'sirena',   nombre: 'Sirena',   traje: 'sirena',   precio: 310, claro: '#9ff0e6', medio: '#3fc6c0', oscuro: '#1a8188', pata: '#2a9d8f', pataOsc: '#14615a' },
   /* EL MEZCLADOR. No es un color: es TODOS. Los tonos salen de los mandos
      del menú, así que es lo único de la tienda que no se acaba nunca. Por
      eso es lo más caro de la pestaña. */
-  { id: 'mezcla',   nombre: 'A tu gusto', mezcla: true,    precio: 330, claro: '#ffffff', medio: '#c9d3e2', oscuro: '#8d97a8', pata: '#5c6474', pataOsc: '#343a46' },
+  { id: 'mezcla',   nombre: 'A tu gusto', mezcla: true,    precio: 380, claro: '#ffffff', medio: '#c9d3e2', oscuro: '#8d97a8', pata: '#5c6474', pataOsc: '#343a46' },
 ];
 
 /* Los cuatro tonos del mezclador. Se guardan con las preferencias, así que
@@ -5040,12 +5086,61 @@ function refrescarMarcador() {
   if (rc !== _hudRecord) { _hudRecord = rc; recordEl.textContent = rc; }
 }
 
+/* Se resuelve una sola vez por partida. */
+let victoriaResuelta = false;
+let miTiempoFin = 0;
+
+/**
+ * ¿Gané la carrera? Se decide un momento DESPUÉS de llegar, no al llegar: si
+ * dos entran casi a la vez, hay que darle tiempo al tiempo del otro a llegar
+ * por la presencia. Y ganar estando solo en la sala no cuenta: eso es una
+ * contrarreloj con más pasos.
+ */
+function resolverCarrera() {
+  if (victoriaResuelta || !modoSala || !miSala || !miTiempoFin) return;
+  victoriaResuelta = true;
+  const gente = genteSala();
+  const cartel = document.getElementById('win-puesto');
+  if (gente.length < 2) {
+    if (cartel) { cartel.className = 'win-puesto solo'; cartel.textContent =
+      'Carrera en solitario: no cuenta como victoria'; }
+    return;
+  }
+  let mejorAjeno = Infinity;
+  for (const p of gente) {
+    if (p.soyYo || !p.pres.fin) continue;
+    mejorAjeno = Math.min(mejorAjeno, p.pres.fin);
+  }
+  const gane = miTiempoFin < mejorAjeno;
+  if (cartel) {
+    cartel.className = 'win-puesto ' + (gane ? 'gano' : 'pierdo');
+    if (gane) {
+      const n = anotarVictoria('sala');
+      cartel.textContent = '🏆 ¡Primero! ' + n +
+        (n === 1 ? ' carrera ganada' : ' carreras ganadas');
+    } else {
+      cartel.textContent = 'Llegaste después. La próxima.';
+    }
+  } else if (gane) { anotarVictoria('sala'); }
+}
+
 function triggerWin() {
   gameOver = true; running = false;
   const seg = segundosPartida();
   // En sala, lo primero es cantar el tiempo: es lo que ordena la
   // clasificación de los que todavía están subiendo.
-  if (modoSala && miSala) SALA.presencia({ fin: Math.round(seg * 100) / 100, m: 1000 });
+  if (modoSala && miSala) {
+    miTiempoFin = Math.round(seg * 100) / 100;
+    SALA.presencia({ fin: miTiempoFin, m: 1000 });
+    setTimeout(resolverCarrera, 1600);
+  } else {
+    const n = anotarVictoria('solo');
+    const cartel = document.getElementById('win-puesto');
+    if (cartel) {
+      cartel.className = 'win-puesto gano';
+      cartel.textContent = '🏁 Cumbre número ' + n + ' en solitario';
+    }
+  }
   efecto([523, 659, 784, 1047], 0.18, 'triangle', 0.07);
   const nuevos = anotarPartida(seg);
   winStats.textContent = 'Tiempo: ' + reloj(seg) + '  ·  Caídas: ' + deaths +
@@ -9677,14 +9772,20 @@ const ACCESORIOS = [
       '...OOOO..OOOO...',
       '.....OOOOOO.....',
     ] } },
+  { id: 'banda',  corto: 'Cinta',  nombre: 'Cinta del pelo', precio: 40, fila: 0, px: [] },
   { id: 'chef',   corto: 'Chef',   nombre: 'Gorro de cocinero', precio: 65, fila: 0, px: [] },
+  { id: 'orejeras', corto: 'Orejeras', nombre: 'Orejeras de invierno', precio: 70, fila: 0, px: [] },
   { id: 'obrero', corto: 'Obra',   nombre: 'Casco de obra',  precio: 75, fila: 0, px: [] },
   { id: 'fiesta', corto: 'Fiesta', nombre: 'Gorro de fiesta', precio: 85, fila: 0, px: [] },
   { id: 'auriculares', corto: 'Cascos', nombre: 'Auriculares', precio: 95, fila: 0, px: [] },
+  { id: 'flotador', corto: 'Flotador', nombre: 'Flotador de pato', precio: 105, fila: 0, px: [] },
   { id: 'momia',  corto: 'Momia',  nombre: 'Vendas de momia', precio: 110, fila: 0, px: [] },
   { id: 'reno',   corto: 'Reno',   nombre: 'Cuernos de reno', precio: 125, fila: 0, px: [] },
   { id: 'bruja',  corto: 'Bruja',  nombre: 'Sombrero de bruja', precio: 140, fila: 0, px: [] },
+  { id: 'graduado', corto: 'Birrete', nombre: 'Birrete de graduación', precio: 145, fila: 0, px: [] },
   { id: 'mexicano', corto: 'Charro', nombre: 'Sombrero charro', precio: 155, fila: 0, px: [] },
+  { id: 'pirata', corto: 'Pirata', nombre: 'Pañuelo y parche', precio: 165, fila: 0, px: [] },
+  { id: 'vaquero', corto: 'Vaquero', nombre: 'Sombrero vaquero', precio: 180, fila: 0, px: [] },
   { id: 'vikingo', corto: 'Vikingo', nombre: 'Casco vikingo', precio: 175, fila: 0, px: [] },
   { id: 'luchador', corto: 'Luchador', nombre: 'Máscara de luchador', precio: 190, fila: 0, px: [] },
   { id: 'visor',  corto: 'Visor',  nombre: 'Visor de combate', precio: 210, fila: 0, px: [] },
@@ -9729,13 +9830,18 @@ const ESTELAS = [
   { id: 'petalos',  corto: 'Pétalos',  nombre: 'Pétalos',           tipo: 'petalo',   precio: 55,  color: '#ff9ec7' },
   { id: 'copos',    corto: 'Copos',    nombre: 'Copos de nieve',    tipo: 'copo',     precio: 70,  color: '#e8f6ff' },
   { id: 'hojas',    corto: 'Hojas',    nombre: 'Hojas al viento',   tipo: 'hoja',     precio: 85,  color: '#8fd45c' },
+  { id: 'humo',     corto: 'Humo',     nombre: 'Nubes de humo',     tipo: 'humo',     precio: 95,  color: '#c9d6e5' },
   { id: 'estrellas',corto: 'Estrellas',nombre: 'Estrellitas',       tipo: 'estrella', precio: 110, color: '#ffe27a' },
+  { id: 'corazones',corto: 'Corazones',nombre: 'Corazones',         tipo: 'corazon',  precio: 120, color: '#ff7aa8' },
   { id: 'bits',     corto: 'Bits',     nombre: 'Bits',              tipo: 'bit',      precio: 130, color: '#5ce1a0' },
   { id: 'fuego',    corto: 'Fuego',    nombre: 'Rastro de fuego',   tipo: 'fuego',    precio: 155, color: '#ff7a2f' },
+  { id: 'notas',    corto: 'Notas',    nombre: 'Notas musicales',   tipo: 'nota',     precio: 165, color: '#a5b8ff' },
   { id: 'peces',    corto: 'Peces',    nombre: 'Banco de peces',    tipo: 'pez',      precio: 180, color: '#ff9b52' },
+  { id: 'rayos',    corto: 'Rayos',    nombre: 'Rayos',             tipo: 'rayo',     precio: 200, color: '#ffe14d' },
   { id: 'monedas',  corto: 'Monedas',  nombre: 'Lluvia de monedas', tipo: 'moneda',   precio: 220, color: '#ffd447' },
   { id: 'arcoiris', corto: 'Arcoíris', nombre: 'Arcoíris',          tipo: 'arcoiris', precio: 280, color: '#ff6ec7' },
-  { id: 'mundo',    corto: 'Del mundo',nombre: 'Estela de la cumbre', tipo: 'mundo',  precio: 400, color: '#c39bff' },
+  { id: 'pintura',  corto: 'Pintura',  nombre: 'Pintura de tu color', tipo: 'pintura', precio: 320, color: '#7df3f5' },
+  { id: 'mundo',    corto: 'Del mundo',nombre: 'Estela de la cumbre', tipo: 'mundo',  precio: 450, color: '#c39bff' },
 ];
 let estelaElegida = 0;
 
@@ -9755,7 +9861,7 @@ function tipoDeEstela(est, mundo) {
 function nacerEstela(tipo, x, y, dir, aire) {
   const q = { tipo, x, y, giro: (rnd() - 0.5) * 3, vgiro: (rnd() - 0.5) * 0.14,
               vx: -dir * (0.5 + rnd() * 0.9), vy: -0.3 - rnd() * 0.7,
-              size: 4 + rnd() * 2.5, life: 62, vida0: 62,
+              size: 5.4 + rnd() * 3.2, life: 62, vida0: 62,
               peso: 0.012, roce: 0.955, tono: rnd() * 360 };
   if (tipo === 'burbuja') { q.vy = -0.9 - rnd() * 0.8; q.peso = -0.016; q.size = 3.4 + rnd() * 3.4; q.life = q.vida0 = 76; }
   else if (tipo === 'copo') { q.vy = -0.15 + rnd() * 0.35; q.peso = 0.008; q.size = 3.6 + rnd() * 2.4; q.life = q.vida0 = 92; }
@@ -9769,6 +9875,18 @@ function nacerEstela(tipo, x, y, dir, aire) {
   else if (tipo === 'bit') { q.vy = -0.6 - rnd() * 0.6; q.peso = 0.006; q.size = 4.4; q.life = q.vida0 = 58; q.uno = rnd() < 0.5; }
   else if (tipo === 'estrella') { q.peso = 0.006; q.size = 5 + rnd() * 2.5; q.life = q.vida0 = 70; }
   else if (tipo === 'arcoiris') { q.peso = -0.004; q.size = 6 + rnd() * 3; q.life = q.vida0 = 66; }
+  else if (tipo === 'humo') { q.vy = -0.5 - rnd() * 0.5; q.peso = -0.014; q.roce = 0.985;
+                              q.size = 7 + rnd() * 4; q.life = q.vida0 = 74; }
+  else if (tipo === 'corazon') { q.peso = -0.02; q.vgiro = (rnd() - 0.5) * 0.1;
+                                 q.size = 6 + rnd() * 2.5; q.life = q.vida0 = 78; }
+  else if (tipo === 'nota') { q.vy = -0.8 - rnd() * 0.7; q.peso = -0.012;
+                              q.vgiro = (rnd() - 0.5) * 0.12; q.size = 7 + rnd() * 2;
+                              q.life = q.vida0 = 80; q.alta = rnd() < 0.5; }
+  else if (tipo === 'rayo') { q.vy = -0.4 - rnd() * 0.8; q.peso = 0.02;
+                              q.size = 7 + rnd() * 3; q.life = q.vida0 = 40; }
+  else if (tipo === 'pintura') { q.peso = 0.05; q.roce = 0.9; q.size = 6.5 + rnd() * 4.5;
+                                 q.life = q.vida0 = 88; q.vgiro = (rnd() - 0.5) * 0.3;
+                                 q.mio = q.halo = pielDe(skinElegida).medio; }
   if (aire) { q.vx *= 0.6; q.vy -= 0.25; }
   return q;
 }
@@ -9784,8 +9902,12 @@ function emitirEstela() {
   const vuela = !player.onGround;
   if (!anda && !vuela) { ritmoEstela = 0; return; }
   ritmoEstela++;
-  if (ritmoEstela % (anda ? 5 : 4) !== 0) return;
-  if (estelas.length > 140) return;          // techo duro: es adorno, no física
+  // Se soltaba una cada cinco fotogramas y a plena velocidad quedaba un
+  // reguero de puntos sueltos que apenas se leía. Ahora salen casi el doble
+  // —cada tres andando, cada dos en el aire, que es cuando más luce— y el
+  // techo sube en consecuencia.
+  if (ritmoEstela % (anda ? 3 : 2) !== 0) return;
+  if (estelas.length > 230) return;          // techo duro: es adorno, no física
   const tipo = tipoDeEstela(est, mundoEnAltura(player.y));
   const dir = player.facing || 1;
   // Detrás del personaje: en el suelo a la altura de los pies, en el aire a
@@ -9940,11 +10062,95 @@ function dibujoEstela(q, s) {
 
     } else if (q.tipo === 'arcoiris') {
       const h = (q.tono + (q.vida0 - q.life) * 5) % 360;
-      ctx.shadowColor = hsl(h, 95, 62); ctx.shadowBlur = 12;
+      ctx.shadowColor = hsl(h, 95, 62); ctx.shadowBlur = 14;
       ctx.fillStyle = hsl(h, 95, 62);
       ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.fill();
+
+    } else if (q.tipo === 'humo') {
+      // Tres bolas que se abren: una sola parecía una pelota, no humo
+      ctx.fillStyle = 'rgba(206,220,238,0.5)';
+      const abre = (q.vida0 - q.life) * 0.06;
+      for (const [ax, ay] of [[0, 0], [-0.55, -0.3], [0.5, -0.45]]) {
+        ctx.beginPath();
+        ctx.arc(ax * s * (1 + abre), ay * s * (1 + abre), s * 0.72, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+    } else if (q.tipo === 'corazon') {
+      ctx.rotate(q.giro * 0.5);
+      ctx.shadowColor = '#ff5f92'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#ff7aa8';
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.85);
+      ctx.bezierCurveTo(-s * 1.35, -s * 0.15, -s * 0.5, -s * 1.05, 0, -s * 0.35);
+      ctx.bezierCurveTo(s * 0.5, -s * 1.05, s * 1.35, -s * 0.15, 0, s * 0.85);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath(); ctx.ellipse(-s * 0.42, -s * 0.4, s * 0.2, s * 0.13, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (q.tipo === 'nota') {
+      ctx.rotate(q.giro * 0.35);
+      ctx.shadowColor = '#93a9ff'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#c3d0ff';
+      ctx.beginPath(); ctx.ellipse(-s * 0.28, s * 0.5, s * 0.46, s * 0.34, -0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(s * 0.06, -s * 0.95, s * 0.19, s * 1.55);
+      if (q.alta) {                     // corchea: con su banderola
+        ctx.beginPath();
+        ctx.moveTo(s * 0.25, -s * 0.95);
+        ctx.quadraticCurveTo(s * 0.95, -s * 0.7, s * 0.6, -s * 0.05);
+        ctx.quadraticCurveTo(s * 0.7, -s * 0.6, s * 0.25, -s * 0.62);
+        ctx.closePath(); ctx.fill();
+      } else {                          // negra doble: dos cabezas y una barra
+        ctx.beginPath(); ctx.ellipse(s * 0.95, s * 0.24, s * 0.42, s * 0.31, -0.42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(s * 1.27, -s * 1.2, s * 0.19, s * 1.55);
+        ctx.fillRect(s * 0.06, -s * 1.2, s * 1.4, s * 0.25);
+      }
+
+    } else if (q.tipo === 'rayo') {
+      ctx.rotate(q.giro * 0.2);
+      ctx.shadowColor = '#ffe14d'; ctx.shadowBlur = 16;
+      ctx.fillStyle = '#fff3a8';
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.3, -s);
+      ctx.lineTo(s * 0.45, -s * 0.12);
+      ctx.lineTo(s * 0.05, -s * 0.05);
+      ctx.lineTo(s * 0.42, s);
+      ctx.lineTo(-s * 0.5, s * 0.05);
+      ctx.lineTo(-s * 0.08, -s * 0.02);
+      ctx.closePath(); ctx.fill();
+
+    } else if (q.tipo === 'pintura') {
+      // Salpicón DE TU COLOR: la estela más personal de la tienda
+      ctx.rotate(q.giro);
+      ctx.fillStyle = q.mio || '#7df3f5';
+      ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.78, 0, 0, Math.PI * 2); ctx.fill();
+      for (let k = 0; k < 3; k++) {
+        const a = q.tono * 0.017 + k * 2.1;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * s * 1.25, Math.sin(a) * s * 1.05, s * (0.2 + (k % 2) * 0.13),
+                0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.38)';
+      ctx.beginPath(); ctx.ellipse(-s * 0.3, -s * 0.28, s * 0.28, s * 0.19, -0.5, 0, Math.PI * 2);
+      ctx.fill();
     }
 }
+
+/* El color del halo de cada tipo. Se calcula una vez por partícula y se
+   guarda en ella: son dos docenas de comparaciones que no hacen falta 230
+   veces por fotograma. */
+const TINTA_ESTELA = {
+  polvo: '#dce9fb', chispa: '#ffb02e', burbuja: '#7fd8ff', petalo: '#ff8fbe',
+  hoja: '#7bc74a', copo: '#dff0ff', fuego: '#ff7a2f', moneda: '#ffd447',
+  pez: '#ff9b52', papel: '#c8d6ea', trigo: '#f0cd5e', bit: '#3ef0a0',
+  estrella: '#ffe27a', arcoiris: '#ff6ec7', humo: '#b9c9de', corazon: '#ff5f92',
+  nota: '#93a9ff', rayo: '#ffe14d', pintura: '#ffffff',
+};
+function tintaEstela(tipo) { return TINTA_ESTELA[tipo] || '#dce9fb'; }
 
 /** La estela viva, JUSTO ANTES del personaje. */
 function pintarEstelas() {
@@ -9952,10 +10158,22 @@ function pintarEstelas() {
     if (q.x < cameraX - 80 || q.x > cameraX + viewWidth + 80) continue;
     if (q.y < cameraY - 80 || q.y > cameraY + viewHeight + 80) continue;
     const a = Math.max(0, Math.min(1, q.life / q.vida0));
+    // ESCALA. Antes la partícula nacía al 100 % y se encogía hasta el 45 %:
+    // justo al revés de lo que se lee, porque lo más nuevo es lo que hay que
+    // ver. Ahora sale creciendo un pelo y se apaga sin encogerse tanto.
+    const nacer = Math.min(1, (q.vida0 - q.life) / 5);
+    const s = q.size * (0.62 + a * 0.5) * (0.65 + nacer * 0.35) * 1.3;
     ctx.save();
     ctx.translate(q.x, q.y);
+    // Un halo suave por detrás. Es lo que hace que la estela se vea sobre el
+    // cielo claro, que es donde antes se perdía del todo.
+    ctx.globalAlpha = a * 0.24;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = q.halo || (q.halo = tintaEstela(q.tipo));
+    ctx.beginPath(); ctx.arc(0, 0, s * 1.62, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = a;
-    dibujoEstela(q, q.size * (0.45 + a * 0.55));
+    dibujoEstela(q, s);
     ctx.restore();
   }
   ctx.globalAlpha = 1;
@@ -10140,6 +10358,26 @@ function trajeDetras(piel, reloj, aire) {
     ctx.lineCap = 'butt';
     return;
   }
+
+  if (id === 'cactus') {
+    // Dos brazos de cactus, uno arriba y otro abajo
+    ctx.fillStyle = piel.medio;
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    const brazo = (sg, alto) => {
+      ctx.beginPath();
+      ctx.moveTo(sg * 26, -20);
+      ctx.lineTo(sg * 40, -20);
+      ctx.lineTo(sg * 40, alto);
+      ctx.lineWidth = 13; ctx.strokeStyle = piel.medio; ctx.stroke();
+      ctx.lineWidth = 16.5; ctx.strokeStyle = '#000000';
+      ctx.globalCompositeOperation = 'destination-over'; ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+    };
+    brazo(-1, -40); brazo(1, -48);
+    ctx.lineCap = 'butt'; ctx.lineWidth = 2.6;
+    return;
+  }
 }
 
 /** Lo que se pinta sobre el cuerpo, recortado por su silueta. */
@@ -10263,6 +10501,58 @@ function trajeDentro(piel) {
     ctx.fillRect(-6, -9.5, 12, 9);
     return;
   }
+
+  if (id === 'panda') {
+    // Manchas de los ojos y peto oscuro: es lo que hace panda a un panda
+    ctx.fillStyle = '#1c1f25';
+    for (const sg of [-1, 1]) {
+      ctx.save();
+      ctx.translate(sg * 12, -33); ctx.rotate(sg * 0.32);
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, 13, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.beginPath();
+    ctx.moveTo(-24, -12);
+    ctx.quadraticCurveTo(0, -20, 24, -12);
+    ctx.lineTo(24, 6); ctx.lineTo(-24, 6);
+    ctx.closePath(); ctx.fill();
+    return;
+  }
+
+  if (id === 'cactus') {
+    // Espinas en filas, y las costillas verticales del cactus
+    ctx.strokeStyle = 'rgba(28,72,16,0.5)'; ctx.lineWidth = 2.4;
+    for (const dx2 of [-17, 0, 17]) {
+      ctx.beginPath();
+      ctx.moveTo(dx2, -52); ctx.quadraticCurveTo(dx2 * 1.2, -28, dx2, -4);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#f2f0d8'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    for (let f = 0; f < 5; f++) {
+      const yy = -50 + f * 11;
+      for (const dx2 of [-25, -8, 8, 25]) {
+        ctx.beginPath();
+        ctx.moveTo(dx2, yy); ctx.lineTo(dx2 + (dx2 < 0 ? -4 : 4), yy - 3);
+        ctx.stroke();
+      }
+    }
+    ctx.lineCap = 'butt';
+    return;
+  }
+
+  if (id === 'sirena') {
+    // Escamas en el pecho y la concha
+    ctx.strokeStyle = 'rgba(255,255,255,0.32)'; ctx.lineWidth = 1.6;
+    for (let f = 0; f < 3; f++) {
+      const yy = -18 + f * 8;
+      for (let c = -3; c <= 3; c++) {
+        ctx.beginPath();
+        ctx.arc(c * 11 + (f % 2 ? 5.5 : 0), yy, 5.5, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+      }
+    }
+    return;
+  }
 }
 
 /** Orejas, antenas, rabitos y faldones: por delante del contorno. */
@@ -10384,6 +10674,95 @@ function trajeDelante(piel, reloj) {
     ctx.quadraticCurveTo(35, -44, 30, -58);
     ctx.stroke();
     ctx.lineCap = 'butt';
+    return;
+  }
+
+  if (id === 'panda') {
+    // Orejas redondas, negras y bien separadas
+    ctx.fillStyle = '#1c1f25';
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.4;
+    for (const sg of [-1, 1]) {
+      ctx.beginPath(); ctx.arc(sg * 21, -50, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#3a3f48';
+      ctx.beginPath(); ctx.arc(sg * 21, -50, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1c1f25';
+    }
+    // Hocico
+    ctx.fillStyle = '#1c1f25';
+    ctx.beginPath(); ctx.ellipse(0, -25, 4.6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+
+  if (id === 'cactus') {
+    // Flor en lo alto: es lo que remata el disfraz
+    ctx.fillStyle = '#ff6f9d';
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a) * 6, -58 + Math.sin(a) * 6, 5, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffe27a';
+    ctx.beginPath(); ctx.arc(0, -58, 4.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, -58, 4.2, 0, Math.PI * 2); ctx.stroke();
+    return;
+  }
+
+  if (id === 'sirena') {
+    // La cola va POR DELANTE, como el faldón del fantasma: dibujada detrás,
+    // las patas se pintaban encima y asomaban dos piernas dentro del pez.
+    const mece = Math.sin(reloj * 1.7) * 0.25;
+    const grad = ctx.createLinearGradient(0, -16, 0, 18);
+    grad.addColorStop(0, piel.medio); grad.addColorStop(1, '#1a8188');
+    ctx.fillStyle = grad;
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 3;
+    // Se estrecha en el talle y se abre en dos lóbulos con muesca: sin la
+    // muesca no era una aleta, era una falda.
+    const on = mece * 13;
+    ctx.beginPath();
+    ctx.moveTo(-15, -19);
+    ctx.quadraticCurveTo(-9, -2, -5.5, 7);
+    ctx.quadraticCurveTo(-16, 12, -27 + on, 19);
+    ctx.quadraticCurveTo(-8, 13, 0, 9);
+    ctx.quadraticCurveTo(8, 13, 27 + on, 19);
+    ctx.quadraticCurveTo(16, 12, 5.5, 7);
+    ctx.quadraticCurveTo(9, -2, 15, -19);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.42)'; ctx.lineWidth = 1.8;
+    for (const sg of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(sg * 3, 4); ctx.lineTo(sg * 19 + on, 16);
+      ctx.stroke();
+    }
+    // Escamas de la cola
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.4;
+    for (let f = 0; f < 2; f++) {
+      for (let c = -2; c <= 2; c++) {
+        ctx.beginPath();
+        ctx.arc(c * 5.5 + (f % 2 ? 2.8 : 0), -14 + f * 7, 3.8, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+      }
+    }
+    // Diadema de conchas y perla
+    ctx.fillStyle = '#ffd9e8';
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.2;
+    for (const [cx2, r] of [[-15, 6], [0, 8], [15, 6]]) {
+      ctx.beginPath();
+      ctx.moveTo(cx2 - r, -47);
+      ctx.arc(cx2, -47, r, Math.PI, 0);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(190,110,150,0.6)'; ctx.lineWidth = 1.2;
+      for (const a of [-0.6, 0, 0.6]) {
+        ctx.beginPath();
+        ctx.moveTo(cx2, -47);
+        ctx.lineTo(cx2 + Math.sin(a) * r, -47 - Math.cos(a) * r);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.2;
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(0, -58, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     return;
   }
 }
@@ -10632,6 +11011,172 @@ function dibujarAccesorioIlustrado(piel, contorno, dx, aire, corriendo) {
   dx = dx || 0;
   // Los sombreros se inclinan un poco hacia donde se avanza, y más al saltar
   const inclina = (corriendo ? 0.07 : 0.03) + (aire ? 0.05 : 0);
+
+  if (id === 'banda') {
+    ctx.save(); ctx.translate(dx * 0.85, 0); ctx.rotate(inclina * 0.5);
+    const tela = ctx.createLinearGradient(0, -50, 0, -42);
+    tela.addColorStop(0, '#ff5c7a'); tela.addColorStop(1, '#c02748');
+    ctx.fillStyle = tela;
+    ctx.beginPath();
+    ctx.moveTo(-27, -44);
+    ctx.quadraticCurveTo(0, -54, 27, -44);
+    ctx.quadraticCurveTo(0, -48, -27, -44);
+    ctx.closePath();
+    ctx.lineWidth = 7; ctx.strokeStyle = tela; ctx.stroke(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(-27, -44); ctx.quadraticCurveTo(0, -55, 27, -44); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-27, -40); ctx.quadraticCurveTo(0, -50, 27, -40); ctx.stroke();
+    // Los dos cabos, al viento
+    ctx.strokeStyle = '#c02748'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    const ond = Math.sin(t * 0.09) * 3;
+    ctx.beginPath();
+    ctx.moveTo(-26, -43); ctx.quadraticCurveTo(-38, -38 + ond, -42, -28 + ond);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-26, -43); ctx.quadraticCurveTo(-36, -33 - ond, -37, -22 - ond);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'orejeras') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina * 0.6);
+    // Diadema por encima de la coronilla
+    ctx.strokeStyle = '#3c4657'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-27, -40); ctx.quadraticCurveTo(0, -60, 27, -40);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    // Las dos almohadillas peludas
+    for (const sg of [-1, 1]) {
+      ctx.fillStyle = '#e8556f';
+      ctx.strokeStyle = contorno; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.ellipse(sg * 28, -36, 10, 12, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.6;
+      for (let k = -2; k <= 2; k++) {
+        ctx.beginPath();
+        ctx.moveTo(sg * 28 - 7, -36 + k * 4);
+        ctx.lineTo(sg * 28 + 7, -36 + k * 4);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'graduado') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    // Casquete
+    ctx.fillStyle = '#1e2433';
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.6;
+    rrect(-15, -52, 30, 10, 3); ctx.fill(); ctx.stroke();
+    // Tabla, en rombo
+    ctx.fillStyle = '#2b3247';
+    ctx.beginPath();
+    ctx.moveTo(0, -66); ctx.lineTo(31, -55); ctx.lineTo(0, -44); ctx.lineTo(-31, -55);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Borla, colgando y balanceándose
+    const bal = Math.sin(t * 0.06) * 3;
+    ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -55); ctx.quadraticCurveTo(24, -52, 27 + bal, -38);
+    ctx.stroke();
+    ctx.fillStyle = '#ffd34d';
+    ctx.beginPath();
+    ctx.moveTo(27 + bal - 4, -38); ctx.lineTo(27 + bal + 4, -38);
+    ctx.lineTo(27 + bal + 2, -27); ctx.lineTo(27 + bal - 2, -27);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'pirata') {
+    ctx.save();
+    ctx.translate(dx * 0.8, 0);
+    // Pañuelo rojo
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    ctx.moveTo(-25, -42);
+    ctx.bezierCurveTo(-26, -58, 26, -58, 25, -42);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    for (const [px2, py2] of [[-13, -50], [4, -53], [15, -47]]) {
+      ctx.beginPath(); ctx.arc(px2, py2, 2.1, 0, Math.PI * 2); ctx.fill();
+    }
+    // Nudo y cabo a un lado
+    ctx.fillStyle = '#a02a1f';
+    ctx.beginPath(); ctx.arc(-25, -43, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#a02a1f'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-27, -42); ctx.quadraticCurveTo(-38, -36, -40, -26);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    // Parche en un ojo, con su correa
+    ctx.strokeStyle = '#14171d'; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.moveTo(-22, -41); ctx.lineTo(22, -38); ctx.stroke();
+    ctx.fillStyle = '#14171d';
+    ctx.beginPath(); ctx.ellipse(-11, -33.5, 8.5, 7.5, 0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'vaquero') {
+    ctx.save(); ctx.translate(dx * 0.7, 0); ctx.rotate(inclina);
+    const cuero = ctx.createLinearGradient(0, -62, 0, -40);
+    cuero.addColorStop(0, '#b9834a'); cuero.addColorStop(1, '#7c522a');
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.8;
+    // Ala ancha y ondulada
+    ctx.fillStyle = cuero;
+    ctx.beginPath();
+    ctx.moveTo(-38, -41);
+    ctx.quadraticCurveTo(-30, -49, 0, -47);
+    ctx.quadraticCurveTo(30, -49, 38, -41);
+    ctx.quadraticCurveTo(28, -34, 0, -36);
+    ctx.quadraticCurveTo(-28, -34, -38, -41);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Copa con hendidura
+    ctx.beginPath();
+    ctx.moveTo(-17, -45);
+    ctx.bezierCurveTo(-18, -66, -6, -70, -5, -62);
+    ctx.quadraticCurveTo(0, -58, 5, -62);
+    ctx.bezierCurveTo(6, -70, 18, -66, 17, -45);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Cinta y hebilla
+    ctx.fillStyle = '#3a2a18';
+    ctx.fillRect(-17, -50, 34, 6);
+    ctx.fillStyle = '#e8c05a';
+    ctx.fillRect(-3, -50.5, 6, 7);
+    ctx.restore();
+    return;
+  }
+
+  if (id === 'flotador') {
+    // Va alrededor del cuerpo, no en la cabeza: por eso se pinta bajo y
+    // ancho, y por delante, que es como se lleva un flotador.
+    ctx.save();
+    ctx.translate(dx * 0.4, 0);
+    const bal = Math.sin(t * 0.05) * 1.6;
+    ctx.strokeStyle = '#ffd84d'; ctx.lineWidth = 13;
+    ctx.beginPath(); ctx.ellipse(0, -14 + bal, 35, 13, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.ellipse(0, -14 + bal, 41.5, 19.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, -14 + bal, 28.5, 6.5, 0, 0, Math.PI * 2); ctx.stroke();
+    // Cabeza de pato a un lado
+    ctx.fillStyle = '#ffd84d';
+    ctx.beginPath(); ctx.arc(34, -26 + bal, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = contorno; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.fillStyle = '#f28c28';
+    ctx.beginPath();
+    ctx.moveTo(41, -27 + bal); ctx.lineTo(52, -25 + bal); ctx.lineTo(41, -22 + bal);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#14171d';
+    ctx.beginPath(); ctx.arc(36, -29 + bal, 1.9, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    return;
+  }
 
   if (id === 'antifaz') {
     // Antifaz de héroe: se pinta ENCIMA de la cara, así que lleva los dos
@@ -13288,6 +13833,9 @@ function arrancarPartida() {
   player.scaleX = 1; player.scaleY = 1; player.animTimer = 0;
   player.giro = 0; player.dirPrev = 0;
   startTime = performance.now();
+  victoriaResuelta = false; miTiempoFin = 0;
+  const cartel = document.getElementById('win-puesto');
+  if (cartel) { cartel.className = 'win-puesto oculta'; cartel.textContent = ''; }
   showMessage('¡Vamos! Cumbre 1 de ' + TOTAL_WORLDS + ': ' + WORLDS[0].name, '#2ed573');
   running = true;
 }
@@ -13415,7 +13963,10 @@ let marcas = { altura: 0, tiempo: 0, muertes: null, completado: false, puntos: 0
                // momento de cogerlas: una moneda sólo se puede coger una vez
                // por partida, así que morir a propósito no sirve para
                // refarmear. `compradas` guarda lo que ya es tuyo.
-               banco: 0, compradas: [] };
+               banco: 0, compradas: [],
+               // VICTORIAS. Dos cuentas separadas a propósito: terminar la
+               // subida tú solo y ganar una carrera no son la misma proeza.
+               ganadasSolo: 0, ganadasSala: 0 };
 
 function cargarGuardado() {
   let d = null;
@@ -13424,6 +13975,9 @@ function cargarGuardado() {
   if (d.marcas) Object.assign(marcas, d.marcas);
   if (!Array.isArray(marcas.compradas)) marcas.compradas = [];
   if (typeof marcas.banco !== 'number' || !isFinite(marcas.banco)) marcas.banco = 0;
+  for (const k of ['ganadasSolo', 'ganadasSala']) {
+    if (typeof marcas[k] !== 'number' || !isFinite(marcas[k]) || marcas[k] < 0) marcas[k] = 0;
+  }
   // Guardados viejos: las llaves eran la POSICIÓN en el catálogo. Se
   // traducen a la llave por nombre para que nadie pierda lo comprado al
   // reordenar la tienda.
@@ -13498,6 +14052,28 @@ function anotarPartida(seg) {
   return nuevos;
 }
 
+/* Se apunta al ganar. `pintarPalmares()` lo enseña en el menú y la pantalla
+   de victoria dice cuál acaba de subir. */
+function anotarVictoria(cual) {
+  const k = cual === 'sala' ? 'ganadasSala' : 'ganadasSolo';
+  marcas[k] = (marcas[k] || 0) + 1;
+  guardar();
+  pintarPalmares();
+  return marcas[k];
+}
+
+function pintarPalmares() {
+  const el = document.getElementById('palmares');
+  if (!el) return;
+  const filas = [
+    ['🏁', marcas.ganadasSolo || 0, 'Cumbres en solitario', '255,215,0'],
+    ['🏆', marcas.ganadasSala || 0, 'Carreras ganadas', '122,222,255'],
+  ];
+  el.innerHTML = filas.map(([ico, n, txt, tinte]) =>
+    '<div class="' + (n ? 'tiene' : '') + '" style="--tinte:' + tinte + '">' +
+    '<i>' + ico + '</i><u><b>' + n + '</b><span>' + txt + '</span></u></div>').join('');
+}
+
 function textoMarcas() {
   if (marcas.completado) {
     return 'Mejor vuelta: ' + reloj(marcas.tiempo) + '  ·  ' + marcas.muertes +
@@ -13519,6 +14095,7 @@ function actualizarMarcaMenu() {
   const el = document.getElementById('marca-menu');
   if (el) el.textContent = textoMarcas();
   pintarVitrina();
+  pintarPalmares();
   pintarRutaMenu();
   pintarCumbres();
   pintarDatosNivel();

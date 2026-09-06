@@ -42,6 +42,59 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### Más catálogo, estela más visible y dos cuentas de victorias
+
+**El catálogo crece a 30 colores, 28 accesorios y 19 estelas** — 15.960
+escaladores distintos. Nuevos:
+
+- **Colores**: Coral, Menta, Lavanda, Arena, Índigo y Vino.
+- **Disfraces**: **Panda** (orejas, antifaz y peto), **Cactus** (costillas,
+  espinas, brazos y flor) y **Sirena** (diadema de conchas, escamas y cola).
+- **Accesorios**: cinta, orejeras, flotador de pato, birrete, pañuelo pirata
+  con parche y sombrero vaquero.
+- **Estelas**: humo, corazones, notas musicales, rayos y **Pintura**, que
+  salpica **de tu propio color** —el del mezclador incluido—, así que es la
+  única que cambia contigo.
+
+Dos cosas que sólo se ven mirando el dibujo de cerca: la **cola de la sirena**
+se pintaba detrás del cuerpo, así que las patas se dibujaban encima y asomaban
+dos piernas dentro del pez (va delante, como el faldón del fantasma); y la
+aleta era una falda hasta que se le puso la muesca central de los dos lóbulos.
+
+### La estela, más visible
+
+Se soltaba una partícula cada cinco fotogramas y a plena velocidad quedaba un
+reguero de puntos sueltos que sobre el cielo claro casi no se leía. Tres
+cambios:
+
+- **Casi el doble de partículas**: una cada tres fotogramas andando y cada dos
+  en el aire, que es cuando más luce. El techo sube de 140 a 230.
+- **Un halo aditivo por detrás**, del color del tipo de estela. Es lo que hace
+  que se despegue del cielo. El tono se calcula una vez por partícula y se
+  guarda en ella: son dos docenas de comparaciones que no hacen falta 230
+  veces por fotograma.
+- **La escala, al revés**. Cada partícula nacía al 100 % y se encogía hasta el
+  45 %, justo lo contrario de lo que se lee: lo más nuevo es lo que hay que
+  ver. Ahora sale creciendo un poco y se apaga sin encogerse tanto.
+
+Medido a 4,2 millones de píxeles con la estela puesta y corriendo: **0,76 ms
+por fotograma** de los 3,28 que cuesta el dibujo entero. 60 fps.
+
+### Dos cuentas de victorias, una por modo
+
+Ganar una carrera y terminar la subida tú solo no son la misma proeza, así que
+son dos cuentas separadas, guardadas con el resto de las marcas y a la vista
+en la columna «Tu escalador»: **cumbres en solitario** y **carreras ganadas**.
+
+La de sala no se decide al llegar sino **un momento después** (1,6 s): si dos
+entran casi a la vez, hay que darle tiempo al tiempo del otro a llegar por la
+presencia. Y ganar estando solo en la sala **no cuenta**: eso es una
+contrarreloj con más pasos, y el cartel de la victoria lo dice.
+
+Al terminar, la pantalla de victoria abre con el cartel del puesto: «🏆
+¡Primero! N carreras ganadas», «Llegaste después. La próxima.» o «🏁 Cumbre
+número N en solitario».
+
 ### Dos modos: contrarreloj y sala
 
 **Jugar solo** es lo de siempre: la subida entera contra el cronómetro.
