@@ -15364,13 +15364,6 @@ window.addEventListener('resize', () => {
   const rotulo = b.textContent;
   let vuelta = 0;
 
-  /* ¿Vamos dentro del marco de otra página? Un visor que incrusta el juego en
-     un iframe aislado puede prohibir abrir pestañas, y entonces no hay nada
-     que el juego pueda hacer: conviene decirlo con esas palabras en vez de
-     echarle la culpa al bloqueador de emergentes. */
-  let enMarco = false;
-  try { enMarco = window.top !== window.self; } catch (e) { enMarco = true; }
-
   const avisar = (txt) => {
     b.classList.add('falla');
     b.textContent = txt;
@@ -15378,25 +15371,36 @@ window.addEventListener('resize', () => {
     vuelta = setTimeout(() => { b.classList.remove('falla'); b.textContent = rotulo; }, 4200);
   };
 
+  /* Volcar el juego en la pestaña nueva sólo se puede si el navegador nos deja
+     tocar su documento. Dentro de un iframe con `sandbox` la emergente nace
+     con un origen propio y aislado: se abre, pero cualquier acceso a ella salta
+     por seguridad y la pestaña se queda en blanco de verdad. Por eso no basta
+     con escribir: hay que comprobar que el juego llegó. */
+  const volcar = (w) => {
+    try {
+      /* `open()` antes de escribir: sin él, algunos navegadores conservan el
+         documento vacío de la pestaña y el volcado se pierde. */
+      w.document.open();
+      w.document.write(FUENTE_LIMPIA);
+      w.document.close();
+      return !!w.document.getElementById('gameCanvas');
+    } catch (e) { return false; }
+  };
+
   b.addEventListener('click', () => {
     let w = null;
     try { w = window.open('about:blank'); } catch (e) { w = null; }
-    if (w) {
-      try {
-        /* `open()` antes de escribir: sin él, algunos navegadores conservan el
-           documento vacío de la pestaña y el volcado se pierde. */
-        w.document.open();
-        w.document.write(FUENTE_LIMPIA);
-        w.document.close();
-        /* Y se comprueba que de verdad llegó: una pestaña que se abre pero no
-           deja escribir se queda en blanco, y en blanco no se distingue de que
-           haya funcionado hasta que el jugador se planta delante de ella. */
-        if (w.document.getElementById('gameCanvas')) return;
-      } catch (e) { /* la pestaña no admite que se escriba en ella */ }
-      try { w.close(); } catch (e) {}
-    }
-    avisar(enMarco ? 'Aquí no se puede: descarga el archivo'
-                   : 'Permite las ventanas emergentes');
+    if (!w) { avisar('Permite las ventanas emergentes'); return; }
+    if (volcar(w)) return;
+
+    /* La pestaña se abrió pero no se dejó escribir: el juego va incrustado en
+       el marco de otra página y el navegador aísla lo que salga de ahí. No hay
+       arreglo desde dentro —abrir otra copia heredaría el mismo aislamiento y
+       el botón volvería a fallar allí—, así que se retira la pestaña en blanco
+       y se dice lo único que sirve: sacar el juego del marco, que es abrir su
+       enlace en una pestaña propia. Ahí el disfraz funciona. */
+    try { w.close(); } catch (e) {}
+    avisar('Aquí dentro no: ábrelo en su propia pestaña');
   });
 })();
 montarTactil();
