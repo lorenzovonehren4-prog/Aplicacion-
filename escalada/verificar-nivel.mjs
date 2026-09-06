@@ -200,7 +200,10 @@ const informe = await pagina.evaluate(() => {
   moverPlataformas(platforms, 0);
 
   return { saltosCadena: nCadena - 1, imposibles, sinVentanaJusta, apretados,
-           atajos: platforms.length - nCadena, atajosMalos,
+           // Sólo los atajos de verdad: el pasillo de entrenamiento también
+           // va marcado `extra` (no es cadena) y engordaba la cuenta.
+           atajos: platforms.filter((q) => q.atajo).length, atajosMalos,
+           tutorial: platforms.filter((q) => q.tuto).length,
            monedas: monedas.length, monedasSueltas, pinchos: spikes.length,
            geiseres: geysers.length, drones: voladores.length,
            dronesMalos, dronesQueTapan,

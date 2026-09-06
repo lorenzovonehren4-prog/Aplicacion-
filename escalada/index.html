@@ -1995,28 +1995,46 @@ let inicioGen = 0;
  * Con el mapa fijo no tiene sentido recalcularlo en cada partida: se tarda
  * medio minuto y el resultado sería idéntico.
  */
+/* ====================================================================
+   EL PASILLO DE ENTRENAMIENTO
+   La partida empezaba con el personaje de pie en una plataforma de 320 px
+   flotando en el aire, y el primer salto de verdad venía enseguida. Ahora
+   delante hay un SUELO CONTINUO donde no se puede caer al vacío: se camina
+   unos pasos, se lee quién hizo el juego, se prueban el salto, el doble
+   salto, unos pinchos y un dron, y al final del pasillo está el primer
+   checkpoint, que es donde empieza la escalada de verdad.
+
+   El nivel incrustado no se toca: se DESPLAZA entero a la derecha al
+   cargarlo y el pasillo ocupa el hueco que queda. Un desplazamiento
+   uniforme mantiene todas las distancias, así que la cadena de saltos
+   verificada sigue siendo exactamente la misma.
+   ==================================================================== */
+const TUTORIAL_DX = 2240;      // lo que se corre el nivel para dejar sitio
+const TUTORIAL_SUELO_H = 430;  // el suelo llega hasta abajo del todo
+
 function cargarNivelFijo() {
   const D = (typeof NIVEL_FIJO !== 'undefined') ? NIVEL_FIJO : null;
   if (!D) return false;
+  const DX = TUTORIAL_DX;
   platforms = D.p.map(a => {
-    const o = { x: a[0], y: a[1], width: a[2], height: PLAT_H, type: a[3], world: a[4] };
-    if (a[5]) o.entradaX = a[5];
+    const o = { x: a[0] + DX, y: a[1], width: a[2], height: PLAT_H, type: a[3], world: a[4] };
+    if (a[5]) o.entradaX = a[5] + DX;
     if (a[6]) o.dir = a[6];
     for (const f of (a[7] || [])) o[f] = true;
-    if (a[8]) o.mov = { min: a[8][0], max: a[8][1], speed: a[8][2], fase: a[8][3] };
+    if (a[8]) o.mov = { min: a[8][0] + DX, max: a[8][1] + DX, speed: a[8][2], fase: a[8][3] };
     // El plan de teclas de cada salto viene guardado: sirve para comprobar
     // que el mapa incrustado sigue siendo jugable de principio a fin.
-    if (a[9]) { o.traza = [{ x: a[5], y: a[1] - PH }]; o.traza.plan =
-      { lanzX: a[9][0], dir: a[9][1], j0: !!a[9][2], f2: a[9][3], margen: a[9][4] }; }
+    if (a[9]) { o.traza = [{ x: a[5] + DX, y: a[1] - PH }]; o.traza.plan =
+      { lanzX: a[9][0] + DX, dir: a[9][1], j0: !!a[9][2], f2: a[9][3], margen: a[9][4] }; }
     // Inclinación: sin guardarla, al cargar el nivel salían TODOS los apoyos
     // planos y no se veía ni una diagonal.
     o.ang = a[10] || 0;
     return o;
   });
-  lasers  = D.l.map(a => ({ x: a[0], y: a[1], width: a[2], height: a[3],
-                            minX: a[4], maxX: a[5], speed: a[6], fase: a[7] }));
-  spikes  = D.s.map(a => ({ x: a[0], y: a[1], width: a[2], height: a[3] }));
-  geysers = D.g.map(a => ({ x: a[0], y: a[1], width: a[2], height: a[3] }));
+  lasers  = D.l.map(a => ({ x: a[0] + DX, y: a[1], width: a[2], height: a[3],
+                            minX: a[4] + DX, maxX: a[5] + DX, speed: a[6], fase: a[7] }));
+  spikes  = D.s.map(a => ({ x: a[0] + DX, y: a[1], width: a[2], height: a[3] }));
+  geysers = D.g.map(a => ({ x: a[0] + DX, y: a[1], width: a[2], height: a[3] }));
   limitesMundo = D.lim.slice();
   TOP_Y = Math.min(...platforms.map(p => p.y));
   ALTURA_TOTAL = Math.max(1, GROUND_Y - TOP_Y);
@@ -3168,6 +3186,70 @@ function componerNivel() {
   return r;
 }
 
+/* --------------------------------------------------------------------
+   EL PASILLO: SUELO, OBSTÁCULOS Y CARTELES
+   Se monta DESPUÉS de componer el nivel a propósito. Todas las pasadas de
+   siembra —monedas, objetos, pinchos, drones, atajos— recorren `platforms`,
+   así que si el pasillo estuviera ahí antes se le llenaría de cosas y, lo
+   que es peor, cada pasada gasta números del azar con semilla: colarlo
+   antes movería de sitio medio nivel.
+
+   Todo lo del pasillo va marcado `extra`, que es como el juego señala lo
+   que NO forma parte de la cadena de saltos verificada, y `tuto`, que es lo
+   que le da la piedra de castillo.
+   -------------------------------------------------------------------- */
+
+/* Las medidas de lo que se practica, en un sitio solo. El muro bajo se pasa
+   de un salto (con GRAVITY 0.55 y JUMP_FORCE -12 se suben 131 px) y el alto
+   NO: 150 px de pared piden el segundo salto sí o sí. */
+const TUTORIAL = {
+  ancho: TUTORIAL_DX,
+  firma: 330,          // el cartel de quién hizo esto
+  muroBajo: 700,
+  muroAlto: 1030,
+  pinchos: 1420,
+  dron: [1700, 2080],
+  meta: 2130,          // el cartel de «aquí empieza la subida»
+};
+
+function montarTutorial() {
+  const yS = GROUND_Y;
+  const suelo = (x, w, extra2) => Object.assign({
+    x, y: yS, width: w, height: TUTORIAL_SUELO_H, type: 'normal', world: 1,
+    extra: true, tuto: true, ang: 0, ancla: { x, y: yS },
+  }, extra2 || {});
+
+  // EL SUELO, de una pieza y hasta abajo del todo: no hay por dónde caerse.
+  // Se pasa de largo hasta CUBRIR la plataforma de salida del nivel de
+  // siempre (que ahora empieza en TUTORIAL_DX + 40): cortándolo justo en el
+  // borde quedaba un hueco de 40 px por el que se caía al vacío en el sitio
+  // exacto donde el pasillo tenía que entregarte sano al checkpoint. Cubrir
+  // no quita nada: la plataforma sigue debajo, con su salto ya verificado.
+  platforms.push(suelo(-40, TUTORIAL.ancho + 400));
+
+  // Muro bajo: un salto normal lo pasa de sobra.
+  const bajo = { x: TUTORIAL.muroBajo, y: yS - 72, width: 66, height: 72 + 20,
+                 type: 'normal', world: 1, extra: true, tuto: true, muro: true,
+                 ang: 0, ancla: { x: TUTORIAL.muroBajo, y: yS - 72 } };
+  platforms.push(bajo);
+
+  // Muro alto: 150 px, por encima de lo que da un salto suelto.
+  const alto = { x: TUTORIAL.muroAlto, y: yS - 150, width: 84, height: 150 + 20,
+                 type: 'normal', world: 1, extra: true, tuto: true, muro: true,
+                 ang: 0, ancla: { x: TUTORIAL.muroAlto, y: yS - 150 } };
+  platforms.push(alto);
+
+  // Pinchos en el suelo, a saltar. Van en el mismo array que los del nivel,
+  // así que matan y se dibujan igual que los de arriba.
+  spikes.push({ x: TUTORIAL.pinchos, y: yS - SPIKE_H, width: 132, height: SPIKE_H });
+
+  // Un dron patrullando a la altura de la cabeza: hay que cronometrarlo.
+  voladores.push({
+    min: TUTORIAL.dron[0], max: TUTORIAL.dron[1],
+    speed: 1.15, fase: 0, y: yS - 132, tuto: true,
+  });
+}
+
 /* El nivel se compone UNA vez. `generateLevel()` se llamaba dos veces —al
    cargar la página y otra vez al pulsar Empezar— y la composición entera se
    repetía. Como es determinista, la segunda vez basta con devolver el nivel a
@@ -3191,6 +3273,7 @@ function generateLevel() {
     repartirCumbres();
     despejarRatoneras();
     componerNivel();
+    montarTutorial();          // el pasillo, cuando ya no se siembra nada más
     nivelCompuesto = true;
     return;
   }
@@ -4790,7 +4873,12 @@ function die(motivo) {
   player.vx = 0; player.vy = 0; player.saltos = 2;
   player.giro = 0; player.scaleX = 1; player.scaleY = 1;
   player.aterrizajeReciente = 0; player.dirPrev = 0;
-  showMessage(motivo, '#ff4757');
+  // En el pasillo de entrenamiento todavía no hay checkpoint que valga: el
+  // aviso decía «volviendo al checkpoint» y te dejaba en la casilla de
+  // salida, que no es lo mismo.
+  showMessage(player.spawnX < TUTORIAL.ancho
+    ? motivo.replace(/Volviendo al checkpoint…?/i, 'Vuelves al principio del pasillo')
+    : motivo, '#ff4757');
 }
 
 function update() {
@@ -6172,7 +6260,8 @@ function drawPlatform(p) {
   p.x = a.x; p.y = a.y;                 // dibujar en reposo; el lienzo ya viaja
 
   const { x, y, width: w, height: hh } = p;
-  if (p.type === 'goal')            { platMeta(p); contorno(x, y, w, hh, 3.5); }
+  if (p.tuto)                       { platCastillo(p); }
+  else if (p.type === 'goal')       { platMeta(p); contorno(x, y, w, hh, 3.5); }
   else if (p.type === 'checkpoint') { platCheckpoint(p); contorno(x, y, w, hh, 3.5); }
   else                              { drawObjeto(p); }
 
@@ -6180,6 +6269,192 @@ function drawPlatform(p) {
   ctx.restore();
 }
 
+
+/**
+ * LOS CARTELES DEL PASILLO. Van sobre el suelo y por detrás del personaje.
+ * Sólo se pintan mientras la cámara está en el pasillo: fuera de ahí no hay
+ * nada que decir y no cuesta nada.
+ */
+function dibujarTutorial() {
+  if (cameraX > TUTORIAL.ancho + 240) return;
+
+  const yS = GROUND_Y;
+
+  /* Placa de piedra sobre dos postes, con el texto grabado. */
+  const placa = (cx, base, ancho, alto, lineas, tono) => {
+    ctx.save();
+    ctx.translate(cx, base);
+    // Postes
+    ctx.fillStyle = '#6b4a2a';
+    ctx.fillRect(-ancho * 0.33, -alto - 6, 9, alto + 8);
+    ctx.fillRect(ancho * 0.33 - 9, -alto - 6, 9, alto + 8);
+    ctx.strokeStyle = 'rgba(25,20,35,0.85)'; ctx.lineWidth = 2.4;
+    ctx.strokeRect(-ancho * 0.33, -alto - 6, 9, alto + 8);
+    ctx.strokeRect(ancho * 0.33 - 9, -alto - 6, 9, alto + 8);
+    // Tablero
+    const g = ctx.createLinearGradient(0, -alto - 30, 0, -6);
+    g.addColorStop(0, tono[0]); g.addColorStop(1, tono[1]);
+    ctx.fillStyle = g;
+    rrect(-ancho / 2, -alto - 30, ancho, alto + 12, 9); ctx.fill();
+    ctx.strokeStyle = 'rgba(25,20,35,0.85)'; ctx.lineWidth = 3.2;
+    rrect(-ancho / 2, -alto - 30, ancho, alto + 12, 9); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 2;
+    rrect(-ancho / 2 + 5, -alto - 25, ancho - 10, alto + 2, 6); ctx.stroke();
+    // Texto
+    ctx.textAlign = 'center';
+    let yy = -alto - 30 + 26;
+    for (const [txt, tam, col, peso] of lineas) {
+      ctx.font = (peso || 'bold') + ' ' + tam + 'px "Segoe UI", sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillText(txt, 0, yy + 1.5);
+      ctx.fillStyle = col;
+      ctx.fillText(txt, 0, yy);
+      yy += tam + 7;
+    }
+    ctx.textAlign = 'left';
+    ctx.restore();
+  };
+
+  /* Rótulo suelto encima de un obstáculo, para decir qué se practica. */
+  const rotulo = (cx, cy, txt, sub, col) => {
+    ctx.save();
+    ctx.textAlign = 'center';
+    // El ancho sale del renglón MÁS LARGO, no del título: medido sólo con el
+    // título, el subtítulo se salía de la caja por los dos lados.
+    ctx.font = 'bold 19px "Segoe UI", sans-serif';
+    let ancho = ctx.measureText(txt).width;
+    if (sub) {
+      ctx.font = 'bold 12px "Segoe UI", sans-serif';
+      ancho = Math.max(ancho, ctx.measureText(sub).width);
+    }
+    ctx.font = 'bold 19px "Segoe UI", sans-serif';
+    const an = ancho + 26;
+    ctx.fillStyle = 'rgba(10,16,28,0.72)';
+    rrect(cx - an / 2, cy - 20, an, sub ? 44 : 28, 9); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 2;
+    rrect(cx - an / 2, cy - 20, an, sub ? 44 : 28, 9); ctx.stroke();
+    ctx.fillStyle = col;
+    ctx.fillText(txt, cx, cy);
+    if (sub) {
+      ctx.font = 'bold 12px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#c4d3e4';
+      ctx.fillText(sub, cx, cy + 17);
+    }
+    ctx.textAlign = 'left';
+    ctx.restore();
+  };
+
+  // --- Quién hizo esto ---
+  placa(TUTORIAL.firma, yS - 8, 268, 92, [
+    ['CREADOR DEL JUEGO', 15, '#c9b48a'],
+    ['ANONIMUS', 30, '#ffe27a'],
+  ], ['#6e6152', '#463d33']);
+
+  // --- Flechas del camino, dibujadas: un carácter de flecha depende de la
+  //     tipografía que tenga cada máquina y en más de una no sale nada. ---
+  const flecha = (cx, cy, tam, alfa) => {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,' + alfa + ')';
+    ctx.lineWidth = tam * 0.22; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - tam * 0.5, cy);
+    ctx.lineTo(cx + tam * 0.4, cy);
+    ctx.moveTo(cx + tam * 0.05, cy - tam * 0.36);
+    ctx.lineTo(cx + tam * 0.45, cy);
+    ctx.lineTo(cx + tam * 0.05, cy + tam * 0.36);
+    ctx.stroke();
+    ctx.restore();
+  };
+  for (let k = 0; k < 3; k++) {
+    flecha(TUTORIAL.firma + 195 + k * 46, yS - 30, 30, 0.24 + k * 0.16);
+  }
+
+  // --- Lo que se practica ---
+  rotulo(TUTORIAL.muroBajo + 33, yS - 126, 'SALTA', 'ARRIBA  ·  W  ·  ESPACIO', '#8be36a');
+  rotulo(TUTORIAL.muroAlto + 42, yS - 204, 'DOBLE SALTO', 'pulsa otra vez en el aire', '#5ad1ff');
+  rotulo(TUTORIAL.pinchos + 66, yS - 96, 'PINCHOS', 'saltar por encima', '#ff7a6b');
+  rotulo((TUTORIAL.dron[0] + TUTORIAL.dron[1]) / 2, yS - 196, 'DRON', 'espera y pasa', '#ff5f6b');
+
+  // --- Y aquí se acaba lo fácil ---
+  placa(TUTORIAL.meta, yS - 8, 250, 78, [
+    ['AQUÍ EMPIEZA', 14, '#a9c3d8'],
+    ['LA SUBIDA', 24, '#ffffff'],
+  ], ['#2f4a63', '#1d3040']);
+}
+
+/**
+ * PIEDRA DE CASTILLO, para el pasillo de entrenamiento. Sillares grises a
+ * juntas trabadas, con la hilada de arriba más clara —que es por donde se
+ * pisa— y musgo en las juntas. El aparejo se calcula de la posición del
+ * bloque, no del tiempo: así no parpadea.
+ */
+function platCastillo(p) {
+  const { x, y, width: w, height: hh } = p;
+  const AL = 26, AN = 52;                       // sillar
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, hh); ctx.clip();
+
+  // Mortero de fondo
+  ctx.fillStyle = '#4c5058';
+  ctx.fillRect(x, y, w, hh);
+
+  // SÓLO LO QUE SE VE. El suelo mide 2 640 x 430: recorrerlo entero son unos
+  // 870 sillares por fotograma para enseñar doscientos y pico. Medido, el
+  // pasillo costaba 4,4 ms de dibujo frente a 2,7 arriba en la montaña; con
+  // este recorte se queda en lo mismo que el resto del juego.
+  const vIzq = cameraX - AN, vDer = cameraX + viewWidth + AN;
+  const vArr = cameraY - AL, vAba = cameraY + viewHeight + AL;
+  const f0 = Math.max(0, Math.floor((vArr - y) / AL));
+  const f1 = Math.min(Math.ceil(hh / AL), Math.ceil((vAba - y) / AL));
+  for (let f = f0; f < f1; f++) {
+    const yy = y + f * AL;
+    // Cuanto más abajo, más oscuro: da fondo a un muro que llega al borde
+    const hondo = Math.min(1, (f * AL) / Math.max(1, hh));
+    const desf = (f % 2) * (AN / 2);
+    const c0 = x - AN + desf + Math.max(0, Math.floor((vIzq - (x - AN + desf)) / AN)) * AN;
+    for (let cx = c0; cx < Math.min(x + w + AN, vDer); cx += AN) {
+      // Un tono estable por sillar, sacado de su sitio en el mundo
+      const n = Math.abs(Math.sin(cx * 0.021 + f * 1.7)) ;
+      const base = 150 - hondo * 52 - n * 16;
+      ctx.fillStyle = 'rgb(' + Math.round(base) + ',' + Math.round(base + 4) +
+                      ',' + Math.round(base + 12) + ')';
+      ctx.fillRect(cx + 2, yy + 2, AN - 4, AL - 4);
+      // Bisel: luz arriba, sombra abajo
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.fillRect(cx + 2, yy + 2, AN - 4, 3);
+      ctx.fillStyle = 'rgba(0,0,0,0.20)';
+      ctx.fillRect(cx + 2, yy + AL - 5, AN - 4, 3);
+      // Alguna piedra picada
+      if (n > 0.88) {
+        ctx.fillStyle = 'rgba(0,0,0,0.16)';
+        ctx.beginPath();
+        ctx.arc(cx + AN * 0.35, yy + AL * 0.55, 3.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Hilada de arriba: es la que se pisa, así que se ve distinta
+  ctx.fillStyle = 'rgba(226,236,248,0.14)';
+  ctx.fillRect(x, y, w, 9);
+  ctx.fillStyle = '#79c05a';                    // musgo en la junta de arriba
+  const mIzq = Math.max(x, cameraX - 20), mDer = Math.min(x + w, cameraX + viewWidth + 20);
+  for (let cx = mIzq - ((mIzq - x) % 17); cx < mDer; cx += 17) {
+    const n = Math.abs(Math.sin(cx * 0.037));
+    if (n < 0.62) continue;
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(cx, y, 8 + n * 7, 2.5 + n * 2.5);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+
+  // Cornisa: el canto de arriba, que separa el suelo del cielo
+  ctx.fillStyle = '#8e97a6';
+  ctx.fillRect(x, y - 4, w, 5);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillRect(x, y - 4, w, 2);
+  contorno(x, y - 4, w, hh + 4, 3);
+}
 
 /* --------------------------------------------------------------------
    OBJETOS COMO PLATAFORMAS
@@ -9570,6 +9845,9 @@ function draw() {
   // Jugador: el dibujo bueno está en drawPlayer(). Aquí quedaba pegado el
   // cuadro antiguo, y como nunca se llamaba a drawPlayer el personaje no
   // cambiaba por mucho que se editara aquella función.
+  // Los carteles del pasillo, por detrás de todo lo que se mueve.
+  dibujarTutorial();
+
   // Los compañeros de sala van DEBAJO de ti: en un amontonamiento, el que
   // manda en la pantalla tiene que ser el que juega.
   dibujarCompaneros();
@@ -14150,9 +14428,12 @@ function pintarDatosNivel() {
     return;
   }
   const chk = platforms.filter((q) => q.type === 'checkpoint').length;
+  // El pasillo de entrenamiento no cuenta como apoyos de la subida: son el
+  // suelo y dos muros de práctica, no sitios donde haya que atinar.
+  const apoyos = platforms.filter((q) => !q.tuto).length;
   const filas = [
     ['1000', 'metros'], [String(TOTAL_WORLDS), 'cumbres'],
-    [String(platforms.length), 'apoyos'], [String(chk), 'checkpoints'],
+    [String(apoyos), 'apoyos'], [String(chk), 'checkpoints'],
     [String(monedas.length), 'monedas'],
   ];
   cont.innerHTML = filas.map(([n, t]) => '<li><b>' + n + '</b>' + t + '</li>').join('');

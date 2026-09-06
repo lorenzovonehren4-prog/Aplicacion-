@@ -42,6 +42,47 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### El pasillo de entrenamiento
+
+La partida empezaba con el personaje de pie en una plataforma de 320 px
+flotando en el aire y el primer salto de verdad venía enseguida. Ahora delante
+hay un **suelo continuo de piedra de castillo** donde no se puede caer al
+vacío: se camina unos pasos, se lee quién hizo el juego, se prueban el salto,
+el doble salto, unos pinchos y un dron, y al final del pasillo está el primer
+checkpoint, que es donde empieza la escalada de verdad.
+
+**El nivel incrustado no se toca.** Se desplaza entero 2 240 px a la derecha al
+cargarlo y el pasillo ocupa el hueco. Un desplazamiento **uniforme** mantiene
+todas las distancias, así que la cadena de saltos verificada sigue siendo
+exactamente la misma —245 saltos, 0 imposibles— y el desplazamiento se aplica
+a todo lo que lleva una x: apoyos, entradas, carriles de las móviles, planes
+de salto guardados, láseres, pinchos y géiseres.
+
+**Se monta al final, no al principio.** Todas las pasadas de siembra
+—monedas, objetos, suelos, bolas, atajos, drones— recorren `platforms`, así
+que si el pasillo estuviera ahí antes se le llenaría de cosas. Y hay un motivo
+más serio: cada pasada gasta números del azar con semilla, así que colarlo
+antes movería de sitio medio nivel. Va marcado `extra` —lo que el juego usa
+para señalar lo que no es cadena— y `tuto`, que es lo que le pone la piedra.
+
+Las medidas no son a ojo. Con `GRAVITY 0.55` y `JUMP_FORCE -12` un salto suelto
+sube 131 px: el muro bajo mide **72** (se pasa de un salto) y el alto **150**
+(pide el segundo sí o sí).
+
+**El hueco de 40 px.** El suelo acababa justo donde empezaba la plataforma de
+salida del nivel, y entre las dos quedaba un agujero por el que se caía al
+vacío en el sitio exacto donde el pasillo tenía que entregarte sano al
+checkpoint. Ahora el suelo pasa de largo y la cubre: cubrir no quita nada,
+la plataforma sigue debajo con su salto ya verificado.
+
+**Y costaba caro.** El suelo mide 2 640 x 430 y se pintaba sillar a sillar
+entero: unos 870 piedras por fotograma para enseñar doscientas y pico. Medido,
+el pasillo costaba 4,4 ms de dibujo frente a 2,7 arriba en la montaña, y bajaba
+a 57 fps. Recortando el aparejo a lo que cabe en la cámara vuelve a 60.
+
+De propina, el aviso al morir decía «volviendo al checkpoint» y te dejaba en la
+casilla de salida, que no es lo mismo: en el pasillo ahora dice lo que hace.
+
 ### Más catálogo, estela más visible y dos cuentas de victorias
 
 **El catálogo crece a 30 colores, 28 accesorios y 19 estelas** — 15.960
@@ -1429,6 +1470,7 @@ Todo vive en `index.html`. Las piezas, por orden:
 | Zona | Qué hay |
 |---|---|
 | `NIVEL_FIJO` | El nivel entero ya generado y verificado, serializado |
+| Pasillo | `montarTutorial()`, `platCastillo()`, `dibujarTutorial()`: el suelo de salida y lo que se practica en él |
 | Constantes | Gravedad, salto, cumbres, metros por cumbre |
 | Física | `pasoFisica()`, el motor **único** que comparten el juego y el generador |
 | Empotramientos | `desincrustar()`: te saca del bloque en el que se ha metido una plataforma |
