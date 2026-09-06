@@ -450,8 +450,14 @@
     background:linear-gradient(180deg, rgba(48,60,84,.96), rgba(30,40,58,.96));
     box-shadow:0 6px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.09); }
   .menu .btn.ghost:active { transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.4); }
-  .pie-menu #start-btn { flex:2.4; margin-top:0; }
-  .pie-menu .js-mute { flex:1; margin-top:0; }
+  /* Tres botones, no dos: la contrarreloj manda, la sala es la alternativa
+     de verdad y el sonido es el último. Sin repartir el ancho a mano, el de
+     empezar se quedaba en una rendija. */
+  .pie-menu .btn { min-width:0; margin-top:0; }
+  .pie-menu #start-btn { flex:2; }
+  .pie-menu #sala-btn { flex:1.5; font-size:15px; }
+  .pie-menu .js-mute { flex:1; }
+  @media (max-width:900px) { .pie-menu #sala-btn { font-size:13.5px; } }
   @media (max-width:600px) { .pie-menu { flex-direction:column; } }
   /* Los récords, en la esquina de la cabecera: cuatro fichas con su franja
      de color, no cuatro cajas iguales en fila. */
@@ -623,6 +629,112 @@
   }
 
   /* ====================================================================
+     SALAS
+     ==================================================================== */
+  .panel.sala { max-width:470px; }
+  .sala-lema { margin:0 0 16px; color:#93a8bd; font-size:13px; line-height:1.45; }
+  .sala-puertas { display:flex; flex-direction:column; gap:10px; }
+  .sala-o { text-align:center; font-size:10.5px; letter-spacing:2px; color:#61748a;
+    text-transform:uppercase; position:relative; }
+  .sala-o::before, .sala-o::after { content:''; position:absolute; top:50%; width:38%;
+    height:1px; background:rgba(255,255,255,.09); }
+  .sala-o::before { left:0; } .sala-o::after { right:0; }
+  .sala-unir { display:flex; gap:8px; }
+  .sala-unir input { flex:1; min-width:0; padding:12px 14px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.3); color:#fff;
+    font:900 21px/1 "Segoe UI", sans-serif; letter-spacing:7px; text-align:center;
+    text-transform:uppercase; outline:none; box-shadow:inset 0 2px 6px rgba(0,0,0,.35); }
+  .sala-unir input::placeholder { color:#4d5d70; letter-spacing:4px; font-size:15px; }
+  .sala-unir input:focus { border-color:#ffd700; box-shadow:inset 0 2px 6px rgba(0,0,0,.35),
+    0 0 0 3px rgba(255,215,0,.15); }
+  .sala-unir .btn { flex:none; width:120px; margin-top:0; }
+
+  /* El código es lo único que hay que pasar a otra persona, así que es lo
+     más grande del panel y se puede copiar de un botón. */
+  .sala-codigo { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:12px 16px; border-radius:14px; margin-bottom:12px;
+    background:linear-gradient(180deg, rgba(255,215,0,.11), rgba(255,150,20,.04));
+    border:1px solid rgba(255,200,60,.26); }
+  .sala-codigo span { font-size:9.5px; letter-spacing:1.6px; color:#a8b8c8;
+    text-transform:uppercase; flex:1 0 100%; text-align:left; }
+  .sala-codigo b { font:900 40px/1 "Segoe UI", sans-serif; letter-spacing:11px;
+    color:#ffe27a; text-shadow:0 3px 14px rgba(255,190,50,.35); flex:1; text-align:left; }
+  .sala-codigo .btn { margin-top:0; flex:none; padding:8px 14px; font-size:12px; }
+  .sala-gente { list-style:none; margin:0 0 8px; padding:0; display:flex;
+    flex-direction:column; gap:5px; max-height:190px; overflow:auto; }
+  .sala-gente li { display:flex; align-items:center; gap:9px; text-align:left;
+    padding:7px 12px; border-radius:10px; background:rgba(255,255,255,.045);
+    font-size:13.5px; color:#e2ebf5; }
+  .sala-gente i { width:14px; flex:none; font-style:normal; font-size:12px;
+    color:#61748a; text-align:center; }
+  .sala-gente i.corona { color:#ffd700; }
+  .sala-gente em { font-style:normal; font-size:10px; letter-spacing:1.2px;
+    text-transform:uppercase; color:#8fa8c0; margin-left:6px; }
+  .sala-cuantos { margin:0 0 14px; font-size:11px; letter-spacing:.4px; color:#7d90a6; }
+  .sala-pie { display:flex; flex-direction:column; gap:8px; }
+  .sala-pie .btn { margin-top:0; }
+  .sala-espera { padding:12px; border-radius:12px; font-size:13px; color:#9fb2c6;
+    background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.12); }
+  .sala-espera b { color:#ffd700; }
+  .sala-nota { margin:12px 0 0; font-size:11px; line-height:1.4; color:#7d90a6; }
+  .sala-nota.bien { color:#8be36a; }
+  .sala-nota.aviso { color:#e0b45c; }
+  .sala-aviso { margin:6px 0 0; font-size:12px; color:#ffd700; min-height:16px;
+    opacity:0; transition:opacity .18s; }
+  .sala-aviso.visible { opacity:1; }
+  #sala-screen .btn.ghost#sala-cerrar { margin-top:14px; }
+
+  /* La clasificación repetida dentro de la pantalla de victoria */
+  #win-sala { margin:14px 0 4px; padding:11px 13px 9px; border-radius:14px;
+    background:rgba(0,0,0,.26); border:1px solid rgba(255,255,255,.08); text-align:left; }
+  #win-sala h3 { margin:0 0 8px; font-size:10px; letter-spacing:1.8px; color:#ffd700;
+    text-transform:uppercase; }
+  #win-sala ol { list-style:none; margin:0; padding:0; display:flex;
+    flex-direction:column; gap:4px; }
+  #win-sala li { display:flex; align-items:center; gap:9px; font-size:13px;
+    color:#c9d6e5; padding:5px 9px; border-radius:9px; background:rgba(255,255,255,.04); }
+  #win-sala li.yo { background:rgba(255,215,0,.15); color:#fff; font-weight:700; }
+  #win-sala li.meta u { color:#8be36a; }
+  #win-sala b { width:16px; flex:none; text-align:center; color:#8fa8c0; font-size:11px; }
+  #win-sala span { flex:1; }
+  #win-sala u { text-decoration:none; font-variant-numeric:tabular-nums;
+    color:#ffd700; font-weight:700; }
+  #win-sala p { margin:9px 0 0; font-size:11px; color:#7d90a6; letter-spacing:.3px; }
+
+  /* Clasificación en vivo, arriba a la derecha bajo los botones */
+  #tabla-sala { position:absolute; top:62px; right:12px; z-index:6; width:172px;
+    padding:7px; border-radius:12px; background:rgba(9,14,24,.82);
+    border:1px solid rgba(255,255,255,.1); backdrop-filter:none;
+    box-shadow:0 8px 22px rgba(0,0,0,.4); pointer-events:none; }
+  #tabla-sala ol { list-style:none; margin:0; padding:0; display:flex;
+    flex-direction:column; gap:3px; }
+  #tabla-sala li { display:flex; align-items:center; gap:7px; font-size:11.5px;
+    color:#c9d6e5; padding:3px 6px; border-radius:7px; }
+  #tabla-sala li.yo { background:rgba(255,215,0,.14); color:#fff; font-weight:700; }
+  #tabla-sala li.meta u { color:#8be36a; }
+  #tabla-sala b { width:13px; flex:none; text-align:center; color:#8fa8c0;
+    font-size:10px; font-weight:800; }
+  #tabla-sala span { flex:1; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; }
+  #tabla-sala u { text-decoration:none; font-variant-numeric:tabular-nums;
+    font-size:11px; color:#ffd700; font-weight:700; }
+  #game-container.en-menu #tabla-sala { display:none !important; }
+
+  /* Cuenta atrás de la salida */
+  #cuenta-salida { position:absolute; inset:0; z-index:9; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    pointer-events:none; background:radial-gradient(60% 50% at 50% 50%,
+      rgba(4,8,16,.55), transparent 72%); }
+  #cuenta-salida b { font:900 108px/1 "Segoe UI", sans-serif; color:#ffe27a;
+    text-shadow:0 6px 34px rgba(255,180,60,.5), 0 3px 0 rgba(0,0,0,.45); }
+  #cuenta-salida span { font-size:13px; letter-spacing:4px; text-transform:uppercase;
+    color:#dbe6f2; text-shadow:0 2px 8px rgba(0,0,0,.7); }
+  @media (max-width:600px) {
+    #tabla-sala { width:136px; top:58px; right:8px; }
+    #cuenta-salida b { font-size:76px; }
+  }
+
+  /* ====================================================================
      ADAPTACIÓN DE LA PANTALLA DE INICIO
      Van al final del hoja de estilo A PROPÓSITO: estas reglas ajustan
      cosas que se declaran más abajo (el pie, la vitrina, la ruta) y
@@ -724,10 +836,15 @@
       <span id="recordDisplay"></span>
     </div>
 
+    <!-- Clasificación de la sala. Fuera de una sala no existe. -->
+    <div id="tabla-sala" class="oculta"></div>
+
     <div id="topright">
       <button id="mute-btn" class="mini" title="Silenciar (M)">🔊</button>
       <button id="pause-btn" class="mini" title="Pausa (Esc)">❚❚</button>
     </div>
+
+    <div id="cuenta-salida" class="oculta"><b></b><span>¡A escalar!</span></div>
 
     <div id="hud">
       <div id="hud-bar">
@@ -841,10 +958,23 @@
         </div>
 
         <div class="pie-menu">
-          <button id="start-btn" class="btn"><span>Empezar a escalar &nbsp;→</span></button>
+          <button id="start-btn" class="btn"><span>Jugar solo &nbsp;→</span></button>
+          <button id="sala-btn" class="btn ghost">👥  Jugar con amigos</button>
           <button class="btn ghost js-mute">🔊  Sonido activado</button>
         </div>
         <p class="marca-menu" id="marca-menu"></p>
+      </div>
+    </div>
+
+    <div id="sala-screen" class="overlay hidden">
+      <div class="panel sala">
+        <h1>JUGAR CON AMIGOS</h1>
+        <p class="sala-lema">Misma montaña, misma salida. Gana quien llegue antes
+           a los 1000 metros.</p>
+        <div id="sala-cuerpo"></div>
+        <p class="sala-nota" id="sala-nota"></p>
+        <p class="sala-aviso" id="sala-aviso"></p>
+        <button id="sala-cerrar" class="btn ghost">Volver al menú</button>
       </div>
     </div>
 
@@ -880,6 +1010,9 @@
         <h1 class="win">¡LO LOGRASTE!</h1>
         <p>1000 metros y las 6 cumbres, de punta a punta.</p>
         <p id="win-stats"></p>
+        <!-- En sala, la clasificación de la carrera. Sigue viva mientras los
+             demás terminan: no se cierra el marcador cuando llegas tú. -->
+        <div id="win-sala" class="oculta"></div>
         <p id="marcas"></p>
         <button id="restart-btn" class="btn">Jugar de nuevo</button>
         <button id="win-menu-btn" class="btn ghost">Volver al menú</button>
@@ -4279,6 +4412,7 @@ const heightEl     = document.getElementById('heightDisplay');
 const messageEl    = document.getElementById('message');
 const startScreen  = document.getElementById('start-screen');
 const winScreen    = document.getElementById('win-screen');
+const salaScreen   = document.getElementById('sala-screen');
 const winStats     = document.getElementById('win-stats');
 const statsEl      = document.getElementById('statsDisplay');
 const puntosEl     = document.getElementById('puntosDisplay');
@@ -4511,6 +4645,18 @@ function reanudar() {
 }
 
 function volverAlMenu() {
+  // La sala sigue viva —no te echa de ella volver al menú— pero la partida se
+  // acabó: el anfitrión vuelve a «espera» para poder dar otra salida.
+  if (modoSala) {
+    modoSala = false;
+    if (miSala) {
+      SALA.presencia({ m: null, x: null, y: null, fin: null });
+      if (soyHost) SALA.presencia({ fase: 'espera' });
+    }
+  }
+  cuentaAtras = 0;
+  ocultarCuentaAtras();
+  refrescarTablaSala();          // fuera de sala, la clasificación se retira
   mapaAbierto = false;
   document.getElementById('map-screen').classList.add('hidden');
   segundosPartida();
@@ -4603,6 +4749,20 @@ function die(motivo) {
 
 function update() {
   if (!running || gameOver) { pedirSalto = false; return; }
+
+  // CUENTA ATRÁS DE LA SALIDA. La partida ya está montada y el nivel se ve,
+  // pero el control no se suelta hasta el «¡YA!»: así nadie sale antes por
+  // haber recibido la señal medio segundo antes.
+  if (cuentaAtras > 0) {
+    cuentaAtras--;
+    pintarCuentaAtras();
+    pedirSalto = false;
+    // El cronómetro se reengancha en cada fotograma de la cuenta: si no,
+    // el marcador contaba los tres segundos y luego volvía atrás.
+    startTime = performance.now(); tiempoAcumulado = 0;
+    return;
+  }
+
   tiempoJuego++;
 
   let dir = 0;
@@ -4809,6 +4969,8 @@ function update() {
     if (q.life <= 0) particles.splice(i, 1);
   }
 
+  publicarEnCarrera();
+
   if (player.y > player.spawnY + 950) die('¡Caíste al vacío!');
 
   // Progreso: metros de los 1000 que mide la subida entera
@@ -4881,6 +5043,9 @@ function refrescarMarcador() {
 function triggerWin() {
   gameOver = true; running = false;
   const seg = segundosPartida();
+  // En sala, lo primero es cantar el tiempo: es lo que ordena la
+  // clasificación de los que todavía están subiendo.
+  if (modoSala && miSala) SALA.presencia({ fin: Math.round(seg * 100) / 100, m: 1000 });
   efecto([523, 659, 784, 1047], 0.18, 'triangle', 0.07);
   const nuevos = anotarPartida(seg);
   winStats.textContent = 'Tiempo: ' + reloj(seg) + '  ·  Caídas: ' + deaths +
@@ -4891,6 +5056,515 @@ function triggerWin() {
     ? '¡Récord de ' + nuevos.join(' y de ') + '!  ' + textoMarcas()
     : textoMarcas();
   winScreen.classList.remove('hidden');
+}
+
+/* ====================================================================
+   SALAS: JUGAR CON AMIGOS
+   Dos modos: SOLO (contrarreloj, el de siempre) y SALA (el anfitrión crea
+   una, reparte el código y cuando él arranca salen todos a la vez).
+
+   El transporte va detrás de una sola interfaz, `SALA`, con dos
+   implementaciones:
+
+   · `room`  — la capacidad de sala del artefacto publicado. Alcanza a quien
+               tenga la página abierta AHORA. Toda la partida viaja en la
+               PRESENCIA de cada jugador: un objeto que la plataforma reparte
+               a todos, entrega a quien llega tarde y borra cuando te vas.
+               Eso quita el problema de «y el que entra a mitad, ¿cómo se
+               entera?»: se entera solo. Y como cualquiera puede publicar su
+               presencia (los temas de eventos son de administrador), un
+               invitado con permiso de sólo lectura puede jugar.
+   · `local` — un `BroadcastChannel`, que sólo alcanza a otras PESTAÑAS DEL
+               MISMO NAVEGADOR. No es multijugador de verdad, pero deja
+               probar la sala entera abriendo dos pestañas, y es lo que hace
+               que el archivo suelto del repositorio no se quede muerto.
+
+   Nada de esto es autoridad: lo que llega es lo que otra página dice de sí
+   misma. Sirve para pintar fantasmas y una clasificación, y para nada más:
+   la física, las monedas y el tiempo de cada uno se calculan en su máquina.
+
+   NO hay reloj común. Cada uno cronometra SU subida con su propio reloj
+   desde su cuenta atrás, así que no hace falta sincronizar relojes entre
+   máquinas: el tiempo que se compara es «lo que tardaste tú», que es lo que
+   se quería medir.
+   ==================================================================== */
+
+const CANAL_LOCAL = 'dontlookup.sala.v1';
+const LATIDO_MS = 1200;         // cada cuánto repite su presencia el modo local
+const OLVIDO_MS = 4200;         // sin noticias de alguien, se le da por ido
+
+const SALA = {
+  tipo: null,          // 'room' | 'local' | null
+  yo: 'p' + Math.random().toString(36).slice(2, 10),
+  _mia: {},            // MI presencia, ya fusionada
+  _otros: new Map(),   // id -> { pres, visto }   (sólo en el modo local)
+  _room: null,
+  _canal: null,
+  _avisar: [],
+  _version: 0,         // sube con cada cambio: el bucle mira esto y no diffea
+
+  /** Fusiona `parche` en mi presencia y la reparte. `null` borra un campo. */
+  presencia(parche) {
+    for (const k in parche) {
+      if (parche[k] === null) delete this._mia[k];
+      else this._mia[k] = parche[k];
+    }
+    if (this.tipo === 'room' && this._room) {
+      this._room.presence(parche).catch(() => {});
+    } else if (this.tipo === 'local' && this._canal) {
+      this._difundirLocal();
+    }
+    this._version++;
+  },
+
+  /** Todos los que están ahora, yo incluido: [{ id, soyYo, pres }]. */
+  pares() {
+    if (this.tipo === 'room' && this._room) {
+      const lista = [];
+      for (const p of this._room.peers()) {
+        if (p.kind !== 'viewer') continue;      // los agentes no juegan
+        lista.push({ id: p.peer, soyYo: p.sameTab, pres: p.presence || {} });
+      }
+      return lista;
+    }
+    if (this.tipo === 'local') {
+      const lista = [{ id: this.yo, soyYo: true, pres: this._mia }];
+      const ahora = Date.now();
+      for (const [id, o] of this._otros) {
+        if (ahora - o.visto > OLVIDO_MS) continue;
+        lista.push({ id, soyYo: false, pres: o.pres });
+      }
+      return lista;
+    }
+    return [{ id: this.yo, soyYo: true, pres: this._mia }];
+  },
+
+  alCambiar(fn) { this._avisar.push(fn); },
+  _cambio() { this._version++; for (const f of this._avisar) { try { f(); } catch (e) {} } },
+
+  _difundirLocal() {
+    try {
+      this._canal.postMessage({ que: 'pres', de: this.yo, pres: this._mia });
+    } catch (e) {}
+  },
+
+  /** «Estoy aquí, contadme cómo va esto.» Con la sala del artefacto no hace
+   *  falta —la plataforma le entrega a quien llega la presencia de todos—
+   *  pero por el canal local nadie repite nada si no se le pide. */
+  saludar() {
+    if (this.tipo === 'local' && this._canal) {
+      try { this._canal.postMessage({ que: 'hola', de: this.yo }); } catch (e) {}
+    }
+  },
+
+  /** Arranca el mejor transporte que haya. No bloquea nada: la página
+   *  funciona entera sin sala y esto la enciende cuando conteste. */
+  arrancar() {
+    // El BroadcastChannel siempre está si el navegador lo trae; se monta
+    // primero para que haya algo con lo que probar, y si luego contesta la
+    // sala del artefacto, esa manda.
+    if (typeof BroadcastChannel === 'function') {
+      try {
+        this._canal = new BroadcastChannel(CANAL_LOCAL);
+        this._canal.onmessage = (ev) => {
+          const m = ev.data;
+          if (!m || m.de === this.yo) return;
+          if (m.que === 'pres') {
+            const nuevo = !this._otros.has(m.de);
+            this._otros.set(m.de, { pres: m.pres || {}, visto: Date.now() });
+            // A quien acaba de aparecer hay que contarle que estoy: los
+            // mensajes no se repiten solos.
+            if (nuevo) this._difundirLocal();
+            this._cambio();
+          } else if (m.que === 'hola') {
+            // Alguien acaba de entrar en una sala y necesita el estado AHORA,
+            // no dentro de un latido. Se le contesta con lo mío.
+            this._difundirLocal();
+          } else if (m.que === 'adios') {
+            this._otros.delete(m.de);
+            this._cambio();
+          }
+        };
+        this.tipo = 'local';
+        setInterval(() => { if (this.tipo === 'local') this._difundirLocal(); }, LATIDO_MS);
+        window.addEventListener('pagehide', () => {
+          try { this._canal.postMessage({ que: 'adios', de: this.yo }); } catch (e) {}
+        });
+      } catch (e) { this._canal = null; }
+    }
+
+    // Y la de verdad, si la página corre publicada como artefacto.
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('room').then((r) => {
+        if (!r) return;                       // aquí no hay sala: se sigue con lo que haya
+        this._room = r;
+        this.tipo = 'room';
+        r.onPeers(() => this._cambio(), () => {});
+        // Lo que ya hubiera dicho de mí se vuelve a decir por el canal bueno.
+        if (Object.keys(this._mia).length) r.presence(this._mia).catch(() => {});
+        this._cambio();
+        pintarSala();
+      }).catch(() => {});
+    }
+  },
+};
+
+/* --------------------------------------------------------------------
+   LA SALA, POR ENCIMA DEL TRANSPORTE
+   -------------------------------------------------------------------- */
+
+/* Sin I ni O ni 0 ni 1: un código se dicta en voz alta o se copia a mano, y
+   ahí es donde se confunden. */
+const LETRAS_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+let modoSala = false;        // ¿la partida en curso es de sala?
+let miSala = null;           // código de la sala en la que estoy
+let soyHost = false;
+let rondaSala = 0;           // número de la ronda que estoy jugando
+let cuentaAtras = 0;         // fotogramas de 3-2-1 antes de soltar el control
+let pulsoSala = 0;           // para no publicar la posición en cada fotograma
+
+function codigoSala() {
+  let c = '';
+  for (let i = 0; i < 4; i++) {
+    c += LETRAS_CODIGO.charAt(Math.floor(Math.random() * LETRAS_CODIGO.length));
+  }
+  return c;
+}
+
+/**
+ * El nombre, limpio. Va a la presencia —que sólo admite texto sin caracteres
+ * de control ni invisibles— y de ahí a un `innerHTML` en la lista de la sala,
+ * así que se recorta aquí una sola vez y lo demás lo da por bueno.
+ */
+function limpiarNombre(txt) {
+  const t = String(txt == null ? '' : txt)
+    .replace(/[\u0000-\u001f\u007f\u00ad\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, '')
+    .replace(/[<>&"']/g, '')
+    .trim()
+    .slice(0, 14);
+  return t || 'Escalador';
+}
+
+/** Lo que digo de mí cuando estoy en el vestíbulo. */
+function miFicha() {
+  return {
+    sala: miSala,
+    nom: limpiarNombre(nombreJugador),
+    col: (SKINS[skinElegida] || {}).id || 'cian',
+    acc: (ACCESORIOS[accesorioElegido] || {}).id || 'ninguno',
+    est: (ESTELAS[estelaElegida] || {}).id || 'ninguna',
+    host: soyHost ? 1 : 0,
+  };
+}
+
+/** Todos los de MI sala, yo incluido, en orden estable. */
+function genteSala() {
+  if (!miSala) return [];
+  return SALA.pares()
+    .filter((p) => p.pres && p.pres.sala === miSala)
+    .sort((a, b) => (b.pres.host || 0) - (a.pres.host || 0) ||
+                    String(a.id).localeCompare(String(b.id)));
+}
+
+function anfitrionSala() {
+  return genteSala().find((p) => p.pres.host) || null;
+}
+
+function crearSala() {
+  miSala = codigoSala();
+  soyHost = true;
+  rondaSala = 0;
+  SALA.presencia(Object.assign(miFicha(), { fase: 'espera', ronda: 0, m: 0, fin: 0 }));
+  pintarSala();
+}
+
+/* Quien entra con una carrera ya empezada no debe salir disparado a mitad:
+   la primera vez que ve la sala adopta la ronda en curso sin jugarla y espera
+   a la siguiente salida. */
+let primeraVistaSala = false;
+
+function unirseSala(codigo) {
+  const c = String(codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  if (c.length !== 4) { avisoSala('El código son cuatro letras o números'); return; }
+  miSala = c;
+  soyHost = false;
+  rondaSala = 0;
+  primeraVistaSala = true;
+  SALA.presencia(Object.assign(miFicha(), { fase: null, ronda: null, m: 0, fin: 0 }));
+  SALA.saludar();
+  pintarSala();
+  /* La primera lectura del anfitrión decide si me he metido en una carrera ya
+     empezada o si estoy en el vestíbulo esperando la salida. Esa lectura tiene
+     que ser la de VERDAD: si se hace con lo primero que llegue, el propio
+     mensaje de «salida» puede ser lo primero que veo y me quedo fuera de la
+     carrera que acaban de dar. Por eso se deja un respiro para que conteste
+     todo el mundo y se mira entonces. */
+  setTimeout(() => { revisarSala(); pintarSala(); }, 220);
+  // Puede que la sala no exista. No es un error: se ve en el vestíbulo, donde
+  // no aparece nadie más, y de ahí se sale.
+}
+
+function salirSala() {
+  miSala = null; soyHost = false; modoSala = false; rondaSala = 0;
+  SALA.presencia({ sala: null, host: null, fase: null, ronda: null,
+                   m: null, x: null, y: null, fin: null });
+  pintarSala();
+}
+
+/** El anfitrión da la salida: sube la ronda y todos la ven por su presencia. */
+function empezarSala() {
+  if (!soyHost || !miSala) return;
+  rondaSala++;
+  SALA.presencia({ fase: 'juego', ronda: rondaSala });
+  lanzarPartidaSala();
+}
+
+/**
+ * Se llama en cada cambio de la sala. El seguidor no obedece a un mensaje
+ * —los mensajes se pierden— sino a lo que DICE el anfitrión ahora mismo: si
+ * su ronda es mayor que la que llevo jugada, es que ha dado la salida.
+ */
+function revisarSala() {
+  if (!miSala || soyHost) return;
+  const h = anfitrionSala();
+  if (!h) return;
+  const ronda = h.pres.ronda || 0;
+  if (primeraVistaSala) {
+    primeraVistaSala = false;
+    if (h.pres.fase === 'juego') {
+      // Carrera en curso: se adopta su número para no meterse en ella.
+      rondaSala = ronda;
+      avisoSala('Hay una carrera en marcha: entras en la siguiente');
+      return;
+    }
+  }
+  if (h.pres.fase === 'juego' && ronda > rondaSala) {
+    rondaSala = ronda;
+    lanzarPartidaSala();
+  }
+}
+
+/** Arranca la partida de sala: el nivel de siempre, con cuenta atrás. */
+function lanzarPartidaSala() {
+  modoSala = true;
+  cerrarSala();
+  startGame();
+  // 3-2-1 antes de soltar el control. No iguala la latencia —cada uno cuenta
+  // desde que le llegó— pero son décimas en una subida de minutos, y evita
+  // que a nadie le arranquen la partida sin avisar.
+  cuentaAtras = 180;
+}
+
+function abrirSala() {
+  salaScreen.classList.remove('hidden');
+  _vistaSala = '';                 // se monta de nuevo, con el campo vacío
+  pintarSala();
+}
+function cerrarSala() { salaScreen.classList.add('hidden'); _vistaSala = ''; }
+
+let avisoSalaTimer = 0;
+function avisoSala(txt) {
+  const el = document.getElementById('sala-aviso');
+  if (!el) return;
+  el.textContent = txt;
+  el.classList.add('visible');
+  clearTimeout(avisoSalaTimer);
+  avisoSalaTimer = setTimeout(() => el.classList.remove('visible'), 2600);
+}
+
+/* La vista que hay montada ahora mismo. `pintarSala()` se llama en CADA
+   cambio de la sala —y con un latido de por medio eso es varias veces por
+   segundo—, así que reconstruir el panel entero borraba lo que estabas
+   escribiendo en el campo del código: bastaba con que alguien publicara su
+   presencia mientras tecleabas. Ahora la estructura sólo se rehace cuando
+   cambia de verdad, y lo que se refresca es la lista. */
+let _vistaSala = '';
+
+function pintarSala() {
+  const cuerpo = document.getElementById('sala-cuerpo');
+  if (!cuerpo) return;
+  const nota = document.getElementById('sala-nota');
+  if (nota) {
+    nota.textContent = SALA.tipo === 'room'
+      ? 'Conectado. Comparte el código con quien tenga abierta esta página.'
+      : (SALA.tipo === 'local'
+        ? 'Aquí sólo alcanza a otras pestañas de este navegador. Para jugar con otra gente hace falta la versión publicada.'
+        : 'Sin conexión de sala en esta copia.');
+    nota.className = 'sala-nota' + (SALA.tipo === 'room' ? ' bien' : ' aviso');
+  }
+
+  const vista = miSala ? 'sala:' + miSala + ':' + (soyHost ? 'h' : 'i') : 'puertas';
+  const rehacer = vista !== _vistaSala;
+  _vistaSala = vista;
+
+  if (!miSala) {
+    if (!rehacer) return;               // el campo del código se queda quieto
+    cuerpo.innerHTML =
+      '<div class="sala-puertas">' +
+        '<button class="btn" id="sala-crear">Crear sala</button>' +
+        '<div class="sala-o">o</div>' +
+        '<div class="sala-unir">' +
+          '<input id="sala-codigo" maxlength="4" placeholder="CÓDIGO" ' +
+                 'autocomplete="off" spellcheck="false">' +
+          '<button class="btn ghost" id="sala-unirse">Unirse</button>' +
+        '</div>' +
+      '</div>';
+    const inp = document.getElementById('sala-codigo');
+    document.getElementById('sala-crear').onclick = crearSala;
+    document.getElementById('sala-unirse').onclick = () => unirseSala(inp.value);
+    inp.oninput = () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    inp.onkeydown = (e) => { if (e.key === 'Enter') unirseSala(inp.value); };
+    return;
+  }
+
+  if (rehacer) {
+    cuerpo.innerHTML =
+      '<div class="sala-codigo"><span>CÓDIGO DE LA SALA</span><b>' + miSala + '</b>' +
+        '<button class="btn ghost chico" id="sala-copiar">Copiar</button></div>' +
+      '<ol class="sala-gente" id="sala-lista"></ol>' +
+      '<p class="sala-cuantos" id="sala-cuantos"></p>' +
+      '<div class="sala-pie">' +
+        (soyHost
+          ? '<button class="btn" id="sala-empezar">Dar la salida &nbsp;→</button>'
+          : '<div class="sala-espera" id="sala-espera"></div>') +
+        '<button class="btn ghost" id="sala-salir">Salir de la sala</button>' +
+      '</div>';
+    const bc = document.getElementById('sala-copiar');
+    bc.onclick = () => {
+      try { navigator.clipboard.writeText(miSala); avisoSala('Código copiado'); }
+      catch (e) { avisoSala('Copia el código a mano: ' + miSala); }
+    };
+    const be = document.getElementById('sala-empezar');
+    if (be) be.onclick = empezarSala;
+    document.getElementById('sala-salir').onclick = salirSala;
+  }
+
+  // Lo que sí cambia solo: quién hay y a quién se espera.
+  const gente = genteSala();
+  const lista = document.getElementById('sala-lista');
+  if (lista) {
+    lista.innerHTML = gente.map((p) => {
+      const yo = p.soyYo ? ' <em>tú</em>' : '';
+      const jefe = p.pres.host ? '<i class="corona">★</i>' : '<i></i>';
+      return '<li>' + jefe + '<span>' + limpiarNombre(p.pres.nom) + yo + '</span></li>';
+    }).join('');
+  }
+  const cuantos = document.getElementById('sala-cuantos');
+  if (cuantos) {
+    cuantos.textContent = gente.length +
+      (gente.length === 1 ? ' escalador' : ' escaladores') + ' en la sala';
+  }
+  const espera = document.getElementById('sala-espera');
+  if (espera) {
+    const h = anfitrionSala();
+    espera.innerHTML = h
+      ? 'Esperando a que <b>' + limpiarNombre(h.pres.nom) + '</b> dé la salida…'
+      : 'No hay nadie con ese código todavía…';
+  }
+}
+
+/* El 3-2-1 de la salida. Los fotogramas van a 60 por segundo, así que 180
+   son tres segundos justos aunque la pestaña vaya a tirones. */
+function pintarCuentaAtras() {
+  const el = document.getElementById('cuenta-salida');
+  if (!el) return;
+  el.classList.remove('oculta');
+  const seg = Math.ceil(cuentaAtras / 60);
+  const txt = seg > 0 ? String(seg) : '¡YA!';
+  const b = el.querySelector('b');
+  if (b.textContent !== txt) {
+    b.textContent = txt;
+    efecto(seg > 0 ? [440] : [880, 1174], 0.1, 'square', 0.05);
+  }
+  if (cuentaAtras === 0) setTimeout(ocultarCuentaAtras, 450);
+}
+function ocultarCuentaAtras() {
+  const el = document.getElementById('cuenta-salida');
+  if (el) el.classList.add('oculta');
+}
+
+/** Durante la partida: lo que los demás necesitan para pintarme. */
+function publicarEnCarrera() {
+  if (!modoSala || !miSala) return;
+  pulsoSala++;
+  if (pulsoSala % 4) return;              // 15 veces por segundo, de sobra
+  SALA.presencia({
+    m: alturaMetros,
+    x: Math.round(player.x), y: Math.round(player.y),
+    mira: player.facing, aire: player.onGround ? 0 : 1,
+  });
+}
+
+/** La clasificación en vivo, en una esquina del marcador. */
+let _tablaSala = '';
+function refrescarTablaSala() {
+  const el = document.getElementById('tabla-sala');
+  if (!el) return;
+  if (!modoSala || !miSala) { el.classList.add('oculta'); return; }
+  el.classList.remove('oculta');
+  const gente = genteSala().slice().sort((a, b) => {
+    const fa = a.pres.fin || 0, fb = b.pres.fin || 0;
+    if (fa && fb) return fa - fb;           // los que acabaron, por tiempo
+    if (fa) return -1;
+    if (fb) return 1;
+    return (b.pres.m || 0) - (a.pres.m || 0);
+  });
+  const html = gente.map((p, i) => {
+    const nom = limpiarNombre(p.pres.nom);
+    const dato = p.pres.fin ? reloj(p.pres.fin) : (p.pres.m || 0) + ' m';
+    return '<li class="' + (p.soyYo ? 'yo' : '') + (p.pres.fin ? ' meta' : '') + '">' +
+      '<b>' + (i + 1) + '</b><span>' + nom + '</span><u>' + dato + '</u></li>';
+  }).join('');
+  if (html !== _tablaSala) { _tablaSala = html; el.innerHTML = '<ol>' + html + '</ol>'; }
+
+  // La misma clasificación, dentro de la pantalla de victoria: el que llega
+  // primero se queda mirando cómo acaban los demás en vez de un panel muerto.
+  const ganar = document.getElementById('win-sala');
+  if (ganar) {
+    if (winScreen.classList.contains('hidden')) { ganar.classList.add('oculta'); }
+    else {
+      ganar.classList.remove('oculta');
+      const faltan = gente.filter((p) => !p.pres.fin).length;
+      ganar.innerHTML = '<h3>La carrera</h3><ol>' + html + '</ol>' +
+        '<p>' + (faltan ? faltan + (faltan === 1 ? ' sigue subiendo' : ' siguen subiendo')
+                        : 'Todos han llegado') + '</p>';
+    }
+  }
+}
+
+/**
+ * Los demás, pintados en su sitio. Se reaprovecha `drawPlayer()` entero
+ * cambiando los globales un momento —lo mismo que hacen los retratos del
+ * menú— así que un compañero se ve exactamente igual que tú: su color, su
+ * gorro y su nombre.
+ */
+function dibujarCompaneros() {
+  if (!modoSala || !miSala) return;
+  const gente = genteSala();
+  if (gente.length < 2) return;
+  const antesPj = player, antesSkin = skinElegida, antesAcc = accesorioElegido;
+  const antesNom = nombreJugador, antesEst = estelaElegida;
+  for (const p of gente) {
+    if (p.soyYo) continue;
+    const x = p.pres.x, y = p.pres.y;
+    if (typeof x !== 'number' || typeof y !== 'number') continue;
+    if (x < cameraX - 120 || x > cameraX + viewWidth + 120) continue;
+    if (y < cameraY - 120 || y > cameraY + viewHeight + 120) continue;
+    skinElegida = indicePorId(SKINS, p.pres.col, 0);
+    accesorioElegido = indicePorId(ACCESORIOS, p.pres.acc, 0);
+    nombreJugador = limpiarNombre(p.pres.nom);
+    player = { x, y, width: PW, height: PH, facing: p.pres.mira === -1 ? -1 : 1,
+               vx: 0, vy: p.pres.aire ? 4 : 0, onGround: !p.pres.aire, saltos: 2,
+               animTimer: t * 0.05, scaleX: 1, scaleY: 1, angulo: 0, giro: 0,
+               apoyo: null, dirPrev: 0 };
+    ctx.save();
+    ctx.globalAlpha = 0.62;
+    try { drawPlayer(); } catch (e) { /* un compañero nunca rompe el dibujo */ }
+    ctx.restore();
+  }
+  player = antesPj; skinElegida = antesSkin; accesorioElegido = antesAcc;
+  nombreJugador = antesNom; estelaElegida = antesEst;
 }
 
 /* ====================================================================
@@ -8801,6 +9475,10 @@ function draw() {
   // Jugador: el dibujo bueno está en drawPlayer(). Aquí quedaba pegado el
   // cuadro antiguo, y como nunca se llamaba a drawPlayer el personaje no
   // cambiaba por mucho que se editara aquella función.
+  // Los compañeros de sala van DEBAJO de ti: en un amontonamiento, el que
+  // manda en la pantalla tiene que ser el que juega.
+  dibujarCompaneros();
+
   // La estela, POR DETRÁS del personaje: es un rastro de por dónde has
   // pasado, no algo que se te ponga delante de la cara.
   pintarEstelas();
@@ -12571,6 +13249,9 @@ function gameLoop(ahora) {
   // En el menú el fondo lo pone el CSS y la pantalla de inicio es opaca:
   // dibujar el nivel entero por detrás era trabajo que no veía nadie.
   if (!enMenu()) draw();
+  // También con la partida acabada: los demás siguen subiendo y la
+  // clasificación de la pantalla de victoria se va llenando sola.
+  if (modoSala) refrescarTablaSala();
 }
 
 function startGame() {
@@ -13439,8 +14120,18 @@ function montarTactil() {
                   () => { keys.jumpHeld = false; });
 }
 
-document.getElementById('start-btn').addEventListener('click', () => { leerPersonalizacion(); startGame(); });
-document.getElementById('restart-btn').addEventListener('click', startGame);
+document.getElementById('start-btn').addEventListener('click', () => {
+  leerPersonalizacion();
+  modoSala = false;            // el botón de arriba es siempre la contrarreloj
+  cuentaAtras = 0;
+  startGame();
+});
+document.getElementById('restart-btn').addEventListener('click', () => {
+  // «Jugar de nuevo» repite el modo en el que estabas: en sala, la salida la
+  // vuelve a dar el anfitrión, así que desde aquí se vuelve a la contrarreloj.
+  modoSala = false; cuentaAtras = 0;
+  startGame();
+});
 document.getElementById('win-menu-btn').addEventListener('click', volverAlMenu);
 document.getElementById('resume-btn').addEventListener('click', reanudar);
 document.getElementById('menu-btn').addEventListener('click', volverAlMenu);
@@ -13517,6 +14208,29 @@ requestAnimationFrame(() => requestAnimationFrame(repintarTarjetas));
 setTimeout(repintarTarjetas, 300);
 document.getElementById('game-container').classList.add('en-menu');
 resizeCanvas();
+
+/* ---- Sala: botones y arranque del transporte ---- */
+(function montarSala() {
+  const abrir = document.getElementById('sala-btn');
+  const cerrar = document.getElementById('sala-cerrar');
+  if (abrir) abrir.addEventListener('click', () => {
+    // El nombre se escribe en el menú y viaja con la ficha: si lo cambias
+    // antes de entrar, entras con ese.
+    const inp = document.getElementById('nombre-input');
+    if (inp && inp.value.trim()) nombreJugador = limpiarNombre(inp.value);
+    if (miSala) SALA.presencia(miFicha());
+    abrirSala();
+  });
+  if (cerrar) cerrar.addEventListener('click', cerrarSala);
+
+  // Cualquier cambio en la sala repinta el vestíbulo y, si el anfitrión ha
+  // dado la salida, arranca la partida.
+  SALA.alCambiar(() => {
+    revisarSala();
+    if (!salaScreen.classList.contains('hidden')) pintarSala();
+  });
+  SALA.arrancar();
+})();
 cameraY = GROUND_Y + PH / 2 - viewHeight / 2;
 
 /* Componer el nivel entero —sembrar, verificar salto a salto y repasar— son

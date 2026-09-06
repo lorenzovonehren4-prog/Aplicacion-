@@ -42,6 +42,83 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### Dos modos: contrarreloj y sala
+
+**Jugar solo** es lo de siempre: la subida entera contra el cronómetro.
+
+**Jugar con amigos** es una sala. Uno la crea y le sale un código de cuatro
+caracteres; los demás lo escriben en «Unirse»; cuando el anfitrión da la
+salida, todos arrancan a la vez, en la misma montaña, viéndose por el camino y
+con una clasificación en vivo en la esquina.
+
+#### El transporte va detrás de una sola interfaz
+
+`SALA` tiene dos implementaciones y el juego no sabe cuál está usando:
+
+- **`room`** — la capacidad de sala del artefacto publicado. Alcanza a quien
+  tenga la página abierta ahora mismo. Es la de verdad.
+- **`local`** — un `BroadcastChannel`, que sólo alcanza a otras **pestañas del
+  mismo navegador**. No es multijugador, pero deja probar la sala entera
+  abriendo dos pestañas —así está verificada— y hace que el archivo suelto del
+  repositorio no se quede muerto. El panel lo dice con todas las letras en vez
+  de fingir que hay conexión.
+
+#### Todo viaja en la presencia, no en mensajes
+
+La sala tiene dos brazos: mensajes sueltos y **presencia**, que es un objeto
+que cada jugador mantiene al día y que la plataforma reparte a todos, entrega
+a quien llega tarde y borra cuando se va. La partida entera va por ahí:
+
+```
+{ sala:'QWZM', nom:'ANFI', col:'cian', acc:'gorra', est:'polvo',
+  host:1, fase:'juego', ronda:3, m:412, x:1905, y:-270, mira:1, fin:0 }
+```
+
+Eso quita de un plumazo el problema de «¿y el que entra a mitad, cómo se
+entera?»: se entera solo. Y como cualquiera puede publicar su presencia
+—los temas de eventos son de administrador—, alguien con permiso de sólo
+lectura puede jugar igual.
+
+El seguidor no obedece a un mensaje de «¡ya!», que se puede perder: obedece a
+lo que **dice** el anfitrión ahora mismo. Si su `ronda` es mayor que la que
+llevo jugada, es que ha dado la salida. Repetir el mensaje no rompe nada y
+perderlo tampoco: lo que cuenta es el estado.
+
+#### No hay reloj común, y no hace falta
+
+Cada uno cronometra su subida con su propio reloj desde su cuenta atrás. Lo
+que se compara es «lo que tardaste tú», que es exactamente lo que se quería
+medir, así que no hay que sincronizar relojes entre máquinas. El 3-2-1 no
+iguala la latencia —cada uno cuenta desde que le llegó la señal— pero son
+décimas en una subida de minutos, y evita que a nadie le arranque la partida
+sin avisar.
+
+#### Un fallo que salió en la prueba de dos pestañas
+
+Quien se unía podía **perderse la salida**. La regla «si la primera vez que
+veo al anfitrión ya está corriendo, espero a la siguiente carrera» se comía la
+salida cuando el propio mensaje de salida era lo primero que llegaba: por el
+canal local nadie repite su estado si no se le pide, así que el recién llegado
+no sabía nada del anfitrión hasta que este pulsaba el botón.
+
+Dos arreglos: el que entra **saluda** y todos le contestan con su estado en el
+acto, y la primera lectura del anfitrión se hace tras un respiro de 220 ms, ya
+con las respuestas puestas. Con la sala del artefacto no hace falta lo primero
+—la plataforma le entrega a quien llega la presencia de todos— pero el arreglo
+vale para las dos.
+
+#### Los demás, dibujados con tu mismo código
+
+Un compañero se pinta llamando a `drawPlayer()` entero con los globales
+cambiados un momento —lo mismo que hacen los retratos del menú—, así que se ve
+exactamente igual que tú: su color, su gorro y su nombre. Van por **debajo**
+de ti: en un amontonamiento, el que manda en la pantalla tiene que ser el que
+juega.
+
+Nada de lo que llega es autoridad: es lo que otra página dice de sí misma.
+Sirve para pintar fantasmas y una clasificación, y para nada más. La física,
+las monedas y el tiempo de cada uno se calculan en su máquina.
+
 ### La pantalla de inicio: el fondo, el muro gris y las cajas vacías
 
 **El fondo era un fallo de pintado, no un fondo.** Detrás del menú se pintaba
@@ -1317,6 +1394,7 @@ Todo vive en `index.html`. Las piezas, por orden:
 | Sonido | Notas generadas con Web Audio, sin archivos |
 | Dibujo | Fondos por bioma, apoyos ilustrados, personaje y accesorios |
 | Menú | Tienda de color, accesorio y estela, con el personaje dibujado en cada tarjeta, y el mezclador |
+| Salas | `SALA` (transporte), `miFicha()`, `revisarSala()`, `dibujarCompaneros()`: los dos modos de juego |
 
 Que el generador use el **mismo** `pasoFisica()` que el juego es lo que hace
 imposible que se genere un salto que luego no se pueda dar. Por eso la
