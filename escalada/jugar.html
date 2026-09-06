@@ -36,7 +36,9 @@
    La dirección del juego se calcula a partir de la de esta página, así que
    este archivo funciona igual esté donde esté: en GitHub Pages, en otro
    servidor o en una carpeta del ordenador. */
-var DESTINO = new URL('index.html', location.href).href;
+// Lo que venga detrás de la dirección se pasa tal cual al juego, para que
+// un parámetro puesto aquí llegue adentro y no se pierda en el marco.
+var DESTINO = new URL('index.html' + location.search, location.href).href;
 
 document.getElementById('jugar').addEventListener('click', function () {
   var v = window.open('about:blank');

@@ -1559,3 +1559,49 @@ Todo vive en `index.html`. Las piezas, por orden:
 Que el generador use el **mismo** `pasoFisica()` que el juego es lo que hace
 imposible que se genere un salto que luego no se pueda dar. Por eso la
 reparación de ratoneras se comprueba con él y no con una fórmula aparte.
+
+## Salas por internet sin servidor propio
+
+El enlace de claude.ai pedía cuenta y había cuentas a las que se les bloquea.
+En GitHub Pages no se bloquea nadie, pero Pages sirve archivos y no tiene con
+qué juntar a dos jugadores. La sala se monta entonces entre los propios
+navegadores: PeerJS los presenta y a partir de ahí hablan directos.
+
+La forma es una estrella, no una malla. El anfitrión coge como dirección el
+código de la sala —`dontlookup-v1-` más las cuatro letras—, así que sabiendo el
+código se sabe a quién llamar; él recibe la presencia de cada uno y reparte la
+tabla entera. Es lo que la sala ya era, porque el anfitrión es quien da la
+salida, y ahorra tener a todos hablando con todos.
+
+La librería va incrustada en el archivo (87 kB, MIT). El juego sigue sin pedir
+nada a la red para arrancar: se abre con doble clic igual que antes, y sólo se
+usa el servidor de PeerJS en el momento de presentar a dos navegadores.
+
+Tres cosas que costaron:
+
+- **Los fantasmas.** WebRTC no avisa de que el de enfrente ha cerrado la
+  pestaña: el corte tarda minutos en notarse, o no se nota. Con el anfitrión
+  caído, los demás seguían viéndolo en la lista para siempre. Ahora cada uno
+  dice «sigo aquí» cada `LATIDO_MS` y al que lleva callado más de `OLVIDO_MS`
+  se le da por ido — lo mismo que hacía el canal local, por el mismo motivo.
+  Al que se queda sin anfitrión en el vestíbulo se le saca; al que estaba
+  corriendo se le deja seguir, que su subida es suya.
+- **El código que no existe.** Tarda 5,6 s en saberse, que es lo que aguanta
+  el servidor antes de decir que ahí no hay nadie. Sin nada en pantalla
+  parecía que el botón no funcionaba, así que mientras tanto hay una rueda y
+  un «buscando la sala…», y al fallar no se entra en el vestíbulo vacío: se
+  dice que no hay ninguna sala con ese código.
+- **Que no se quede colgado.** Si no se llega al servidor, la sala se abre
+  igual en local (0,4 s cuando la conexión se rechaza de golpe, hasta 12 s si
+  no contesta nadie) avisando de que sólo llega a este ordenador.
+
+`?peer=maquina:puerto` apunta a otro servidor. Es como se prueba esto sin
+tocar el archivo: con `npx peerjs --host 127.0.0.1 --port 9000 --path /` y dos
+navegadores de verdad —no dos pestañas, que el BroadcastChannel las juntaría y
+no se estaría probando la red.
+
+Comprobado con navegadores separados: dos y tres jugadores se ven, la salida
+llega a todos, la posición viaja (dx=528 en la pantalla del otro), quien cierra
+de golpe desaparece de la lista, y todo ello también dentro del `about:blank`
+del lanzador. 61 fps en menú, pasillo y montaña; el nivel, intacto: «El
+recorrido se puede completar de principio a fin.»
