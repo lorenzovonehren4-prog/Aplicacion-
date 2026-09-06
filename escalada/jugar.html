@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jugar</title>
+<style>
+  html, body { height:100%; margin:0; display:flex; align-items:center;
+    justify-content:center; background:#071626; color:#dbe6f2;
+    font-family:'Segoe UI', system-ui, sans-serif; }
+  main { text-align:center; padding:24px; }
+  h1 { margin:0 0 6px; font-size:clamp(24px,5vw,38px); font-weight:900;
+    letter-spacing:.5px;
+    background:linear-gradient(178deg,#fff 6%,#ffeaad 48%,#f0ac22 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  p { margin:0 0 22px; font-size:13.5px; color:#8fa8c0; }
+  button { font:900 20px/1 'Segoe UI', sans-serif; letter-spacing:.5px;
+    padding:16px 38px; border:0; border-radius:14px; cursor:pointer;
+    color:#10202e; background:linear-gradient(180deg,#ffe27a,#f5b31f);
+    box-shadow:0 5px 0 #a8760d, 0 10px 22px rgba(245,179,31,.3); }
+  button:active { transform:translateY(4px); box-shadow:0 1px 0 #a8760d; }
+  small { display:block; margin-top:18px; font-size:11.5px; color:#61748a; }
+  a { color:#8fa8c0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>DON'T LOOK UP</h1>
+  <p>Pulsa para abrir el juego</p>
+  <button id="jugar">JUGAR</button>
+  <small id="aviso"></small>
+</main>
+
+<script>
+/* Abre el juego dentro de una ventana `about:blank`.
+   La dirección del juego se calcula a partir de la de esta página, así que
+   este archivo funciona igual esté donde esté: en GitHub Pages, en otro
+   servidor o en una carpeta del ordenador. */
+// Lo que venga detrás de la dirección se pasa tal cual al juego, para que
+// un parámetro puesto aquí llegue adentro y no se pierda en el marco.
+var DESTINO = new URL('index.html' + location.search, location.href).href;
+
+document.getElementById('jugar').addEventListener('click', function () {
+  var v = window.open('about:blank');
+  if (!v) {
+    document.getElementById('aviso').textContent =
+      'El navegador ha bloqueado la ventana. Permítela en el icono de la barra de direcciones y vuelve a pulsar.';
+    return;
+  }
+  /* El juego va dentro de un marco a pantalla completa: así la barra de
+     direcciones se queda en about:blank en vez de cambiar a la dirección
+     real, que es lo que pasa si sólo se redirige la ventana. */
+  v.document.write(
+    '<!doctype html><html><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<style>html,body{margin:0;height:100%;overflow:hidden;background:#071626}' +
+    'iframe{border:0;display:block;width:100%;height:100%}</style></head><body>' +
+    '<iframe id="j" src="' + DESTINO + '" allow="autoplay; fullscreen"></iframe>' +
+    '<' + 'script>' +
+    'var f=document.getElementById("j");' +
+    /* El teclado sólo llega al juego si el marco tiene el foco. Se le da al
+       cargar y en cuanto se hace clic en cualquier sitio. */
+    'f.addEventListener("load",function(){f.focus();});' +
+    'document.addEventListener("click",function(){f.focus();});' +
+    '<' + '/script></body></html>'
+  );
+  v.document.close();
+});
+</script>
+</body>
+</html>

@@ -8,6 +8,11 @@ fin: menú → 30 niveles encadenados → pantalla final.
 
 ---
 
+> En `escalada/` vive además **DON'T LOOK UP**, un juego de escalada aparte, en
+> un único archivo HTML. Tiene su propio [README](escalada/README.md).
+
+---
+
 ## Cómo ejecutarlo
 
 El juego usa ES modules y carga `data/levels-meta.json` con `fetch`, así que
