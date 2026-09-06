@@ -15371,6 +15371,17 @@ window.addEventListener('resize', () => {
     vuelta = setTimeout(() => { b.classList.remove('falla'); b.textContent = rotulo; }, 4200);
   };
 
+  /* ¿Vamos dentro del marco de otra página? Hace falta saberlo para acertar
+     con el aviso. Una pestaña que se pide con el dedo del jugador encima del
+     botón no la bloquea ningún navegador: el bloqueador de emergentes va a por
+     las que se abren solas, sin que nadie las pida. Así que si aquí no sale
+     ninguna, el que manda no es la configuración del navegador sino el
+     `sandbox` del marco, y mandar al jugador a toquetear sus ajustes es
+     mandarlo a perder el tiempo con algo que ya está bien. */
+  let enMarco = false;
+  try { enMarco = window.top !== window.self; } catch (e) { enMarco = true; }
+  const fueraDelMarco = 'Aquí dentro no: ábrelo en su propia pestaña';
+
   /* Volcar el juego en la pestaña nueva sólo se puede si el navegador nos deja
      tocar su documento. Dentro de un iframe con `sandbox` la emergente nace
      con un origen propio y aislado: se abre, pero cualquier acceso a ella salta
@@ -15390,7 +15401,7 @@ window.addEventListener('resize', () => {
   b.addEventListener('click', () => {
     let w = null;
     try { w = window.open('about:blank'); } catch (e) { w = null; }
-    if (!w) { avisar('Permite las ventanas emergentes'); return; }
+    if (!w) { avisar(enMarco ? fueraDelMarco : 'Permite las ventanas emergentes'); return; }
     if (volcar(w)) return;
 
     /* La pestaña se abrió pero no se dejó escribir: el juego va incrustado en
@@ -15400,7 +15411,7 @@ window.addEventListener('resize', () => {
        y se dice lo único que sirve: sacar el juego del marco, que es abrir su
        enlace en una pestaña propia. Ahí el disfraz funciona. */
     try { w.close(); } catch (e) {}
-    avisar('Aquí dentro no: ábrelo en su propia pestaña');
+    avisar(fueraDelMarco);
   });
 })();
 montarTactil();
