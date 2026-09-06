@@ -42,6 +42,32 @@ viene así del nivel original, cuyo plan guardado tiene margen 7, y es jugable.
 
 ## Qué se arregló y qué se añadió
 
+### `jugar.html`: el mismo juego, con la barra en about:blank
+
+Un lanzador de dos kilobytes al lado del juego. Se pulsa el botón, se abre una
+ventana `about:blank` y el juego va dentro, a pantalla completa, sin que la
+barra de direcciones cambie.
+
+Por qué hace falta el marco y no vale con redirigir: `window.open('about:blank')`
+seguido de `location.href = …` **cambia la barra a la dirección real**. Metiendo
+el juego en un marco dentro de esa ventana, la ventana sigue siendo about:blank
+y lo que cambia es sólo su contenido.
+
+Dos detalles que sin ellos no sirve de nada:
+
+- **La dirección se calcula sola** (`new URL('index.html', location.href)`).
+  Dentro de un about:blank no hay página base, así que una ruta relativa no
+  resuelve a ningún sitio: tiene que ser absoluta. Calculándola de la propia
+  página, el archivo funciona igual en GitHub Pages, en otro servidor o en una
+  carpeta del ordenador.
+- **El foco.** El teclado sólo llega al juego si el marco lo tiene, así que se
+  le da al cargar y en cada clic. Sin eso el juego se ve pero no se mueve.
+
+Esto **no** funciona con la versión publicada en claude.ai: esa manda
+`content-security-policy: frame-ancestors 'self'`, o sea que se niega a
+mostrarse dentro de un marco ajeno. Sirve para copias servidas desde un sitio
+propio, que es para lo que está.
+
 ### Dos monedas, la realeza y tu nombre en la carrera
 
 **Dos cosas se llamaban «monedas».** En la cabecera del menú salía «0 monedas»
