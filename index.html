@@ -466,6 +466,10 @@
      muy alta— se quedaba encima y lo tapaba. Medido: a 1920x1080 se veía; a
      1366x768, 1280x720, 900x640 y en móvil, no. */
   .pie-menu #disfraz-btn { flex:1; font-size:13px; letter-spacing:.4px; padding:10px; }
+  .pie-menu .disfraz.listo {
+    border-color: rgba(255,214,102,.85);
+    box-shadow: 0 0 0 2px rgba(255,214,102,.25);
+  }
   .pie-menu .disfraz.falla { color:#ffb4a8;
     background:linear-gradient(180deg, rgba(120,30,24,.5), rgba(90,22,18,.5));
     border-color:rgba(255,120,100,.45); }
@@ -15355,20 +15359,28 @@ window.addEventListener('resize', () => {
   clearTimeout(repinteVentana);
   repinteVentana = setTimeout(repintarTarjetas, 120);
 });
-/* El disfraz. Si el navegador bloquea la ventana emergente no hay nada que
-   hacer desde aquí, así que lo dice el propio botón: el aviso del juego vive
-   en el marcador, que en el menú está oculto. */
+/* El disfraz. Abre el juego en una pestaña de about:blank. Cuando el juego va
+   incrustado en el marco de otra página el navegador sella lo que salga de
+   ahí, y entonces el botón ofrece la única salida que queda: llevarse la
+   página entera al juego. El aviso del juego vive en el marcador, que en el
+   menú está oculto, así que quien habla aquí es el propio botón. */
 (function montarDisfraz() {
   const b = document.getElementById('disfraz-btn');
   if (!b) return;
-  const rotulo = b.textContent;
+  const AVISO = 4200;
+  /* El aviso que pide confirmación dura más porque hay que leerlo y decidir, y
+     porque mientras se ve es cuando el segundo clic vale: que el botón esté
+     armado exactamente lo que dura el mensaje evita la sorpresa de pulsar un
+     botón que parecía tranquilo y ver saltar la página entera. */
+  const CONFIRMA = 6000;
+  let rotulo = b.textContent;
   let vuelta = 0;
 
-  const avisar = (txt) => {
+  const avisar = (txt, ms) => {
     b.classList.add('falla');
     b.textContent = txt;
     clearTimeout(vuelta);
-    vuelta = setTimeout(() => { b.classList.remove('falla'); b.textContent = rotulo; }, 4200);
+    vuelta = setTimeout(() => { b.classList.remove('falla'); b.textContent = rotulo; }, ms || AVISO);
   };
 
   /* ¿Vamos dentro del marco de otra página? Hace falta saberlo para acertar
@@ -15380,7 +15392,6 @@ window.addEventListener('resize', () => {
      mandarlo a perder el tiempo con algo que ya está bien. */
   let enMarco = false;
   try { enMarco = window.top !== window.self; } catch (e) { enMarco = true; }
-  const fueraDelMarco = 'Aquí dentro no: ábrelo en su propia pestaña';
 
   /* Volcar el juego en la pestaña nueva sólo se puede si el navegador nos deja
      tocar su documento. Dentro de un iframe con `sandbox` la emergente nace
@@ -15398,21 +15409,44 @@ window.addEventListener('resize', () => {
     } catch (e) { return false; }
   };
 
+  /* La salida de emergencia: llevar la página de arriba al juego, que así deja
+     de estar enmarcado y el disfraz vuelve a funcionar. Es brusca —se lleva por
+     delante lo que hubiera alrededor del marco—, así que no se hace a la
+     primera: el primer clic avisa y el segundo, mientras el aviso sigue en
+     pantalla, es el sí. Puede fallar en silencio si el marco tampoco permite
+     tocar la dirección de arriba, y la única señal fiable de que sí salió es
+     que esta página se descargue: por eso se escucha `pagehide` y se da la fuga
+     por fallada si al cabo de un momento seguimos aquí. */
+  let fugando = false;
+  window.addEventListener('pagehide', () => { fugando = true; });
+  const salirDelMarco = () => {
+    /* La marca en la dirección es para el otro lado: al llegar sin marco, el
+       botón se señala solo en vez de hacer buscarlo otra vez. */
+    const destino = location.href.split('#')[0] + '#disfraz';
+    try { window.top.location.href = destino; } catch (e) { /* ni eso */ }
+    setTimeout(() => { if (!fugando) avisar('El marco tampoco deja salir'); }, 1500);
+  };
+
+  let armado = 0;
+
   b.addEventListener('click', () => {
+    if (Date.now() < armado) { armado = 0; salirDelMarco(); return; }
+
     let w = null;
     try { w = window.open('about:blank'); } catch (e) { w = null; }
-    if (!w) { avisar(enMarco ? fueraDelMarco : 'Permite las ventanas emergentes'); return; }
-    if (volcar(w)) return;
+    if (w && volcar(w)) return;
+    if (w) { try { w.close(); } catch (e) {} }
 
-    /* La pestaña se abrió pero no se dejó escribir: el juego va incrustado en
-       el marco de otra página y el navegador aísla lo que salga de ahí. No hay
-       arreglo desde dentro —abrir otra copia heredaría el mismo aislamiento y
-       el botón volvería a fallar allí—, así que se retira la pestaña en blanco
-       y se dice lo único que sirve: sacar el juego del marco, que es abrir su
-       enlace en una pestaña propia. Ahí el disfraz funciona. */
-    try { w.close(); } catch (e) {}
-    avisar(fueraDelMarco);
+    if (!enMarco) { avisar('Permite las ventanas emergentes'); return; }
+    armado = Date.now() + CONFIRMA;
+    avisar('Aquí dentro no · pulsa otra vez y salgo del marco', CONFIRMA);
   });
+
+  if (!enMarco && location.hash === '#disfraz') {
+    rotulo = '\u25F1  about:blank \u00b7 pulsa aquí';
+    b.textContent = rotulo;
+    b.classList.add('listo');
+  }
 })();
 montarTactil();
 actualizarBotonMute();
