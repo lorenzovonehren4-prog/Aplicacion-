@@ -466,6 +466,21 @@
      muy alta— se quedaba encima y lo tapaba. Medido: a 1920x1080 se veía; a
      1366x768, 1280x720, 900x640 y en móvil, no. */
   .pie-menu #disfraz-btn { flex:1; font-size:13px; letter-spacing:.4px; padding:10px; }
+  /* El parte del disfraz. Va fijo sobre todo lo demás a propósito: el pie del
+     menú es pegajoso y tapa a sus hermanos, y este aviso no sirve de nada si
+     hay que adivinar dónde quedó. */
+  .parte-disfraz {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 14px;
+    z-index: 99999; max-width: min(560px, calc(100vw - 24px));
+    padding: 11px 14px; border-radius: 12px; text-align: left; cursor: pointer;
+    background: rgba(12,18,30,.98); border: 1px solid rgba(255,120,100,.5);
+    color: #ffd9d2; font-size: 12.5px; line-height: 1.6; letter-spacing: .2px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.55);
+  }
+  .parte-disfraz b { color: #ffd700; }
+  .parte-disfraz code { font-family: inherit; color: #cfe3ff; }
+  .parte-disfraz .apagar { opacity: .6; }
+
   .pie-menu .disfraz.listo {
     border-color: rgba(255,214,102,.85);
     box-shadow: 0 0 0 2px rgba(255,214,102,.25);
@@ -1063,6 +1078,7 @@
                   title="Abre el juego en una pestaña nueva de about:blank">◱  about:blank</button>
         </div>
         <p class="marca-menu" id="marca-menu"></p>
+        <div id="disfraz-parte" class="parte-disfraz" hidden></div>
       </div>
     </div>
 
@@ -15393,11 +15409,42 @@ window.addEventListener('resize', () => {
   let enMarco = false;
   try { enMarco = window.top !== window.self; } catch (e) { enMarco = true; }
 
-  /* Volcar el juego en la pestaña nueva sólo se puede si el navegador nos deja
-     tocar su documento. Dentro de un iframe con `sandbox` la emergente nace
-     con un origen propio y aislado: se abre, pero cualquier acceso a ella salta
-     por seguridad y la pestaña se queda en blanco de verdad. Por eso no basta
-     con escribir: hay que comprobar que el juego llegó. */
+  /* Con qué se viste la pestaña nueva. Hay dos maneras y se prueban en este
+     orden, porque la primera es mucho mejor cuando se puede:
+
+     1) Un marco a pantalla completa apuntando a esta misma dirección. Lo que
+        se escribe son cuatro líneas, así que la pestaña aparece al instante y
+        el juego se carga dentro como se carga cualquier página.
+     2) Volcar el documento entero. No necesita red —vale para el archivo
+        suelto en el disco— pero el navegador se queda parado los segundos que
+        tarda el generador en armar el nivel, porque todo eso se ejecuta de una
+        sentada mientras se escribe.
+
+     En ambos casos la barra de direcciones se queda en `about:blank`, que es
+     de lo que va todo esto. */
+  const TAPADERA = 'Classes';
+  const enRed = /^https?:$/.test(location.protocol);
+  /* La marca en la dirección le dice al juego de dentro que ya va tapado, para
+     que no ofrezca taparse otra vez ni intente salir del marco: salir sería
+     justo lo contrario de lo que se le ha pedido. */
+  const destinoJuego = () => location.href.split('#')[0] + '#tapado';
+
+  const vestir = (w) => {
+    try {
+      const d = w.document;
+      d.open();
+      d.write('<!DOCTYPE html><html><head><meta charset="utf-8">' +
+              '<title>' + TAPADERA + '</title>' +
+              '<style>html,body{margin:0;padding:0;height:100%;background:#0a0e18;' +
+              'overflow:hidden}iframe{display:block;width:100vw;height:100vh;' +
+              'border:0}</style></head><body><iframe src="' +
+              destinoJuego().replace(/"/g, '&quot;') +
+              '" allow="autoplay; fullscreen"></iframe></body></html>');
+      d.close();
+      return !!d.querySelector('iframe');
+    } catch (e) { return false; }
+  };
+
   const volcar = (w) => {
     try {
       /* `open()` antes de escribir: sin él, algunos navegadores conservan el
@@ -15405,9 +15452,20 @@ window.addEventListener('resize', () => {
       w.document.open();
       w.document.write(FUENTE_LIMPIA);
       w.document.close();
-      return !!w.document.getElementById('gameCanvas');
-    } catch (e) { return false; }
+    } catch (e) {
+      /* Esto sí es un no rotundo: dentro de un iframe con `sandbox` la pestaña
+         nueva nace con un origen propio y aislado, y tocar su documento salta
+         por seguridad. */
+      return false;
+    }
+    /* Si no saltó nada, el volcado entró. Que el lienzo no esté todavía en el
+       árbol sólo querría decir que el navegador aún no ha terminado de leer lo
+       escrito, y cerrar la pestaña por eso sería tirar abajo algo que funciona.
+       El único fallo de verdad es el de arriba. */
+    return true;
   };
+
+  const disfrazar = (w) => (enRed && vestir(w)) || volcar(w);
 
   /* La salida de emergencia: llevar la página de arriba al juego, que así deja
      de estar enmarcado y el disfraz vuelve a funcionar. Es brusca —se lleva por
@@ -15424,8 +15482,39 @@ window.addEventListener('resize', () => {
        botón se señala solo en vez de hacer buscarlo otra vez. */
     const destino = location.href.split('#')[0] + '#disfraz';
     try { window.top.location.href = destino; } catch (e) { /* ni eso */ }
-    setTimeout(() => { if (!fugando) avisar('El marco tampoco deja salir'); }, 1500);
+    setTimeout(() => {
+      if (fugando) return;
+      avisar('El marco tampoco deja salir');
+      dar('El marco no deja ni salir', [
+        'dirección: <code>' + sitio() + '</code>',
+        'enmarcado: <code>sí</code> · origen: <code>' + origen() + '</code>',
+        'llevar la página al juego: <code>no se permite</code>',
+        'no queda nada por probar desde dentro de la página',
+      ]);
+    }, 1500);
   };
+
+  /* El parte. Un botón de cuatro palabras no puede explicar por qué falla algo
+     que depende de dónde esté abierta la página, así que cuando falla lo dice
+     entero: dirección, si va enmarcado, si la pestaña llegó a abrirse y si se
+     dejó escribir. Con eso se sabe en un vistazo si el culpable es el visor,
+     el navegador o la propia página, sin tener que adivinarlo. */
+  const parte = document.getElementById('disfraz-parte');
+  let borrado = 0;
+  if (parte) parte.addEventListener('click', () => { parte.hidden = true; });
+  const dar = (titulo, filas) => {
+    if (!parte) return;
+    parte.innerHTML = '<b>' + titulo + '</b><br>' + filas.join('<br>') +
+      '<br><span class="apagar">toca este aviso para cerrarlo</span>';
+    parte.hidden = false;
+    clearTimeout(borrado);
+    borrado = setTimeout(() => { parte.hidden = true; }, 25000);
+  };
+  const origen = () => {
+    try { return window.origin || '—'; } catch (e) { return 'aislado'; }
+  };
+  const sitio = () =>
+    location.protocol === 'file:' ? 'archivo local' : (location.host || '—');
 
   let armado = 0;
 
@@ -15434,13 +15523,28 @@ window.addEventListener('resize', () => {
 
     let w = null;
     try { w = window.open('about:blank'); } catch (e) { w = null; }
-    if (w && volcar(w)) return;
-    if (w) { try { w.close(); } catch (e) {} }
+    const abrio = !!w;
+    if (w) {
+      if (disfrazar(w)) return;
+      try { w.close(); } catch (e) {}
+    }
+
+    dar('El disfraz no ha podido', [
+      'dirección: <code>' + sitio() + '</code>',
+      'enmarcado: <code>' + (enMarco ? 'sí' : 'no') +
+        '</code> · origen: <code>' + origen() + '</code>',
+      'pestaña nueva: <code>' + (abrio ? 'se abrió' : 'no se abrió') + '</code>' +
+        (abrio ? ' · se dejó escribir: <code>no</code>' : ''),
+    ]);
 
     if (!enMarco) { avisar('Permite las ventanas emergentes'); return; }
     armado = Date.now() + CONFIRMA;
     avisar('Aquí dentro no · pulsa otra vez y salgo del marco', CONFIRMA);
   });
+
+  /* Dentro de la pestaña disfrazada el botón sobra: ya se está donde se quería
+     llegar, y lo único que podría hacer es deshacerlo. */
+  if (location.hash === '#tapado') { b.style.display = 'none'; return; }
 
   if (!enMarco && location.hash === '#disfraz') {
     rotulo = '\u25F1  about:blank \u00b7 pulsa aquí';
