@@ -480,6 +480,8 @@
   .parte-disfraz b { color: #ffd700; }
   .parte-disfraz code { font-family: inherit; color: #cfe3ff; }
   .parte-disfraz .apagar { opacity: .6; }
+  .parte-disfraz .enlace { color: #ffd700; text-decoration: underline;
+    text-underline-offset: 2px; cursor: pointer; word-break: break-all; }
 
   .pie-menu .disfraz.listo {
     border-color: rgba(255,214,102,.85);
@@ -15424,10 +15426,27 @@ window.addEventListener('resize', () => {
      de lo que va todo esto. */
   const TAPADERA = 'Classes';
   const enRed = /^https?:$/.test(location.protocol);
+
+  /* La copia pública: la que está servida como página normal, sin visor de por
+     medio. Se usa para dos cosas, y las dos hacen falta.
+
+     La primera es el destino del marco cuando esta copia no se puede meter en
+     uno. La publicada en claude.ai manda `frame-ancestors 'self'`, o sea que
+     se niega a mostrarse dentro de un marco ajeno: apuntar el marco a ella
+     daría una pestaña en blanco aunque todo lo demás saliera bien.
+
+     La segunda es poder decirle al jugador, cuando aquí no hay nada que hacer,
+     dónde está la copia que sí puede — y dejársela copiada de un toque, porque
+     la dirección de esta página no le sirve para nada. */
+  const CASA = 'https://lorenzovonehren4-prog.github.io/Aplicacion-/';
+  const enCasa = CASA && location.href.indexOf(CASA) === 0;
+  const enVisor = /(^|\.)claudeusercontent\.com$/.test(location.hostname);
+
   /* La marca en la dirección le dice al juego de dentro que ya va tapado, para
      que no ofrezca taparse otra vez ni intente salir del marco: salir sería
      justo lo contrario de lo que se le ha pedido. */
-  const destinoJuego = () => location.href.split('#')[0] + '#tapado';
+  const destinoJuego = () =>
+    (enVisor && CASA ? CASA : location.href.split('#')[0]) + '#tapado';
 
   const vestir = (w) => {
     try {
@@ -15501,9 +15520,46 @@ window.addEventListener('resize', () => {
      el navegador o la propia página, sin tener que adivinarlo. */
   const parte = document.getElementById('disfraz-parte');
   let borrado = 0;
-  if (parte) parte.addEventListener('click', () => { parte.hidden = true; });
+
+  /* Si el portapapeles no está permitido —dentro de un visor pasa—, al menos se
+     deja el texto seleccionado para copiarlo a mano. */
+  const seleccionar = (nodo) => {
+    try {
+      const r = document.createRange();
+      r.selectNodeContents(nodo);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    } catch (e) {}
+  };
+  const copiar = (nodo, texto) => {
+    const antes = nodo.textContent;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => {
+          nodo.textContent = 'copiado \u2713';
+          setTimeout(() => { nodo.textContent = antes; }, 1800);
+        }, () => seleccionar(nodo));
+        return;
+      }
+    } catch (e) {}
+    seleccionar(nodo);
+  };
+
+  if (parte) parte.addEventListener('click', (ev) => {
+    const enlace = ev.target && ev.target.closest && ev.target.closest('.enlace');
+    if (enlace) { ev.stopPropagation(); copiar(enlace, enlace.dataset.copia); return; }
+    parte.hidden = true;
+  });
+
+  const filaCasa = () => (!CASA || enCasa) ? null :
+    'la copia que sí puede: <span class="enlace" data-copia="' + CASA + '">' +
+    CASA + '</span>';
+
   const dar = (titulo, filas) => {
     if (!parte) return;
+    const casa = filaCasa();
+    if (casa) filas = filas.concat([casa]);
     parte.innerHTML = '<b>' + titulo + '</b><br>' + filas.join('<br>') +
       '<br><span class="apagar">toca este aviso para cerrarlo</span>';
     parte.hidden = false;
