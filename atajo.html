@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atajo · DON'T LOOK UP</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; padding:36px 20px 60px; background:#070b14; color:#dfe7f5;
+    font:15px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:660px; margin:0 auto; }
+  h1 { font-size:26px; letter-spacing:.5px; margin:0 0 4px; color:#fff; }
+  .sub { color:#8ea0bd; margin:0 0 28px; font-size:13.5px; letter-spacing:.3px; }
+  .caja { background:#0e1524; border:1px solid #1d2942; border-radius:14px;
+    padding:20px 20px 22px; margin:0 0 18px; }
+  h2 { font-size:14px; letter-spacing:.6px; text-transform:uppercase;
+    color:#ffd700; margin:0 0 10px; }
+  .tirar { display:inline-block; padding:13px 22px; border-radius:11px;
+    background:linear-gradient(180deg,#ffd86b,#f0b429); color:#241a02;
+    font-weight:800; letter-spacing:.4px; text-decoration:none; cursor:grab; }
+  .tirar:active { cursor:grabbing; }
+  ol { margin:12px 0 0; padding-left:20px; }
+  li { margin:6px 0; }
+  textarea { width:100%; box-sizing:border-box; height:110px; margin-top:10px;
+    background:#060a12; color:#a9c6ff; border:1px solid #1d2942; border-radius:9px;
+    padding:10px; font:12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    resize:vertical; }
+  .nota { color:#8ea0bd; font-size:13px; }
+  a.simple { color:#ffd700; }
+  code { color:#a9c6ff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Atajo para abrir el juego en about:blank</h1>
+  <p class="sub">Funciona desde cualquier pestaña, sin depender de la página en la que estés.</p>
+
+  <div class="caja">
+    <h2>1 · Arrástralo a la barra de marcadores</h2>
+    <p><a class="tirar" href="javascript:(function(){var w=window.open(&#x27;about:blank&#x27;,&#x27;_blank&#x27;);if(!w){alert(&#x27;Permite las ventanas emergentes de esta p\u00e1gina.&#x27;);return;}var d=w.document;d.write(&#x27;&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;title&gt;Classes&lt;/title&gt;&lt;style&gt;html,body{margin:0;height:100%;background:#0a0e18;overflow:hidden}iframe{display:block;width:100vw;height:100vh;border:0}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;iframe src=&quot;https://lorenzovonehren4-prog.github.io/Aplicacion-/#tapado&quot; allow=&quot;autoplay; fullscreen&quot;&gt;&lt;/iframe&gt;&lt;/body&gt;&lt;/html&gt;&#x27;);d.close();})();">◱&nbsp; about:blank</a></p>
+    <p class="nota" style="margin-bottom:0">Si no ves la barra de marcadores, sácala con
+      <b>Ctrl+Mayús+B</b> (en Mac, <b>⌘+Mayús+B</b>).</p>
+  </div>
+
+  <div class="caja">
+    <h2>2 · Úsalo</h2>
+    <ol>
+      <li>Abre cualquier pestaña.</li>
+      <li>Pulsa el marcador <b>◱ about:blank</b>.</li>
+      <li>Se abre una pestaña cuya barra dice <code>about:blank</code>, titulada
+        <b>Classes</b>, con el juego dentro.</li>
+    </ol>
+  </div>
+
+  <div class="caja">
+    <h2>Si no puedes arrastrarlo</h2>
+    <p class="nota">Crea un marcador nuevo a mano y pega esto en el campo de la dirección:</p>
+    <textarea readonly onclick="this.select()">javascript:(function(){var w=window.open('about:blank','_blank');if(!w){alert('Permite las ventanas emergentes de esta p\u00e1gina.');return;}var d=w.document;d.write('&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;Classes&lt;/title&gt;&lt;style&gt;html,body{margin:0;height:100%;background:#0a0e18;overflow:hidden}iframe{display:block;width:100vw;height:100vh;border:0}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;iframe src="https://lorenzovonehren4-prog.github.io/Aplicacion-/#tapado" allow="autoplay; fullscreen"&gt;&lt;/iframe&gt;&lt;/body&gt;&lt;/html&gt;');d.close();})();</textarea>
+  </div>
+
+  <p class="nota">El juego en su página normal:
+    <a class="simple" href="https://lorenzovonehren4-prog.github.io/Aplicacion-/">https://lorenzovonehren4-prog.github.io/Aplicacion-/</a></p>
+</main>
+</body>
+</html>
