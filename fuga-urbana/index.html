@@ -358,6 +358,7 @@ const ctx = cv.getContext('2d');
 const T = 96, P = 8, NB = 7, MW = NB * P + 2, MH = MW, WORLD = MW * T;
 const R = 0, SW = 1, BLD = 2, GR = 3, PK = 4, WA = 5, PL = 6, IND = 7;
 const grid = new Uint8Array(MW * MH);
+const bgKind = new Uint8Array(MW * MH); // suelo bajo un edificio: 0 jardín, 1 concreto, 2 plaza
 let buildings = [], obstacles = [], boxes = [], lamps = [], pools = [], lotSlots = [];
 
 const $ = id => document.getElementById(id);
@@ -389,12 +390,15 @@ const CARS = [
   { id: 'vibora',  name: 'Víbora',  kind: 'Superdeportivo', color: '#ff2d55', max: 535, accel: 500, turn: 3.3, grip: 8.5, hp: 100, len: 45, wid: 22, style: 'super',  mass: 1 },
   { id: 'cometa',  name: 'Cometa',  kind: 'Hiperdeportivo', color: '#e6dfcf', max: 595, accel: 570, turn: 3.4, grip: 9,   hp: 95,  len: 46, wid: 21, style: 'hyper',  mass: 1 },
 ];
-const INTRO_CAR = Object.assign({}, CARS[5], { id: 'intro', max: 520, hp: 9999 });
+// Todo va un poco más lento para que se vea la ciudad
+for (const c of CARS) { c.max = Math.round(c.max * 0.8); c.accel = Math.round(c.accel * 0.85); }
+const INTRO_CAR = Object.assign({}, CARS[5], { id: 'intro', max: 420, hp: 9999 });
 const ENEMY = {
   police: { max: 350, accel: 340, turn: 2.8, grip: 8,  hp: 60,  len: 42, wid: 21, mass: 1, dmg: 7,  style: 'police' },
   swat:   { max: 325, accel: 290, turn: 2.3, grip: 8,  hp: 130, len: 54, wid: 26, mass: 2, dmg: 14, style: 'swat' },
   tank:   { max: 170, accel: 150, turn: 1.4, grip: 12, hp: 420, len: 62, wid: 40, mass: 6, dmg: 28, style: 'tank' },
 };
+for (const k in ENEMY) { ENEMY[k].max = Math.round(ENEMY[k].max * 0.8); ENEMY[k].accel = Math.round(ENEMY[k].accel * 0.85); }
 const CIV_MODELS = [
   { style: 'sedan', len: 42, wid: 21, mass: 1 }, { style: 'sedan', len: 42, wid: 21, mass: 1 },
   { style: 'hatch', len: 37, wid: 20, mass: 0.9 }, { style: 'van', len: 52, wid: 24, mass: 1.5 },
@@ -430,7 +434,7 @@ function genCity() {
   }
   const set = (tx, ty, t) => { grid[ty * MW + tx] = t; };
   const fill = (ox, oy, t) => { for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) set(ox + i, oy + j, t); };
-  const addB = (b) => { b.id = bid++; b.wallA = shade(b.roof, 0.58); b.wallB = shade(b.roof, 0.42); b.rim = shade(b.roof, 1.2); buildings.push(b); return b; };
+  const addB = (b) => { boxes.push({ x: b.x, y: b.y, w: b.w, h: b.h }); b.id = bid++; b.wallA = shade(b.roof, 0.58); b.wallB = shade(b.roof, 0.42); b.rim = shade(b.roof, 1.2); buildings.push(b); return b; };
   const layouts = [
     [[0, 0, 4, 4]], [[0, 0, 4, 2], [0, 2, 4, 2]], [[0, 0, 2, 4], [2, 0, 2, 4]],
     [[0, 0, 2, 2], [2, 0, 2, 2], [0, 2, 2, 2], [2, 2, 2, 2]],
@@ -444,18 +448,23 @@ function genCity() {
   // Edificios bajos: la vista desde arriba queda despejada
   const towerBlock = (ox, oy, tall) => {
     for (const [x, y, w, h] of layouts[Math.floor(rnd() * layouts.length)]) {
-      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) set(ox + x + i, oy + y + j, BLD);
-      const big = w * h >= 8;
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { set(ox + x + i, oy + y + j, BLD); bgKind[(oy + y + j) * MW + ox + x + i] = tall ? 2 : 0; }
+      const big = w * h >= 8, ins = tall ? 22 : 18;
+      const sx = (ox + x) * T, sy = (oy + y) * T;
       const b = addB({
-        type: tall ? 'tower' : 'office', x: (ox + x) * T + 3, y: (oy + y) * T + 3, w: w * T - 6, h: h * T - 6,
-        z: tall ? 90 + rnd() * (big ? 80 : 50) : 45 + rnd() * (big ? 55 : 40),
+        type: tall ? 'tower' : 'office', x: sx + ins, y: sy + ins, w: w * T - ins * 2, h: h * T - ins * 2, yard: true,
+        z: tall ? 55 + rnd() * (big ? 45 : 30) : 32 + rnd() * (big ? 28 : 20),
         roof: tall ? TOWER_ROOFS[Math.floor(rnd() * TOWER_ROOFS.length)] : OFFICE_ROOFS[Math.floor(rnd() * OFFICE_ROOFS.length)],
         det: [], win: true,
       });
       const n = 1 + Math.floor(rnd() * 3);
       for (let k = 0; k < n; k++) b.det.push({ x: 12 + rnd() * (b.w - 44), y: 12 + rnd() * (b.h - 40), w: 14 + rnd() * 16, h: 10 + rnd() * 14 });
       b.heli = tall && b.w > 150 && b.h > 150 && rnd() < 0.22;
-      b.beacon = tall && b.z > 140;
+      b.beacon = tall && b.z > 85;
+      // Árboles en las esquinas del jardín
+      for (const [cx, cy] of [[sx + ins / 2, sy + ins / 2], [sx + w * T - ins / 2, sy + ins / 2], [sx + ins / 2, sy + h * T - ins / 2], [sx + w * T - ins / 2, sy + h * T - ins / 2]]) {
+        if (rnd() < 0.55) obstacles.push({ x: cx, y: cy, r: 8, kind: 'tree', s: 13 + rnd() * 4, hue: rnd(), blobs: [[0, 0, 9], [4, -3, 7], [-4, 3, 7]] });
+      }
       b.garden = !tall && rnd() < 0.25;
     }
   };
@@ -491,7 +500,7 @@ function genCity() {
       else if (kind === 2) { fh = 2; fx += rnd() < 0.5 ? 0 : 1; }
       else { fx += rnd() < 0.5 ? 0 : 1; fy += rnd() < 0.5 ? 0 : 1; }
       for (let j = 0; j < fh; j++) for (let i = 0; i < fw; i++) set(fx + i, fy + j, BLD);
-      addB({ type: 'house', x: fx * T + 10, y: fy * T + 10, w: fw * T - 20, h: fh * T - 20, z: 24 + rnd() * 8, roof: HOUSE_ROOFS[Math.floor(rnd() * HOUSE_ROOFS.length)], det: [], chim: rnd() < 0.6 });
+      addB({ type: 'house', x: fx * T + 14, y: fy * T + 14, w: fw * T - 28, h: fh * T - 28, z: 18 + rnd() * 6, yard: true, roof: HOUSE_ROOFS[Math.floor(rnd() * HOUSE_ROOFS.length)], det: [], chim: rnd() < 0.6 });
       const yard = [];
       for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) if (tileAt(ox + lx + i, oy + ly + j) === GR) yard.push([ox + lx + i, oy + ly + j]);
       if (yard.length && rnd() < 0.45) { const [px, py] = yard[Math.floor(rnd() * yard.length)]; pools.push({ x: px * T + 20, y: py * T + 26, w: 56, h: 44 }); }
@@ -501,14 +510,13 @@ function genCity() {
   const industrial = (ox, oy) => {
     fill(ox, oy, IND);
     const top = rnd() < 0.5, wy = top ? oy : oy + 2;
-    for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) set(ox + i, wy + j, BLD);
-    addB({ type: 'warehouse', x: ox * T + 4, y: wy * T + 4, w: 4 * T - 8, h: 2 * T - 8, z: 40 + rnd() * 12, roof: rnd() < 0.5 ? '#8d949c' : '#7f8a80', det: [] });
+    for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) { set(ox + i, wy + j, BLD); bgKind[(wy + j) * MW + ox + i] = 1; }
+    addB({ type: 'warehouse', x: ox * T + 4, y: wy * T + 4, w: 4 * T - 8, h: 2 * T - 8, z: 28 + rnd() * 8, roof: rnd() < 0.5 ? '#8d949c' : '#7f8a80', det: [] });
     const yy = top ? (oy + 2) * T : oy * T;
     for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
       if (rnd() < 0.45) continue;
       const bx = ox * T + 14 + c * 92, by = yy + 18 + r * 58;
-      boxes.push({ x: bx, y: by, w: 70, h: 26 });
-      addB({ type: 'container', x: bx, y: by, w: 70, h: 26, z: 20, roof: CONTAINER_COLORS[Math.floor(rnd() * CONTAINER_COLORS.length)], det: [] });
+      addB({ type: 'container', x: bx, y: by, w: 70, h: 26, z: 14, roof: CONTAINER_COLORS[Math.floor(rnd() * CONTAINER_COLORS.length)], det: [] });
     }
   };
   for (let by = 0; by < NB; by++) for (let bx = 0; bx < NB; bx++) {
@@ -690,7 +698,7 @@ function collideWorld(c) {
   const r = c.r; let hit = 0;
   const tx0 = Math.floor((c.x - r) / T), tx1 = Math.floor((c.x + r) / T), ty0 = Math.floor((c.y - r) / T), ty1 = Math.floor((c.y + r) / T);
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
-    if (isSolid(tileAt(tx, ty))) hit = Math.max(hit, collideRect(c, tx * T, ty * T, T, T));
+    if (tx < 0 || ty < 0 || tx >= MW || ty >= MH || grid[ty * MW + tx] === WA) hit = Math.max(hit, collideRect(c, tx * T, ty * T, T, T));
   }
   for (const o of obstacles) {
     const dx = c.x - o.x, dy = c.y - o.y, m = r + o.r;
@@ -865,7 +873,7 @@ function spawnEnemy(type, mode, near) {
     if (mode !== 'patrol' && flow[p.ty * MW + p.tx] < 0) continue;
     const d = opts.length ? pick(opts) : 0;
     const def = Object.assign({ type }, ENEMY[type]);
-    if (type === 'police') def.max += 14 * Math.max(0, level - 1);
+    if (type === 'police') def.max += 11 * Math.max(0, level - 1);
     const a = mode === 'chase' ? Math.atan2(player.y - p.y, player.x - p.x) : Math.atan2(DY[d], DX[d]);
     const e = makeCar(def, p.x, p.y, a);
     Object.assign(e, {
@@ -891,7 +899,7 @@ function spawnCiv(minD, maxD) {
     if (!opts.length) continue;
     const d = pick(opts), lo = pick(LANES);
     const c = makeCiv(pick(CIV_MODELS), p.x - DY[d] * lo, p.y + DX[d] * lo, Math.atan2(DY[d], DX[d]), pick(CIV_COLORS));
-    Object.assign(c, { tx: p.tx, ty: p.ty, d, lo, v: 120, cruise: 130 + Math.random() * 80, loose: false, looseT: 0 });
+    Object.assign(c, { tx: p.tx, ty: p.ty, d, lo, v: 120, cruise: 110 + Math.random() * 60, loose: false, looseT: 0 });
     civs.push(c);
     return;
   }
@@ -1011,7 +1019,7 @@ function startIntro() {
   flowSrc = -1; buildFlow(player.x, player.y);
   pickIntroDest();
   for (const [x, y] of [[25 * T - 30, 30 * T], [25 * T + 30, 31.5 * T]]) {
-    const e = makeCar(Object.assign({ type: 'police' }, ENEMY.police, { max: 470, accel: 460 }), x, y, -Math.PI / 2);
+    const e = makeCar(Object.assign({ type: 'police' }, ENEMY.police, { max: 380, accel: 380 }), x, y, -Math.PI / 2);
     Object.assign(e, { type: 'police', mode: 'chase', alert: true, hitCd: 0, stuck: 0, rev: 0, revSteer: 1, ox: 0, oy: 0, ta: 0, cd: 0, aim: false });
     e.vy = -300;
     enemies.push(e);
@@ -1037,7 +1045,7 @@ function startGame() {
   enemies = []; shells = []; parts = []; skids = []; wrenches = []; target = null; decals = [];
   civs = []; spawnParked();
   state = 'play';
-  for (let i = 0; i < 16; i++) spawnCiv(260, 1400);
+  for (let i = 0; i < 26; i++) spawnCiv(220, 1100);
   time = 0; heat = 0; level = 0; maxLevel = 0; bonus = 0; kills = 0; runCars = 0; escapes = 0; bust = 0; flash = 0; shake = 0;
   nitro = 0.5; nitroOn = false; bestDrift = 0; drift.t = 0; drift.pts = 0; drift.idle = 0; drift.show = 0;
   lastSeenT = -99; backupCalled = false;
@@ -1223,10 +1231,10 @@ function update(dt) {
   if (player) {
     const sliding = Math.abs(player.lat);
     driftAmt = clamp((sliding - 90) / 200, 0, 1);
-    const skid = sliding > 110 || (playing && key.brake && speed > 110);
+    const skid = sliding > 100 || (playing && key.brake && speed > 100);
     const w = wheelSkids(player, skid ? 0.5 + driftAmt * 0.5 : 0);
     if (skid) for (const [x, y] of w) if (Math.random() < 0.55) puff(x, y, player.vx * 0.1 + (Math.random() - .5) * 30, player.vy * 0.1 + (Math.random() - .5) * 30, 0.8 + driftAmt * 0.5, 4 + driftAmt * 3, 'rgba(215,215,220,1)', 20);
-    if (playing && speed > 170 && sliding > 120) {
+    if (playing && speed > 140 && sliding > 100) {
       drift.t += dt; drift.idle = 0;
       drift.pts += sliding * dt * 0.55;
       nitro = Math.min(1, nitro + dt * 0.06);
@@ -1245,7 +1253,7 @@ function update(dt) {
     const s = shells[i];
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     if (Math.random() < 0.6) puff(s.x, s.y, 0, 0, 0.35, 3, 'rgba(180,180,185,1)', 10);
-    let boom = s.life <= 0 || solidAt(s.x, s.y);
+    let boom = s.life <= 0 || tileAt(Math.floor(s.x / T), Math.floor(s.y / T)) === WA || boxes.some(b => s.x > b.x && s.x < b.x + b.w && s.y > b.y && s.y < b.y + b.h);
     if (!boom) for (const c of cars) if (c !== s.owner && Math.hypot(c.x - s.x, c.y - s.y) < c.r + 6) { boom = true; break; }
     if (boom) { shells.splice(i, 1); explode(s.x, s.y, 1); }
   }
@@ -1263,10 +1271,10 @@ function update(dt) {
     const c = civs[i];
     if (c.hp <= 0) { civs.splice(i, 1); explode(c.x, c.y, 0.6); continue; }
     const d = Math.hypot(c.x - f.x, c.y - f.y);
-    if (!c.parked && (d > 1800 || (c.loose && c.looseT > 14 && d > 900))) civs.splice(i, 1);
+    if (!c.parked && (d > 1400 || (c.loose && c.looseT > 14 && d > 900))) civs.splice(i, 1);
   }
   civTimer -= dt;
-  if (civTimer <= 0) { civTimer = 0.4; if (civs.filter(c => !c.parked).length < 18) spawnCiv(700, 1400); }
+  if (civTimer <= 0) { civTimer = 0.4; if (civs.filter(c => !c.parked).length < 28) spawnCiv(560, 1100); }
 
   // Partículas
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -1289,7 +1297,7 @@ function update(dt) {
   if (intro) {
     // La intro siempre tiene persecución a la vista
     spawnTimer -= dt;
-    if (spawnTimer <= 0) { spawnTimer = 1.5; if (enemies.length < 3) { const e = spawnEnemy('police', 'chase'); if (e) { e.def.max = 470; e.def.accel = 460; } } }
+    if (spawnTimer <= 0) { spawnTimer = 1.5; if (enemies.length < 3) { const e = spawnEnemy('police', 'chase'); if (e) { e.def.max = 380; e.def.accel = 380; } } }
   }
 
   if (playing) {
@@ -1359,7 +1367,7 @@ function drawGround(x0, y0, x1, y1, t) {
   const ty0 = Math.max(0, Math.floor(y0 / T)), ty1 = Math.min(MH - 1, Math.floor(y1 / T));
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
     const tt = grid[ty * MW + tx], px = tx * T, py = ty * T;
-    ctx.fillStyle = tt === R ? TEX.road : tt === SW ? TEX.side : tt === GR ? TEX.grass : tt === PK ? TEX.lot : tt === PL ? TEX.plaza : tt === IND ? TEX.ind : tt === WA ? TEX.water : TEX.base;
+    ctx.fillStyle = tt === R ? TEX.road : tt === SW ? TEX.side : tt === GR ? TEX.grass : tt === PK ? TEX.lot : tt === PL ? TEX.plaza : tt === IND ? TEX.ind : tt === WA ? TEX.water : bgKind[ty * MW + tx] === 1 ? TEX.ind : bgKind[ty * MW + tx] === 2 ? TEX.plaza : TEX.grass;
     ctx.fillRect(px, py, T + 0.6, T + 0.6);
     if (tt === WA) {
       ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 2;
@@ -1621,6 +1629,21 @@ function drawBuilding(b, night, t) {
     if (on && night) beacons.push([bx, by]);
   }
 }
+function drawYard(b) {
+  const m = b.type === 'house' ? 6 : 8;
+  ctx.strokeStyle = '#2e5a2c'; ctx.lineWidth = 6;
+  rr(ctx, b.x - m, b.y - m, b.w + m * 2, b.h + m * 2, 6); ctx.stroke();
+  ctx.strokeStyle = '#3f7a3a'; ctx.lineWidth = 2.5; ctx.stroke();
+  const per = 2 * (b.w + b.h), n = Math.floor(per / 26);
+  for (let i = 0; i < n; i++) {
+    if (hash(b.id, i, 5) > 0.45) continue;
+    let d = (i + 0.5) / n * per, x, y;
+    if (d < b.w) { x = b.x + d; y = b.y - m; } else if ((d -= b.w) < b.h) { x = b.x + b.w + m; y = b.y + d; }
+    else if ((d -= b.h) < b.w) { x = b.x + b.w - d; y = b.y + b.h + m; } else { d -= b.w; x = b.x - m; y = b.y + b.h - d; }
+    ctx.fillStyle = ['#e8c93c', '#e0607e', '#f2efe6', '#b77be0'][Math.floor(hash(b.id, i, 6) * 4)];
+    ctx.beginPath(); ctx.arc(x, y, 2.6, 0, 6.28); ctx.fill();
+  }
+}
 function drawTree(o) {
   const k = 0.035, ox = (o.x - cam.x) * k, oy = (o.y - cam.y) * k;
   ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.arc(o.x + 7, o.y + 8, o.s * 0.95, 0, 6.28); ctx.fill();
@@ -1672,12 +1695,12 @@ const ts = document.createElement('canvas'), tsx = ts.getContext('2d');
 const tr = document.createElement('canvas'), trx = tr.getContext('2d');
 let trailReady = false;
 function darkness(t) {
-  const c = t % 240;
-  if (c < 70) return 0.04;
-  if (c < 100) return 0.04 + (c - 70) / 30 * 0.68;
-  if (c < 190) return 0.72;
-  if (c < 220) return 0.72 - (c - 190) / 30 * 0.68;
-  return 0.04;
+  const c = t % 300;
+  if (c < 150) return 0.03;
+  if (c < 180) return 0.03 + (c - 150) / 30 * 0.45;
+  if (c < 260) return 0.48;
+  if (c < 290) return 0.48 - (c - 260) / 30 * 0.45;
+  return 0.03;
 }
 function punch(x, y, r, a) {
   const g = lx.createRadialGradient(x, y, 0, x, y, r);
@@ -1757,6 +1780,7 @@ function render(t) {
   ctx.globalAlpha = 1; ctx.lineCap = 'butt';
 
   const visB = buildings.filter(b => b.x < x1 + 200 && b.x + b.w > x0 - 200 && b.y < y1 + 200 && b.y + b.h > y0 - 200);
+  for (const b of visB) if (b.yard) drawYard(b);
   ctx.fillStyle = `rgba(0,0,0,${0.24 * (1 - dark)})`;
   for (const b of visB) buildingShadow(b);
 
@@ -1813,7 +1837,7 @@ function render(t) {
     ctx.beginPath(); ctx.moveTo(c.x + Math.cos(c.ta) * 46, c.y + Math.sin(c.ta) * 46); ctx.lineTo(player.x, player.y); ctx.stroke(); ctx.setLineDash([]);
   }
 
-  tiltShift();
+  if (state === 'intro') tiltShift();
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (player && target && state === 'play') {
@@ -1927,7 +1951,7 @@ function drawGauge() {
   const s = gauge.width, c = s / 2, r = s * 0.38;
   gctx.setTransform(1, 0, 0, 1, 0, 0); gctx.clearRect(0, 0, s, s);
   const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
-  const kmh = Math.abs(player.fwd) * 0.3, maxK = Math.ceil(player.def.max * 1.35 * 0.3 / 40) * 40;
+  const kmh = Math.abs(player.fwd) * 0.38, maxK = Math.ceil(player.def.max * 1.35 * 0.38 / 40) * 40;
   const f = clamp(kmh / maxK, 0, 1), fa = a0 + (a1 - a0) * f;
   gctx.lineCap = 'round';
   gctx.lineWidth = s * 0.05; gctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -2096,7 +2120,7 @@ for (const b of document.querySelectorAll('.sound-btn')) b.addEventListener('cli
 
 /* ================= Bucle ================= */
 function resize() {
-  dpr = Math.min(2, window.devicePixelRatio || 1);
+  dpr = Math.min(document.body.classList.contains('touch') ? 1.5 : 2, window.devicePixelRatio || 1);
   W = innerWidth; H = innerHeight;
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   lc.width = Math.max(1, Math.round(W * 0.5)); lc.height = Math.max(1, Math.round(H * 0.5));
@@ -2113,7 +2137,7 @@ function frame(now) {
   if (fade.dir === 1) { fade.a = Math.min(1, fade.a + dt * 2.6); if (fade.a >= 1) { fade.dir = -1; const cb = fade.cb; fade.cb = null; if (cb) cb(); } }
   else if (fade.dir === -1) { fade.a = Math.max(0, fade.a - dt * 2); if (fade.a <= 0) fade.dir = 0; }
   $('fade').style.opacity = fade.a;
-  const base = clamp(Math.min(W, H) / 760, 0.6, 1.15);
+  const base = clamp(Math.min(W, H) / 540, 0.9, 1.4);
   if (state === 'garage') {
     gPop += dt;
     renderGarage(clock);
@@ -2128,13 +2152,13 @@ function frame(now) {
       cam.x += (tx - cam.x) * Math.min(1, dt * 4); cam.y += (ty - cam.y) * Math.min(1, dt * 4);
     } else if (player) {
       if (state !== 'pause') update(dt);
-      dark = darkness(time + 45);
+      dark = darkness(time);
       cam.rot = 0;
       // Cámara dinámica: se aleja con la velocidad y el nitro, se acerca al frenar
       const sp = Math.hypot(player.vx, player.vy);
-      const wantZ = base * (1 - 0.18 * clamp(sp / 500, 0, 1) - (nitroOn ? 0.08 : 0) + (player.braking ? 0.05 : 0));
+      const wantZ = base * (1 - 0.12 * clamp(sp / 400, 0, 1) - (nitroOn ? 0.05 : 0) + (player.braking ? 0.04 : 0));
       zoom += (wantZ - zoom) * Math.min(1, dt * 2);
-      const look = 0.3 + 0.15 * clamp(sp / 500, 0, 1);
+      const look = 0.22 + 0.1 * clamp(sp / 400, 0, 1);
       const tx = player.x + player.vx * look, ty = player.y + player.vy * look;
       cam.x += (tx - cam.x) * Math.min(1, dt * 5); cam.y += (ty - cam.y) * Math.min(1, dt * 5);
       drawGauge();
