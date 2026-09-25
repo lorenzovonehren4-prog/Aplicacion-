@@ -133,6 +133,7 @@
     touch-action: none; -webkit-tap-highlight-color: transparent;
   }
   .pad button.on { background: rgba(245,197,66,0.4); border-color: var(--lane); }
+  .pad button.small.wide { grid-column: 1 / -1; width: 150px; height: 46px; font-size: 14px; }
   .pad button.small { width: 58px; height: 42px; border-radius: 12px; font-size: 12px; font-weight: 700; letter-spacing: .06em; }
   .pad button.nos { color: var(--nitro); }
 
@@ -235,6 +236,7 @@
   .coin { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; background: radial-gradient(circle at 35% 35%, #fff0b0, #f5c542 55%, #a87812); box-shadow: 0 0 0 1px rgba(0,0,0,.45); }
   .g-wallet { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .g-wallet .pill { display: flex; align-items: center; gap: 6px; }
+  .fs-btn { color: var(--ink); font: 700 14px var(--body); cursor: pointer; }
   .g-panel { max-height: 60vh; overflow-y: auto; }
   .tabs { display: flex; gap: 6px; overflow-x: auto; }
   .tabs button {
@@ -372,8 +374,7 @@
   <button type="button" data-key="right" aria-label="Derecha">▶</button>
 </div>
 <div class="pad right" id="padR">
-  <button type="button" class="small nos" data-key="nitro" aria-label="Nitro">NITRO</button>
-  <button type="button" class="small" data-key="brake" aria-label="Freno de mano">FRENO</button>
+  <button type="button" class="small nos wide" data-key="nitro" aria-label="Turbo">TURBO</button>
   <button type="button" data-key="down" aria-label="Atrás">▼</button>
   <button type="button" data-key="up" aria-label="Adelante">▲</button>
 </div>
@@ -393,6 +394,7 @@
     <div class="g-wallet">
       <div class="glass pill" title="Monedas"><i class="coin"></i><span id="coins">0</span></div>
       <div class="glass pill">Pase <span id="passPill">1</span></div>
+      <button type="button" class="glass pill fs-btn" id="fsBtn" hidden>Pantalla completa</button>
     </div>
   </div>
   <button type="button" class="glass g-arrow prev" id="prevCar" aria-label="Carro anterior">◀</button>
@@ -421,6 +423,7 @@
       <div class="actions">
         <button type="button" class="btn" id="startBtn">Arrancar</button>
         <button type="button" class="btn ghost sound-btn" id="soundBtn">Sonido: sí</button>
+        <button type="button" class="btn ghost music-btn" id="musicBtn">Música: sí</button>
         <span class="best" id="bestLine"></span>
       </div>
       <p class="g-note last-run" id="lastRun" hidden></p>
@@ -443,8 +446,8 @@
           <li><b>5:00</b> enjambre, blindados y helicóptero. Si su foco te alumbra, todos saben dónde estás.</li>
         </ul></section>
         <section><h3>Trucos</h3><ul>
-          <li>Derrapa con el freno de mano: suma puntos y carga el nitro. Si chocas a mitad del derrape, lo pierdes.</li>
-          <li>Guarda el nitro para las rectas y abre distancia.</li>
+          <li>Gira a buena velocidad y el carro derrapa solo: suma puntos y carga el turbo. Si chocas a mitad del derrape, lo pierdes.</li>
+          <li>Guarda el turbo para las rectas y abre distancia.</li>
           <li>Los edificios se vuelven transparentes cuando pasas por detrás.</li>
           <li>No salgas de la ciudad: al llegar al borde el carro se frena.</li>
         </ul></section>
@@ -455,11 +458,11 @@
           <li>En la <b>Tienda</b> personalizas tu carro y tu garaje.</li>
         </ul></section>
         <section><h3>Controles</h3><ul class="keys">
-          <li><kbd>↑</kbd> <kbd>W</kbd> acelerar · <kbd>↓</kbd> <kbd>S</kbd> frenar y reversa</li>
-          <li><kbd>←</kbd> <kbd>→</kbd> <kbd>A</kbd> <kbd>D</kbd> girar</li>
-          <li><kbd>Espacio</kbd> freno de mano para derrapar</li>
-          <li><kbd>Shift</kbd> nitro · <kbd>P</kbd> pausa · <kbd>M</kbd> sonido</li>
-          <li>En el celular: ◀ ▶ a la izquierda; ▲ ▼, FRENO y NITRO a la derecha.</li>
+          <li><kbd>↑</kbd> avanzar</li>
+          <li><kbd>←</kbd> <kbd>→</kbd> girar; a buena velocidad, derrapar</li>
+          <li><kbd>↓</kbd> frenar y reversa</li>
+          <li><kbd>Espacio</kbd> turbo · <kbd>P</kbd> pausa · <kbd>M</kbd> sonido</li>
+          <li>También sirven <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>. En el celular: ◀ ▶ a la izquierda; ▲ ▼ y TURBO a la derecha.</li>
         </ul></section>
       </div>
     </div>
@@ -531,6 +534,7 @@
     <div class="actions">
       <button type="button" class="btn" id="resumeBtn">Seguir</button>
       <button type="button" class="btn ghost sound-btn" id="soundBtn2">Sonido: sí</button>
+      <button type="button" class="btn ghost music-btn" id="musicBtn2">Música: sí</button>
       <button type="button" class="btn ghost" id="quitBtn">Salir al garaje</button>
     </div>
   </div>
@@ -676,7 +680,7 @@ function rewardLabel(r) {
 const SAVE_KEY = 'fuga-urbana-v1';
 let save = {};
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s && typeof s === 'object') save = s; } catch (e) {}
-save = Object.assign({ unlocked: ['tico'], selected: 'tico', best: 0, sound: true, coins: 0, xp: 0, claimed: 0, items: ['gar_night'], equip: { tema: 'gar_night' }, diff: 'medium', nitroBoost: 0 }, save);
+save = Object.assign({ unlocked: ['tico'], selected: 'tico', best: 0, sound: true, music: true, coins: 0, xp: 0, claimed: 0, items: ['gar_night'], equip: { tema: 'gar_night' }, diff: 'medium', nitroBoost: 0 }, save);
 if (!Array.isArray(save.unlocked)) save.unlocked = ['tico'];
 save.unlocked = save.unlocked.filter(id => CARS.some(c => c.id === id));
 if (!save.unlocked.includes('tico')) save.unlocked.unshift('tico');
@@ -979,6 +983,7 @@ function los(x0, y0, x1, y1) {
 
 /* ================= Física arcade ================= */
 function physics(c, thr, steer, dt, hb) {
+  const dr = +hb || 0; // 0 = agarre normal, 1 = derrape completo
   const d = c.def, fx = Math.cos(c.a), fy = Math.sin(c.a);
   let fwd = c.vx * fx + c.vy * fy, lat = -c.vx * fy + c.vy * fx;
   const surf = tileAt(Math.floor(c.x / T), Math.floor(c.y / T));
@@ -992,13 +997,19 @@ function physics(c, thr, steer, dt, hb) {
   if (fwd < -max * 0.4) fwd = -max * 0.4;
   let grip = d.grip * (1 - 0.32 * clamp(Math.abs(fwd) / d.max, 0, 1));
   grip *= c.gripMul || 1;
-  if (hb) { grip *= 0.16; fwd -= Math.sign(fwd) * Math.min(Math.abs(fwd), 110 * dt); }
+  if (dr > 0) { grip *= 1 - 0.8 * dr; fwd -= Math.sign(fwd) * Math.min(Math.abs(fwd), 45 * dr * dt); }
   if (surf === GR) grip *= 0.7;
-  lat -= lat * Math.min(1, grip * dt);
+  const lost = lat * Math.min(1, grip * dt);
+  lat -= lost;
+  // En el derrape, parte del deslizamiento se convierte en avance: el carro no pierde el impulso
+  if (dr > 0 && fwd > 0) fwd = Math.min(max, fwd + Math.abs(lost) * 0.9 * dr);
   c.steer += (steer - c.steer) * Math.min(1, dt * 10);
   const sp = Math.min(1, Math.abs(fwd) / 120);
   const sliding = clamp(Math.abs(lat) / 200, 0, 1);
-  c.a += c.steer * d.turn * (hb ? 1.45 : 1) * (1 + sliding * 0.35) * sp * dt * (fwd < 0 ? -1 : 1);
+  c.a += c.steer * d.turn * (1 + 0.2 * dr) * (1 + sliding * 0.35) * sp * dt * (fwd < 0 ? -1 : 1);
+  // Sin trompos: el deslizamiento lateral nunca supera al avance
+  const maxLat = Math.abs(fwd) * 0.75 + 30;
+  if (Math.abs(lat) > maxLat) lat = Math.sign(lat) * maxLat;
   c.vx = fx * fwd - fy * lat; c.vy = fy * fwd + fx * lat;
   c.x += c.vx * dt; c.y += c.vy * dt;
   c.fwd = fwd; c.lat = lat;
@@ -1078,61 +1089,156 @@ function carCollisions() {
 
 /* ================= Sonido ================= */
 const Snd = {
-  ac: null,
+  ac: null, gear: 1, step: 0, nextStep: 0,
   init() {
     if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
       const ac = this.ac = new AC();
-      const m = this.master = ac.createGain(); m.gain.value = save.sound ? 0.5 : 0; m.connect(ac.destination);
-      const e1 = this.e1 = ac.createOscillator(); e1.type = 'sawtooth';
-      const e2 = this.e2 = ac.createOscillator(); e2.type = 'square';
-      const ef = this.ef = ac.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 500;
-      const eg = this.eg = ac.createGain(); eg.gain.value = 0;
-      e1.connect(ef); e2.connect(ef); ef.connect(eg); eg.connect(m); e1.start(); e2.start();
+      const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.connect(ac.destination);
+      const m = this.master = ac.createGain(); m.gain.value = save.sound ? 0.6 : 0; m.connect(comp);
       const nb = this.nb = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
       const data = nb.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-      const ns = ac.createBufferSource(); ns.buffer = nb; ns.loop = true;
-      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 5;
+      const loopNoise = () => { const n = ac.createBufferSource(); n.buffer = nb; n.loop = true; n.start(0, Math.random() * 1.5); return n; };
+      // Motor: fundamental, sub-octava y armónico, saturados y filtrados según las revoluciones
+      this.eo = [['sawtooth', 1, 0], ['square', 0.5, 0], ['sawtooth', 2, 7]].map(([type, mul, det]) => { const o = ac.createOscillator(); o.type = type; o.detune.value = det; o.start(); return { o, mul }; });
+      const shaper = ac.createWaveShaper(), curve = new Float32Array(512);
+      for (let i = 0; i < 512; i++) { const x = i / 256 - 1; curve[i] = Math.tanh(2.6 * x); }
+      shaper.curve = curve;
+      const ef = this.ef = ac.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 600; ef.Q.value = 3;
+      const eg = this.eg = ac.createGain(); eg.gain.value = 0;
+      const mix = ac.createGain(); mix.gain.value = 0.35;
+      this.eo.forEach(({ o }) => o.connect(mix)); mix.connect(shaper); shaper.connect(ef); ef.connect(eg); eg.connect(m);
+      // Ruido de rodado
+      const rf = ac.createBiquadFilter(); rf.type = 'lowpass'; rf.frequency.value = 320;
+      const rg = this.rg = ac.createGain(); rg.gain.value = 0;
+      loopNoise().connect(rf); rf.connect(rg); rg.connect(m);
+      // Chirrido de llantas: banda estrecha que vibra
+      const bp = this.bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 9;
+      const lfo = ac.createOscillator(), lfoG = ac.createGain(); lfo.frequency.value = 11; lfoG.gain.value = 260; lfo.connect(lfoG); lfoG.connect(bp.frequency); lfo.start();
       const sg = this.sg = ac.createGain(); sg.gain.value = 0;
-      ns.connect(bp); bp.connect(sg); sg.connect(m); ns.start();
-      const so = this.so = ac.createOscillator(); so.type = 'square';
-      const sf = ac.createBiquadFilter(); sf.type = 'lowpass'; sf.frequency.value = 1600;
+      loopNoise().connect(bp); bp.connect(sg); sg.connect(m);
+      // Turbo: soplido y silbido
+      const tf = ac.createBiquadFilter(); tf.type = 'bandpass'; tf.frequency.value = 2600; tf.Q.value = 0.8;
+      const tg = this.tg = ac.createGain(); tg.gain.value = 0;
+      loopNoise().connect(tf); tf.connect(tg); tg.connect(m);
+      const wh = this.wh = ac.createOscillator(); wh.type = 'sine'; wh.frequency.value = 2400; wh.start();
+      const whg = this.whg = ac.createGain(); whg.gain.value = 0; wh.connect(whg); whg.connect(m);
+      // Sirena de dos tonos con estéreo
+      this.so = [ac.createOscillator(), ac.createOscillator()];
+      this.so[0].type = 'triangle'; this.so[1].type = 'square';
+      const sf = ac.createBiquadFilter(); sf.type = 'lowpass'; sf.frequency.value = 2200;
       const sig = this.sig = ac.createGain(); sig.gain.value = 0;
-      so.connect(sf); sf.connect(sig); sig.connect(m); so.start();
+      const sgm = ac.createGain(); sgm.gain.value = 0.25; this.so[1].connect(sgm); sgm.connect(sf); this.so[0].connect(sf);
+      this.so.forEach(o => o.start());
+      sf.connect(sig);
+      if (ac.createStereoPanner) { this.pan = ac.createStereoPanner(); sig.connect(this.pan); this.pan.connect(m); } else sig.connect(m);
+      // Música
+      this.mus = ac.createGain(); this.mus.gain.value = 0; this.mus.connect(m);
+      this.nextStep = ac.currentTime;
     } catch (e) { this.ac = null; }
   },
-  update(t, speed, max, driftAmt, siren, nos, active) {
+  update(t, o) {
     if (!this.ac) return;
-    const now = this.ac.currentTime, r = clamp(speed / max, 0, 1.4);
-    const f = 36 + r * 105 + (nos ? 30 : 0);
-    this.e1.frequency.setTargetAtTime(f, now, 0.06); this.e2.frequency.setTargetAtTime(f * 0.5, now, 0.06);
-    this.ef.frequency.setTargetAtTime(350 + r * 1300 + (nos ? 600 : 0), now, 0.06);
-    this.eg.gain.setTargetAtTime(active ? 0.045 + r * 0.05 : 0, now, 0.1);
-    this.sg.gain.setTargetAtTime(active ? driftAmt * 0.08 : 0, now, 0.05);
-    this.so.frequency.setTargetAtTime(760 + 340 * Math.sin(t * Math.PI * 1.3), now, 0.02);
-    this.sig.gain.setTargetAtTime(active ? siren * 0.03 : 0, now, 0.15);
+    const ac = this.ac, now = ac.currentTime, on = o.active;
+    const r = clamp(o.speed / o.max, 0, 1.4);
+    // Cambios: el tono sube dentro de cada marcha y cae al cambiar
+    const G = [0, 0.2, 0.4, 0.6, 0.8, 1.01];
+    let gear = 1; while (gear < 5 && r > G[gear]) gear++;
+    const rpm = clamp((r - G[gear - 1]) / (G[gear] - G[gear - 1]), 0, 1.2);
+    if (on && gear > this.gear && o.throttle > 0) this.pop(0.08);
+    this.gear = gear;
+    const base = o.speed < 20 ? 42 + Math.sin(t * 9) * 1.5 : 50 + rpm * 85 + gear * 7 + (o.nos ? 12 : 0);
+    this.eo.forEach(({ o: osc, mul }) => osc.frequency.setTargetAtTime(base * mul, now, 0.04));
+    this.ef.frequency.setTargetAtTime(420 + rpm * 1500 + o.throttle * 500 + (o.nos ? 700 : 0), now, 0.05);
+    this.eg.gain.setTargetAtTime(on ? 0.05 + o.throttle * 0.05 + r * 0.02 : 0, now, 0.08);
+    this.rg.gain.setTargetAtTime(on ? Math.min(0.05, r * 0.05) : 0, now, 0.1);
+    this.sg.gain.setTargetAtTime(on ? o.drift * 0.1 : 0, now, 0.05);
+    this.tg.gain.setTargetAtTime(on && o.nos ? 0.07 : 0, now, 0.08);
+    this.whg.gain.setTargetAtTime(on && o.nos ? 0.018 : 0, now, 0.1);
+    this.wh.frequency.setTargetAtTime(2100 + rpm * 900, now, 0.05);
+    const wail = 0.5 + 0.5 * Math.sin(t * Math.PI * 1.2);
+    this.so[0].frequency.setTargetAtTime(640 + wail * 460, now, 0.02);
+    this.so[1].frequency.setTargetAtTime(641 + wail * 460, now, 0.02);
+    this.sig.gain.setTargetAtTime(on ? o.siren * 0.045 : 0, now, 0.15);
+    if (this.pan) this.pan.pan.setTargetAtTime(clamp(o.pan, -0.9, 0.9), now, 0.1);
+    // Música de persecución: bajo, bombo y platillos según las estrellas
+    this.mus.gain.setTargetAtTime(on && save.music ? 0.5 : 0, now, 0.3);
+    const beat = 60 / (118 + o.level * 5) / 2;
+    if (this.nextStep < now - 0.5) this.nextStep = now;
+    while (this.nextStep < now + 0.15) {
+      if (on && save.music) this.note(this.step, this.nextStep, o.level);
+      this.nextStep += beat; this.step = (this.step + 1) % 16;
+    }
   },
-  burst(dur, freq, vol) {
+  note(step, at, lv) {
+    const ac = this.ac, BASS = [55, 55, 65.4, 55, 49, 55, 82.4, 73.4];
+    if (lv > 0 || step % 2 === 0) {
+      const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+      o.type = 'sawtooth'; o.frequency.value = BASS[step % 8]; f.type = 'lowpass'; f.frequency.value = 300 + lv * 90;
+      g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.16, at + 0.01); g.gain.exponentialRampToValueAtTime(0.001, at + 0.2);
+      o.connect(f); f.connect(g); g.connect(this.mus); o.start(at); o.stop(at + 0.22);
+    }
+    if (lv >= 1 && step % 4 === 0) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.setValueAtTime(130, at); o.frequency.exponentialRampToValueAtTime(40, at + 0.14);
+      g.gain.setValueAtTime(0.35, at); g.gain.exponentialRampToValueAtTime(0.001, at + 0.16);
+      o.connect(g); g.connect(this.mus); o.start(at); o.stop(at + 0.18);
+    }
+    if (lv >= 2 && step % 2 === 1) this.noiseHit(at, 0.04, 'highpass', 7000, 0.07, this.mus);
+    if (lv >= 3 && step % 8 === 4) this.noiseHit(at, 0.12, 'bandpass', 1800, 0.14, this.mus);
+  },
+  noiseHit(at, dur, type, freq, vol, dest) {
+    const ac = this.ac, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = this.nb; f.type = type; f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(0.001, at + dur);
+    s.connect(f); f.connect(g); g.connect(dest || this.master); s.start(at, Math.random()); s.stop(at + dur + 0.05);
+  },
+  tone(at, type, f0, f1, dur, vol, dest) {
+    const ac = this.ac, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, at); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, at + dur);
+    g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(0.001, at + dur);
+    o.connect(g); g.connect(dest || this.master); o.start(at); o.stop(at + dur + 0.02);
+  },
+  burst(dur, freq, vol) { if (this.ac) this.noiseHit(this.ac.currentTime, dur, 'lowpass', freq, vol); },
+  // Choque: golpe grave, ruido y un toque metálico
+  thump(vol) {
     if (!this.ac) return;
-    const ac = this.ac, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), now = ac.currentTime;
-    s.buffer = this.nb; f.type = 'lowpass'; f.frequency.value = freq;
-    g.gain.setValueAtTime(vol, now); g.gain.exponentialRampToValueAtTime(0.001, now + dur);
-    s.connect(f); f.connect(g); g.connect(this.master); s.start(now, Math.random()); s.stop(now + dur + 0.05);
+    const at = this.ac.currentTime;
+    this.tone(at, 'sine', 150, 42, 0.25, vol);
+    this.noiseHit(at, 0.22, 'lowpass', 1400, vol * 0.8);
+    this.tone(at, 'square', 880 + Math.random() * 400, 700, 0.07, vol * 0.18);
   },
+  boom(vol) {
+    if (!this.ac) return;
+    const ac = this.ac, at = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    this.tone(at, 'sine', 90, 28, 0.9, vol);
+    s.buffer = this.nb; f.type = 'lowpass'; f.frequency.setValueAtTime(1500, at); f.frequency.exponentialRampToValueAtTime(140, at + 1.2);
+    g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(0.001, at + 1.3);
+    s.connect(f); f.connect(g); g.connect(this.master); s.start(at); s.stop(at + 1.35);
+  },
+  pop(vol) { if (this.ac) this.noiseHit(this.ac.currentTime, 0.06, 'bandpass', 900, vol); },
   blip(notes) {
     if (!this.ac) return;
-    const ac = this.ac, now = ac.currentTime;
-    notes.forEach((n, i) => {
-      const o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.value = n;
-      g.gain.setValueAtTime(0.0001, now + i * 0.08); g.gain.exponentialRampToValueAtTime(0.18, now + i * 0.08 + 0.01); g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.18);
-      o.connect(g); g.connect(this.master); o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.2);
-    });
+    const at = this.ac.currentTime;
+    notes.forEach((n, i) => this.tone(at + i * 0.08, 'triangle', n, n, 0.2, 0.18));
   },
-  setOn(v) { save.sound = v; persist(); if (this.master) this.master.gain.value = v ? 0.5 : 0; syncSoundBtns(); },
+  tick() { if (this.ac) this.tone(this.ac.currentTime, 'sine', 1900, 1500, 0.035, 0.06); },
+  coin() { if (!this.ac) return; const at = this.ac.currentTime; this.tone(at, 'square', 988, 988, 0.09, 0.07); this.tone(at + 0.08, 'square', 1319, 1319, 0.25, 0.07); },
+  drumroll() {
+    if (!this.ac) return;
+    const at = this.ac.currentTime;
+    for (let i = 0; i < 14; i++) this.noiseHit(at + i * 0.065 * (1 - i / 40), 0.06, 'bandpass', 1500, 0.05 + i * 0.012);
+    this.tone(at, 'sawtooth', 60, 120, 0.9, 0.12);
+  },
+  setOn(v) { save.sound = v; persist(); if (this.master) this.master.gain.value = v ? 0.6 : 0; syncSoundBtns(); },
+  setMusic(v) { save.music = v; persist(); syncSoundBtns(); },
 };
-function syncSoundBtns() { for (const b of document.querySelectorAll('.sound-btn')) b.textContent = save.sound ? 'Sonido: sí' : 'Sonido: no'; }
-function crashSound(impact) { if (crashCd > 0) return; crashCd = 0.12; Snd.burst(0.25, 900, Math.min(0.5, impact / 700)); }
+function syncSoundBtns() {
+  for (const b of document.querySelectorAll('.sound-btn')) b.textContent = save.sound ? 'Sonido: sí' : 'Sonido: no';
+  for (const b of document.querySelectorAll('.music-btn')) b.textContent = save.music ? 'Música: sí' : 'Música: no';
+}
+function crashSound(impact) { if (crashCd > 0) return; crashCd = 0.12; Snd.thump(Math.min(0.6, impact / 600)); }
 
 /* ================= Efectos ================= */
 function puff(x, y, vx, vy, life, size, color, grow, glow) {
@@ -1159,7 +1265,7 @@ function explode(x, y, power) {
   }
   const fp = focus(), dp = Math.hypot(fp.x - x, fp.y - y);
   shake = Math.max(shake, 14 * power * clamp(1 - dp / 700, 0, 1));
-  if (dp < 1400) Snd.burst(1.1, 260, 0.7 * clamp(1 - dp / 1400, 0.1, 1) * Math.min(1.3, power));
+  if (dp < 1400) Snd.boom(0.7 * clamp(1 - dp / 1400, 0.1, 1) * Math.min(1.3, power));
 }
 function hurt(n) {
   if (state !== 'play') return;
@@ -1478,7 +1584,7 @@ function showOver() {
 function setPause(on) {
   if (on && state === 'play') {
     state = 'pause'; $('pause').hidden = false;
-    $('errLine').hidden = !lastErr; $('errLine').textContent = lastErr ? `Aviso técnico (${errCount}): ${lastErr}` : ''; $('resumeBtn').focus(); Snd.update(0, 0, 1, 0, 0, false, false); }
+    $('errLine').hidden = !lastErr; $('errLine').textContent = lastErr ? `Aviso técnico (${errCount}): ${lastErr}` : ''; $('resumeBtn').focus(); Snd.update(0, { speed: 0, max: 1, throttle: 0, drift: 0, siren: 0, pan: 0, nos: false, active: false, level: 0 }); }
   else if (!on && state === 'pause') { state = 'play'; $('pause').hidden = true; }
 }
 const currentScore = () => Math.floor(time * 10) + bonus;
@@ -1660,13 +1766,16 @@ function update(dt) {
   if (player) {
     if (intro) introDrive(dt);
     else {
-      nitroOn = playing && key.nitro && nitro > 0.02 && key.up;
+      nitroOn = playing && key.nitro && nitro > 0.02 && !key.down;
       player.speedMul = (nitroOn ? 1.35 : 1) * (player.flatT > 0 ? 0.62 : 1); player.accelMul = nitroOn ? 1.8 : 1;
       player.gripMul = player.flatT > 0 ? 0.55 : 1;
       if (nitroOn) nitro = Math.max(0, nitro - dt * 0.32); else nitro = Math.min(1, nitro + dt * 0.012);
       const steer = playing ? (key.right ? 1 : 0) - (key.left ? 1 : 0) : 0;
-      const thr = playing ? (key.up ? 1 : 0) - (key.down ? 1 : 0) : 0;
-      physics(player, thr, steer, dt, playing && key.brake);
+      const thr = playing ? (key.down ? -1 : key.up || nitroOn ? 1 : 0) : 0;
+      // Girar a buena velocidad derrapa solo; al soltar, el carro se endereza
+      const sp0 = Math.hypot(player.vx, player.vy), want = playing && steer !== 0 && thr >= 0 && sp0 > 150 ? 1 : 0;
+      player.driftK = (player.driftK || 0) + (want - (player.driftK || 0)) * Math.min(1, dt * (want ? 5 : 3));
+      physics(player, thr, steer, dt, player.driftK);
     }
     flowTimer -= dt;
     if (flowTimer <= 0) {
@@ -1701,7 +1810,7 @@ function update(dt) {
   if (player) {
     const sliding = Math.abs(player.lat);
     driftAmt = clamp((sliding - 90) / 200, 0, 1);
-    const skid = sliding > 100 || (playing && key.brake && speed > 100);
+    const skid = sliding > 100 || (playing && player.driftK > 0.5 && speed > 120);
     const w = wheelSkids(player, skid ? 0.5 + driftAmt * 0.5 : 0);
     if (skid) for (const [x, y] of w) if (Math.random() < 0.55) puff(x, y, player.vx * 0.1 + (Math.random() - .5) * 30, player.vy * 0.1 + (Math.random() - .5) * 30, 0.8 + driftAmt * 0.5, 4 + driftAmt * 3, 'rgba(215,215,220,1)', 20);
     if (playing && speed > 140 && sliding > 100) {
@@ -1716,7 +1825,7 @@ function update(dt) {
       shake = Math.max(shake, 1.5);
     }
     const fire = save.equip.escape && itemById(save.equip.escape);
-    if (fire && playing && key.up && speed > 80 && Math.random() < 0.45) {
+    if (fire && playing && (key.up || nitroOn) && speed > 80 && Math.random() < 0.45) {
       const fx = Math.cos(player.a), fy = Math.sin(player.a), bx = player.x - fx * player.def.len * 0.55, by = player.y - fy * player.def.len * 0.55;
       puff(bx, by, -fx * 160 + (Math.random() - .5) * 40, -fy * 160 + (Math.random() - .5) * 40, 0.16, 4, Math.random() < 0.5 ? fire.color : '#ffe28a', -8, true);
     }
@@ -1765,9 +1874,14 @@ function update(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('show'); }
   if (drift.show > 0) drift.show -= dt;
 
-  let siren = 0;
-  if (player) for (const e of enemies) if (e.type !== 'tank' && (e.mode !== 'patrol' || e.alert)) siren = Math.max(siren, clamp(1 - Math.hypot(e.x - player.x, e.y - player.y) / 900, 0, 1));
-  Snd.update(clock, speed, player ? player.def.max : 1, driftAmt, siren, nitroOn, playing);
+  // La sirena más cercana suena del lado de la pantalla donde está
+  let siren = 0, pan = 0;
+  if (player) for (const e of enemies) {
+    if (e.type === 'tank' || !hasSiren(e)) continue;
+    const v = clamp(1 - Math.hypot(e.x - player.x, e.y - player.y) / 900, 0, 1);
+    if (v > siren) { siren = v; pan = (e.x - player.x) / 500; }
+  }
+  Snd.update(clock, { speed, max: player ? player.def.max : 1, throttle: playing && (key.up || nitroOn) ? 1 : 0, drift: driftAmt, siren, pan, nos: nitroOn, active: playing, level });
 
 
   if (playing) {
@@ -2068,7 +2182,7 @@ const hasSiren = c => !!c.type && (c.mode !== 'patrol' || c.alert) && !c.leave;
 function carView(c) {
   const d = c.def;
   const mine = c === player && state !== 'intro';
-  return { style: d.style, color: d.color, len: d.len, wid: d.wid, steer: c.steer, braking: c.braking, phase: c.phase, track: c.track, turret: c.type === 'tank' ? c.ta - c.a : 0, nitro: c === player && nitroOn, siren: hasSiren(c), mods: mine ? playerMods() : null, accel: mine && key.up };
+  return { style: d.style, color: d.color, len: d.len, wid: d.wid, steer: c.steer, braking: c.braking, phase: c.phase, track: c.track, turret: c.type === 'tank' ? c.ta - c.a : 0, nitro: c === player && nitroOn, siren: hasSiren(c), mods: mine ? playerMods() : null, accel: mine && (key.up || nitroOn) };
 }
 function playerMods(pv) {
   const e = Object.assign({}, save.equip), col = id => id && itemById(id) ? itemById(id).color : null;
@@ -2630,7 +2744,7 @@ function pullGacha() {
   gacha.t = 0; gacha.car = won;
   gIdx = CARS.indexOf(won); gPop = 0;
   $('gachaMsg').textContent = 'Abriendo…';
-  Snd.burst(0.9, 180, 0.4);
+  Snd.drumroll();
   syncGarage();
 }
 function gachaTick(dt) {
@@ -2706,7 +2820,7 @@ function drawGauge() {
   gctx.fillText(String(Math.round(kmh)), c, c - s * 0.01);
   gctx.fillStyle = '#9ea4b3'; gctx.font = `600 ${Math.round(s * 0.06)}px "Chakra Petch", system-ui, sans-serif`;
   gctx.fillText('KM/H', c, c + s * 0.11);
-  gctx.fillStyle = '#4fd6ff'; gctx.fillText('NITRO', c, c + s * 0.37);
+  gctx.fillStyle = '#4fd6ff'; gctx.fillText('TURBO', c, c + s * 0.37);
 }
 const mini = $('mini'), mctx = mini.getContext('2d'), MS = 3;
 const miniBase = document.createElement('canvas');
@@ -2811,7 +2925,7 @@ function updateHud(force) {
 }
 
 /* ================= Entrada ================= */
-const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'brake', ShiftLeft: 'nitro', ShiftRight: 'nitro', KeyN: 'nitro' };
+const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'nitro', ShiftLeft: 'nitro', ShiftRight: 'nitro', KeyN: 'nitro' };
 function enterGarage() { if (state !== 'intro') return; Snd.init(); fadeTo(showGarage); }
 function tryStart() { if (state === 'garage' && save.unlocked.includes(CARS[gIdx].id)) fadeTo(startGame); }
 addEventListener('keydown', e => {
@@ -2841,10 +2955,18 @@ for (const btn of document.querySelectorAll('.pad button')) {
 }
 $('intro').addEventListener('click', enterGarage);
 $('prevCar').addEventListener('click', () => garageStep(-1));
-for (const b of document.querySelectorAll('.tabs [data-tab]')) b.addEventListener('click', () => { tab = b.dataset.tab; preview = null; $('shopNote').textContent = 'Toca un accesorio para probarlo en tu carro.'; syncGarage(); });
+for (const b of document.querySelectorAll('.tabs [data-tab]')) b.addEventListener('click', () => { Snd.tick(); tab = b.dataset.tab; preview = null; $('shopNote').textContent = 'Toca un accesorio para probarlo en tu carro.'; syncGarage(); });
 $('gDots').addEventListener('click', e => { const b = e.target.closest('[data-car]'); if (b) { gIdx = +b.dataset.car; gPop = 0; syncGarage(); } });
 for (const b of document.querySelectorAll('.diff [data-diff]')) b.addEventListener('click', () => { save.diff = b.dataset.diff; persist(); syncGarage(); });
 $('gachaBtn').addEventListener('click', pullGacha);
+if (document.fullscreenEnabled && document.documentElement.requestFullscreen) {
+  $('fsBtn').hidden = false;
+  $('fsBtn').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else document.documentElement.requestFullscreen().catch(() => {});
+  });
+  document.addEventListener('fullscreenchange', () => { $('fsBtn').textContent = document.fullscreenElement ? 'Salir de pantalla completa' : 'Pantalla completa'; });
+}
 $('shopCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { shopCat = b.dataset.cat; syncGarage(); } });
 $('shopList').addEventListener('click', e => {
   const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-equip]'), row = e.target.closest('[data-item]');
@@ -2857,7 +2979,7 @@ $('shopList').addEventListener('click', e => {
   }
   if (buy) {
     const it = itemById(buy.dataset.buy);
-    if (it && it.price !== null && save.coins >= it.price && !save.items.includes(it.id)) { save.coins -= it.price; save.items.push(it.id); save.equip[it.cat] = it.id; persist(); Snd.blip([660, 880]); }
+    if (it && it.price !== null && save.coins >= it.price && !save.items.includes(it.id)) { save.coins -= it.price; save.items.push(it.id); save.equip[it.cat] = it.id; persist(); Snd.coin(); }
   } else if (eq) {
     const it = itemById(eq.dataset.equip);
     if (save.equip[it.cat] === it.id) { if (it.cat !== 'tema') save.equip[it.cat] = null; } else save.equip[it.cat] = it.id;
@@ -2873,6 +2995,7 @@ $('resumeBtn').addEventListener('click', () => setPause(false));
 $('quitBtn').addEventListener('click', () => fadeTo(() => { finishRun(); showGarage(); }));
 $('pauseBtn').addEventListener('click', () => setPause(true));
 for (const b of document.querySelectorAll('.sound-btn')) b.addEventListener('click', () => { Snd.init(); Snd.setOn(!save.sound); });
+for (const b of document.querySelectorAll('.music-btn')) b.addEventListener('click', () => { Snd.init(); Snd.setMusic(!save.music); });
 
 /* ================= Bucle ================= */
 function resize() {
@@ -2956,7 +3079,7 @@ function step(now) {
     render(clock);
   }
 }
-window.__fuga = { where() { const tx = Math.floor(player.x / T), ty = Math.floor(player.y / T), names = ['calle','vereda','edificio','pasto','estacionamiento','agua','plaza','industrial','campo','borde']; const near = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) near.push(names[tileAt(tx + i, ty + j)] || '?'); const e = edgeInfo(player); return { tile: names[tileAt(tx, ty)], near: [...new Set(near)].join(','), edge: Math.round(e.d), police: enemies.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 80).length, civ: civs.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 70).length, tree: obstacles.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < o.r + 30).length, box: boxes.filter(b => player.x > b.x - 30 && player.x < b.x + b.w + 30 && player.y > b.y - 30 && player.y < b.y + b.h + 30).length }; }, introHits() { let n = 0; for (const c of [player, ...enemies]) { const r = c.r * 0.7; if (isSolid(tileAt(Math.floor(c.x / T), Math.floor(c.y / T))) && tileAt(Math.floor(c.x / T), Math.floor(c.y / T)) !== BLD) n++; if (boxes.some(b => c.x > b.x - r && c.x < b.x + b.w + r && c.y > b.y - r && c.y < b.y + b.h + r)) n++; if (obstacles.some(o => Math.hypot(o.x - c.x, o.y - c.y) < o.r + r)) n++; } return n; }, tp(x, y) { Object.assign(player, { x, y, vx: 0, vy: 0 }); cam.x = x; cam.y = y; }, esc() { escape(); }, calm(v) { calmT = v; }, st() { return { level, calmT: +calmT.toFixed(1), x: Math.round(player.x), y: Math.round(player.y), W: WORLD, enemies: enemies.length, time: +time.toFixed(1) }; }, stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; }, coins(n) { save.coins += n; persist(); if (state === 'garage') syncGarage(); }, time(t) { time = t; }, peek() { return { heli: heli ? 1 : 0, spikes: spikes.length, block: enemies.filter(e => e.mode === 'block').length, interceptor: enemies.filter(e => e.type === 'interceptor').length }; } };
+window.__fuga = { car() { return { sp: Math.round(Math.hypot(player.vx, player.vy)), lat: Math.round(player.lat), fwd: Math.round(player.fwd), dk: +(player.driftK || 0).toFixed(2), nitro: +nitro.toFixed(2), nos: nitroOn, driftPts: Math.round(drift.pts), bank: bonus, audio: Snd.ac ? Snd.ac.state : 'none', gear: Snd.gear }; }, where() { const tx = Math.floor(player.x / T), ty = Math.floor(player.y / T), names = ['calle','vereda','edificio','pasto','estacionamiento','agua','plaza','industrial','campo','borde']; const near = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) near.push(names[tileAt(tx + i, ty + j)] || '?'); const e = edgeInfo(player); return { tile: names[tileAt(tx, ty)], near: [...new Set(near)].join(','), edge: Math.round(e.d), police: enemies.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 80).length, civ: civs.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 70).length, tree: obstacles.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < o.r + 30).length, box: boxes.filter(b => player.x > b.x - 30 && player.x < b.x + b.w + 30 && player.y > b.y - 30 && player.y < b.y + b.h + 30).length }; }, introHits() { let n = 0; for (const c of [player, ...enemies]) { const r = c.r * 0.7; if (isSolid(tileAt(Math.floor(c.x / T), Math.floor(c.y / T))) && tileAt(Math.floor(c.x / T), Math.floor(c.y / T)) !== BLD) n++; if (boxes.some(b => c.x > b.x - r && c.x < b.x + b.w + r && c.y > b.y - r && c.y < b.y + b.h + r)) n++; if (obstacles.some(o => Math.hypot(o.x - c.x, o.y - c.y) < o.r + r)) n++; } return n; }, tp(x, y) { Object.assign(player, { x, y, vx: 0, vy: 0, a: -Math.PI / 2, heading: -Math.PI / 2, steer: 0, driftK: 0 }); cam.x = x; cam.y = y; }, esc() { escape(); }, calm(v) { calmT = v; }, st() { return { level, calmT: +calmT.toFixed(1), x: Math.round(player.x), y: Math.round(player.y), W: WORLD, enemies: enemies.length, time: +time.toFixed(1) }; }, stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; }, coins(n) { save.coins += n; persist(); if (state === 'garage') syncGarage(); }, time(t) { time = t; }, peek() { return { heli: heli ? 1 : 0, spikes: spikes.length, block: enemies.filter(e => e.mode === 'block').length, interceptor: enemies.filter(e => e.type === 'interceptor').length }; } };
 startIntro();
 requestAnimationFrame(frame);
 })();
