@@ -519,7 +519,7 @@ const CIV_MODELS = [
 const CIV_COLORS = ['#b8bcc4', '#2e3440', '#8c2f39', '#3d5a80', '#e0e0da', '#6b705c', '#c9a227', '#5c4d7d', '#9aa5a0', '#7a4b2a'];
 // Unidades por nivel de búsqueda. Con 0 estrellas sólo hay patrullas de ronda.
 const HEAT_STEPS = [25, 55, 100, 155];
-const LEVEL_MSG = ['', 'Te persigue la policía', 'Llegan más patrullas', '¡Llegó el SWAT!', '¡Tanques en la ciudad!', 'Búsqueda máxima'];
+const LEVEL_MSG = ['', '', 'Llegan más patrullas', '¡Llegó el SWAT!', '¡Tanques en la ciudad!', 'Búsqueda máxima'];
 const SEEN_MEMORY = 3;           // segundos que la policía "sabe" dónde estás después de perderte de vista
 const evadeNeed = lv => 8 + lv * 2.5;
 const CALM_MAX = 25;          // segundos escondido antes de que te vuelvan a detectar
@@ -688,8 +688,9 @@ function genCity() {
     for (let k = 0; k < n * 4; k++) {
       const x = (ox + 0.3 + rnd() * 3.4) * T, y = (oy + 0.3 + rnd() * 3.4) * T;
       if (isSolid(tileAt(Math.floor(x / T), Math.floor(y / T)))) continue;
-      if (solidAt(x + 22, y) || solidAt(x - 22, y) || solidAt(x, y + 22) || solidAt(x, y - 22)) continue;
-      if (obstacles.some(o => Math.hypot(o.x - x, o.y - y) < 60)) continue;
+      // Espacio de sobra entre árboles y con el lago, para que el carro nunca quede encajado
+      if ([[52, 0], [-52, 0], [0, 52], [0, -52], [37, 37], [-37, 37], [37, -37], [-37, -37]].some(([dx, dy]) => solidAt(x + dx, y + dy))) continue;
+      if (obstacles.some(o => Math.hypot(o.x - x, o.y - y) < 78)) continue;
       tree(x, y, 22 + rnd() * 14);
     }
   };
@@ -820,6 +821,7 @@ let time = 0, heat = 0, level = 0, maxLevel = 0, bonus = 0, kills = 0, escapes =
 let spawnTimer = 0, civTimer = 0, overTimer = 0, endReason = '', hudT = 0, dark = 0, clock = 0;
 let nitro = 0.5, nitroOn = false, bestDrift = 0, crashCd = 0;
 let lastSeenT = -99, backupCalled = false;
+let runSettled = true, lastRun = '';
 let spikes = [], heli = null, roadblockT = 0, spikeT = 0, lastTier = 1, driftTotal = 0, tab = 'car', shopCat = 'neon';
 const gacha = { t: -1, car: null };
 const lastPos = { x: 0, y: 0 };
@@ -1344,6 +1346,7 @@ function startGame() {
   for (let i = 0; i < 26; i++) spawnCiv(220, 1100);
   time = 0; heat = 0; level = 0; maxLevel = 0; bonus = 0; kills = 0; escapes = 0; wantedT = 0; calmT = 0; bust = 0; flash = 0; shake = 0;
   nitro = Math.min(0.9, 0.5 + 0.05 * save.nitroBoost); nitroOn = false; bestDrift = 0; driftTotal = 0;
+  runSettled = false;
   spikes = []; heli = null; roadblockT = 6; spikeT = 5; lastTier = 1; drift.t = 0; drift.pts = 0; drift.idle = 0; drift.show = 0;
   lastSeenT = -99; backupCalled = false;
   spawnTimer = 1.5; civTimer = 0; flowSrc = -1; flowTimer = 0;
@@ -1378,7 +1381,7 @@ function showOver() {
   if (currentScore() > save.best) { save.best = currentScore(); persist(); }
   $('stScore').textContent = currentScore().toLocaleString('es');
   $('stBest').textContent = save.best.toLocaleString('es');
-  settleRewards();
+  finishRun();
   hideAll();
   $('over').hidden = false;
   $('againBtn').focus();
@@ -1705,7 +1708,7 @@ function update(dt) {
       if (time - lastSeenT > evadeNeed(level)) escape();
     }
     const lv = levelFromHeat(heat);
-    if (lv > level) { level = lv; maxLevel = Math.max(maxLevel, lv); toast(LEVEL_MSG[lv]); for (const e of enemies) e.alert = true; }
+    if (lv > level) { level = lv; maxLevel = Math.max(maxLevel, lv); if (LEVEL_MSG[lv]) toast(LEVEL_MSG[lv]); for (const e of enemies) e.alert = true; }
 
     const tier = timeTier();
     if (tier > lastTier) { lastTier = tier; toast(TIER_MSG[tier]); }
@@ -2536,6 +2539,14 @@ function gachaTick(dt) {
   }
 }
 // Recompensas al final de la partida: XP para el pase y monedas
+function finishRun() {
+  if (runSettled) return;
+  runSettled = true;
+  if (currentScore() > save.best) save.best = currentScore();
+  const r = settleRewards();
+  lastRun = `Última partida: +${fmtN(r.xp)} XP · +${fmtN(r.coins)} monedas${r.got.length ? ` · subiste al nivel ${passLevel()} del pase` : ''}`;
+  persist();
+}
 function settleRewards() {
   const parts = [['Tiempo', Math.floor(time * 2)], ['Derrapes', Math.floor(driftTotal / 8)], ['Escapes', escapes * 150], ['Patrullas', kills * 60], ['Persecución', Math.floor(wantedT)]];
   const base = parts.reduce((a, p) => a + p[1], 0), d = D();
@@ -2549,6 +2560,7 @@ function settleRewards() {
     <div class="pass-head"><span>Pase nivel ${lv} / ${PASS_MAX}</span><span>${lv >= PASS_MAX ? 'Completo' : `${fmtN(into)} / ${fmtN(XP_LEVEL)} XP`}</span></div>
     <div class="bar pass-bar"><i style="width:${lv >= PASS_MAX ? 100 : into / XP_LEVEL * 100}%"></i></div>
     ${got.length ? `<ul class="rw-got">${got.map(g => `<li>Nivel ${g.lv}: ${g.text}</li>`).join('')}</ul>` : ''}`;
+  return { xp, coins: coins + got.reduce((a, g) => a + (passReward(g.lv).coins || 0), 0), got };
 }
 
 /* ================= HUD: velocímetro y radar ================= */
@@ -2744,7 +2756,7 @@ $('startBtn').addEventListener('click', tryStart);
 $('againBtn').addEventListener('click', () => fadeTo(startGame));
 $('garageBtn').addEventListener('click', () => fadeTo(showGarage));
 $('resumeBtn').addEventListener('click', () => setPause(false));
-$('quitBtn').addEventListener('click', () => fadeTo(showGarage));
+$('quitBtn').addEventListener('click', () => fadeTo(() => { finishRun(); showGarage(); }));
 $('pauseBtn').addEventListener('click', () => setPause(true));
 for (const b of document.querySelectorAll('.sound-btn')) b.addEventListener('click', () => { Snd.init(); Snd.setOn(!save.sound); });
 
@@ -2830,7 +2842,7 @@ function step(now) {
     render(clock);
   }
 }
-window.__fuga = { introHits() { let n = 0; for (const c of [player, ...enemies]) { const r = c.r * 0.7; if (isSolid(tileAt(Math.floor(c.x / T), Math.floor(c.y / T))) && tileAt(Math.floor(c.x / T), Math.floor(c.y / T)) !== BLD) n++; if (boxes.some(b => c.x > b.x - r && c.x < b.x + b.w + r && c.y > b.y - r && c.y < b.y + b.h + r)) n++; if (obstacles.some(o => Math.hypot(o.x - c.x, o.y - c.y) < o.r + r)) n++; } return n; }, tp(x, y) { Object.assign(player, { x, y, vx: 0, vy: 0 }); cam.x = x; cam.y = y; }, esc() { escape(); }, calm(v) { calmT = v; }, st() { return { level, calmT: +calmT.toFixed(1), x: Math.round(player.x), y: Math.round(player.y), W: WORLD, enemies: enemies.length, time: +time.toFixed(1) }; }, stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; }, coins(n) { save.coins += n; persist(); if (state === 'garage') syncGarage(); }, time(t) { time = t; }, peek() { return { heli: heli ? 1 : 0, spikes: spikes.length, block: enemies.filter(e => e.mode === 'block').length, interceptor: enemies.filter(e => e.type === 'interceptor').length }; } };
+window.__fuga = { where() { const tx = Math.floor(player.x / T), ty = Math.floor(player.y / T), names = ['calle','vereda','edificio','pasto','estacionamiento','agua','plaza','industrial','campo','borde']; const near = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) near.push(names[tileAt(tx + i, ty + j)] || '?'); const e = edgeInfo(player); return { tile: names[tileAt(tx, ty)], near: [...new Set(near)].join(','), edge: Math.round(e.d), police: enemies.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 80).length, civ: civs.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 70).length, tree: obstacles.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < o.r + 30).length, box: boxes.filter(b => player.x > b.x - 30 && player.x < b.x + b.w + 30 && player.y > b.y - 30 && player.y < b.y + b.h + 30).length }; }, introHits() { let n = 0; for (const c of [player, ...enemies]) { const r = c.r * 0.7; if (isSolid(tileAt(Math.floor(c.x / T), Math.floor(c.y / T))) && tileAt(Math.floor(c.x / T), Math.floor(c.y / T)) !== BLD) n++; if (boxes.some(b => c.x > b.x - r && c.x < b.x + b.w + r && c.y > b.y - r && c.y < b.y + b.h + r)) n++; if (obstacles.some(o => Math.hypot(o.x - c.x, o.y - c.y) < o.r + r)) n++; } return n; }, tp(x, y) { Object.assign(player, { x, y, vx: 0, vy: 0 }); cam.x = x; cam.y = y; }, esc() { escape(); }, calm(v) { calmT = v; }, st() { return { level, calmT: +calmT.toFixed(1), x: Math.round(player.x), y: Math.round(player.y), W: WORLD, enemies: enemies.length, time: +time.toFixed(1) }; }, stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; }, coins(n) { save.coins += n; persist(); if (state === 'garage') syncGarage(); }, time(t) { time = t; }, peek() { return { heli: heli ? 1 : 0, spikes: spikes.length, block: enemies.filter(e => e.mode === 'block').length, interceptor: enemies.filter(e => e.type === 'interceptor').length }; } };
 startIntro();
 requestAnimationFrame(frame);
 })();
