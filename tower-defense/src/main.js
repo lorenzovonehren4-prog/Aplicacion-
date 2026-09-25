@@ -53,4 +53,18 @@ TD.App = class {
   }
 };
 
+// Onda al pulsar cualquier botón
+document.addEventListener('pointerdown', (ev) => {
+  const b = ev.target.closest && ev.target.closest('.btn');
+  if (!b || b.disabled) return;
+  const r = b.getBoundingClientRect(), size = Math.max(r.width, r.height);
+  const s = document.createElement('span');
+  s.className = 'ripple';
+  s.style.width = s.style.height = size + 'px';
+  s.style.left = (ev.clientX - r.left - size / 2) + 'px';
+  s.style.top = (ev.clientY - r.top - size / 2) + 'px';
+  b.appendChild(s);
+  setTimeout(() => s.remove(), 650);
+});
+
 window.addEventListener('DOMContentLoaded', () => { TD.app = new TD.App(); });

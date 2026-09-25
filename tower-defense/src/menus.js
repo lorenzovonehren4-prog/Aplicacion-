@@ -20,11 +20,19 @@ TD.BgScene = class {
     this.bats = Array.from({ length: 5 }, () => ({ x: Math.random(), y: 0.15 + Math.random() * 0.25, v: 0.02 + Math.random() * 0.03, p: Math.random() * 6 }));
     this.tracers = [];
     this.fireCd = 0;
+    // Brasas que suben, relámpagos ocasionales y explosiones lejanas
+    this.embers = Array.from({ length: 45 }, () => this.newEmber(true));
+    this.lightning = 0; this.lightningCd = 4 + Math.random() * 5; this.bolt = null;
+    this.blasts = [];
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }
   newZombie(x) {
     return { x: x === undefined ? -40 : x, speed: 18 + Math.random() * 22, size: 0.8 + Math.random() * 0.5, p: Math.random() * 6, hp: 1, dead: 0, lane: Math.random() };
+  }
+  newEmber(anywhere) {
+    return { x: Math.random(), y: anywhere ? Math.random() : 1.05, v: 0.02 + Math.random() * 0.05, s: 1 + Math.random() * 2.2,
+             p: Math.random() * 6, hue: Math.random() < 0.7 ? '255,140,60' : '255,210,120' };
   }
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -65,9 +73,28 @@ TD.BgScene = class {
         const z = alive[0];
         const zy = groundY - 8 + z.lane * 26;
         this.tracers.push({ x1: fortX - 10, y1: groundY - 120, x2: z.x, y2: zy - 14 * z.size, t: 0 });
-        if (Math.random() < 0.45) z.dead = 0.01;
+        if (Math.random() < 0.45) { z.dead = 0.01; this.blasts.push({ x: z.x, y: zy - 14 * z.size, t: 0 }); }
       }
     }
+    for (const e of this.embers) {
+      e.y -= e.v * dt; e.p += dt * 2;
+      if (e.y < -0.05) Object.assign(e, this.newEmber(false));
+    }
+    // Relámpago
+    this.lightningCd -= dt;
+    if (this.lightningCd <= 0) {
+      this.lightningCd = 5 + Math.random() * 7;
+      this.lightning = 1;
+      const x0 = Math.random() * this.w * 0.7;
+      const pts = [{ x: x0, y: 0 }];
+      let x = x0, y = 0;
+      while (y < this.h * 0.6) { y += 20 + Math.random() * 30; x += (Math.random() - 0.5) * 60; pts.push({ x, y }); }
+      this.bolt = pts;
+    }
+    if (this.lightning > 0) this.lightning = Math.max(0, this.lightning - dt * 2.5);
+    // Explosiones cuando cae un zombi
+    for (const b of this.blasts) b.t += dt;
+    this.blasts = this.blasts.filter(b => b.t < 0.5);
     for (const tr of this.tracers) tr.t += dt;
     this.tracers = this.tracers.filter(tr => tr.t < 0.12);
   }
@@ -82,6 +109,12 @@ TD.BgScene = class {
       c.fillStyle = '#fff'; c.fillRect(s.x * w, s.y * h, s.s, s.s);
     }
     c.globalAlpha = 1;
+    // Relámpago
+    if (this.lightning > 0 && this.bolt) {
+      c.fillStyle = 'rgba(200,190,255,' + this.lightning * 0.18 + ')'; c.fillRect(0, 0, w, h);
+      c.strokeStyle = 'rgba(230,225,255,' + this.lightning + ')'; c.lineWidth = 2.5;
+      c.beginPath(); this.bolt.forEach((p, i) => i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)); c.stroke();
+    }
     // Luna
     const mx = w * 0.78, my = h * 0.2, mr = Math.min(w, h) * 0.07;
     const glow = c.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 4);
@@ -121,6 +154,16 @@ TD.BgScene = class {
     for (let i = 0; i < 5; i++) c.fillRect(fx - 40 + i * 11, groundY - 162, 7, 12);
     c.fillStyle = 'rgba(255,190,90,' + (0.6 + 0.3 * Math.sin(t * 3)) + ')';
     c.fillRect(fx - 22, groundY - 128, 10, 14); c.fillRect(fx + 30, groundY - 80, 10, 14);
+    // Reflector que barre el cielo desde la torre
+    const la = -Math.PI / 2 - 0.5 + Math.sin(t * 0.5) * 0.7;
+    const lx = fx - 15, ly = groundY - 150;
+    const beam = c.createLinearGradient(lx, ly, lx + Math.cos(la) * h, ly + Math.sin(la) * h);
+    beam.addColorStop(0, 'rgba(255,240,200,0.28)'); beam.addColorStop(1, 'rgba(255,240,200,0)');
+    c.fillStyle = beam;
+    c.beginPath(); c.moveTo(lx, ly);
+    c.lineTo(lx + Math.cos(la - 0.09) * h * 1.2, ly + Math.sin(la - 0.09) * h * 1.2);
+    c.lineTo(lx + Math.cos(la + 0.09) * h * 1.2, ly + Math.sin(la + 0.09) * h * 1.2);
+    c.closePath(); c.fill();
     // Balas trazadoras
     c.strokeStyle = 'rgba(255,230,150,0.9)'; c.lineWidth = 2;
     for (const tr of this.tracers) { c.beginPath(); c.moveTo(tr.x1, tr.y1); c.lineTo(tr.x2, tr.y2); c.stroke(); }
@@ -140,6 +183,19 @@ TD.BgScene = class {
       c.save(); c.translate(0, -10 * s); c.rotate(-Math.sin(z.p) * 0.4); c.fillRect(0, 0, 4 * s, 12 * s); c.restore();
       c.fillStyle = '#ff2a2a'; c.fillRect(2 * s, -37 * s + bob, 2 * s, 2 * s);
       c.restore();
+    }
+    // Explosiones
+    for (const b of this.blasts) {
+      const k = 1 - b.t / 0.5;
+      c.fillStyle = 'rgba(255,170,60,' + k * 0.8 + ')';
+      c.beginPath(); c.arc(b.x, b.y, 6 + (1 - k) * 22, 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,240,200,' + k + ')';
+      c.beginPath(); c.arc(b.x, b.y, 4 + (1 - k) * 8, 0, Math.PI * 2); c.fill();
+    }
+    // Brasas
+    for (const e of this.embers) {
+      c.fillStyle = 'rgba(' + e.hue + ',' + (0.35 + 0.35 * Math.sin(e.p * 3)) + ')';
+      c.beginPath(); c.arc(e.x * w + Math.sin(e.p) * 12, e.y * h, e.s, 0, Math.PI * 2); c.fill();
     }
     // Niebla
     const fog = c.createLinearGradient(0, h * 0.7, 0, h);
@@ -393,7 +449,7 @@ TD.Menus = class {
         '<h3>🗼 Torres</h3>Elige una torre en el panel derecho y haz clic en una casilla libre (fuera del camino). Verás su alcance antes de colocarla. Haz clic en una torre construida para <b>mejorarla</b> (hasta nivel 5 ★) o <b>venderla</b> por el 70% de lo invertido. En el nivel 5 cada torre desbloquea una habilidad especial.' +
         '<h3>🦶🪽👁️ Tipos de ataque</h3>Cada torre muestra a qué puede atacar: <b>🦶 terrestres</b>, <b>🪽 voladores</b> y <b>👁️ camuflados</b>. Los camuflados solo los ven las torres de detección o las que están cerca de un <b>Radar</b>. Los <b>🛡️ blindados</b> restan daño a cada golpe: usa armas potentes o perforantes (Francotirador, Tanque).' +
         '<h3>💵 Plata</h3>Ganas plata al eliminar zombis y al terminar cada oleada. Las <b>Granjas</b>, <b>Minas de Plata</b> y <b>Bancos</b> generan más. ¡Pasa el ratón sobre las monedas de la Mina de Plata para recogerlas con +25%!' +
-        '<h3>⏩ Adelantar oleadas</h3>Puedes lanzar la siguiente oleada aunque la actual no haya terminado: ganas plata extra. Usa <b>x1.5, x2 o x3</b> para acelerar el juego.' +
+        '<h3>⏩ Ritmo de las oleadas</h3>Una oleada termina cuando eliminas a todos sus zombis. Entonces tienes <b>10 segundos</b> para prepararte antes de que llegue la siguiente (o pulsa <kbd>N</kbd> para empezarla ya y ganar plata extra). Mientras dura una oleada puedes <b>adelantar la siguiente una sola vez</b>. Usa <b>x1.5, x2 o x3</b> para acelerar el juego.' +
         '<h3>🦸 Héroe y habilidades</h3>Coloca tu héroe gratis al empezar; sube de nivel solo al eliminar zombis cerca. Las habilidades (✈️🧊📦🧱💣) se recargan con el tiempo.' +
         '<h3>🌙🌪️🌋 Eventos</h3>Cada mapa tiene su evento: noches que reducen el alcance, tormentas que ralentizan la cadencia y erupciones que aturden torres.';
     } else if (tab === 'controles') {

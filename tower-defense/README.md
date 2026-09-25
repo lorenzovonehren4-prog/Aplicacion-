@@ -25,7 +25,7 @@ El progreso (nivel, rango, medallas, estrellas y logros) se guarda en el navegad
 | 🧟 **14 zombis y 3 jefes** | Terrestres 🦶, voladores 🪽, camuflados 👁️ y blindados 🛡️. |
 | 🦸 **3 héroes** | Suben de nivel durante la partida y se pueden mover. |
 | 💥 **5 habilidades** | Bombardeo, granada de hielo, suministro aéreo, barricadas y minas. |
-| ⏩ **Ritmo** | Velocidades x1, x1.5, x2 y x3, adelantar oleadas (con plata extra) y oleadas automáticas. |
+| ⏩ **Ritmo** | Al eliminar a todos los zombis de una oleada tienes 10 s para prepararte antes de la siguiente (o empiézala ya por plata extra). Durante una oleada puedes adelantar la siguiente una sola vez. Velocidades x1, x1.5, x2 y x3. |
 | ⭐ **Progresión** | 1 a 3 estrellas según las vidas que conserves, puntuación con récords, XP y **14 rangos militares** (de Recluta a Leyenda del Apocalipsis). |
 | 🎖️ **Metajuego** | Desbloqueo de torres, héroes y habilidades por nivel; Cuartel de mejoras permanentes pagadas con medallas; 17 logros; recompensa diaria con racha; 3 misiones diarias. |
 | ♾️ **Modos** | Campaña, Infinito y 4 Desafíos. |
@@ -48,6 +48,7 @@ tower-defense/
 │   ├── enemies.js     zombis: movimiento, estados, jefes y barras de vida
 │   ├── projectiles.js proyectiles, minas, napalm y efectos visuales
 │   ├── towers.js      torres y sus comportamientos (BEHAVIORS)
+│   ├── sprites.js     dibujo de las torres: soldados, nidos de ametralladora, tanques…
 │   ├── heroes.js      héroes (extienden Tower)
 │   ├── game.js        bucle con requestAnimationFrame + delta time, oleadas, economía
 │   ├── ui.js          HUD, tienda, panel de torre, habilidades, resultados
@@ -59,7 +60,8 @@ tower-defense/
 ### ➕ Añadir una torre nueva
 1. Añade una entrada en `CONFIG.towers` (`config.js`) con precio, estadísticas, crecimiento por nivel, a qué ataca (`targets`, `detect`) y su `perk` de nivel 5.
 2. Si reutiliza un comportamiento existente (`bullet`, `splash`, `chain`, `slow`…), ya está lista.
-3. Si necesita una mecánica nueva, registra `TD.BEHAVIORS.miComportamiento = { update(t, dt) {…}, draw(t, ctx) {…} }` en `towers.js`.
+3. Si necesita una mecánica nueva, registra `TD.BEHAVIORS.miComportamiento = { update(t, dt) {…} }` en `towers.js`.
+4. Opcional: dale aspecto propio añadiendo `TD.SPRITES.miTorre = (t, ctx) => {…}` en `sprites.js` (por ejemplo con `TD.drawSoldier`).
 
 Los zombis, las oleadas, los mapas, los héroes, las habilidades, los rangos, los logros y las mejoras del Cuartel también se definen solo en `config.js`.
 

@@ -147,25 +147,32 @@ TD.Tower = class {
     const S = TD.CONFIG.grid.cell;
     const cat = TD.CONFIG.categories[this.def.category];
     const x = this.x, y = this.y;
-    // Base
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(x - S * 0.42 + 3, y - S * 0.42 + 4, S * 0.84, S * 0.84);
-    ctx.fillStyle = TD.U.shade(cat.color, -0.45);
-    this.roundRect(ctx, x - S * 0.42, y - S * 0.42, S * 0.84, S * 0.84, 7); ctx.fill();
-    ctx.fillStyle = TD.U.shade(cat.color, -0.2);
-    this.roundRect(ctx, x - S * 0.36, y - S * 0.36, S * 0.72, S * 0.72, 6); ctx.fill();
+    const sprite = TD.SPRITES && TD.SPRITES[this.id];
+    // Base: parcela de tierra con el color de la categoría
+    ctx.fillStyle = 'rgba(30,24,16,0.28)';
+    this.roundRect(ctx, x - S * 0.44, y - S * 0.44, S * 0.88, S * 0.88, 9); ctx.fill();
+    if (!sprite) {
+      ctx.fillStyle = TD.U.shade(cat.color, -0.45);
+      this.roundRect(ctx, x - S * 0.4, y - S * 0.4, S * 0.8, S * 0.8, 7); ctx.fill();
+      ctx.fillStyle = TD.U.shade(cat.color, -0.2);
+      this.roundRect(ctx, x - S * 0.34, y - S * 0.34, S * 0.68, S * 0.68, 6); ctx.fill();
+    }
+    ctx.strokeStyle = cat.color; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.5;
+    this.roundRect(ctx, x - S * 0.44, y - S * 0.44, S * 0.88, S * 0.88, 9); ctx.stroke();
+    ctx.globalAlpha = 1;
     // Marco según el nivel
     const lvlColors = [null, '#cd7f32', '#c0c8d0', '#ffd84a', '#d27bff'];
     const lc = lvlColors[this.level - 1];
     if (lc) {
       ctx.strokeStyle = lc; ctx.lineWidth = this.level >= 5 ? 3 : 2;
       if (this.level >= 5) { ctx.shadowColor = lc; ctx.shadowBlur = 10 + Math.sin(this.anim * 4) * 4; }
-      this.roundRect(ctx, x - S * 0.42, y - S * 0.42, S * 0.84, S * 0.84, 7); ctx.stroke();
+      this.roundRect(ctx, x - S * 0.44, y - S * 0.44, S * 0.88, S * 0.88, 9); ctx.stroke();
       ctx.shadowBlur = 0;
     }
 
     const b = TD.BEHAVIORS[this.def.behavior];
-    if (b && b.draw) b.draw(this, ctx);
+    if (sprite) sprite(this, ctx);
+    else if (b && b.draw) b.draw(this, ctx);
     else this.drawTurret(ctx);
 
     // Indicadores de nivel (puntos)
@@ -485,8 +492,7 @@ TD.BEHAVIORS = {
       }
       TD.Audio.play('laser');
     },
-    draw(t, ctx) {
-      t.drawTurret(ctx);
+    drawTop(t, ctx) {
       if (!t.beam) return;
       const w = 3 + Math.sin(t.anim * 30) * 1.2;
       ctx.lineCap = 'round';

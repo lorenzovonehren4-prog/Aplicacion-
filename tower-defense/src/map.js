@@ -168,22 +168,6 @@ TD.GameMap = class {
       ctx.beginPath(); ctx.arc(p.x + (rnd() - 0.5) * S * 0.6, p.y + (rnd() - 0.5) * S * 0.6, 1.5 + rnd() * 2, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Ruta de los voladores: línea punteada con flechas
-    ctx.save();
-    ctx.setLineDash([6, 10]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(180,225,255,0.35)';
-    ctx.beginPath();
-    this.air.points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(180,225,255,0.5)';
-    for (let d = S * 2; d < this.air.len - S; d += S * 4) {
-      const p = this.airPointAt(d);
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
-      ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-4, -5); ctx.lineTo(-4, 5); ctx.closePath(); ctx.fill();
-      ctx.restore();
-    }
-    ctx.restore();
-
     // Decoración estática
     for (const d of this.decos) if (d.type !== 'lava' && d.type !== 'molino') this.drawDeco(ctx, d, rnd);
 
@@ -271,6 +255,26 @@ TD.GameMap = class {
     ctx.restore();
   }
 
+  // Ruta aérea estática (para las miniaturas del menú)
+  drawAirHint(ctx) {
+    const S = this.cell;
+    ctx.save();
+    ctx.setLineDash([6, 10]); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(170,225,255,0.85)';
+    ctx.beginPath();
+    this.air.points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(180,225,255,0.5)';
+    for (let d = S * 2; d < this.air.len - S; d += S * 4) {
+      const p = this.airPointAt(d);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+      ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-4, -5); ctx.lineTo(-4, 5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+  }
+
   // Dibuja una miniatura del mapa en un lienzo (para el menú)
   drawPreview(canvas) {
     if (!this.bg) this.buildBackground();
@@ -279,6 +283,7 @@ TD.GameMap = class {
     ctx.save();
     ctx.scale(canvas.width / this.width, canvas.height / this.height);
     this.draw(ctx, 0);
+    this.drawAirHint(ctx);
     ctx.restore();
   }
 };

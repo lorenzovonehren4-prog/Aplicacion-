@@ -50,8 +50,8 @@ TD.Game = class {
     this.speedIndex = 0;
     this.paused = false;
     this.over = false;
-    this.autoWave = false;
-    this.autoTimer = 0;
+    this.countdown = null;     // segundos hasta la siguiente oleada (entre oleadas)
+    this.earlyUsed = false;    // ya se adelantó una oleada durante la actual
     this.time = 0;
 
     // Selección / modos de entrada
@@ -161,10 +161,10 @@ TD.Game = class {
 
     this.fx.update(dt);
 
-    // Oleada automática
-    if (this.autoWave && this.waveNum < this.totalWaves && this.activeWaves().length === 0) {
-      this.autoTimer += dt;
-      if (this.autoTimer > 1.5) { this.autoTimer = 0; this.startNextWave(); }
+    // Cuenta atrás de preparación entre oleadas
+    if (this.countdown !== null && !this.waveActive) {
+      this.countdown -= dt;
+      if (this.countdown <= 0) { this.countdown = null; this.startNextWave(); }
     }
 
     if (this.lives <= 0) this.endGame(false);
@@ -215,14 +215,21 @@ TD.Game = class {
   startNextWave() {
     if (this.over || this.waveNum >= this.totalWaves) return false;
     const C = TD.CONFIG;
-    // Adelantar: si todavía hay oleadas en curso, da plata extra
+    // Adelantar: con oleadas en curso solo se permite una vez, y da plata extra
     if (this.waveActive) {
+      if (this.earlyUsed) { TD.Audio.play('error'); this.emit('hint', '⏳ Ya adelantaste una oleada: acaba con los zombis actuales', 1800); return false; }
+      this.earlyUsed = true;
       const bonus = Math.round(C.earlyCallBonus.base + C.earlyCallBonus.perWave * (this.waveNum + 1));
       this.addMoney(bonus);
       this.stats.earlyCalls++;
       TD.Profile.addStat('earlyCalls');
       this.fx.text(this.map.width / 2, 40, '¡Adelantada! +' + bonus + ' 💵', '#ffd84a', 18);
+    } else if (this.countdown !== null && this.countdown > 0) {
+      // Saltarse la preparación también da plata
+      const bonus = Math.round(this.countdown * C.prepSkipBonus);
+      if (bonus > 0) { this.addMoney(bonus); this.fx.text(this.map.width / 2, 40, '¡Sin esperar! +' + bonus + ' 💵', '#ffd84a', 18); }
     }
+    this.countdown = null;
     this.waveNum++;
     const num = this.waveNum;
     const wave = { num, spawners: [], alive: 0, done: false, night: false };
@@ -308,6 +315,11 @@ TD.Game = class {
     this.stats.score += 100 * w.num;
     if (this.mode === 'endless' && w.num >= 30) TD.Profile.unlockAchievement('infinito30');
     TD.Audio.play('coin');
+    // Todas las oleadas limpias: se reinicia el adelanto y empieza la preparación
+    if (!this.waveActive) {
+      this.earlyUsed = false;
+      if (this.waveNum < this.totalWaves) this.countdown = C.prepTime;
+    }
     this.emit('onWaveComplete', w.num, total);
   }
 
@@ -735,6 +747,7 @@ TD.Game = class {
     if (this.shakeAmt > 0) ctx.translate(TD.U.rand(-1, 1) * this.shakeAmt * 0.5, TD.U.rand(-1, 1) * this.shakeAmt * 0.5);
 
     this.map.draw(ctx, this.time);
+    this.drawAirRoute(ctx);
     for (const p of this.puddles) p.draw(ctx);
     for (const m of this.mines) m.draw(ctx);
     for (const b of this.barricades) this.drawBarricade(ctx, b);
@@ -764,6 +777,7 @@ TD.Game = class {
     }
 
     this.fx.draw(ctx);
+    this.drawCountdown(ctx);
 
     // Capas de eventos
     if (this.nightActive) {
@@ -860,6 +874,78 @@ TD.Game = class {
       ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1;
       ctx.strokeRect(h.c * S + 0.5, h.r * S + 0.5, S - 1, S - 1);
     }
+  }
+
+  // ¿Hay voladores en el mapa o en la próxima oleada?
+  airIncoming() {
+    if (this.enemies.some(e => e.flying)) return true;
+    if (this.waveActive) return false;
+    return this.wavePreview(this.waveNum + 1).some(p => TD.CONFIG.enemies[p.type].air);
+  }
+
+  // Ruta de los voladores: línea brillante animada con flechas en movimiento
+  drawAirRoute(ctx) {
+    const air = this.map.air, S = TD.CONFIG.grid.cell;
+    const alert = this.airIncoming();
+    const k = alert ? 0.75 + 0.25 * Math.sin(this.time * 6) : 0.55;
+    const trace = () => { ctx.beginPath(); air.points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); };
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = alert ? 'rgba(255,120,120,' + 0.22 * k + ')' : 'rgba(90,190,255,0.16)';
+    ctx.lineWidth = 18; trace();
+    ctx.setLineDash([16, 12]); ctx.lineDashOffset = -this.time * 45;
+    ctx.strokeStyle = alert ? 'rgba(255,170,170,' + k + ')' : 'rgba(170,225,255,' + k + ')';
+    ctx.lineWidth = 3; trace();
+    ctx.setLineDash([]);
+    // Flechas que avanzan por la ruta
+    const spacing = S * 2.5;
+    ctx.fillStyle = alert ? 'rgba(255,200,200,0.9)' : 'rgba(210,240,255,0.85)';
+    for (let d = (this.time * 45) % spacing; d < air.len; d += spacing) {
+      const p = this.map.airPointAt(d);
+      if (p.x < 4 || p.x > this.map.width - 4) continue;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+      ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -7); ctx.lineTo(-2, 0); ctx.lineTo(-5, 7); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    // Insignia de entrada
+    const e0 = this.map.airPointAt(S * 1.2);
+    const e = { x: TD.U.clamp(e0.x, 40, this.map.width - 40), y: TD.U.clamp(e0.y, 18, this.map.height - 34) };
+    ctx.fillStyle = alert ? 'rgba(160,30,30,0.9)' : 'rgba(20,50,80,0.85)';
+    ctx.strokeStyle = alert ? '#ffb0b0' : '#aee1ff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(e.x, e.y, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('✈', e.x, e.y + 1);
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = alert ? '#ffd0d0' : '#d8f0ff';
+    ctx.fillText(alert ? '¡AÉREOS!' : 'RUTA AÉREA', e.x, e.y + 26);
+    ctx.restore();
+  }
+
+  // Cuenta atrás entre oleadas
+  drawCountdown(ctx) {
+    if (this.countdown === null || this.over) return;
+    const secs = Math.ceil(this.countdown);
+    if (this.lastTick !== secs) { this.lastTick = secs; if (secs <= 3) TD.Audio.play('click'); }
+    const cx = this.map.width / 2, cy = 44, w = 310, h = 54;
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,14,20,0.82)'; ctx.strokeStyle = secs <= 3 ? '#ff7a5a' : '#ffd84a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 14) : ctx.rect(cx - w / 2, cy - h / 2, w, h); ctx.fill(); ctx.stroke();
+    // Anillo de progreso
+    const f = this.countdown / TD.CONFIG.prepTime;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(cx - w / 2 + 30, cy, 17, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = secs <= 3 ? '#ff7a5a' : '#ffd84a';
+    ctx.beginPath(); ctx.arc(cx - w / 2 + 30, cy, 17, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke();
+    const pop = 1 + Math.max(0, (this.countdown % 1) - 0.7) * 1.2;
+    ctx.fillStyle = '#fff'; ctx.font = 'bold ' + Math.round(18 * pop) + 'px "Trebuchet MS", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(secs, cx - w / 2 + 30, cy + 1);
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 15px "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffd84a';
+    ctx.fillText('Oleada ' + (this.waveNum + 1) + ' en camino', cx - w / 2 + 58, cy - 8);
+    ctx.font = '12px "Trebuchet MS", sans-serif'; ctx.fillStyle = '#c9d3df';
+    ctx.fillText('¡Prepárate! · N = empezar ya (+' + Math.round(this.countdown * TD.CONFIG.prepSkipBonus) + ' 💵)', cx - w / 2 + 58, cy + 11);
+    ctx.restore();
   }
 
   drawBarricade(ctx, b) {

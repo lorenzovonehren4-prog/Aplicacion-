@@ -38,7 +38,6 @@ TD.GameUI = class {
 
     this.$('btn-wave').addEventListener('click', () => { if (this.game) this.game.startNextWave(); this.onHud(); });
     this.$('btn-speed').addEventListener('click', () => { if (this.game) { this.game.cycleSpeed(); TD.Audio.play('click'); } });
-    this.$('btn-auto').addEventListener('click', () => { if (this.game) { this.game.autoWave = !this.game.autoWave; TD.Audio.play('click'); this.onHud(); } });
     this.$('btn-pause').addEventListener('click', () => this.togglePause());
     this.$('pause').addEventListener('click', (ev) => {
       const act = ev.target.dataset && ev.target.dataset.act;
@@ -270,14 +269,19 @@ TD.GameUI = class {
     this.$('hud-score').textContent = TD.U.fmt(Math.round(g.stats.score * g.diff.scoreMul));
     this.$('btn-speed').textContent = 'x' + g.speed;
     this.$('btn-speed').classList.toggle('active', g.speed > 1);
-    this.$('btn-auto').classList.toggle('active', g.autoWave);
 
     const bw = this.$('btn-wave');
     if (g.waveNum >= g.totalWaves) { bw.disabled = true; bw.textContent = '🏁 Última oleada'; bw.classList.remove('early'); }
-    else if (g.waveActive) {
+    else if (g.waveActive && g.earlyUsed) {
+      bw.disabled = true; bw.classList.remove('early');
+      bw.textContent = '⏳ Acaba con la oleada';
+    } else if (g.waveActive) {
       const C = TD.CONFIG.earlyCallBonus;
       bw.disabled = false; bw.classList.add('early');
       bw.textContent = '⏩ Adelantar +' + Math.round(C.base + C.perWave * (g.waveNum + 1)) + ' 💵';
+    } else if (g.countdown !== null) {
+      bw.disabled = false; bw.classList.add('early');
+      bw.textContent = '▶ Oleada ' + (g.waveNum + 1) + ' en ' + Math.ceil(g.countdown) + 's';
     } else { bw.disabled = false; bw.classList.remove('early'); bw.textContent = '▶ Iniciar oleada ' + (g.waveNum + 1); }
 
     // Vista previa de la próxima oleada

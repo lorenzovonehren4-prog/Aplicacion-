@@ -36,11 +36,17 @@ TD.CONFIG = {
   // Recompensa al terminar una oleada: base + por número de oleada
   waveBonus: { base: 20, perWave: 4 },
 
-  // Plata extra por adelantar una oleada: base + por número de oleada
+  // Plata extra por adelantar una oleada: base + por número de oleada.
+  // Solo se puede adelantar UNA vez mientras dura la oleada en curso.
   earlyCallBonus: { base: 10, perWave: 3 },
 
-  // Crecimiento de la vida de los enemigos por oleada (+7% por oleada)
-  hpGrowthPerWave: 0.07,
+  // Segundos de preparación entre oleadas (empieza sola al terminar la cuenta)
+  prepTime: 10,
+  // Plata por cada segundo de preparación que te saltes
+  prepSkipBonus: 2,
+
+  // Crecimiento de la vida de los enemigos por oleada (+10% por oleada)
+  hpGrowthPerWave: 0.1,
 
   // Racha de bajas: eliminaciones en poco tiempo dan plata extra
   killStreak: { window: 1.2, minKills: 5, bonusPerKill: 1 },
@@ -59,9 +65,9 @@ TD.CONFIG = {
   // Dificultades
   // ---------------------------------------------------------------
   difficulties: {
-    aprendiz: { name: 'Aprendiz', icon: '🟢', lives: 30, money: 260, hpMul: 0.8,  speedMul: 0.9,  waveBonusMul: 1.5,  scoreMul: 1.0, xpMul: 0.8, medalMul: 1 },
-    guardian: { name: 'Guardián', icon: '🟡', lives: 20, money: 220, hpMul: 1.0,  speedMul: 1.0,  waveBonusMul: 1.0,  scoreMul: 1.5, xpMul: 1.0, medalMul: 2 },
-    leyenda:  { name: 'Leyenda',  icon: '🔴', lives: 10, money: 200, hpMul: 1.45, speedMul: 1.1,  waveBonusMul: 0.75, scoreMul: 2.2, xpMul: 1.5, medalMul: 3 }
+    aprendiz: { name: 'Aprendiz', icon: '🟢', lives: 30, money: 260, hpMul: 0.95, speedMul: 0.9,  waveBonusMul: 1.5,  scoreMul: 1.0, xpMul: 0.8, medalMul: 1 },
+    guardian: { name: 'Guardián', icon: '🟡', lives: 20, money: 220, hpMul: 1.2,  speedMul: 1.0,  waveBonusMul: 1.0,  scoreMul: 1.5, xpMul: 1.0, medalMul: 2 },
+    leyenda:  { name: 'Leyenda',  icon: '🔴', lives: 10, money: 200, hpMul: 1.7,  speedMul: 1.1,  waveBonusMul: 0.75, scoreMul: 2.2, xpMul: 1.5, medalMul: 3 }
   },
 
   // Estrellas según el porcentaje de vidas conservadas al ganar
@@ -123,7 +129,7 @@ TD.CONFIG = {
       name: 'Fragua Volcánica',
       icon: '🌋',
       desc: 'Curvas cerradas y ríos de lava. Las torres junto a la lava disparan +15% más rápido, pero las erupciones aturden torres.',
-      hpMul: 1.2,
+      hpMul: 1.15,
       boss: 'dragon',
       palette: { grass: '#3b3440', grass2: '#443c4a', path: '#6b5d59', pathEdge: '#4a3f3c', deco: '#ff6a1f' },
       path: [[-1, 1], [6, 1], [6, 5], [2, 5], [2, 10], [10, 10], [10, 3], [14, 3], [14, 8], [17, 8], [17, 2], [20, 2]],
@@ -426,6 +432,7 @@ TD.CONFIG = {
   heroes: {
     rex: {
       name: 'Sargento Rex', icon: '🦁', color: '#d0873a', unlock: 1,
+      look: { uniform: '#8a6a3a', beret: '#a02a2a', gun: { len: 0.42, w: 0.06 }, pack: 'mochila' },
       desc: 'Potencia a las torres cercanas (+15% daño). Nivel 3: lanza granadas.',
       targets: { ground: true, air: true }, detect: false,
       stats: { damage: 10, range: 2.8, rate: 1.6, auraRange: 2.5, auraDmg: 0.15 },
@@ -433,6 +440,7 @@ TD.CONFIG = {
     },
     luna: {
       name: 'Doc Luna', icon: '🩺', color: '#e46aa4', unlock: 4,
+      look: { uniform: '#e8e8ee', helmet: '#e46aa4', gun: { len: 0.3, w: 0.05 }, pack: 'mochila' },
       desc: 'Ve camuflados. Recupera 1 vida cada 3 oleadas y despierta torres aturdidas.',
       targets: { ground: true, air: true }, detect: true,
       stats: { damage: 7, range: 3.0, rate: 2.4, auraRange: 2.5 },
@@ -440,6 +448,7 @@ TD.CONFIG = {
     },
     chispa: {
       name: 'Ingeniera Chispa', icon: '🔧', color: '#f0c43a', unlock: 8,
+      look: { uniform: '#4a5a7a', helmet: '#f0c43a', gun: { len: 0.34, w: 0.07, color: '#6a6f78' }, pack: 'tanques' },
       desc: 'Despliega torretas temporales. Nivel 4: torretas dobles.',
       targets: { ground: true, air: true }, detect: false,
       stats: { damage: 8, range: 2.6, rate: 1.8 },

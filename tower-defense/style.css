@@ -385,3 +385,109 @@ input[type=range] { width: 180px; accent-color: var(--gold); }
   .ability.hero { width: 76px; }
   .ability .name { display: none; }
 }
+
+/* ------------------------------------------------------------------ */
+/* Animaciones de los menús                                            */
+/* ------------------------------------------------------------------ */
+/* Entrada de pantallas: aparece con desenfoque y leve zoom */
+.screen.active:not(#screen-game) { animation: screenIn 0.5s cubic-bezier(.2, .9, .3, 1); }
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* Elementos que entran uno tras otro */
+.menu-buttons > *, .maps > *, .options-row > *, .barracks > *, .ach-grid > *, .ranks > *,
+.stat-list > *, .bestiary > *, .daily-day, .mission, .help-tabs > * {
+  animation: popIn 0.45s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+@keyframes popIn { from { opacity: 0; transform: translateY(14px) scale(0.94); } to { opacity: 1; transform: none; } }
+.menu-buttons > *:nth-child(1), .maps > *:nth-child(1), .options-row > *:nth-child(1), .daily-day:nth-child(1) { animation-delay: 0.05s; }
+.menu-buttons > *:nth-child(2), .maps > *:nth-child(2), .options-row > *:nth-child(2), .daily-day:nth-child(2) { animation-delay: 0.1s; }
+.menu-buttons > *:nth-child(3), .maps > *:nth-child(3), .options-row > *:nth-child(3), .daily-day:nth-child(3) { animation-delay: 0.15s; }
+.menu-buttons > *:nth-child(4), .daily-day:nth-child(4) { animation-delay: 0.2s; }
+.menu-buttons > *:nth-child(5), .daily-day:nth-child(5) { animation-delay: 0.25s; }
+.menu-buttons > *:nth-child(6), .daily-day:nth-child(6) { animation-delay: 0.3s; }
+.menu-buttons > *:nth-child(7), .daily-day:nth-child(7) { animation-delay: 0.35s; }
+.menu-buttons > *:nth-child(8) { animation-delay: 0.4s; }
+.barracks > *:nth-child(n+2), .ach-grid > *:nth-child(n+2), .bestiary > *:nth-child(n+2), .ranks > *:nth-child(n+2), .stat-list > *:nth-child(n+2) { animation-delay: 0.06s; }
+.barracks > *:nth-child(n+4), .ach-grid > *:nth-child(n+4), .bestiary > *:nth-child(n+4), .ranks > *:nth-child(n+4), .stat-list > *:nth-child(n+4) { animation-delay: 0.12s; }
+.barracks > *:nth-child(n+7), .ach-grid > *:nth-child(n+7), .bestiary > *:nth-child(n+7), .ranks > *:nth-child(n+7), .stat-list > *:nth-child(n+7) { animation-delay: 0.18s; }
+.ach-grid > *:nth-child(n+10), .bestiary > *:nth-child(n+10), .ranks > *:nth-child(n+10), .stat-list > *:nth-child(n+10) { animation-delay: 0.24s; }
+
+/* Brillo que cruza los botones al pasar el ratón */
+.btn { position: relative; overflow: hidden; }
+.btn::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg); pointer-events: none; opacity: 0;
+}
+.btn:hover:not(:disabled)::after { animation: shine 0.7s ease; }
+@keyframes shine { from { left: -60%; opacity: 1; } to { left: 130%; opacity: 1; } }
+.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+
+/* Onda al pulsar */
+.ripple { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.45); transform: scale(0); animation: ripple 0.6s ease-out forwards; pointer-events: none; }
+@keyframes ripple { to { transform: scale(3.2); opacity: 0; } }
+
+/* Botón JUGAR: degradado vivo y latido */
+.menu-buttons .btn-play {
+  background: linear-gradient(90deg, #3fae4a, #78ea83, #3fae4a);
+  background-size: 200% 100%;
+  animation: popIn 0.45s cubic-bezier(.2, 1.4, .4, 1) both, playFlow 3s linear infinite, playBeat 2.2s ease-in-out infinite;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+@keyframes playFlow { to { background-position: 200% 0; } }
+@keyframes playBeat { 0%, 100% { box-shadow: 0 0 0 0 rgba(120, 234, 131, 0.5); } 50% { box-shadow: 0 0 0 10px rgba(120, 234, 131, 0); } }
+
+/* Logo con destello metálico y flotación */
+.logo {
+  background: linear-gradient(100deg, #e06a2a 0%, #ffd84a 30%, #fff6d0 45%, #ffd84a 60%, #e06a2a 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  animation: logoShine 5s linear infinite, float 4s ease-in-out infinite;
+}
+@keyframes logoShine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+@keyframes float { 50% { transform: translateY(-4px); } }
+
+/* Tarjetas que se elevan */
+.card { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+.map-card:hover, .opt:hover, .bk:hover, .ach:hover, .beast:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 216, 74, 0.35); }
+.map-card canvas { transition: transform 0.4s ease, filter 0.4s; }
+.map-card:hover canvas { transform: scale(1.04); filter: saturate(1.25) brightness(1.08); }
+.map-card { overflow: hidden; }
+.opt.selected, .map-card.selected { animation: selectedGlow 2s ease-in-out infinite; }
+@keyframes selectedGlow { 50% { box-shadow: 0 0 0 2px var(--gold), 0 0 24px rgba(255, 216, 74, 0.45); } }
+
+/* Barra de XP con brillo en movimiento */
+.xpbar > i { position: relative; overflow: hidden; }
+.xpbar > i::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: xpShine 2.2s ease-in-out infinite;
+}
+@keyframes xpShine { from { transform: translateX(-100%); } to { transform: translateX(200%); } }
+
+/* Insignia de rango con reflejo */
+.rank-badge { position: relative; overflow: hidden; }
+.rank-badge::after {
+  content: ""; position: absolute; top: -50%; left: -80%; width: 60%; height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: rotate(25deg); animation: badgeShine 3.5s ease-in-out infinite;
+}
+@keyframes badgeShine { 0%, 60% { left: -80%; } 100% { left: 140%; } }
+
+/* Candados que tiemblan al pasar el ratón */
+.locked-overlay big { display: block; width: fit-content; margin: 0 auto; }
+.map-card:hover .locked-overlay big, .opt:hover .locked-overlay big { animation: shakeLock 0.4s; }
+@keyframes shakeLock { 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+
+/* Títulos de sección con subrayado que se dibuja */
+.section-title { position: relative; display: inline-block; }
+.section-title::after { content: ""; position: absolute; left: 0; bottom: -3px; height: 2px; width: 100%; background: var(--gold); transform-origin: left; animation: drawLine 0.8s 0.2s ease both; }
+@keyframes drawLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

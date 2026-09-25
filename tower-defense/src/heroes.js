@@ -116,19 +116,17 @@ TD.Hero = class extends TD.Tower {
     ctx.fillStyle = '#6a5520';
     ctx.beginPath(); ctx.arc(x, y + 2, S * 0.38, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 2; ctx.stroke();
-    // Cuerpo que mira al objetivo
-    ctx.save(); ctx.translate(x, y); ctx.rotate(this.angle);
-    ctx.fillStyle = '#2d3136'; ctx.fillRect(S * 0.05, -3, S * 0.34 * (1 - this.recoil * 0.2), 6);
-    ctx.fillStyle = h.color;
-    ctx.beginPath(); ctx.arc(0, 0, S * 0.24, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = TD.U.shade(h.color, -0.4); ctx.lineWidth = 2; ctx.stroke();
-    ctx.restore();
-    ctx.font = '16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(h.icon, x, y + 1);
+    // El héroe: un soldado con su equipo, mirando al objetivo
+    TD.drawSoldier(ctx, this, Object.assign({ scale: 1.1 }, h.look));
+    // Insignia con su icono
+    ctx.fillStyle = '#1a1406'; ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x + S * 0.3, y - S * 0.28, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(h.icon, x + S * 0.3, y - S * 0.28 + 1);
     ctx.textBaseline = 'alphabetic';
     // Nivel
     ctx.fillStyle = '#ffd84a'; ctx.font = 'bold 10px sans-serif';
-    ctx.fillText('Nv' + this.level, x, y - S * 0.42);
+    ctx.fillText('Nv' + this.level, x - S * 0.22, y - S * 0.38);
     // Barra de XP
     const nx = this.nextXp();
     if (nx) {

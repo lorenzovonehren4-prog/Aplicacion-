@@ -31,7 +31,7 @@ const results = await page.evaluate(() => {
       const t = g.build(ids[k % ids.length], c, r); k++;
       if (t) while (!t.maxed) g.upgrade(t);
     }
-    g.autoWave = true;
+    g.startNextWave(); // las siguientes empiezan solas tras la cuenta atrás
     let steps = 0;
     while (!g.over && steps < 60 * 60 * 40) { g.update(1 / 60); if (steps % 10 === 0) g.render(); steps++; }
     out.push({ map: g.mapDef.id, win: !!(g.result && g.result.win), waves: g.completedWaves, lives: g.lives });
