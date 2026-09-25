@@ -206,6 +206,7 @@
   .stats b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
   .stats small { color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
   .pause-title { font-family: var(--display); font-size: 48px; margin: 0; }
+  .err { margin: 0; max-width: 40em; color: var(--muted); font-size: 12px; user-select: text; -webkit-user-select: text; overflow-wrap: anywhere; }
 
   @media (max-width: 640px) {
     #gauge { width: 84px; height: 84px; }
@@ -339,6 +340,7 @@
 <section class="screen" id="pause" hidden>
   <div class="sheet" style="justify-items:start">
     <p class="pause-title">Pausa</p>
+    <p class="err" id="errLine" hidden></p>
     <div class="actions">
       <button type="button" class="btn" id="resumeBtn">Seguir</button>
       <button type="button" class="btn ghost sound-btn" id="soundBtn2">Sonido: sí</button>
@@ -363,7 +365,12 @@ let buildings = [], obstacles = [], boxes = [], lamps = [], pools = [], lotSlots
 
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+// Sin bucles: un ángulo enorme o infinito ya no puede colgar el juego
+const wrap = a => {
+  if (!Number.isFinite(a)) return 0;
+  a %= 2 * Math.PI;
+  return a > Math.PI ? a - 2 * Math.PI : a < -Math.PI ? a + 2 * Math.PI : a;
+};
 const tileAt = (tx, ty) => (tx < 0 || ty < 0 || tx >= MW || ty >= MH) ? BLD : grid[ty * MW + tx];
 const isSolid = t => t === BLD || t === WA;
 const solidAt = (x, y) => isSolid(tileAt(Math.floor(x / T), Math.floor(y / T)));
@@ -834,9 +841,11 @@ function explode(x, y, power) {
   if (dp < 1400) Snd.burst(1.1, 260, 0.7 * clamp(1 - dp / 1400, 0.1, 1) * Math.min(1.3, power));
 }
 function hurt(n) {
+  if (state !== 'play') return;
   player.hp -= n; flash = Math.min(0.6, flash + 0.25 + n / 80);
   shake = Math.max(shake, Math.min(10, n / 3));
-  if (player.hp <= 0 && state === 'play') { player.hp = 0; explode(player.x, player.y, 1.4); endGame('wrecked'); }
+  // Primero se termina la partida y después explota: así la explosión no vuelve a dañar al carro sin fin
+  if (player.hp <= 0) { player.hp = 0; endGame('wrecked'); explode(player.x, player.y, 1.4); }
 }
 let toastT = 0;
 function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('show'); toastT = 2.4; }
@@ -1077,6 +1086,7 @@ function showOver() {
   $('stEscapes').textContent = escapes;
   $('stDrift').textContent = bestDrift.toLocaleString('es');
   $('stLevel').textContent = maxLevel ? '★'.repeat(maxLevel) : '–';
+  if (currentScore() > save.best) { save.best = currentScore(); persist(); }
   $('stScore').textContent = currentScore().toLocaleString('es');
   $('stBest').textContent = save.best.toLocaleString('es');
   hideAll();
@@ -1084,7 +1094,9 @@ function showOver() {
   $('againBtn').focus();
 }
 function setPause(on) {
-  if (on && state === 'play') { state = 'pause'; $('pause').hidden = false; $('resumeBtn').focus(); Snd.update(0, 0, 1, 0, 0, false, false); }
+  if (on && state === 'play') {
+    state = 'pause'; $('pause').hidden = false;
+    $('errLine').hidden = !lastErr; $('errLine').textContent = lastErr ? `Aviso técnico (${errCount}): ${lastErr}` : ''; $('resumeBtn').focus(); Snd.update(0, 0, 1, 0, 0, false, false); }
   else if (!on && state === 'pause') { state = 'play'; $('pause').hidden = true; }
 }
 const currentScore = () => Math.floor(time * 10) + bonus;
@@ -1744,6 +1756,7 @@ function lightPass(visCars, visLamps, sx, sy) {
 }
 // Efecto tilt-shift: bordes de arriba y abajo desenfocados, como una maqueta
 function tiltShift() {
+  if (cv.width < 4 || cv.height < 4) return;
   const w = ts.width, h = ts.height;
   tsx.globalCompositeOperation = 'source-over';
   tsx.clearRect(0, 0, w, h);
@@ -1867,7 +1880,7 @@ function render(t) {
   if (state === 'intro') {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (trailReady) { ctx.globalAlpha = 0.42; ctx.drawImage(tr, 0, 0); ctx.globalAlpha = 1; }
-    trx.clearRect(0, 0, tr.width, tr.height); trx.drawImage(cv, 0, 0); trailReady = true;
+    if (cv.width > 1 && cv.height > 1) { trx.clearRect(0, 0, tr.width, tr.height); trx.drawImage(cv, 0, 0); trailReady = true; }
   } else trailReady = false;
 }
 
@@ -2121,7 +2134,7 @@ for (const b of document.querySelectorAll('.sound-btn')) b.addEventListener('cli
 /* ================= Bucle ================= */
 function resize() {
   dpr = Math.min(document.body.classList.contains('touch') ? 1.5 : 2, window.devicePixelRatio || 1);
-  W = innerWidth; H = innerHeight;
+  W = Math.max(1, innerWidth || 0); H = Math.max(1, innerHeight || 0);
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   lc.width = Math.max(1, Math.round(W * 0.5)); lc.height = Math.max(1, Math.round(H * 0.5));
   ts.width = Math.max(1, Math.round(W / 4)); ts.height = Math.max(1, Math.round(H / 4));
@@ -2131,7 +2144,35 @@ addEventListener('resize', resize);
 resize();
 
 let last = performance.now();
+let lastErr = '', errCount = 0;
+const safePos = { x: 25 * T, y: 27 * T };
+const okCar = c => Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.vx) && Number.isFinite(c.vy) && Number.isFinite(c.a);
+// Si un choque raro deja un valor inválido, se corrige antes de dibujar
+function sanitize() {
+  if (player) {
+    if (okCar(player)) { safePos.x = player.x; safePos.y = player.y; }
+    else { Object.assign(player, { x: safePos.x, y: safePos.y, vx: 0, vy: 0, fwd: 0, lat: 0, a: Number.isFinite(player.a) ? player.a : 0, steer: 0 }); }
+  }
+  if (enemies.some(c => !okCar(c))) enemies = enemies.filter(okCar);
+  if (civs.some(c => !okCar(c))) civs = civs.filter(okCar);
+  if (parts.some(p => !Number.isFinite(p.x + p.y + p.size))) parts = parts.filter(p => Number.isFinite(p.x + p.y + p.size));
+  if (shells.some(p => !Number.isFinite(p.x + p.y))) shells = shells.filter(p => Number.isFinite(p.x + p.y));
+  if (!Number.isFinite(cam.x) || !Number.isFinite(cam.y)) { cam.x = safePos.x; cam.y = safePos.y; }
+  if (!Number.isFinite(zoom) || zoom <= 0) zoom = 1;
+  if (!Number.isFinite(cam.rot)) cam.rot = 0;
+}
 function frame(now) {
+  // El siguiente cuadro se pide primero: aunque algo falle, el juego sigue
+  requestAnimationFrame(frame);
+  try { step(now); }
+  catch (e) {
+    errCount++;
+    lastErr = String(e && e.message || e) + ' @ ' + String(e && e.stack || '').split('\n').slice(1, 3).join(' ').trim();
+    console.error(e);
+    try { sanitize(); } catch (_) {}
+  }
+}
+function step(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now;
   clock += dt;
   if (fade.dir === 1) { fade.a = Math.min(1, fade.a + dt * 2.6); if (fade.a >= 1) { fade.dir = -1; const cb = fade.cb; fade.cb = null; if (cb) cb(); } }
@@ -2165,10 +2206,11 @@ function frame(now) {
       hudT -= dt;
       if (hudT <= 0) { updateHud(false); drawRadar(clock); hudT = 0.05; }
     }
+    sanitize();
     render(clock);
   }
-  requestAnimationFrame(frame);
 }
+window.__fuga = { stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; } };
 startIntro();
 requestAnimationFrame(frame);
 })();
