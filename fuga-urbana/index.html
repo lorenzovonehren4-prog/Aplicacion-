@@ -843,7 +843,7 @@ const allCars = () => player ? [player, ...enemies, ...civs] : [...enemies, ...c
 const knowsWhere = () => state === 'intro' || time - lastSeenT < SEEN_MEMORY;
 
 /* ================= Rutas (BFS) ================= */
-const flow = new Int16Array(MW * MH), flowB = new Int16Array(MW * MH);
+const flow = new Int16Array(MW * MH);
 const queue = new Int32Array(MW * MH);
 let flowSrc = -1, flowTimer = 0;
 function bfs(out, s) {
@@ -951,7 +951,7 @@ function collideWorld(c) {
   return hit;
 }
 function carCollisions() {
-  const fc = focus(), all = allCars().filter(c => Math.abs(c.x - fc.x) < 1500 && Math.abs(c.y - fc.y) < 1500);
+  const fc = focus(), all = (state === 'intro' ? civs : allCars()).filter(c => Math.abs(c.x - fc.x) < 1500 && Math.abs(c.y - fc.y) < 1500);
   for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
     const a = all[i], b = all[j];
     const dx = b.x - a.x, dy = b.y - a.y, m = a.r + b.r;
@@ -1207,7 +1207,7 @@ function spawnCiv(minD, maxD) {
     if (!p) continue;
     const opts = laneDirs(p.tx, p.ty);
     if (!opts.length) continue;
-    const d = pick(opts), lo = pick(LANES);
+    const d = pick(opts), lo = state === 'intro' ? pick([-30, 30]) : pick(LANES);
     const c = makeCiv(pick(CIV_MODELS), p.x - DY[d] * lo, p.y + DX[d] * lo, Math.atan2(DY[d], DX[d]), pick(CIV_COLORS));
     Object.assign(c, { tx: p.tx, ty: p.ty, d, lo, v: 120, cruise: 110 + Math.random() * 60, loose: false, looseT: 0 });
     civs.push(c);
@@ -1305,28 +1305,22 @@ function hideAll() {
   for (const id of ['intro', 'garageScr', 'over', 'pause', 'hud', 'mid', 'bust', 'drift', 'edgeWarn']) $(id).hidden = true;
   $('padL').classList.remove('live'); $('padR').classList.remove('live');
 }
-function pickIntroDest() {
-  const p = randomTile([R], 1500, 3800);
-  if (p) bfs(flowB, p.ty * MW + p.tx);
-}
 function startIntro() {
   hideAll(); $('intro').hidden = false;
   state = 'intro';
+  buildIntroRoute();
+  introRun.s = 600; introRun.v = 400;
   player = makeCar(INTRO_CAR, START.x, START.y, -Math.PI / 2);
-  player.vy = -320;
-  Object.assign(player, { stuck: 0, rev: 0 });
   enemies = []; shells = []; wrenches = [];
-  civs = []; spawnParked();
-  for (let i = 0; i < 14; i++) spawnCiv(260, 1400);
-  flowSrc = -1; buildFlow(player.x, player.y);
-  pickIntroDest();
-  for (const [x, y] of [[START.x - 30, START.y + 3 * T], [START.x + 30, START.y + 4.5 * T]]) {
-    const e = makeCar(Object.assign({ type: 'police' }, ENEMY.police, { max: 380, accel: 380 }), x, y, -Math.PI / 2);
+  for (let k = 0; k < 2; k++) {
+    const e = makeCar(Object.assign({ type: 'police' }, ENEMY.police), START.x, START.y, -Math.PI / 2);
     Object.assign(e, { type: 'police', mode: 'chase', alert: true, hitCd: 0, stuck: 0, rev: 0, revSteer: 1, ox: 0, oy: 0, ta: 0, cd: 0, aim: false });
-    e.vy = -300;
     enemies.push(e);
   }
-  cam.x = player.x; cam.y = player.y; cam.rot = 0;
+  introDrive(0.016);
+  civs = []; spawnParked();
+  for (let i = 0; i < 14; i++) spawnCiv(260, 1400);
+  cam.x = player.x; cam.y = player.y; cam.rot = -Math.PI / 2 - player.heading;
 }
 function showGarage() {
   hideAll();
@@ -1476,22 +1470,82 @@ function enemyUpdate(e, dt, cars) {
     }
   }
 }
-// Piloto automático del carro de la intro: va a un destino al azar derrapando en las esquinas
-function autopilot(dt) {
-  const tx = Math.floor(player.x / T), ty = Math.floor(player.y / T);
-  const here = (tx >= 0 && ty >= 0 && tx < MW && ty < MH) ? flowB[ty * MW + tx] : -1;
-  if (here >= 0 && here <= 2) pickIntroDest();
-  const f = flowTarget(player, flowB);
-  let steer = 0, hb = false, thr = 1;
-  const sp = Math.hypot(player.vx, player.vy);
-  if (f) {
-    const diff = wrap(Math.atan2(f.y - player.y, f.x - player.x) - player.a);
-    steer = clamp(diff * 2.5, -1, 1);
-    hb = Math.abs(diff) > 0.7 && sp > 250;
+/* ================= Intro: ruta de cine ================= */
+// El carro de la intro y las patrullas no se conducen solos: recorren una ruta
+// trazada sobre los carriles con curvas suaves, así la escena nunca choca.
+const nodeC = k => (M + k * P + 1) * T;             // eje de la avenida número k
+const laneOff = d => (d === 1 || d === 2) ? -48 : 48; // carril de cada sentido
+const route = { dense: [], cum: [], i: 0, j: 0, d: 3, exit: null };
+const introRun = { s: 0, v: 0 };
+function routePush(x, y) {
+  const n = route.dense.length;
+  if (n) { const q = route.dense[n - 1], l = Math.hypot(x - q.x, y - q.y); if (l < 0.5) return; route.cum.push(route.cum[n - 1] + l); }
+  else route.cum.push(0);
+  route.dense.push({ x, y });
+}
+function routeLine(ax, ay, bx, by) {
+  const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 12));
+  for (let k = 1; k <= n; k++) routePush(ax + (bx - ax) * k / n, ay + (by - ay) * k / n);
+}
+function routeCorner(i, j, dIn, dOut) {
+  const vert = dIn === 1 || dIn === 3;
+  if (dIn === dOut) return vert ? { x: nodeC(i) + laneOff(dIn), y: nodeC(j) } : { x: nodeC(i), y: nodeC(j) + laneOff(dIn) };
+  return vert ? { x: nodeC(i) + laneOff(dIn), y: nodeC(j) + laneOff(dOut) } : { x: nodeC(i) + laneOff(dOut), y: nodeC(j) + laneOff(dIn) };
+}
+function extendRoute(n) {
+  for (let k = 0; k < n; k++) {
+    const d = route.d, ni = route.i + DX[d], nj = route.j + DY[d], opts = [];
+    for (const [o, w] of [[d, 2], [(d + 1) % 4, 1.5], [(d + 3) % 4, 1.5]]) {
+      const ti = ni + DX[o], tj = nj + DY[o];
+      if (ti >= 0 && tj >= 0 && ti <= NB && tj <= NB) opts.push([o, w]);
+    }
+    let r = Math.random() * opts.reduce((a, o) => a + o[1], 0), nd = opts[0][0];
+    for (const [o, w] of opts) { if ((r -= w) <= 0) { nd = o; break; } }
+    const C = routeCorner(ni, nj, d, nd);
+    if (nd === d) { routeLine(route.exit.x, route.exit.y, C.x, C.y); route.exit = C; }
+    else {
+      const rad = 120, A = { x: C.x - DX[d] * rad, y: C.y - DY[d] * rad }, B = { x: C.x + DX[nd] * rad, y: C.y + DY[nd] * rad };
+      routeLine(route.exit.x, route.exit.y, A.x, A.y);
+      for (let q = 1; q <= 18; q++) { const t = q / 18, u = 1 - t; routePush(u * u * A.x + 2 * u * t * C.x + t * t * B.x, u * u * A.y + 2 * u * t * C.y + t * t * B.y); }
+      route.exit = B;
+    }
+    route.i = ni; route.j = nj; route.d = nd;
   }
-  if (player.rev > 0) { player.rev -= dt; thr = -1; steer = -steer; hb = false; }
-  else { player.stuck = sp < 40 ? player.stuck + dt : 0; if (player.stuck > 0.8) { player.rev = 0.8; player.stuck = 0; } }
-  physics(player, thr, steer, dt, hb);
+}
+function routeAt(s) {
+  const c = route.cum;
+  let lo = 0, hi = c.length - 1;
+  s = clamp(s, 0, c[hi]);
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] <= s) lo = m; else hi = m; }
+  const t = (s - c[lo]) / ((c[hi] - c[lo]) || 1), a = route.dense[lo], b = route.dense[hi];
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+const routeHeading = s => { const p = routeAt(s), q = routeAt(s + 10); return Math.atan2(q.y - p.y, q.x - p.x); };
+function buildIntroRoute() {
+  route.dense = []; route.cum = [];
+  route.i = CB; route.j = CB + 1; route.d = 3;
+  route.exit = { x: nodeC(CB) + laneOff(3), y: START.y + 600 };
+  routePush(route.exit.x, route.exit.y);
+  extendRoute(14);
+}
+// Coloca un actor sobre la ruta; en las curvas gira la trompa hacia dentro como en un derrape
+function placeOnRoute(c, s, v, dt) {
+  const p = routeAt(s), h = routeHeading(s);
+  const prev = c.heading === undefined ? h : c.heading;
+  const turn = wrap(h - prev) / Math.max(dt, 1e-3);
+  c.slip = (c.slip || 0) + (clamp(turn * 0.32, -0.7, 0.7) - (c.slip || 0)) * Math.min(1, dt * 4);
+  c.heading = h; c.a = h + c.slip;
+  c.x = p.x; c.y = p.y; c.vx = Math.cos(h) * v; c.vy = Math.sin(h) * v;
+  c.fwd = v; c.lat = Math.abs(c.slip) * 420; c.steer = clamp(c.slip * 2.5, -1, 1);
+}
+function introDrive(dt) {
+  // Frena antes de las curvas cerradas y acelera en las rectas
+  const ahead = Math.abs(wrap(routeHeading(introRun.s + 170) - routeHeading(introRun.s)));
+  introRun.v += ((ahead > 0.6 ? 290 : 440) - introRun.v) * Math.min(1, dt * 1.8);
+  introRun.s += introRun.v * dt;
+  if (introRun.s > route.cum[route.cum.length - 1] - 3000) extendRoute(4);
+  placeOnRoute(player, introRun.s, introRun.v, dt);
+  enemies.forEach((e, k) => placeOnRoute(e, Math.max(0, introRun.s - (240 + k * 170) - Math.sin(clock * 0.7 + k * 2) * 50), introRun.v, dt));
 }
 function wheelSkids(c, strength) {
   const fx = Math.cos(c.a), fy = Math.sin(c.a), bl = c.def.len * 0.3, bw = c.def.wid * 0.42;
@@ -1512,7 +1566,7 @@ function update(dt) {
   const cars = allCars();
 
   if (player) {
-    if (intro) autopilot(dt);
+    if (intro) introDrive(dt);
     else {
       nitroOn = playing && key.nitro && nitro > 0.02 && key.up;
       player.speedMul = (nitroOn ? 1.35 : 1) * (player.flatT > 0 ? 0.62 : 1); player.accelMul = nitroOn ? 1.8 : 1;
@@ -1527,7 +1581,7 @@ function update(dt) {
       if (knowsWhere() || level === 0) buildFlow(player.x, player.y); else buildFlow(lastPos.x, lastPos.y);
       flowTimer = 0.25;
     }
-    for (const e of enemies) enemyUpdate(e, dt, cars);
+    if (!intro) for (const e of enemies) enemyUpdate(e, dt, cars);
     if (heli) updateHeli(dt);
     if (!intro) {
       const ed = edgeInfo(player), zone = 2.5 * T;
@@ -1539,7 +1593,7 @@ function update(dt) {
   }
   for (const c of civs) updateCiv(c, dt, cars);
 
-  if (player) {
+  if (player && !intro) {
     const hit = collideWorld(player);
     if (hit > 90 && !intro) crashSound(hit);
     if (hit > 160 && drift.t > 0 && playing) bankDrift(true);
@@ -1623,11 +1677,6 @@ function update(dt) {
   if (player) for (const e of enemies) if (e.type !== 'tank' && (e.mode !== 'patrol' || e.alert)) siren = Math.max(siren, clamp(1 - Math.hypot(e.x - player.x, e.y - player.y) / 900, 0, 1));
   Snd.update(clock, speed, player ? player.def.max : 1, driftAmt, siren, nitroOn, playing);
 
-  if (intro) {
-    // La intro siempre tiene persecución a la vista
-    spawnTimer -= dt;
-    if (spawnTimer <= 0) { spawnTimer = 1.5; if (enemies.length < 3) { const e = spawnEnemy('police', 'chase'); if (e) { e.def.max = 380; e.def.accel = 380; } } }
-  }
 
   if (playing) {
     for (let i = wrenches.length - 1; i >= 0; i--) {
@@ -2756,9 +2805,11 @@ function step(now) {
       update(dt);
       dark = 0.7;
       // Cámara de cine: gira con el carro y se acerca al entrar al garaje
-      cam.rot += wrap((-Math.PI / 2 - player.a) - cam.rot) * Math.min(1, dt * 1.3);
+      cam.rot += wrap((-Math.PI / 2 - player.heading) - cam.rot) * Math.min(1, dt * 1.3);
       zoom = base * 0.78 * (1 + (fade.dir === 1 ? fade.a * 0.7 : 0));
-      const tx = player.x + player.vx * 0.25, ty = player.y + player.vy * 0.25;
+      // El carro va arriba a la derecha de la pantalla, lejos del título
+      const ox = W < 640 ? 0 : W * 0.16, oy = -H * 0.14, cr = Math.cos(-cam.rot), sr = Math.sin(-cam.rot);
+      const tx = player.x + player.vx * 0.15 - (ox * cr - oy * sr) / zoom, ty = player.y + player.vy * 0.15 - (ox * sr + oy * cr) / zoom;
       cam.x += (tx - cam.x) * Math.min(1, dt * 4); cam.y += (ty - cam.y) * Math.min(1, dt * 4);
     } else if (player) {
       if (state !== 'pause') update(dt);
@@ -2779,7 +2830,7 @@ function step(now) {
     render(clock);
   }
 }
-window.__fuga = { tp(x, y) { Object.assign(player, { x, y, vx: 0, vy: 0 }); cam.x = x; cam.y = y; }, esc() { escape(); }, calm(v) { calmT = v; }, st() { return { level, calmT: +calmT.toFixed(1), x: Math.round(player.x), y: Math.round(player.y), W: WORLD, enemies: enemies.length, time: +time.toFixed(1) }; }, stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; }, coins(n) { save.coins += n; persist(); if (state === 'garage') syncGarage(); }, time(t) { time = t; }, peek() { return { heli: heli ? 1 : 0, spikes: spikes.length, block: enemies.filter(e => e.mode === 'block').length, interceptor: enemies.filter(e => e.type === 'interceptor').length }; } };
+window.__fuga = { introHits() { let n = 0; for (const c of [player, ...enemies]) { const r = c.r * 0.7; if (isSolid(tileAt(Math.floor(c.x / T), Math.floor(c.y / T))) && tileAt(Math.floor(c.x / T), Math.floor(c.y / T)) !== BLD) n++; if (boxes.some(b => c.x > b.x - r && c.x < b.x + b.w + r && c.y > b.y - r && c.y < b.y + b.h + r)) n++; if (obstacles.some(o => Math.hypot(o.x - c.x, o.y - c.y) < o.r + r)) n++; } return n; }, tp(x, y) { Object.assign(player, { x, y, vx: 0, vy: 0 }); cam.x = x; cam.y = y; }, esc() { escape(); }, calm(v) { calmT = v; }, st() { return { level, calmT: +calmT.toFixed(1), x: Math.round(player.x), y: Math.round(player.y), W: WORLD, enemies: enemies.length, time: +time.toFixed(1) }; }, stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; }, coins(n) { save.coins += n; persist(); if (state === 'garage') syncGarage(); }, time(t) { time = t; }, peek() { return { heli: heli ? 1 : 0, spikes: spikes.length, block: enemies.filter(e => e.mode === 'block').length, interceptor: enemies.filter(e => e.type === 'interceptor').length }; } };
 startIntro();
 requestAnimationFrame(frame);
 })();
