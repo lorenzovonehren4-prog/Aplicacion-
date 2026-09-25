@@ -182,10 +182,44 @@
   .g-name { font-family: var(--display); font-size: clamp(28px, 6vw, 44px); line-height: 1; }
   .g-idx { color: var(--muted); font-variant-numeric: tabular-nums; }
   .g-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px; }
-  .g-stat { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .g-stat { display: grid; grid-template-columns: 96px 1fr 64px; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
   .g-stat .bar { height: 6px; }
   .g-stat .bar i { background: linear-gradient(90deg, var(--nitro), var(--lane)); }
   .g-lock { margin: 0; color: var(--lane); }
+  .g-stat em { font-style: normal; text-align: right; color: var(--ink); font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+  .dots { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .dots button { width: 20px; height: 20px; border-radius: 50%; border: 2px solid currentColor; background: transparent; cursor: pointer; padding: 0; opacity: .75; }
+  .dots button.own { background: currentColor; opacity: 1; }
+  .dots button.cur { outline: 2px solid #fff; outline-offset: 2px; opacity: 1; }
+  .dots small { color: var(--muted); font-size: 12px; margin-left: 4px; }
+  .last-run { color: var(--nitro); }
+  .help-lead { margin: 0; font-size: 15px; max-width: 60em; }
+  .help-lead b { color: var(--lane); }
+  .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+  .help-grid section { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); }
+  .help-grid h3, .xp-table h3 { margin: 0 0 6px; font-family: var(--display); font-weight: 400; font-size: 14px; letter-spacing: .04em; color: var(--lane); }
+  .help-grid ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: 13px; line-height: 1.4; }
+  .help-grid .r { color: var(--red); }
+  .help-grid .keys { list-style: none; padding-left: 0; }
+  .pass-top { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+  .pass-lv { display: grid; justify-items: center; padding: 8px 16px; border-radius: 12px; border: 1px solid var(--lane); background: rgba(245,197,66,0.1); }
+  .pass-lv b { font-family: var(--display); font-weight: 400; font-size: 36px; line-height: 1; color: var(--lane); }
+  .pass-lv small { color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .pass-info { display: grid; gap: 6px; }
+  .pass-next { margin: 0; font-size: 13px; }
+  .pass-next b { color: var(--lane); }
+  .lvl-top { display: flex; justify-content: space-between; align-items: center; }
+  .chk { color: var(--ok); font-weight: 700; }
+  .ico { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font: 700 12px var(--body); margin: 2px 0; }
+  .ico.coin-i { border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff0b0, #f5c542 55%, #a87812); }
+  .ico.ttl { background: #3a2f10; color: var(--lane); border: 1px solid var(--lane); }
+  .ico.nos { background: linear-gradient(90deg, #2a8cff, var(--nitro)); color: #06121c; }
+  .ico.gar { border: 3px solid; background: #15171d; }
+  .xp-table { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); }
+  .xp-rows { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; font-size: 13px; }
+  .xp-rows b { color: var(--nitro); text-align: right; font-variant-numeric: tabular-nums; }
+  .item { cursor: pointer; }
+  .item.pv { border-color: var(--lane); background: rgba(245,197,66,0.08); }
   .controls { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 13px; margin: 0; padding: 0; list-style: none; }
   kbd { font-family: var(--body); font-weight: 700; font-size: 12px; color: var(--ink); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
@@ -226,7 +260,7 @@
   .pass-head { display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
   .pass-bar i { background: linear-gradient(90deg, var(--nitro), var(--lane)); }
   .track { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
-  .lvl { flex: 0 0 86px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); display: grid; gap: 2px; align-content: start; font-size: 11px; color: var(--muted); }
+  .lvl { flex: 0 0 104px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); display: grid; gap: 2px; align-content: start; font-size: 11px; color: var(--muted); }
   .lvl b { color: var(--ink); font-size: 13px; }
   .lvl.big { border-color: rgba(245,197,66,0.55); }
   .lvl.got { background: rgba(245,197,66,0.13); border-color: var(--lane); }
@@ -288,7 +322,8 @@
     .g-panel { padding: 12px 14px; gap: 10px; max-height: 64vh; }
     .g-arrow { top: 25%; }
     .odd { grid-template-columns: 90px 1fr 52px; }
-    .tabs button { padding: 8px 6px; font-size: 11px; letter-spacing: .02em; }
+    .tabs { flex-wrap: wrap; overflow-x: visible; }
+    .tabs button { flex: 1 1 30%; padding: 8px 6px; font-size: 11px; letter-spacing: .02em; }
   }
   @media (prefers-reduced-motion: reduce) {
     .stars.search span.on { animation: none; }
@@ -364,6 +399,7 @@
   <button type="button" class="glass g-arrow next" id="nextCar" aria-label="Carro siguiente">▶</button>
   <div class="glass g-panel">
     <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="help" aria-selected="false">Cómo jugar</button>
       <button type="button" role="tab" data-tab="car" aria-selected="true">Garaje</button>
       <button type="button" role="tab" data-tab="gacha" aria-selected="false">Abrir garaje</button>
       <button type="button" role="tab" data-tab="pass" aria-selected="false">Pase</button>
@@ -374,6 +410,7 @@
         <div><span class="rarity" id="gRarity">Común</span><span class="label" id="gKind">Sedán</span><div class="g-name" id="gName">Tico</div></div>
         <div class="g-idx" id="gIdx">1 / 10</div>
       </div>
+      <div class="dots" id="gDots" aria-label="Tu colección"></div>
       <div class="g-stats" id="gStats"></div>
       <p class="g-lock" id="gLock" hidden>Todavía no es tuyo. Consíguelo en la pestaña «Abrir garaje».</p>
       <div class="diff" role="group" aria-label="Dificultad">
@@ -386,12 +423,45 @@
         <button type="button" class="btn ghost sound-btn" id="soundBtn">Sonido: sí</button>
         <span class="best" id="bestLine"></span>
       </div>
-      <ul class="controls">
-        <li><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> o <kbd>WASD</kbd> conducir</li>
-        <li><kbd>Espacio</kbd> derrape</li>
-        <li><kbd>Shift</kbd> nitro</li>
-        <li><kbd>P</kbd> pausa · <kbd>M</kbd> sonido</li>
-      </ul>
+      <p class="g-note last-run" id="lastRun" hidden></p>
+    </div>
+    <div class="tab-body" data-body="help" hidden>
+      <p class="help-lead"><b>Fuga Urbana</b> es un juego de persecuciones. La policía te busca desde que arrancas: tu trabajo es aguantar el mayor tiempo posible sin que te atrapen.</p>
+      <div class="help-grid">
+        <section><h3>Cómo se pierde</h3><ul>
+          <li><b class="r">Arrestado:</b> si te quedas casi quieto con patrullas pegadas, se llena la barra roja. Acelera para soltarte.</li>
+          <li><b class="r">Destruido:</b> si tu carro se queda sin salud. Las llaves verdes del mapa lo reparan.</li>
+        </ul></section>
+        <section><h3>Estrellas y cómo escapar</h3><ul>
+          <li>Las estrellas suben mientras la policía te ve.</li>
+          <li>Si nadie te ve, las estrellas parpadean y corre una cuenta atrás. Al llegar a cero, <b>los perdiste</b> y ganas puntos.</li>
+          <li>Escondido no estás a salvo: una patrulla que te vea, o una cámara a los 25 s, te vuelven a delatar.</li>
+        </ul></section>
+        <section><h3>La amenaza crece</h3><ul>
+          <li><b>1:30</b> patrullas más rápidas y bloqueos de carretera.</li>
+          <li><b>3:00</b> interceptores y tiras de clavos, que ponchan las llantas.</li>
+          <li><b>5:00</b> enjambre, blindados y helicóptero. Si su foco te alumbra, todos saben dónde estás.</li>
+        </ul></section>
+        <section><h3>Trucos</h3><ul>
+          <li>Derrapa con el freno de mano: suma puntos y carga el nitro. Si chocas a mitad del derrape, lo pierdes.</li>
+          <li>Guarda el nitro para las rectas y abre distancia.</li>
+          <li>Los edificios se vuelven transparentes cuando pasas por detrás.</li>
+          <li>No salgas de la ciudad: al llegar al borde el carro se frena.</li>
+        </ul></section>
+        <section><h3>Progreso</h3><ul>
+          <li>Cada partida da XP y monedas, aunque salgas desde la pausa.</li>
+          <li>La XP sube tu nivel del <b>Pase</b>: monedas, títulos, neones y más nitro.</li>
+          <li>Con 1 500 monedas <b>abres el garaje</b> y ganas un carro al azar, sin repetidos.</li>
+          <li>En la <b>Tienda</b> personalizas tu carro y tu garaje.</li>
+        </ul></section>
+        <section><h3>Controles</h3><ul class="keys">
+          <li><kbd>↑</kbd> <kbd>W</kbd> acelerar · <kbd>↓</kbd> <kbd>S</kbd> frenar y reversa</li>
+          <li><kbd>←</kbd> <kbd>→</kbd> <kbd>A</kbd> <kbd>D</kbd> girar</li>
+          <li><kbd>Espacio</kbd> freno de mano para derrapar</li>
+          <li><kbd>Shift</kbd> nitro · <kbd>P</kbd> pausa · <kbd>M</kbd> sonido</li>
+          <li>En el celular: ◀ ▶ a la izquierda; ▲ ▼, FRENO y NITRO a la derecha.</li>
+        </ul></section>
+      </div>
     </div>
     <div class="tab-body" data-body="gacha" hidden>
       <p class="g-note">Abre la puerta del garaje y te toca un carro al azar. Nunca sale uno repetido: los que ya tienes salen del sorteo y su probabilidad se reparte entre los que faltan.</p>
@@ -402,13 +472,31 @@
       </div>
     </div>
     <div class="tab-body" data-body="pass" hidden>
-      <div class="pass-head"><b id="passLvText">Nivel 1 / 50</b><span id="passXp">0 / 700 XP</span></div>
-      <div class="bar pass-bar"><i id="passBar"></i></div>
+      <div class="pass-top">
+        <div class="pass-lv"><small>Nivel</small><b id="passLvBig">1</b><small>de 50</small></div>
+        <div class="pass-info">
+          <div class="pass-head"><span id="passXp">0 / 700 XP</span><span id="passLeft"></span></div>
+          <div class="bar pass-bar"><i id="passBar"></i></div>
+          <p class="pass-next" id="passNext"></p>
+        </div>
+      </div>
       <div class="track" id="passTrack"></div>
-      <p class="g-note">La XP sale de cada partida: tiempo que sobrevives, derrapes, policías que pierdes o destruyes y carros que robas. La dificultad la multiplica. Cada nivel te da monedas, y algunos traen títulos, neones, un garaje de oro o más nitro al salir.</p>
+      <div class="xp-table">
+        <h3>Cómo se gana XP</h3>
+        <div class="xp-rows">
+          <span>Cada segundo que sobrevives</span><b>2 XP</b>
+          <span>Cada segundo con estrellas</span><b>1 XP</b>
+          <span>Derrapes</span><b>1 XP cada 8 pts</b>
+          <span>Perder a la policía</span><b>150 XP</b>
+          <span>Destruir una patrulla</span><b>60 XP</b>
+          <span>Dificultad Fácil / Medio / Difícil</span><b>×1 / ×1.5 / ×2.2</b>
+          <span>Monedas por partida</span><b>1 cada 15 XP</b>
+        </div>
+      </div>
     </div>
     <div class="tab-body" data-body="shop" hidden>
       <div class="cats" id="shopCats"></div>
+      <p class="g-note" id="shopNote">Toca un accesorio para probarlo en tu carro.</p>
       <div class="shop" id="shopList"></div>
     </div>
   </div>
@@ -821,7 +909,7 @@ let time = 0, heat = 0, level = 0, maxLevel = 0, bonus = 0, kills = 0, escapes =
 let spawnTimer = 0, civTimer = 0, overTimer = 0, endReason = '', hudT = 0, dark = 0, clock = 0;
 let nitro = 0.5, nitroOn = false, bestDrift = 0, crashCd = 0;
 let lastSeenT = -99, backupCalled = false;
-let runSettled = true, lastRun = '';
+let runSettled = true, lastRun = '', preview = null;
 let spikes = [], heli = null, roadblockT = 0, spikeT = 0, lastTier = 1, driftTotal = 0, tab = 'car', shopCat = 'neon';
 const gacha = { t: -1, car: null };
 const lastPos = { x: 0, y: 0 };
@@ -1330,7 +1418,8 @@ function showGarage() {
   player = null; enemies = []; shells = []; wrenches = []; spikes = []; heli = null;
   cam.rot = 0;
   gIdx = Math.max(0, CARS.findIndex(c => c.id === save.selected));
-  gPop = 0; gacha.t = -1; gacha.car = null; $('gachaMsg').textContent = '';
+  gPop = 0; gacha.t = -1; gacha.car = null; $('gachaMsg').textContent = ''; preview = null;
+  if (!save.seenHelp) { tab = 'help'; save.seenHelp = true; persist(); }
   syncGarage();
   $('garageScr').hidden = false;
   $('startBtn').focus();
@@ -1981,8 +2070,9 @@ function carView(c) {
   const mine = c === player && state !== 'intro';
   return { style: d.style, color: d.color, len: d.len, wid: d.wid, steer: c.steer, braking: c.braking, phase: c.phase, track: c.track, turret: c.type === 'tank' ? c.ta - c.a : 0, nitro: c === player && nitroOn, siren: hasSiren(c), mods: mine ? playerMods() : null, accel: mine && key.up };
 }
-function playerMods() {
-  const e = save.equip, col = id => id && itemById(id) ? itemById(id).color : null;
+function playerMods(pv) {
+  const e = Object.assign({}, save.equip), col = id => id && itemById(id) ? itemById(id).color : null;
+  if (pv && itemById(pv)) e[itemById(pv).cat] = pv;
   return { neon: col(e.neon), rims: col(e.rims), spoiler: e.aleron || null, kit: e.kit || null, fire: col(e.escape) };
 }
 function drawCar(c, t) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); drawVehicle(ctx, carView(c), t); ctx.restore(); }
@@ -2369,7 +2459,8 @@ const THEMES = {
   gar_gold:  { tint: 'rgba(120,90,10,0.2)', ledA: '#f5c542', ledB: '#fff1b8', ring: '245,197,66', grid: 'rgba(245,197,66,0.12)' },
 };
 function renderGarage(t) {
-  const th = THEMES[save.equip.tema] || THEMES.gar_night;
+  const pvItem = tab === 'shop' && preview ? itemById(preview) : null;
+  const th = THEMES[pvItem && pvItem.cat === 'tema' ? pvItem.id : save.equip.tema] || THEMES.gar_night;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = '#0a0c11'; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = TEX.floor; ctx.fillRect(0, 0, W, H);
@@ -2396,7 +2487,7 @@ function renderGarage(t) {
   };
   const sx = R * 1.9;
   led(cx - sx, cy - R * 1.6, cx - sx, H, th.ledA); led(cx + sx, cy - R * 1.6, cx + sx, H, th.ledA);
-  led(cx - sx, cy - R * 1.6, cx + sx, cy - R * 1.6, th.ledB);
+  if (!narrow) led(cx - sx, cy - R * 1.6, cx + sx, cy - R * 1.6, th.ledB);
   const spot = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 2.2);
   spot.addColorStop(0, 'rgba(255,255,255,0.12)'); spot.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = spot; ctx.beginPath(); ctx.arc(cx, cy, R * 2.2, 0, 6.28); ctx.fill();
@@ -2422,7 +2513,7 @@ function renderGarage(t) {
   ctx.rotate(t * 0.45);
   ctx.scale(sc, sc);
   ctx.globalAlpha = Math.min(1, gPop / 0.2);
-  drawVehicle(ctx, { style: car.style, color: owned ? car.color : '#1a1c22', len: car.len, wid: car.wid, steer: Math.sin(t * 0.8) * 0.5, braking: !owned, mods: owned ? playerMods() : null, accel: owned }, t);
+  drawVehicle(ctx, { style: car.style, color: owned ? car.color : '#1a1c22', len: car.len, wid: car.wid, steer: Math.sin(t * 0.8) * 0.5, braking: !owned, mods: owned ? playerMods(pvItem ? pvItem.id : null) : null, accel: owned }, t);
   ctx.globalAlpha = 1;
   ctx.restore();
   if (!owned && gacha.t < 0) {
@@ -2469,8 +2560,10 @@ function syncGarage() {
   $('gName').textContent = owned ? car.name : '???';
   $('gKind').textContent = owned ? car.kind : 'Bloqueado';
   $('gIdx').textContent = `${gIdx + 1} / ${CARS.length} · tienes ${save.unlocked.length}`;
-  const stats = [['Velocidad', car.max / 480], ['Aceleración', car.accel / 485], ['Manejo', (car.turn - 2) / 1.6], ['Blindaje', car.hp / 240]];
-  $('gStats').innerHTML = stats.map(([n, v]) => `<div class="g-stat"><span>${n}</span><div class="bar"><i style="width:${owned ? Math.round(clamp(v, 0.08, 1) * 100) : 0}%"></i></div></div>`).join('');
+  const stats = [['Velocidad', car.max / 480, `${Math.round(car.max * 0.45)} km/h`], ['Aceleración', car.accel / 485, `${(car.accel / 48.5).toFixed(1)}/10`], ['Manejo', (car.turn - 2) / 1.6, `${((car.turn - 2) / 0.16).toFixed(1)}/10`], ['Blindaje', car.hp / 240, `${car.hp} HP`]];
+  $('gStats').innerHTML = stats.map(([n, v, txt]) => `<div class="g-stat"><span>${n}</span><div class="bar"><i style="width:${owned ? Math.round(clamp(v, 0.08, 1) * 100) : 0}%"></i></div><em>${owned ? txt : '?'}</em></div>`).join('');
+  $('gDots').innerHTML = CARS.map((c, k) => `<button type="button" data-car="${k}" class="${save.unlocked.includes(c.id) ? 'own' : ''} ${k === gIdx ? 'cur' : ''}" style="color:${RARITY[c.rarity].color}" aria-label="${save.unlocked.includes(c.id) ? c.name : 'Bloqueado'} · ${RARITY[c.rarity].name}"></button>`).join('') + `<small>${save.unlocked.length} de ${CARS.length}</small>`;
+  $('lastRun').hidden = !lastRun; $('lastRun').textContent = lastRun;
   $('gLock').hidden = owned;
   $('startBtn').disabled = !owned;
   for (const b of document.querySelectorAll('.diff [data-diff]')) b.setAttribute('aria-pressed', String(b.dataset.diff === save.diff));
@@ -2488,18 +2581,21 @@ function syncGarage() {
   if (gacha.t < 0 && !gacha.car) $('gachaMsg').textContent = pool.length && save.coins < GACHA_COST ? `Te faltan ${fmtN(GACHA_COST - save.coins)} monedas` : '';
   // Pase
   const lv = passLevel(), into = save.xp - (lv - 1) * XP_LEVEL;
-  $('passLvText').textContent = `Nivel ${lv} / ${PASS_MAX}`;
+  const next = lv < PASS_MAX ? passReward(lv + 1) : null;
+  $('passLvBig').textContent = lv;
   $('passXp').textContent = lv >= PASS_MAX ? 'Pase completo' : `${fmtN(into)} / ${fmtN(XP_LEVEL)} XP`;
+  $('passLeft').textContent = lv >= PASS_MAX ? '' : `faltan ${fmtN(XP_LEVEL - into)} XP`;
+  $('passNext').innerHTML = next ? `Próxima recompensa, nivel ${lv + 1}: <b>${rewardLabel(next)}</b>` : '¡Completaste el pase!';
   $('passBar').style.width = (lv >= PASS_MAX ? 100 : into / XP_LEVEL * 100) + '%';
   const track = $('passTrack');
   if (track.dataset.lv !== String(lv) || !track.children.length) {
     let html = '';
     for (let l = 1; l <= PASS_MAX; l++) {
       const rw = passReward(l), big = rw.item || rw.nitro || rw.coins >= 600;
-      html += `<div class="lvl ${l <= lv ? 'got' : ''} ${big ? 'big' : ''} ${l === lv ? 'now' : ''}"><b>${l}</b><span>${rewardLabel(rw)}</span></div>`;
+      html += `<div class="lvl ${l <= lv ? 'got' : ''} ${big ? 'big' : ''} ${l === lv ? 'now' : ''}"><div class="lvl-top"><b>${l}</b>${l <= lv ? '<span class="chk">✓</span>' : ''}</div>${rewardIcon(rw)}<span>${rewardLabel(rw)}</span></div>`;
     }
     track.innerHTML = html; track.dataset.lv = lv;
-    requestAnimationFrame(() => { track.scrollLeft = Math.max(0, (lv - 2) * 92); });
+    requestAnimationFrame(() => { track.scrollLeft = Math.max(0, (lv - 2) * 110); });
   }
   // Tienda
   $('shopCats').innerHTML = CATS.map(([id, name]) => `<button type="button" data-cat="${id}" aria-pressed="${id === shopCat}">${name}</button>`).join('');
@@ -2509,9 +2605,19 @@ function syncGarage() {
     const note = have ? (on ? 'Equipado' : 'Es tuyo') : i.price === null ? 'Del pase' : `${fmtN(i.price)} monedas`;
     const btn = have ? `<button type="button" class="btn ghost mini" data-equip="${i.id}">${on ? (i.cat === 'tema' ? 'En uso' : 'Quitar') : 'Usar'}</button>`
       : i.price === null ? '' : `<button type="button" class="btn mini" data-buy="${i.id}" ${save.coins < i.price ? 'disabled' : ''}>Comprar</button>`;
-    return `<div class="item ${on ? 'on' : ''}"><span class="swatch" style="${i.color ? `background:${i.color}` : ''}"></span><div><b>${i.name}</b><small>${note}</small></div>${btn}</div>`;
+    return `<div class="item ${on ? 'on' : ''} ${preview === i.id ? 'pv' : ''}" data-item="${i.id}"><span class="swatch" style="${i.color ? `background:${i.color}` : ''}"></span><div><b>${i.name}</b><small>${note}</small></div>${btn}</div>`;
   }).join('') : '<p class="g-note">Todavía no tienes títulos. Salen en el pase: niveles 3, 13, 23, 33, 43 y 50.</p>';
   syncSoundBtns();
+}
+function rewardIcon(r) {
+  if (r.item) {
+    const it = itemById(r.item);
+    if (it.cat === 'titulo') return '<span class="ico ttl">T</span>';
+    if (it.cat === 'tema') return `<span class="ico gar" style="border-color:${it.color}"></span>`;
+    return `<span class="ico" style="background:${it.color}"></span>`;
+  }
+  if (r.nitro) return '<span class="ico nos">N</span>';
+  return '<span class="ico coin-i"></span>';
 }
 function garageStep(d) { gIdx = (gIdx + d + CARS.length) % CARS.length; gPop = 0; syncGarage(); }
 function pullGacha() {
@@ -2735,12 +2841,20 @@ for (const btn of document.querySelectorAll('.pad button')) {
 }
 $('intro').addEventListener('click', enterGarage);
 $('prevCar').addEventListener('click', () => garageStep(-1));
-for (const b of document.querySelectorAll('.tabs [data-tab]')) b.addEventListener('click', () => { tab = b.dataset.tab; syncGarage(); });
+for (const b of document.querySelectorAll('.tabs [data-tab]')) b.addEventListener('click', () => { tab = b.dataset.tab; preview = null; $('shopNote').textContent = 'Toca un accesorio para probarlo en tu carro.'; syncGarage(); });
+$('gDots').addEventListener('click', e => { const b = e.target.closest('[data-car]'); if (b) { gIdx = +b.dataset.car; gPop = 0; syncGarage(); } });
 for (const b of document.querySelectorAll('.diff [data-diff]')) b.addEventListener('click', () => { save.diff = b.dataset.diff; persist(); syncGarage(); });
 $('gachaBtn').addEventListener('click', pullGacha);
 $('shopCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { shopCat = b.dataset.cat; syncGarage(); } });
 $('shopList').addEventListener('click', e => {
-  const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-equip]');
+  const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-equip]'), row = e.target.closest('[data-item]');
+  if (!buy && !eq && row) {
+    // Probar sin comprar: se ve en el carro de la plataforma
+    preview = preview === row.dataset.item ? null : row.dataset.item;
+    $('shopNote').textContent = preview ? `Probando: ${itemById(preview).name}. Toca otra vez para quitarlo.` : 'Toca un accesorio para probarlo en tu carro.';
+    syncGarage();
+    return;
+  }
   if (buy) {
     const it = itemById(buy.dataset.buy);
     if (it && it.price !== null && save.coins >= it.price && !save.items.includes(it.id)) { save.coins -= it.price; save.items.push(it.id); save.equip[it.cat] = it.id; persist(); Snd.blip([660, 880]); }
