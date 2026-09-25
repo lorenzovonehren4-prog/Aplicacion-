@@ -19,16 +19,11 @@ TD.GameMap = class {
     for (let r = 0; r < this.rows; r++) this.tiles.push(new Array(this.cols).fill('grass'));
 
     // Camino terrestre en píxeles (centro de las casillas)
-    this.points = def.path.map(([c, r]) => ({ x: (c + 0.5) * this.cell, y: (r + 0.5) * this.cell }));
-    this.segments = [];
-    let acc = 0;
-    for (let i = 0; i < this.points.length - 1; i++) {
-      const a = this.points[i], b = this.points[i + 1];
-      const len = Math.hypot(b.x - a.x, b.y - a.y);
-      this.segments.push({ a, b, len, start: acc, angle: Math.atan2(b.y - a.y, b.x - a.x) });
-      acc += len;
-    }
-    this.length = acc;
+    const toPx = ([c, r]) => ({ x: (c + 0.5) * this.cell, y: (r + 0.5) * this.cell });
+    this.points = def.path.map(toPx);
+    const built = TD.GameMap.buildSegments(this.points);
+    this.segments = built.segments;
+    this.length = built.length;
 
     // Marca las casillas del camino (los tramos son horizontales o verticales)
     for (let i = 0; i < def.path.length - 1; i++) {
@@ -49,11 +44,35 @@ TD.GameMap = class {
     }
     for (const s of def.special) if (this.inside(s.c, s.r) && this.tiles[s.r][s.c] === 'grass') this.tiles[s.r][s.c] = s.type;
 
-    // Ruta aérea: línea recta desde la entrada hasta la salida
-    const first = this.points[0], last = this.points[this.points.length - 1];
-    this.air = { a: first, b: last, len: Math.hypot(last.x - first.x, last.y - first.y), angle: Math.atan2(last.y - first.y, last.x - first.x) };
+    // Ruta aérea (polilínea propia o línea recta entre entrada y salida)
+    const airPts = def.airPath ? def.airPath.map(toPx) : [this.points[0], this.points[this.points.length - 1]];
+    const air = TD.GameMap.buildSegments(airPts);
+    this.air = { points: airPts, segments: air.segments, len: air.length };
 
     this.bg = null; // lienzo con el fondo pre-renderizado
+  }
+
+  // Construye tramos con longitud acumulada a partir de una lista de puntos
+  static buildSegments(points) {
+    const segments = [];
+    let acc = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i], b = points[i + 1];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      segments.push({ a, b, len, start: acc, angle: Math.atan2(b.y - a.y, b.x - a.x) });
+      acc += len;
+    }
+    return { segments, length: acc };
+  }
+
+  // Punto a una distancia dada sobre una lista de tramos
+  static pointOn(segments, total, dist) {
+    dist = TD.U.clamp(dist, 0, total);
+    let lo = 0, hi = segments.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (segments[mid].start <= dist) lo = mid; else hi = mid - 1; }
+    const s = segments[lo];
+    const t = s.len ? (dist - s.start) / s.len : 0;
+    return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t, angle: s.angle };
   }
 
   inside(c, r) { return c >= 0 && r >= 0 && c < this.cols && r < this.rows; }
@@ -70,20 +89,10 @@ TD.GameMap = class {
   }
 
   // Posición sobre el camino terrestre a una distancia recorrida
-  pointAt(dist) {
-    dist = TD.U.clamp(dist, 0, this.length);
-    let lo = 0, hi = this.segments.length - 1;
-    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (this.segments[mid].start <= dist) lo = mid; else hi = mid - 1; }
-    const s = this.segments[lo];
-    const t = s.len ? (dist - s.start) / s.len : 0;
-    return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t, angle: s.angle };
-  }
+  pointAt(dist) { return TD.GameMap.pointOn(this.segments, this.length, dist); }
 
   // Posición sobre la ruta aérea
-  airPointAt(dist) {
-    const t = TD.U.clamp(dist / this.air.len, 0, 1);
-    return { x: this.air.a.x + (this.air.b.x - this.air.a.x) * t, y: this.air.a.y + (this.air.b.y - this.air.a.y) * t, angle: this.air.angle };
-  }
+  airPointAt(dist) { return TD.GameMap.pointOn(this.air.segments, this.air.len, dist); }
 
   // Proyecta un punto sobre el camino: distancia recorrida y separación
   project(x, y) {
@@ -158,6 +167,22 @@ TD.GameMap = class {
       ctx.fillStyle = TD.U.shade(P.path, rnd() > 0.5 ? -0.12 : 0.12);
       ctx.beginPath(); ctx.arc(p.x + (rnd() - 0.5) * S * 0.6, p.y + (rnd() - 0.5) * S * 0.6, 1.5 + rnd() * 2, 0, Math.PI * 2); ctx.fill();
     }
+
+    // Ruta de los voladores: línea punteada con flechas
+    ctx.save();
+    ctx.setLineDash([6, 10]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(180,225,255,0.35)';
+    ctx.beginPath();
+    this.air.points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(180,225,255,0.5)';
+    for (let d = S * 2; d < this.air.len - S; d += S * 4) {
+      const p = this.airPointAt(d);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+      ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-4, -5); ctx.lineTo(-4, 5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
 
     // Decoración estática
     for (const d of this.decos) if (d.type !== 'lava' && d.type !== 'molino') this.drawDeco(ctx, d, rnd);

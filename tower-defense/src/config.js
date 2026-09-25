@@ -60,8 +60,8 @@ TD.CONFIG = {
   // ---------------------------------------------------------------
   difficulties: {
     aprendiz: { name: 'Aprendiz', icon: '🟢', lives: 30, money: 260, hpMul: 0.8,  speedMul: 0.9,  waveBonusMul: 1.5,  scoreMul: 1.0, xpMul: 0.8, medalMul: 1 },
-    guardian: { name: 'Guardián', icon: '🟡', lives: 20, money: 200, hpMul: 1.0,  speedMul: 1.0,  waveBonusMul: 1.0,  scoreMul: 1.5, xpMul: 1.0, medalMul: 2 },
-    leyenda:  { name: 'Leyenda',  icon: '🔴', lives: 10, money: 170, hpMul: 1.35, speedMul: 1.1,  waveBonusMul: 0.75, scoreMul: 2.2, xpMul: 1.5, medalMul: 3 }
+    guardian: { name: 'Guardián', icon: '🟡', lives: 20, money: 220, hpMul: 1.0,  speedMul: 1.0,  waveBonusMul: 1.0,  scoreMul: 1.5, xpMul: 1.0, medalMul: 2 },
+    leyenda:  { name: 'Leyenda',  icon: '🔴', lives: 10, money: 200, hpMul: 1.45, speedMul: 1.1,  waveBonusMul: 0.75, scoreMul: 2.2, xpMul: 1.5, medalMul: 3 }
   },
 
   // Estrellas según el porcentaje de vidas conservadas al ganar
@@ -70,6 +70,7 @@ TD.CONFIG = {
   // ---------------------------------------------------------------
   // Mapas. Coordenadas en casillas [columna, fila].
   // path: puntos de paso del camino terrestre (el primero y el último fuera del mapa).
+  // airPath: ruta de los voladores (opcional; por defecto, línea recta).
   // blocked: casillas donde no se puede construir (decoración).
   // special: casillas con efecto (fértil / lava).
   // ---------------------------------------------------------------
@@ -83,6 +84,7 @@ TD.CONFIG = {
       boss: 'granjero',
       palette: { grass: '#5d9c45', grass2: '#67a84e', path: '#c9a86a', pathEdge: '#a8854a', deco: '#3f7a2e' },
       path: [[-1, 2], [3, 2], [3, 9], [8, 9], [8, 2], [13, 2], [13, 9], [17, 9], [17, 5], [20, 5]],
+      airPath: [[-1, 2], [6, 6.5], [13, 6.5], [20, 5]],
       blocked: [
         { c: 10, r: 5, type: 'molino' }, { c: 10, r: 6, type: 'molino' },
         { c: 0, r: 10, type: 'arbol' }, { c: 1, r: 11, type: 'arbol' }, { c: 6, r: 0, type: 'arbol' },
@@ -101,10 +103,11 @@ TD.CONFIG = {
       name: 'Cañón Escarlata',
       icon: '🏜️',
       desc: 'Zigzag entre rocas: menos espacio para construir. Tormentas de arena reducen la cadencia.',
-      hpMul: 1.15,
+      hpMul: 1.1,
       boss: 'escorpion',
       palette: { grass: '#d9a066', grass2: '#e0ab74', path: '#f1d3a0', pathEdge: '#c89660', deco: '#9c4a2f' },
       path: [[-1, 6], [4, 6], [4, 1], [8, 1], [8, 10], [12, 10], [12, 3], [16, 3], [16, 8], [20, 8]],
+      airPath: [[-1, 6], [6, 4.5], [13, 7.5], [20, 8]],
       blocked: [
         { c: 1, r: 1, type: 'roca' }, { c: 2, r: 2, type: 'roca' }, { c: 1, r: 9, type: 'roca' }, { c: 2, r: 10, type: 'cactus' },
         { c: 6, r: 4, type: 'roca' }, { c: 6, r: 7, type: 'cactus' }, { c: 10, r: 1, type: 'roca' }, { c: 10, r: 6, type: 'roca' },
@@ -120,10 +123,11 @@ TD.CONFIG = {
       name: 'Fragua Volcánica',
       icon: '🌋',
       desc: 'Curvas cerradas y ríos de lava. Las torres junto a la lava disparan +15% más rápido, pero las erupciones aturden torres.',
-      hpMul: 1.3,
+      hpMul: 1.2,
       boss: 'dragon',
       palette: { grass: '#3b3440', grass2: '#443c4a', path: '#6b5d59', pathEdge: '#4a3f3c', deco: '#ff6a1f' },
       path: [[-1, 1], [6, 1], [6, 5], [2, 5], [2, 10], [10, 10], [10, 3], [14, 3], [14, 8], [17, 8], [17, 2], [20, 2]],
+      airPath: [[-1, 1], [5, 7], [12, 6], [20, 2]],
       blocked: [
         { c: 4, r: 3, type: 'lava' }, { c: 5, r: 3, type: 'lava' }, { c: 4, r: 7, type: 'lava' }, { c: 5, r: 7, type: 'lava' },
         { c: 6, r: 7, type: 'lava' }, { c: 7, r: 7, type: 'lava' }, { c: 12, r: 6, type: 'lava' }, { c: 12, r: 7, type: 'lava' },
@@ -143,27 +147,27 @@ TD.CONFIG = {
   //   radius (casillas), air/hidden/armor, habilidades opcionales.
   // ---------------------------------------------------------------
   enemies: {
-    zombi:          { name: 'Zombi',           hp: 32,  speed: 1.25, reward: 4,  lives: 1, radius: 0.28, color: '#7fb36a', desc: 'El clásico. Lento y torpe.' },
-    corredor:       { name: 'Corredor',        hp: 20,  speed: 2.3,  reward: 5,  lives: 1, radius: 0.24, color: '#c6d86b', desc: 'Muy rápido, poca vida.' },
-    mole:           { name: 'Mole',            hp: 170, speed: 0.65, reward: 14, lives: 2, radius: 0.4,  color: '#5e7d57', desc: 'Tanque enorme y lento.' },
-    antidisturbios: { name: 'Antidisturbios',  hp: 80,  speed: 1.0,  reward: 10, lives: 1, radius: 0.3,  color: '#6f8fa8', armor: 4, desc: 'Blindado: resta 4 de daño a cada golpe.' },
-    mutante:        { name: 'Mutante',         hp: 75,  speed: 1.05, reward: 10, lives: 1, radius: 0.3,  color: '#b05fc4', regen: 5, desc: 'Se regenera constantemente.' },
-    hinchado:       { name: 'Hinchado',        hp: 60,  speed: 0.9,  reward: 7,  lives: 1, radius: 0.36, color: '#a3b84a', splitInto: { type: 'rata', count: 3 }, desc: 'Al morir revienta en 3 ratas.' },
-    rata:           { name: 'Rata',            hp: 12,  speed: 2.0,  reward: 2,  lives: 1, radius: 0.16, color: '#8d7b6a', desc: 'Pequeña; llega en enjambres.' },
-    chaman:         { name: 'Chamán',          hp: 65,  speed: 1.0,  reward: 13, lives: 1, radius: 0.3,  color: '#d06c6c', healer: { radius: 1.8, hps: 7 }, desc: 'Cura a los zombis cercanos.' },
-    fantasma:       { name: 'Fantasma',        hp: 40,  speed: 1.4,  reward: 9,  lives: 1, radius: 0.27, color: '#cfd8e6', hidden: true, desc: 'Camuflado: solo lo ven las torres de detección o con Radar.' },
-    acechador:      { name: 'Acechador',       hp: 110, speed: 1.0,  reward: 16, lives: 2, radius: 0.32, color: '#8b95a8', hidden: true, armor: 3, desc: 'Camuflado y blindado.' },
-    cuervo:         { name: 'Cuervo',          hp: 28,  speed: 1.8,  reward: 6,  lives: 1, radius: 0.24, color: '#3a3a4a', air: true, desc: 'Volador rápido. Vuela en línea recta.' },
-    murcielago:     { name: 'Murciélago',      hp: 26,  speed: 2.1,  reward: 8,  lives: 1, radius: 0.22, color: '#6b4f7a', air: true, hidden: true, desc: 'Volador y camuflado.' },
-    buitre:         { name: 'Buitre Blindado', hp: 140, speed: 0.85, reward: 16, lives: 2, radius: 0.36, color: '#7a6a5a', air: true, armor: 3, desc: 'Volador tanque con blindaje.' },
-    portador:       { name: 'Portador',        hp: 95,  speed: 0.85, reward: 14, lives: 2, radius: 0.36, color: '#9c7ab8', air: true, spawnOnDeath: { type: 'zombi', count: 4 }, desc: 'Al morir suelta 4 zombis en el camino.' },
+    zombi:          { name: 'Zombi', icon: '🧟',           hp: 26,  speed: 1.25, reward: 4,  lives: 1, radius: 0.28, color: '#7fb36a', desc: 'El clásico. Lento y torpe.' },
+    corredor:       { name: 'Corredor', icon: '🏃',        hp: 20,  speed: 2.3,  reward: 5,  lives: 1, radius: 0.24, color: '#c6d86b', desc: 'Muy rápido, poca vida.' },
+    mole:           { name: 'Mole', icon: '🦍',            hp: 170, speed: 0.65, reward: 14, lives: 2, radius: 0.4,  color: '#5e7d57', desc: 'Tanque enorme y lento.' },
+    antidisturbios: { name: 'Antidisturbios', icon: '🛡️',  hp: 80,  speed: 1.0,  reward: 10, lives: 1, radius: 0.3,  color: '#6f8fa8', armor: 4, desc: 'Blindado: resta 4 de daño a cada golpe.' },
+    mutante:        { name: 'Mutante', icon: '🧬',         hp: 75,  speed: 1.05, reward: 10, lives: 1, radius: 0.3,  color: '#b05fc4', regen: 5, desc: 'Se regenera constantemente.' },
+    hinchado:       { name: 'Hinchado', icon: '🎈',        hp: 60,  speed: 0.9,  reward: 7,  lives: 1, radius: 0.36, color: '#a3b84a', splitInto: { type: 'rata', count: 3 }, desc: 'Al morir revienta en 3 ratas.' },
+    rata:           { name: 'Rata', icon: '🐀',            hp: 12,  speed: 2.0,  reward: 2,  lives: 1, radius: 0.16, color: '#8d7b6a', desc: 'Pequeña; llega en enjambres.' },
+    chaman:         { name: 'Chamán', icon: '🔮',          hp: 65,  speed: 1.0,  reward: 13, lives: 1, radius: 0.3,  color: '#d06c6c', healer: { radius: 1.8, hps: 7 }, desc: 'Cura a los zombis cercanos.' },
+    fantasma:       { name: 'Fantasma', icon: '👻',        hp: 40,  speed: 1.4,  reward: 9,  lives: 1, radius: 0.27, color: '#cfd8e6', hidden: true, desc: 'Camuflado: solo lo ven las torres de detección o con Radar.' },
+    acechador:      { name: 'Acechador', icon: '🥷',       hp: 110, speed: 1.0,  reward: 16, lives: 2, radius: 0.32, color: '#8b95a8', hidden: true, armor: 3, desc: 'Camuflado y blindado.' },
+    cuervo:         { name: 'Cuervo', icon: '🐦',          hp: 28,  speed: 1.8,  reward: 6,  lives: 1, radius: 0.24, color: '#3a3a4a', air: true, desc: 'Volador rápido. Vuela en línea recta.' },
+    murcielago:     { name: 'Murciélago', icon: '🦇',      hp: 26,  speed: 2.1,  reward: 8,  lives: 1, radius: 0.22, color: '#6b4f7a', air: true, hidden: true, desc: 'Volador y camuflado.' },
+    buitre:         { name: 'Buitre Blindado', icon: '🦅', hp: 140, speed: 0.85, reward: 16, lives: 2, radius: 0.36, color: '#7a6a5a', air: true, armor: 3, desc: 'Volador tanque con blindaje.' },
+    portador:       { name: 'Portador', icon: '🪂',        hp: 95,  speed: 0.85, reward: 14, lives: 2, radius: 0.36, color: '#9c7ab8', air: true, spawnOnDeath: { type: 'zombi', count: 4 }, desc: 'Al morir suelta 4 zombis en el camino.' },
 
     // --- Jefes (uno por mapa) ---
-    granjero:  { name: 'Zombi Granjero Gigante', hp: 3200, speed: 0.5,  reward: 300, lives: 20, radius: 0.62, color: '#6d9a4f', armor: 2, boss: true,
+    granjero:  { name: 'Zombi Granjero Gigante', icon: '👨‍🌾', hp: 3200, speed: 0.5,  reward: 300, lives: 20, radius: 0.62, color: '#6d9a4f', armor: 2, boss: true,
                  enrage: { at: 0.5, speedMul: 1.8 }, desc: 'Jefe de la Pradera. Al quedar a media vida, embiste.' },
-    escorpion: { name: 'Escorpión Mutante',      hp: 3600, speed: 0.5,  reward: 320, lives: 20, radius: 0.62, color: '#c4532e', armor: 3, boss: true,
+    escorpion: { name: 'Escorpión Mutante', icon: '🦂',      hp: 3600, speed: 0.5,  reward: 320, lives: 20, radius: 0.62, color: '#c4532e', armor: 3, boss: true,
                  summon: { type: 'corredor', count: 3, every: 6 }, cloak: { every: 9, duration: 3 }, desc: 'Jefe del Cañón. Invoca crías y se camufla por momentos.' },
-    dragon:    { name: 'Dragón de Lava',         hp: 4200, speed: 0.42, reward: 350, lives: 20, radius: 0.66, color: '#e2572b', armor: 5, boss: true, air: true,
+    dragon:    { name: 'Dragón de Lava', icon: '🐉',         hp: 4200, speed: 0.42, reward: 350, lives: 20, radius: 0.66, color: '#e2572b', armor: 5, boss: true, air: true,
                  regen: 12, slowResist: 0.5, desc: 'Jefe de la Fragua. Volador, blindado, se regenera y resiste el frío.' }
   },
 
@@ -304,7 +308,7 @@ TD.CONFIG = {
       name: 'Fusilero', icon: '🪖', category: 'mixta', cost: 50, unlock: 1, behavior: 'bullet',
       desc: 'Barato y rápido. Tierra y aire.',
       targets: { ground: true, air: true }, detect: false,
-      stats: { damage: 5, range: 2.6, rate: 2.2, projSpeed: 16 },
+      stats: { damage: 7, range: 2.6, rate: 2.2, projSpeed: 16 },
       growth: { mul: { damage: 1.4, rate: 1.06 }, add: { range: 0.16 } },
       perk: { name: 'Veterano', desc: 'Cada 5º disparo hace daño doble.', everyN: 5, mult: 2 },
       look: { barrels: 1, barrelLen: 0.4, barrelW: 0.08, color: '#6b8a4a' }
@@ -313,7 +317,7 @@ TD.CONFIG = {
       name: 'Ametralladora', icon: '🔫', category: 'mixta', cost: 140, unlock: 1, behavior: 'bullet',
       desc: 'Cadencia altísima, poco daño por bala. Tierra y aire.',
       targets: { ground: true, air: true }, detect: false,
-      stats: { damage: 3, range: 2.8, rate: 8, projSpeed: 20 },
+      stats: { damage: 4, range: 2.8, rate: 8, projSpeed: 20 },
       growth: { mul: { damage: 1.36 }, add: { range: 0.12, rate: 0.6 } },
       perk: { name: 'Doble cañón', desc: 'Dispara a 2 enemigos a la vez.', multiTarget: 2 },
       look: { barrels: 2, barrelLen: 0.44, barrelW: 0.07, color: '#555b63' }
@@ -473,7 +477,7 @@ TD.CONFIG = {
 
   // Rangos militares: nivel mínimo, nombre, insignia y color
   ranks: [
-    { level: 1,  name: 'Recluta',               badge: '▫️', color: '#9aa3ad' },
+    { level: 1,  name: 'Recluta',               badge: '✧', color: '#9aa3ad' },
     { level: 3,  name: 'Soldado',               badge: '›',  color: '#a0c46a' },
     { level: 5,  name: 'Cabo',                  badge: '»',  color: '#7fbf5a' },
     { level: 8,  name: 'Sargento',              badge: '≫',  color: '#5fb0c0' },

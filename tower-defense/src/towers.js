@@ -662,8 +662,8 @@ TD.BEHAVIORS = {
       ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(Math.sin(t.anim) * 0.2);
       ctx.fillStyle = '#bfe9ff'; ctx.strokeStyle = '#4fb6e8'; ctx.lineWidth = 2;
       ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const a = i / 6 * Math.PI * 2, r = i % 2 ? S * 0.14 : S * 0.28;
+      for (let i = 0; i < 12; i++) {
+        const a = i / 12 * Math.PI * 2, r = i % 2 ? S * 0.12 : S * 0.3;
         ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
       }
       ctx.closePath(); ctx.fill(); ctx.stroke();

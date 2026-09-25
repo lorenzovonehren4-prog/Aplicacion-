@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reino en Guardia: Apocalipsis</title>
+  <meta name="description" content="Tower defense 2D: defiende tu fortaleza de hordas de zombis con 21 torres, héroes y habilidades.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Fondo animado para la intro y los menús -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <div id="app">
+    <!-- ===================== INTRO ===================== -->
+    <section id="screen-intro" class="screen active" aria-label="Introducción">
+      <div class="intro">
+        <div class="intro-badge">☣</div>
+        <h1 class="intro-title"><span>REINO EN</span><span>GUARDIA</span></h1>
+        <h2 class="intro-sub">APOCALIPSIS</h2>
+        <p class="intro-tag">La horda se acerca. Tu fortaleza es la última esperanza.</p>
+        <button class="intro-press" id="intro-start">▶ Toca para comenzar</button>
+      </div>
+    </section>
+
+    <!-- ===================== MENÚS (se generan en menus.js) ===================== -->
+    <section id="screen-menu" class="screen" aria-label="Menú principal"></section>
+    <section id="screen-select" class="screen" aria-label="Elegir mapa"></section>
+    <section id="screen-challenges" class="screen" aria-label="Desafíos"></section>
+    <section id="screen-instructions" class="screen" aria-label="Instrucciones"></section>
+    <section id="screen-profile" class="screen" aria-label="Perfil"></section>
+    <section id="screen-barracks" class="screen" aria-label="Cuartel"></section>
+    <section id="screen-achievements" class="screen" aria-label="Logros"></section>
+    <section id="screen-settings" class="screen" aria-label="Ajustes"></section>
+
+    <!-- ===================== PARTIDA ===================== -->
+    <section id="screen-game" class="screen" aria-label="Partida">
+      <header class="topbar">
+        <div class="hud">
+          <div class="hud-item" title="Vidas"><span class="hud-ico">❤️</span><b id="hud-lives">20</b></div>
+          <div class="hud-item" id="hud-money-box" title="Plata"><span class="hud-ico">💵</span><b id="hud-money">0</b></div>
+          <div class="hud-item" title="Oleada"><span class="hud-ico">🌊</span><b id="hud-wave">0/20</b></div>
+          <div class="hud-item hud-score" title="Puntuación"><span class="hud-ico">🏆</span><b id="hud-score">0</b></div>
+        </div>
+        <div class="next-wave" id="hud-next" title="Próxima oleada"></div>
+        <div class="hud-actions">
+          <button class="btn btn-wave" id="btn-wave" title="Iniciar / adelantar oleada (N)">▶ Iniciar oleada</button>
+          <button class="btn btn-small" id="btn-auto" title="Oleadas automáticas">🔁 Auto</button>
+          <button class="btn btn-small" id="btn-speed" title="Velocidad (F)">x1</button>
+          <button class="btn btn-small" id="btn-pause" title="Pausa (Espacio)">❚❚</button>
+        </div>
+      </header>
+
+      <div class="game-main">
+        <div class="board">
+          <div class="canvas-wrap">
+            <canvas id="game-canvas" width="960" height="576"></canvas>
+            <div class="banner" id="banner"><div class="banner-title"></div><div class="banner-sub"></div></div>
+            <div class="hint" id="hint"></div>
+          </div>
+          <div class="abilities" id="abilities"></div>
+        </div>
+
+        <aside class="side">
+          <div class="info" id="info" hidden></div>
+          <div class="shop">
+            <div class="tabs" id="shop-tabs" role="tablist"></div>
+            <div class="cards" id="shop-cards"></div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Pausa -->
+      <div class="overlay" id="pause" hidden>
+        <div class="panel panel-center">
+          <h2>⏸ Pausa</h2>
+          <button class="btn btn-big" data-act="resume">▶ Continuar</button>
+          <button class="btn" data-act="restart">🔄 Reiniciar</button>
+          <button class="btn" data-act="help">📖 Instrucciones</button>
+          <button class="btn" data-act="sound">🔊 Sonido</button>
+          <button class="btn btn-danger" data-act="quit">🏠 Salir al menú</button>
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div class="overlay" id="results" hidden></div>
+    </section>
+  </div>
+
+  <!-- Notificaciones y ventanas emergentes -->
+  <div id="toasts" aria-live="polite"></div>
+  <div class="overlay modal" id="modal" hidden></div>
+
+  <!-- Módulos del juego (orden importante) -->
+  <script src="src/config.js"></script>
+  <script src="src/utils.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/profile.js"></script>
+  <script src="src/map.js"></script>
+  <script src="src/enemies.js"></script>
+  <script src="src/projectiles.js"></script>
+  <script src="src/towers.js"></script>
+  <script src="src/heroes.js"></script>
+  <script src="src/game.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/menus.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
