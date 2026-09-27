@@ -9,3 +9,7 @@ Thumbs.db
 .idea/
 node_modules
 tests/capturas/
+
+# Combi Rush: capturas y copia del original
+combi-rush/shots/
+combi-rush/original.html
