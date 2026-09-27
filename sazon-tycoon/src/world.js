@@ -1,21 +1,27 @@
 /* ================== MUNDO 3D ================== */
 let isTouch = false;
 const INK = '#1B1523';
-const FONT_D = 'Bungee, Impact, sans-serif';
+const FONT_D = 'Fredoka, Rubik, sans-serif';
 const cv3 = document.getElementById('game');
 const cv = document.getElementById('fx');
 const ctx = cv.getContext('2d');
 let DPR = 1, W = 1280, H = 800;
-const renderer = new THREE.WebGLRenderer({ canvas: cv3, antialias: true, powerPreference: 'high-performance' });
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const renderer = new THREE.WebGLRenderer({ canvas: cv3, antialias: QCFG.aa, powerPreference: 'high-performance' });
+renderer.shadowMap.enabled = QCFG.shadows; renderer.shadowMap.type = QUALITY === 'alta' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+// Tone mapping cinematográfico: colores más ricos y luces que no se queman
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(42, 1, 10, 9000);
+const camera = new THREE.PerspectiveCamera(38, 1, 10, 9000);
 const hemi = new THREE.HemisphereLight(0xeaf0f6, 0x6b6258, 1.3); scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff0dc, 1.9); sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+const sun = new THREE.DirectionalLight(0xfff0dc, 1.9); sun.castShadow = QCFG.shadows;
+if (QCFG.shadows) sun.shadow.mapSize.set(QCFG.shadowSize, QCFG.shadowSize);
+// luz de relleno fría desde el lado opuesto al sol: da volumen a personas y muebles
+const fill = new THREE.DirectionalLight(0xbcd4ff, 0.45); fill.position.set(900, 700, -600); scene.add(fill);
 Object.assign(sun.shadow.camera, { left: -1100, right: 1100, top: 1100, bottom: -1100, near: 10, far: 4000 });
 sun.shadow.camera.updateProjectionMatrix(); sun.shadow.bias = -0.0006; sun.shadow.normalBias = 1.2;
 scene.add(sun); scene.add(sun.target);
+// cápsula de alto 2 y ancho 1: se escala como una caja (ver limb() en helpers.js)
+const GCAP = new THREE.CapsuleGeometry(0.5, 1, 3, 10);
 const GB = new THREE.BoxGeometry(1, 1, 1), GC = new THREE.CylinderGeometry(1, 1, 1, 20), GC8 = new THREE.CylinderGeometry(1, 1, 1, 8), GS = new THREE.SphereGeometry(1, 14, 10), GI = new THREE.IcosahedronGeometry(1, 1), GPL = new THREE.PlaneGeometry(1, 1);
 const MC = new Map(), TC = new Map(), GCache = new Map();
 const MAT = {}, T = {}, VC = {};
@@ -29,7 +35,7 @@ function initTextures() {
   T.soft = canvasTex('soft', 64, 64, (x, w, h) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); });
   T.asphalt = canvasTex('asf', 256, 256, (x, w, h) => { x.fillStyle = '#4A4C51'; x.fillRect(0, 0, w, h); noise(x, w, h, 5000, 0.12, 0.22); }, true);
   T.walk = canvasTex('walk', 128, 128, (x, w, h) => { x.fillStyle = '#C3BDB1'; x.fillRect(0, 0, w, h); noise(x, w, h, 900, 0.12, 0.14); x.strokeStyle = 'rgba(90,82,72,0.45)'; x.lineWidth = 2; for (let i = 0; i <= 4; i++) { x.beginPath(); x.moveTo(0, i * 32); x.lineTo(w, i * 32); x.stroke(); x.beginPath(); x.moveTo(i * 32, 0); x.lineTo(i * 32, h); x.stroke(); } }, true);
-  T.tile = canvasTex('tile', 128, 128, (x, w, h) => { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.fillStyle = (i + j) % 2 ? '#E9E3D6' : '#D8CFBE'; x.fillRect(i * 32, j * 32, 32, 32); } noise(x, w, h, 600, 0.08, 0.08); x.strokeStyle = 'rgba(0,0,0,0.12)'; for (let i = 0; i <= 4; i++) { x.beginPath(); x.moveTo(0, i * 32); x.lineTo(w, i * 32); x.moveTo(i * 32, 0); x.lineTo(i * 32, h); x.stroke(); } }, true);
+  T.tile = canvasTex('tile', 128, 128, (x, w, h) => { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.fillStyle = (i + j) % 2 ? '#E4D5BC' : '#CDB797'; x.fillRect(i * 32, j * 32, 32, 32); } noise(x, w, h, 600, 0.08, 0.08); x.strokeStyle = 'rgba(0,0,0,0.12)'; for (let i = 0; i <= 4; i++) { x.beginPath(); x.moveTo(0, i * 32); x.lineTo(w, i * 32); x.moveTo(i * 32, 0); x.lineTo(i * 32, h); x.stroke(); } }, true);
   T.kitchen = canvasTex('ktile', 128, 128, (x, w, h) => { for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { x.fillStyle = (i + j) % 2 ? '#F4F4F2' : '#2A2A2E'; x.fillRect(i * 16, j * 16, 16, 16); } }, true);
   T.wood = canvasTex('wood', 256, 256, (x, w, h) => { const cols = ['#9C6B3F', '#A87545', '#8E6038', '#B07C4A']; for (let i = 0; i < 8; i++) { x.fillStyle = cols[i % 4]; x.fillRect(0, i * 32, w, 32); for (let k = 0; k < 40; k++) { x.strokeStyle = 'rgba(60,35,15,' + (0.08 + Math.random() * 0.12).toFixed(2) + ')'; x.beginPath(); const yy = i * 32 + Math.random() * 32; x.moveTo(0, yy); x.bezierCurveTo(w * 0.3, yy + 3, w * 0.6, yy - 3, w, yy); x.stroke(); } x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(0, i * 32, w, 2); x.fillRect(((i * 97) % 200) + 20, i * 32, 2, 32); } }, true);
   T.concrete = canvasTex('conc', 128, 128, (x, w, h) => { x.fillStyle = '#A49E94'; x.fillRect(0, 0, w, h); noise(x, w, h, 1600, 0.12, 0.18); }, true);
@@ -58,7 +64,7 @@ const SLOTS = [
   [[-110, 250], [110, 250], [-330, 250], [300, 250], [-110, 60], [110, 60], [-330, 60], [300, 60], [-110, -140], [300, -140]],
 ];
 const floorY = f => f * FLOOR_H;
-const WLD = { root: null, floors: [], tables: [[], [], []], stations: [], pads: [], pops: [], deco: [[], [], []], steam: [], labels: [], money: null, cars: [], motos: [], lampMats: [] };
+const WLD = { root: null, floors: [], front: [], tables: [[], [], []], stations: [], pads: [], pops: [], deco: [[], [], []], steam: [], labels: [], money: null, cars: [], motos: [], lampMats: [] };
 
 function popIn(obj, delay) { obj.scale.setScalar(0.001); WLD.pops.push({ obj, t: -(delay || 0), sx: 1 }); }
 function dust(x, y, z) { for (let i = 0; i < 14; i++) SIM.fx.push({ type: 'dust', x: x + rand(-40, 40), y: y + rand(0, 20), z: z + rand(-40, 40), vx: rand(-60, 60), vy: rand(40, 120), vz: rand(-60, 60), t: 0, life: rand(0.5, 0.9) }); }
@@ -94,6 +100,7 @@ function makeTable(f, i, cap) {
   cyl(g, M(cloth, { phong: true }), r, 2.5, 0, 30, 0, true);
   cyl(g, MAT.woodD, r + 1, 1.5, 0, 28.5, 0, false);
   cyl(g, MAT.dark, 3, 27, 0, 14, 0, true); cyl(g, MAT.dark, 14, 2, 0, 1, 0, false);
+  blobShadow(g, sd + 14);
   // sillas: adelante y atrás; en la mesa para 4 también a los costados (girada, el respaldo mira hacia afuera)
   const chairs = [[0, sd, 0], [0, -sd, Math.PI]]; if (cap === 4) chairs.push([-sd, 0, -Math.PI / 2], [sd, 0, Math.PI / 2]);
   for (const [cx, cz, ry] of chairs) {
@@ -138,7 +145,7 @@ function makeRegister() {
   box(g, MAT.wood, 110, 42, 50, 0, 21, 0, true); box(g, M('#F2EFE6', { phong: true }), 114, 3, 54, 0, 43, 0, false);
   box(g, M('#26262C', { phong: true }), 26, 14, 20, -20, 52, 0, true); box(g, M('#19D46E', { em: '#0E8F4A' }), 18, 5, 1, -20, 57, -10.5, false);
   const mp = new THREE.Group(); mp.position.set(20, 44, 0); g.add(mp); WLD.money = mp;
-  const sign = canvasTex('caja', 256, 64, (x, w, h) => { x.fillStyle = '#FFE14D'; x.fillRect(0, 0, w, h); x.fillStyle = INK; x.font = '44px ' + FONT_D; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('CAJA', w / 2, h / 2 + 3); });
+  const sign = canvasTex('caja', 256, 64, (x, w, h) => { x.fillStyle = '#FFE14D'; x.fillRect(0, 0, w, h); x.fillStyle = INK; x.font = '700 44px ' + FONT_D; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('CAJA', w / 2, h / 2 + 3); });
   plane(g, M('#FFFFFF', { map: sign }), 60, 15, 0, 92, 0); cyl(g, MAT.dark, 1, 30, 0, 72, 0, false);
   return g;
 }
@@ -177,12 +184,14 @@ function makeFloorShell(f) {
     const winM = M('#9FC3DA', { phong: true, shin: 120 }), frM = M('#F4F4F2');
     for (const z of [-60, 120, 280]) for (const sx of [-1, 1]) { box(g, frM, 3, 64, 90, sx * 499, 100, z, false); box(g, winM, 3.5, 56, 82, sx * 499, 100, z, false); }
     for (const sx of [-1, 1]) box(g, M(shade(wc, -0.3)), 12, wh + 4, 16, sx * 500, wh / 2, 400, true);
-    const beam = box(g, M(shade(wc, -0.35)), 1012, 22, 14, 0, wh - 11, 400, true); void beam;
+    // fachada: viga, letrero y toldo van en un grupo aparte que se oculta cuando la cámara baja (vista en corte)
+    const front = new THREE.Group(); g.add(front); WLD.front.push(front);
+    box(front, M(shade(wc, -0.35)), 1012, 22, 14, 0, wh - 11, 400, true);
     if (f === 0) {
       const nt = canvasTex('name' + save.name, 1024, 96, (x, w, h) => { x.fillStyle = '#1B1523'; x.fillRect(0, 0, w, h); x.fillStyle = '#FFE14D'; x.textAlign = 'center'; x.textBaseline = 'middle'; fitFont(x, save.name.toUpperCase(), w - 60, 64, FONT_D); x.fillText(save.name.toUpperCase(), w / 2, h / 2 + 3); });
-      plane(g, M('#FFFFFF', { map: nt }), 500, 46, 0, wh + 28, 408);
-      box(g, MAT.dark, 520, 56, 6, 0, wh + 28, 404, false);
-      const aw = box(g, M('#FFFFFF', { map: stripeTex('#E23B3B', '#FFFFFF', 12) }), 180, 4, 60, 0, 130, 425, true); aw.rotation.x = 0.3;
+      plane(front, M('#FFFFFF', { map: nt }), 500, 46, 0, wh + 28, 408);
+      box(front, MAT.dark, 520, 56, 6, 0, wh + 28, 404, false);
+      const aw = box(front, M('#FFFFFF', { map: stripeTex('#E23B3B', '#FFFFFF', 12) }), 180, 4, 60, 0, 130, 425, true); aw.rotation.x = 0.3;
     }
   } else {
     const rail = M('#F4F4F2', { phong: true });
@@ -201,9 +210,9 @@ function makeDriveThru() {
   box(g, M('#FFE14D', { phong: true }), 8, 70, 70, -505, 90, -300, true);
   box(g, MAT.glass, 9, 50, 56, -505, 90, -300, false);
   const aw = box(g, M('#FFFFFF', { map: stripeTex('#E23B3B', '#FFFFFF', 10) }), 60, 4, 90, -535, 130, -300, true); aw.rotation.z = -0.3;
-  const mb = canvasTex('menuboard', 256, 320, (x, w, h) => { x.fillStyle = '#1B1523'; x.fillRect(0, 0, w, h); x.fillStyle = '#FFE14D'; x.font = '34px ' + FONT_D; x.textAlign = 'center'; x.fillText('DRIVE', w / 2, 46); x.font = '800 20px Rubik, sans-serif'; x.fillStyle = '#FFFFFF'; save.menu.slice(0, 7).forEach((id, i) => { x.textAlign = 'left'; x.fillText(DISH[id].name, 18, 94 + i * 30); x.textAlign = 'right'; x.fillText(soles(dishPrice(id)), w - 18, 94 + i * 30); }); });
+  const mb = canvasTex('menuboard', 256, 320, (x, w, h) => { x.fillStyle = '#1B1523'; x.fillRect(0, 0, w, h); x.fillStyle = '#FFE14D'; x.font = '700 34px ' + FONT_D; x.textAlign = 'center'; x.fillText('DRIVE', w / 2, 46); x.font = '800 20px Rubik, sans-serif'; x.fillStyle = '#FFFFFF'; save.menu.slice(0, 7).forEach((id, i) => { x.textAlign = 'left'; x.fillText(DISH[id].name, 18, 94 + i * 30); x.textAlign = 'right'; x.fillText(soles(dishPrice(id)), w - 18, 94 + i * 30); }); });
   cyl(g, MAT.dark, 3, 90, -700, 45, 60, true); const bp = plane(g, M('#FFFFFF', { map: mb }), 70, 88, -700, 110, 60); bp.rotation.y = Math.PI / 2;
-  const sg = canvasTex('dtsign', 256, 64, (x, w, h) => { x.fillStyle = '#FF2E88'; x.fillRect(0, 0, w, h); x.fillStyle = '#FFFFFF'; x.font = '38px ' + FONT_D; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('DRIVE-THRU', w / 2, h / 2 + 3); });
+  const sg = canvasTex('dtsign', 256, 64, (x, w, h) => { x.fillStyle = '#FF2E88'; x.fillRect(0, 0, w, h); x.fillStyle = '#FFFFFF'; x.font = '700 38px ' + FONT_D; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('DRIVE-THRU', w / 2, h / 2 + 3); });
   cyl(g, MAT.dark, 3, 120, -700, 60, 460, true); plane(g, M('#FFFFFF', { map: sg }), 110, 28, -700, 130, 462);
   return g;
 }
@@ -213,7 +222,7 @@ function makeMoto() {
   box(g, M('#19A35A', { phong: true }), 12, 12, 40, 0, 20, 0, true); box(g, MAT.dark, 14, 5, 22, 0, 29, 6, false);
   box(g, MAT.dark, 24, 2, 2, 0, 34, -20, false);
   const bx = new THREE.Group(); bx.position.set(0, 42, 18); g.add(bx);
-  const bt = canvasTex('dbox', 128, 128, (x, w, h) => { x.fillStyle = '#FF2E88'; x.fillRect(0, 0, w, h); x.fillStyle = '#FFFFFF'; x.font = '26px ' + FONT_D; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('DELIVERY', w / 2, h / 2); });
+  const bt = canvasTex('dbox', 128, 128, (x, w, h) => { x.fillStyle = '#FF2E88'; x.fillRect(0, 0, w, h); x.fillStyle = '#FFFFFF'; x.font = '700 26px ' + FONT_D; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('DELIVERY', w / 2, h / 2); });
   const bm = M('#FFFFFF', { map: bt });
   const b = new THREE.Mesh(GB, [bm, bm, M('#FF2E88'), M('#FF2E88'), bm, bm]); b.scale.set(26, 26, 26); b.castShadow = true; bx.add(b);
   return g;
@@ -292,7 +301,7 @@ function buildStreet(root) {
 function rebuildWorld() {
   if (WLD.root) scene.remove(WLD.root);
   WLD.root = new THREE.Group(); scene.add(WLD.root);
-  WLD.floors = []; WLD.tables = [[], [], []]; WLD.stations = []; WLD.deco = [[], [], []]; WLD.steam = []; WLD.lampMats = []; WLD.pops = []; WLD.money = null; WLD.cars = []; WLD.motoModels = [];
+  WLD.floors = []; WLD.front = []; WLD.tables = [[], [], []]; WLD.stations = []; WLD.deco = [[], [], []]; WLD.steam = []; WLD.lampMats = []; WLD.pops = []; WLD.money = null; WLD.cars = []; WLD.motoModels = [];
   buildStreet(WLD.root);
   for (let f = 0; f < save.floors; f++) {
     const fg = makeFloorShell(f); WLD.root.add(fg); WLD.floors.push(fg);
@@ -313,6 +322,6 @@ function rebuildWorld() {
 }
 function addTableModel(f, i, anim) { const [x, z] = SLOTS[f][i]; const t = makeTable(f, i, tableCap(f, i)); t.position.set(x, 0, z); WLD.floors[f].add(t); WLD.tables[f][i] = t; bake(t.userData.dirty.parent === t ? t : t); if (anim) { popIn(t); dust(x, floorY(f), z); } return t; }
 function addStationModel(i, anim) { const s = makeStation(i); s.position.set(STATION_X[i], 0, STATION_Z); WLD.floors[0].add(s); WLD.stations[i] = s; if (anim) { popIn(s); dust(STATION_X[i], 0, STATION_Z); } }
-function addDecorModel(kind, f, k, anim) { const d = makeDecor(kind, f, k); (kind === 'letrero' ? WLD.floors[0] : WLD.floors[f]).add(d); WLD.deco[f].push(d); if (anim) { popIn(d); dust(d.position.x, floorY(f), d.position.z); } }
+function addDecorModel(kind, f, k, anim) { const d = makeDecor(kind, f, k); (kind === 'letrero' ? WLD.floors[0] : WLD.floors[f]).add(d); if (kind === 'letrero') WLD.front.push(d); WLD.deco[f].push(d); if (anim) { popIn(d); dust(d.position.x, floorY(f), d.position.z); } }
 function addGeneratorModel(anim) { const g = makeGenerator(); g.position.set(GEN_POS.x - 30, 0, GEN_POS.z - 20); WLD.floors[0].add(g); if (anim) { popIn(g); dust(g.position.x, 0, g.position.z); } }
 function addMotoModel(i, anim) { const m = makeMoto(); m.position.set(620, 0, 180 + i * 80); m.rotation.y = Math.PI / 2; WLD.root.add(m); WLD.motoModels[i] = m; if (anim) popIn(m); }

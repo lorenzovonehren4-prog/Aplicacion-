@@ -6,8 +6,9 @@ function noise(x, w, h, n, light, dark) {
 }
 
 function fitFont(x, text, maxW, size, font) {
-  let fs = size; x.font = fs + 'px ' + font;
-  while (x.measureText(text).width > maxW && fs > 8) { fs -= 2; x.font = fs + 'px ' + font; }
+  const wt = font === FONT_D ? '700 ' : '';
+  let fs = size; x.font = wt + fs + 'px ' + font;
+  while (x.measureText(text).width > maxW && fs > 8) { fs -= 2; x.font = wt + fs + 'px ' + font; }
   return fs;
 }
 
@@ -45,6 +46,11 @@ function M(color, o) {
   if (o.op !== undefined) { base.transparent = true; base.opacity = o.op; }
   if (o.ds) base.side = THREE.DoubleSide;
   if (o.basic) { m = new THREE.MeshBasicMaterial(base); if (o.add) { m.blending = THREE.AdditiveBlending; m.depthWrite = false; } }
+  else if (QCFG.pbr) {
+    // PBR: lo "brillante" (phong) queda pulido y lo muy brillante (shin >= 140) es metálico; el resto, mate
+    const shin = o.shin || 70, rough = o.phong ? clamp(1 - shin / 190, 0.14, 0.62) : 0.78, metal = o.phong && shin >= 140 ? 0.65 : 0;
+    m = new THREE.MeshStandardMaterial(Object.assign(base, { roughness: rough, metalness: metal }, o.em ? { emissive: new THREE.Color(o.em), emissiveIntensity: 1 } : {}));
+  }
   else if (o.phong) m = new THREE.MeshPhongMaterial(Object.assign(base, { shininess: o.shin || 70, specular: new THREE.Color(0x3a3a3a) }));
   else m = new THREE.MeshLambertMaterial(Object.assign(base, o.em ? { emissive: new THREE.Color(o.em), emissiveIntensity: 1 } : {}));
   if (o.flat) m.flatShading = true;
@@ -92,6 +98,16 @@ function makeTree(p, x, z, rs, s) {
   p.add(g); return g;
 }
 
+// Extremidades y torso: cápsulas redondeadas (calidad media/alta) o cajas (baja)
+function limb(p, mat, w, h, d, x, y, z, cast) { return QCFG.round ? mesh(p, GCAP, mat, w, h / 2, d, x, y, z, cast !== false) : box(p, mat, w, h, d, x, y, z, cast); }
+// Sombra de contacto suave bajo personas y mesas: da peso aunque no haya sombras reales
+let BLOB_MAT = null;
+function blobShadow(p, r) {
+  if (!BLOB_MAT) BLOB_MAT = new THREE.MeshBasicMaterial({ color: 0x000000, map: T.soft, transparent: true, opacity: QCFG.shadows ? 0.45 : 0.6, depthWrite: false });
+  const m = new THREE.Mesh(GPL, BLOB_MAT); m.rotation.x = -Math.PI / 2; m.scale.set(r * 2, r * 2, 1); m.position.y = 0.7; m.renderOrder = 1; m.userData.keep = true;
+  p.add(m); return m;
+}
+
 function makePalm(p, x, z, rs) {
   const r = mulberry32(rs), g = new THREE.Group(); g.position.set(x, 0, z);
   const trunk = M('#8A6A48'), lean = (r() - 0.5) * 0.25;
@@ -111,31 +127,31 @@ function makePerson(look, opts) {
   const thighs = [], shins = [];
   for (const sx of [-2.7, 2.7]) {
     const th = new THREE.Group(); th.position.set(sx, 17, 0);
-    box(th, pants, 4.4, 8.8, 4.7, 0, -4.2, 0, cast);
+    limb(th, pants, 4.6, 10, 4.8, 0, -4.2, 0, cast);
     const sh = new THREE.Group(); sh.position.set(0, -8.4, 0);
-    box(sh, pants, 4.1, 8.2, 4.4, 0, -4.1, 0, cast);
-    box(sh, MAT.dark, 4.5, 2.6, 7, 0, -7.9, -1.2, cast);
+    limb(sh, pants, 4.2, 9.2, 4.4, 0, -4.1, 0, cast);
+    const shoe = QCFG.round ? sph(sh, MAT.dark, 1, 0, -7.9, -1.2, cast) : box(sh, MAT.dark, 4.5, 2.6, 7, 0, -7.9, -1.2, cast); if (QCFG.round) shoe.scale.set(2.5, 1.6, 3.8);
     th.add(sh); root.add(th); thighs.push(th); shins.push(sh);
   }
   if (look.kind === 'senora') { const sk = mesh(root, GC, M(look.bundle[0]), 7.4, 13, 6.4, 0, 12, 0, cast); sk.scale.set(7.4, 13, 6.4); }
   // tronco (se inclina, respira y se balancea)
   const body = new THREE.Group(); body.position.set(0, 17, 0); root.add(body);
-  box(body, shirt, 11, 13, 6.6, 0, 7, 0, cast);
-  box(body, pants, 10.6, 3, 6.2, 0, 0.5, 0, false);
+  limb(body, shirt, 11.4, 14.5, 7, 0, 7, 0, cast);
+  limb(body, pants, 10.8, 4, 6.4, 0, 0.8, 0, false);
   if (look.kind === 'escolar') { box(body, M('#6B6F76'), 11.2, 4, 6.8, 0, 0.5, 0, cast); box(body, M(look.bag), 8.5, 10, 4.5, 0, 8, 5.2, cast); }
   else if (look.bag) box(body, M(look.bag), 3, 8, 7, 6.4, 1, 0, cast);
   if (look.bundle) { const bt = stripeTex(look.bundle[1], look.bundle[2], 8); box(body, M('#FFFFFF', { map: bt }), 12, 10, 5.5, 0, 8, 5.5, cast); }
   if (look.pouch) box(body, M('#26262C'), 7, 3.5, 2, 0, 1.5, -3.8, cast);
   if (look.vest === true) { box(body, M('#FF7A1A'), 11.4, 11, 7, 0, 7.5, 0, cast); box(body, MAT.chrome, 11.6, 1.4, 7.2, 0, 6, 0, false); }
-  else if (look.vest) { box(body, M(look.vest), 11.4, 11, 7, 0, 7.5, 0, cast); box(body, M(look.shirt), 3.5, 11.2, 7.2, 0, 7.5, 0, false); }
+  else if (look.vest) { limb(body, M(look.vest), 11.9, 12.5, 7.4, 0, 7.5, 0, cast); box(body, M(look.shirt), 3.5, 10, 1, 0, 8, -3.5, false); }
   if (look.apron) box(body, M(look.apron), 10, 12, 1, 0, 3, -3.6, false);
   // brazos con codo
   const arms = [], fores = [];
   for (const sx of [-6.9, 6.9]) {
     const ag = new THREE.Group(); ag.position.set(sx, 12.5, 0);
-    box(ag, shirt, 3.3, 6.6, 3.8, 0, -3.1, 0, cast);
+    limb(ag, shirt, 3.6, 7.6, 3.9, 0, -3.1, 0, cast);
     const fa = new THREE.Group(); fa.position.set(0, -6.2, 0);
-    box(fa, look.kind === 'senora' || look.long ? shirt : skin, 3.0, 6, 3.4, 0, -3, 0, cast);
+    limb(fa, look.kind === 'senora' || look.long ? shirt : skin, 3.1, 6.8, 3.3, 0, -3, 0, cast);
     sph(fa, skin, 1.9, 0, -6.6, 0, false);
     ag.add(fa); body.add(ag); arms.push(ag); fores.push(fa);
   }
@@ -152,6 +168,7 @@ function makePerson(look, opts) {
   box(head, MAT.dark, 1.1, 1.3, 0.6, -1.7, 5, -4.4, false); box(head, MAT.dark, 1.1, 1.3, 0.6, 1.7, 5, -4.4, false);
   box(head, M(shade(look.skin, -0.25)), 2.6, 0.8, 0.6, 0, 2.6, -4.5, false);
   if (look.clip) box(fores[1], M('#8B5E3C'), 6, 8, 1, 0, -6, -3, false);
+  blobShadow(root, 13);
   root.userData = { legs: thighs, shins, arms, fores, body, head, seed: Math.random() * 10 };
   root.scale.setScalar((look.scale || 1) * (opts.scale || 1));
   return root;
@@ -198,9 +215,10 @@ function posePerson(m, phase, walking, wave, t, seated, ex) {
 }
 
 
-function vcMat(kind) {
+function vcMat(kind, src) {
   if (!VC[kind]) {
     if (kind === 'vp') VC[kind] = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.34, metalness: 0.35 });
+    else if (kind[1] === 's') VC[kind] = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: src.roughness, metalness: src.metalness, flatShading: !!src.flatShading });
     else VC[kind] = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: kind === 'vlf' });
   }
   return VC[kind];
@@ -243,7 +261,7 @@ function bake(node) {
       const m = ch.material;
       const plain = !m.map && !m.transparent && !m.isMeshBasicMaterial && !(m.emissive && m.emissive.getHex());
       let key, mat;
-      if (plain) { key = m.isMeshPhongMaterial ? 'vp' : (m.flatShading ? 'vlf' : 'vl'); mat = vcMat(key); }
+      if (plain) { key = m.isMeshStandardMaterial ? 'vs' + m.roughness.toFixed(2) + m.metalness + (m.flatShading ? 'f' : '') : m.isMeshPhongMaterial ? 'vp' : (m.flatShading ? 'vlf' : 'vl'); mat = vcMat(key, m); }
       else { key = m.uuid; mat = m; }
       let b = buckets.get(key); if (!b) { b = { mat, geos: [], cast: false }; buckets.set(key, b); }
       ch.updateMatrix();
@@ -296,7 +314,7 @@ function facadeTex(color, floors, brick, seed) {
           x.strokeStyle = 'rgba(40,40,45,0.45)'; x.lineWidth = 2;
           for (let yy = sy + 4; yy < sy + sh; yy += 7) { x.beginPath(); x.moveTo(sx, yy); x.lineTo(sx + sw, yy); x.stroke(); }
           x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(sx + sw / 2 - 12, sy + sh - 8, 24, 5);
-          if (r() < 0.5) { x.fillStyle = '#E23B3B'; x.font = '18px ' + FONT_D; x.textAlign = 'center'; x.fillText(pickR(r, ['SE ALQUILA', 'NO ESTACIONAR', 'CERRADO']), w / 2, sy + sh / 2); }
+          if (r() < 0.5) { x.fillStyle = '#E23B3B'; x.font = '700 18px ' + FONT_D; x.textAlign = 'center'; x.fillText(pickR(r, ['SE ALQUILA', 'NO ESTACIONAR', 'CERRADO']), w / 2, sy + sh / 2); }
         }
         x.strokeStyle = INK; x.lineWidth = 3; x.strokeRect(sx, sy, sw, sh);
       } else {

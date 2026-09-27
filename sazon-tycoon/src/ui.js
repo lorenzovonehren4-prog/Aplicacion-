@@ -2,7 +2,11 @@
 const $ = s => document.querySelector(s);
 const stage = $('#stage');
 let viewFloor = 0, camYaw = 0.3, camDist = 1200, camPitch = 1.08, playing = false, panel = null, decorFloor = 0;
-const camT = new THREE.Vector3(0, 0, 60), camP = new THREE.Vector3();
+// Cámara: los controles cambian los objetivos (…T) y la cámara los sigue con suavidad.
+// yawV es la inercia al soltar el giro; tilt es la inclinación extra que pone el jugador arrastrando en vertical.
+const CAM = { yawT: 0.3, yawV: 0, distT: 1200, tilt: 0, tiltT: 0, zMin: 560, zMax: 2400 };
+const camT = new THREE.Vector3(0, 0, 60), camP = new THREE.Vector3(), camGoal = new THREE.Vector3(), camLook = new THREE.Vector3();
+const lastAv = { x: 0, z: 0, vx: 0, vz: 0 };
 
 function resize() {
   const vw = window.innerWidth, vh = window.innerHeight;
@@ -10,9 +14,9 @@ function resize() {
   W = vw; H = vh; DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouch ? 1.4 : 2)); renderer.setSize(vw, vh, false);
-  camera.aspect = vw / vh; camera.fov = vw / vh < 1 ? 58 : 42; camera.updateProjectionMatrix();
+  camera.aspect = vw / vh; camera.fov = vw / vh < 1 ? 54 : 38; camera.updateProjectionMatrix();
   stage.classList.toggle('portrait', vw / vh < 1);
-  if (vw / vh < 1) camDist = Math.max(camDist, 1500);
+  if (vw / vh < 1) CAM.distT = Math.max(CAM.distT, 1500);
 }
 window.addEventListener('resize', resize);
 
@@ -229,7 +233,7 @@ window.addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
   keys[e.code] = true;
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code) && playing) e.preventDefault();
-  if (e.code === 'KeyQ') camYaw -= 0.3; if (e.code === 'KeyE') camYaw += 0.3;
+  if (e.code === 'KeyQ') CAM.yawT -= 0.4; if (e.code === 'KeyE') CAM.yawT += 0.4;
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -241,15 +245,22 @@ function readMove() {
 const joy = { on: false, x: 0, y: 0 };
 const ptrs = new Map(); let drag = null, pinch0 = 0;
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-cv3.addEventListener('pointerdown', e => { if (!playing) return; audioInit(); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (ptrs.size === 1) drag = { x: e.clientX, y: e.clientY, yaw: camYaw, moved: false }; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); drag = null; } cv3.setPointerCapture(e.pointerId); });
+cv3.addEventListener('pointerdown', e => { if (!playing) return; audioInit(); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (ptrs.size === 1) { drag = { x: e.clientX, y: e.clientY, yaw: CAM.yawT, tilt: CAM.tiltT, moved: false, lx: e.clientX, lt: performance.now() }; CAM.yawV = 0; } if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); drag = null; } cv3.setPointerCapture(e.pointerId); });
 cv3.addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) camDist = clamp(camDist * pinch0 / d, 650, 2400); pinch0 = d; return; }
-  if (drag) { const dx = e.clientX - drag.x; if (Math.abs(dx) > 7 || Math.abs(e.clientY - drag.y) > 7) drag.moved = true; if (drag.moved) camYaw = drag.yaw - dx * 0.006; }
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) CAM.distT = clamp(CAM.distT * pinch0 / d, CAM.zMin, CAM.zMax); pinch0 = d; return; }
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) > 7 || Math.abs(dy) > 7) drag.moved = true;
+    if (drag.moved) {
+      CAM.yawT = drag.yaw - dx * 0.006; CAM.tiltT = clamp(drag.tilt + dy * 0.0025, -0.3, 0.3);
+      const now = performance.now(), ddt = Math.max(1, now - drag.lt) / 1000; CAM.yawV = lerp(CAM.yawV, -(e.clientX - drag.lx) * 0.006 / ddt, 0.5); drag.lx = e.clientX; drag.lt = now;
+    }
+  }
 });
-cv3.addEventListener('pointerup', e => { ptrs.delete(e.pointerId); if (drag && !drag.moved && ptrs.size === 0) tap(e.clientX, e.clientY); if (ptrs.size === 0) drag = null; pinch0 = 0; });
+cv3.addEventListener('pointerup', e => { ptrs.delete(e.pointerId); if (drag && !drag.moved && ptrs.size === 0) tap(e.clientX, e.clientY); if (drag && performance.now() - drag.lt > 80) CAM.yawV = 0; if (ptrs.size === 0) drag = null; pinch0 = 0; });
 cv3.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); drag = null; });
-cv3.addEventListener('wheel', e => { e.preventDefault(); camDist = clamp(camDist * (1 + Math.sign(e.deltaY) * 0.1), 650, 2400); }, { passive: false });
+cv3.addEventListener('wheel', e => { e.preventDefault(); CAM.distT = clamp(CAM.distT * (1 + clamp(e.deltaY, -100, 100) * 0.0015), CAM.zMin, CAM.zMax); }, { passive: false });
 function tap(cx, cy) {
   const r = cv3.getBoundingClientRect(); ndc.set((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
@@ -291,7 +302,7 @@ function drawOverlay() {
   drawStaffIcons();
   const ready = SIM.orders.filter(o => o.status === 'ready' && o.kind !== 'delivery').length;
   if (ready && viewFloor === 0) { const s = proj(-120, 90, PASS_Z); if (s) { ctx.font = '800 13px Rubik, sans-serif'; const txt = ready + (ready === 1 ? ' plato listo' : ' platos listos'); const w = ctx.measureText(txt).width + 22; ctx.fillStyle = '#FFE14D'; rr(s.x - w / 2, s.y - 13, w, 26, 13); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = INK; ctx.fillText(txt, s.x, s.y + 1); } }
-  if (save.register > 0 && viewFloor === 0) { const s = proj(REG.x, 120, REG.z); if (s) { ctx.font = '15px ' + FONT_D; const txt = soles(save.register); const w = ctx.measureText(txt).width + 24; const bob = Math.sin(SIM.t * 5) * 3; ctx.fillStyle = '#19D46E'; rr(s.x - w / 2, s.y - 15 + bob, w, 30, 15); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1 + bob); } }
+  if (save.register > 0 && viewFloor === 0) { const s = proj(REG.x, 120, REG.z); if (s) { ctx.font = '700 15px ' + FONT_D; const txt = soles(save.register); const w = ctx.measureText(txt).width + 24; const bob = Math.sin(SIM.t * 5) * 3; ctx.fillStyle = '#19D46E'; rr(s.x - w / 2, s.y - 15 + bob, w, 30, 15); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1 + bob); } }
   if (viewFloor === 0) for (const c of SIM.cars) if (c.state === 'in' && c.ordered) { const s = proj(-615, 80, c.z); if (s) { const pc = c.patience / 100; ctx.strokeStyle = pc > 0.5 ? '#19D46E' : pc > 0.25 ? '#FFB800' : '#FF3B30'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(s.x, s.y, 9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pc); ctx.stroke(); } }
   for (const f of SIM.fx) {
     let x = f.x, y = f.y, z = f.z;
@@ -303,7 +314,7 @@ function drawOverlay() {
   for (const t of SIM.texts) {
     const s = proj(t.x, t.y, t.z); if (!s) continue;
     const k = t.t / t.life; ctx.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
-    ctx.font = (t.size > 16 ? t.size + 'px ' + FONT_D : '800 ' + t.size + 'px Rubik, sans-serif');
+    ctx.font = (t.size > 16 ? '700 ' + t.size + 'px ' + FONT_D : '800 ' + t.size + 'px Rubik, sans-serif');
     ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.strokeText(t.text, s.x, s.y); ctx.fillStyle = t.color; ctx.fillText(t.text, s.x, s.y);
   }
   ctx.globalAlpha = 1;
@@ -375,7 +386,9 @@ function updateLighting() {
   const h = hourNow();
   const dayK = clamp((19.2 - h) / 1.4, 0, 1);
   const dusk = clamp(1 - Math.abs(h - 18.6) / 1.2, 0, 1);
-  sun.intensity = 0.25 + 1.65 * dayK; hemi.intensity = 0.55 + 0.8 * dayK;
+  // con materiales PBR el mapa de entorno ya aporta luz ambiente: la hemisférica se baja para no lavar los colores
+  const amb = QCFG.pbr ? 0.5 : 1;
+  sun.intensity = 0.25 + 1.85 * dayK; hemi.intensity = (0.55 + 0.8 * dayK) * amb; fill.intensity = 0.15 + 0.3 * dayK;
   sun.color.setRGB(1, lerp(0.75, 0.94, dayK), lerp(0.55, 0.86, dayK));
   hemi.color.setRGB(lerp(0.45, 0.92, dayK), lerp(0.42, 0.94, dayK), lerp(0.6, 0.96, dayK));
   const key = Math.round(dayK * 6) + '_' + Math.round(dusk * 3);
@@ -392,13 +405,26 @@ function updatePops(dt) {
   for (const d of WLD.deco[0].concat(WLD.deco[1] || [])) if (d.userData.fish) d.userData.fish.forEach((fsh, i) => { fsh.position.z = Math.sin(SIM.t * 0.7 + i) * 55; fsh.rotation.y = Math.cos(SIM.t * 0.7 + i) > 0 ? 0 : Math.PI; });
 }
 function updateCamera(dt) {
-  const a = SIM.avatar;
-  const tx = a ? a.x * 0.8 : 0, tz = a ? a.z * 0.8 + 40 : 60, ty = floorY(viewFloor);
-  camT.lerp(new THREE.Vector3(tx, ty, tz), 1 - Math.exp(-dt * 3));
+  const a = SIM.avatar, k = 1 - Math.exp(-dt * 6);
+  // inercia del giro al soltar el dedo o el mouse
+  if (!drag && Math.abs(CAM.yawV) > 0.001) { CAM.yawT += CAM.yawV * dt; CAM.yawV *= Math.exp(-dt * 3.5); }
+  camYaw = lerp(camYaw, CAM.yawT, k); camDist = lerp(camDist, CAM.distT, 1 - Math.exp(-dt * 5)); CAM.tilt = lerp(CAM.tilt, CAM.tiltT, k);
+  // más cerca = ángulo más bajo y cinematográfico; más lejos = vista de planta
+  const zk = clamp((camDist - CAM.zMin) / (CAM.zMax - CAM.zMin), 0, 1);
+  camPitch = clamp(lerp(0.66, 1.12, zk) + CAM.tilt, 0.42, 1.36);
+  // sigue a tu personaje y mira un poco hacia donde camina
+  let tx = 0, tz = 60;
+  if (a) {
+    const vx = (a.x - lastAv.x) / Math.max(dt, 1e-3), vz = (a.z - lastAv.z) / Math.max(dt, 1e-3); lastAv.x = a.x; lastAv.z = a.z;
+    lastAv.vx = lerp(lastAv.vx, clamp(vx, -300, 300), 1 - Math.exp(-dt * 4)); lastAv.vz = lerp(lastAv.vz, clamp(vz, -300, 300), 1 - Math.exp(-dt * 4));
+    tx = a.x * 0.85 + lastAv.vx * 0.35; tz = a.z * 0.85 + 30 + lastAv.vz * 0.35;
+  }
+  camGoal.set(tx, floorY(viewFloor), tz);
+  camT.lerp(camGoal, 1 - Math.exp(-dt * 3.2));
   camP.set(camT.x + Math.sin(camYaw) * Math.cos(camPitch) * camDist, camT.y + Math.sin(camPitch) * camDist, camT.z + Math.cos(camYaw) * Math.cos(camPitch) * camDist);
   camera.position.copy(camP);
   if (shake > 0 && !REDUCED) { camera.position.x += rand(-1, 1) * shake; camera.position.y += rand(-1, 1) * shake; shake = Math.max(0, shake - dt * 30); }
-  camera.lookAt(camT);
+  camLook.copy(camT); camLook.y += 18; camera.lookAt(camLook);
   sun.position.set(camT.x - 700, 1400, camT.z + 500); sun.target.position.copy(camT);
 }
 
@@ -414,6 +440,7 @@ $('#t-go').addEventListener('click', () => {
   const nm = $('#t-name').value.trim(); if (nm && nm !== save.name) { save.name = nm.slice(0, 26); rebuildAll(); }
   const first = !save.started; save.started = true;
   $('#title').hidden = true; playing = true; stage.classList.remove('intitle'); persist();
+  CAM.distT = W / H < 1 ? 1500 : 1150; CAM.tiltT = 0;
   if (!first && $('#dayend').hidden) showEventCard();
   if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Acércate a las mesas para anotar el pedido. Cuando salga el plato, llévalo a la mesa.'), 400);
 });
@@ -480,9 +507,11 @@ function frame(t) {
     refreshPads(false);
     updateHUD(dt);
     saveT += dt; if (saveT > 8) { saveT = 0; persist(); goalCheck(); }
-  } else if (!playing) { SIM.t += dt; camYaw += dt * 0.05; }
+  } else if (!playing) { SIM.t += dt; CAM.yawT += dt * 0.06; CAM.distT = 1350; CAM.tiltT = -0.12; }
   updateMoneyPile(save.register);
   for (let f = 0; f < WLD.floors.length; f++) WLD.floors[f].visible = f <= viewFloor;
+  // vista en corte: al jugar con la cámara baja se esconde la fachada para ver las mesas de adelante
+  const cut = playing && camPitch < 1.0; for (const fr of WLD.front) fr.visible = !cut;
   updatePops(dt); updateLighting(); poseAll(SIM.t); updateCamera(dt);
   renderer.render(scene, camera);
   drawOverlay();
@@ -491,7 +520,7 @@ function frame(t) {
 
 /* ---------- arranque ---------- */
 isTouch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window;
-stage.classList.toggle('touch', isTouch);
+stage.classList.toggle('touch', isTouch); stage.classList.add('q-' + QUALITY);
 loadSave(); resize();
 function boot() {
   initTextures(); initMats(); initEnv();
@@ -502,6 +531,6 @@ function boot() {
   showTitle(); offlineEarnings();
   requestAnimationFrame(frame);
 }
-const fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('40px Bungee'), document.fonts.load('800 16px Rubik')]) : Promise.resolve();
+const fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 40px Fredoka'), document.fonts.load('800 16px Rubik')]) : Promise.resolve();
 Promise.race([fontsReady, new Promise(r => setTimeout(r, 1800))]).then(boot, boot);
 window.__rt = { get save() { return save; }, SIM, WLD, buy, padList, updateSim, updateAvatar, collectRegister, route, openPanel, frame: () => frame(performance.now()), start() { $('#t-go').click(); } };

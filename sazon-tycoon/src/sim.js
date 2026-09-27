@@ -509,7 +509,7 @@ function updateSim(dt) {
   updateEvents();
   const fer = eventOn('feriado');
   SIM.spawnT -= dt;
-  if (SIM.spawnT <= 0) { SIM.spawnT = rand(0.9, 1.9) / DIST().flow / (fer ? 2 : 1); if (SIM.people.filter(p => p.role === 'walker').length < (DIST().busy ? 32 : 24) * (fer ? 1.5 : 1)) spawnWalker(); }
+  if (SIM.spawnT <= 0) { SIM.spawnT = rand(0.9, 1.9) / DIST().flow / (fer ? 2 : 1); if (SIM.people.filter(p => p.role === 'walker').length < QCFG.walkers * (DIST().busy ? 1.3 : 1) * (fer ? 1.5 : 1)) spawnWalker(); }
   for (const p of SIM.people.slice()) { if (p.role === 'walker') updateWalker(p, dt); else if (ROLES[p.role]) updateStaff(p, dt); }
   const parties = new Set(); for (const p of SIM.people) if (p.party && typeof p.party === 'object') parties.add(p.party);
   for (const t of SIM.tables) if (t.party) parties.add(t.party);
