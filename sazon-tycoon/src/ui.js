@@ -74,7 +74,7 @@ function banner(t, sub) { const el = $('#banner'); el.innerHTML = '<b>' + esc(t)
 function goalCheck() { const d = checkGoals(); if (d.length) { setTimeout(() => { toast('<small>¡Meta cumplida!</small><b>' + esc(d[0].t) + '</b><em>+' + soles(d[0].r) + '</em>'); SFX.cash(); }, 400); persist(); } }
 
 /* ---------- paneles ---------- */
-const PANELS = { staff: 'Personal', carta: 'Carta', decor: 'Decoración', reviews: 'Reseñas', goals: 'Metas', options: 'Opciones' };
+const PANELS = { chain: 'Mi cadena', staff: 'Personal', carta: 'Carta', decor: 'Decoración', reviews: 'Reseñas', goals: 'Metas', options: 'Opciones' };
 function openPanel(k) { panel = panel === k ? null : k; SFX.click(); renderPanel(); }
 function renderPanel() {
   const el = $('#panel');
@@ -82,7 +82,22 @@ function renderPanel() {
   if (!panel) { el.hidden = true; return; }
   el.hidden = false;
   let h = '<div class="ph"><h2>' + PANELS[panel] + '</h2><button class="x" id="pclose" aria-label="Cerrar">✕</button></div><div class="pb">';
-  if (panel === 'staff') {
+  if (panel === 'chain') {
+    const L = chainList(), best = Math.max(...L.map(c => c.rating)), unlocked = best >= CHAIN_RATING;
+    h += '<p class="note">Tu plata es una sola para todos los locales. Los que no estás mirando siguen vendiendo con su personal (rinden un ' + Math.round(BG_SHARE * 100) + ' %).</p>';
+    L.forEach((c, i) => {
+      const D = DISTRICTS[c.district] || DISTRICTS.centro, here = i === save.active, nT = c.tables[0] + c.tables[1] + c.tables[2];
+      h += '<div class="card loc' + (here ? ' here' : '') + '"><div class="ci"><b>' + esc(c.name) + '</b><span>' + D.name + ' · ' + c.rating.toFixed(1) + ' ★ · ' + nT + ' mesas</span><small>' + (here ? 'Estás aquí' : 'Gana unos ' + soles(localeDaily(c) * BG_SHARE) + ' por día sin ti') + '</small></div><div class="ca">' +
+        (here ? '<span class="need ok">Aquí</span>' : '<button class="b g" data-go="' + i + '">Ir</button>') + '</div></div>';
+    });
+    const open = L.map(c => c.district), cost = OPEN_COST[Math.min(L.length, OPEN_COST.length - 1)];
+    const left = Object.keys(DISTRICTS).filter(k => !open.includes(k));
+    if (left.length) {
+      h += '<h3 class="sub">Abrir un nuevo local</h3>';
+      if (!unlocked || save.money < CHAIN_MONEY) h += '<p class="note">Para crecer necesitas un local con <b>' + CHAIN_RATING + ' ★</b> (tu mejor: ' + best.toFixed(1) + ') y <b>' + soles(CHAIN_MONEY) + '</b> en la mano (tienes ' + soles(save.money) + ').</p>';
+      for (const k of left) { const D = DISTRICTS[k], can = unlocked && save.money >= Math.max(CHAIN_MONEY, cost); h += '<div class="card' + (can ? '' : ' lock') + '"><div class="ci"><b>' + D.name + '</b><span>' + D.desc + '</span><small>' + (D.priceMul > 1 ? 'Pagan ' + Math.round((D.priceMul - 1) * 100) + ' % más' : 'Precios ' + Math.round((1 - D.priceMul) * 100) + ' % más bajos') + ' · ' + (D.flow > 1.2 ? 'mucha gente' : D.dinner > 1.5 ? 'fuerte en la cena' : 'exigen decoración') + '</small></div><div class="ca"><button class="b g" data-open="' + k + '"' + (can ? '' : ' disabled') + '>Abrir ' + soles(cost) + '</button></div></div>'; }
+    }
+  } else if (panel === 'staff') {
     for (const k of ROLE_KEYS) {
       const R = ROLES[k], n = save.staff[k] || 0, mx = roleMax(k), lv = save.train[k] || 0;
       const lock = mx === 0;
@@ -145,7 +160,24 @@ function renderPanel() {
   el.querySelectorAll('[data-wall]').forEach(b => b.onclick = () => { save.wall[decorFloor] = b.dataset.wall; rebuildAll(); SFX.click(); renderPanel(); persist(); });
   el.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { const k = b.dataset.tog; save[k] = !save[k]; setGains(); renderPanel(); persist(); });
   const rn = el.querySelector('#rname-ok'); if (rn) rn.onclick = () => { const v = el.querySelector('#rname').value.trim().slice(0, 26); if (v) { save.name = v; rebuildAll(); persist(); SFX.build(); renderPanel(); } };
+  el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => switchLocal(+b.dataset.go));
+  el.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openLocal(b.dataset.open));
   const rs = el.querySelector('#reset'); if (rs) rs.onclick = () => { if (rs.dataset.a) { localStorage.removeItem(SAVE_KEY); location.reload(); } else { rs.dataset.a = 1; rs.textContent = '¿Seguro?'; } };
+}
+// Cambia al local i: guarda el actual, carga el otro y reconstruye el mundo
+function switchLocal(i, isNew) {
+  if (i === save.active) return;
+  save.chain[save.active] = snapshotLocal(); save.active = i; applyLocal(save.chain[i]);
+  resetSim(); rebuildWorld(); syncTables(); syncStaff(); makeAvatar(); refreshPads(true);
+  viewFloor = 0; decorFloor = 0; panel = null; renderPanel(); updateLighting.k = null;
+  SFX.build(); persist();
+  banner(isNew ? '¡Nuevo local en ' + DIST().name + '!' : save.name, isNew ? DIST().desc : DIST().name + ' · ' + save.rating.toFixed(1) + ' ★');
+}
+function openLocal(k) {
+  const cost = OPEN_COST[Math.min(save.chain.length, OPEN_COST.length - 1)];
+  if (Math.max(...chainList().map(c => c.rating)) < CHAIN_RATING || save.money < Math.max(CHAIN_MONEY, cost)) { SFX.no(); return; }
+  save.money -= cost; save.chain[save.active] = snapshotLocal(); save.chain.push(newLocal(k));
+  switchLocal(save.chain.length - 1, true); goalCheck();
 }
 function starStr(v) { const n = Math.round(v); return '★'.repeat(n) + '☆'.repeat(5 - n); }
 
@@ -157,13 +189,15 @@ function updateHUD(dt) {
   const reg = $('#h-reg'); reg.textContent = save.register > 0 ? 'Caja: ' + soles(save.register) : 'Caja vacía'; reg.classList.toggle('hot', save.register >= 40 && !(save.staff.cajero > 0));
   const h = hourNow(), hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15;
   $('#h-clock').textContent = hh + ':' + String(mm).padStart(2, '0');
-  $('#h-day').textContent = 'Día ' + save.day + (h >= 12.5 && h < 15 ? ', almuerzo' : h >= 19 && h < 21.5 ? ', cena' : h >= 22.6 ? ', cerrando' : '');
+  $('#h-day').textContent = 'Día ' + save.day + (save.chain.length > 1 ? ' · ' + DIST().short : '') + (h >= 12.5 && h < 15 ? ', almuerzo' : h >= 19 && h < 21.5 ? ', cena' : h >= 22.6 ? ', cerrando' : '');
   $('#h-dayfill').style.width = (save.dayT / DAY_LEN * 100).toFixed(1) + '%';
   $('#h-rating').textContent = save.rating.toFixed(1); $('#h-stars').textContent = starStr(save.rating);
   const eat = SIM.tables.filter(t => t.party).length; $('#h-busy').textContent = eat + '/' + SIM.tables.length + ' mesas';
   $('#h-speed').textContent = 'x' + save.speed;
   document.querySelectorAll('[data-floor]').forEach(b => { const f = +b.dataset.floor; b.hidden = f >= save.floors; b.classList.toggle('on', f === viewFloor); });
   $('#floors').hidden = save.floors < 2;
+  $('#b-chain').hidden = !(save.chain.length > 1 || save.rating >= 4 || save.money >= 10000);
+  if (!save.chainTold && save.chain.length < 4 && save.rating >= CHAIN_RATING && save.money >= CHAIN_MONEY) { save.chainTold = true; banner('¡Ya puedes abrir otro local!', 'Entra a Mi cadena y elige un distrito.'); SFX.cash(); }
   // pista contextual
   const a = SIM.avatar, ready = SIM.orders.filter(o => o.status === 'ready' && !o.claimed && o.kind !== 'delivery').length;
   let hint = '';
@@ -175,7 +209,7 @@ function updateHUD(dt) {
   else if (SIM.queue.length >= 2) hint = 'Hay cola en la puerta: compra más mesas.';
   else { const pd = WLD.pads.find(p => save.money >= p.price); if (pd) hint = 'Ya puedes comprar: ' + pd.title + ' (pisa el círculo verde o tócalo).'; }
   $('#hint').textContent = hint; $('#hint').hidden = !hint;
-  if (panel === 'staff' || panel === 'carta' || panel === 'decor') { const t2 = Math.floor(save.money / 10); if (t2 !== renderPanel._m) { renderPanel._m = t2; renderPanel(); } }
+  if (panel === 'staff' || panel === 'carta' || panel === 'decor' || panel === 'chain') { const t2 = Math.floor(save.money / 10); if (t2 !== renderPanel._m) { renderPanel._m = t2; renderPanel(); } }
 }
 
 /* ---------- controles ---------- */
@@ -373,9 +407,10 @@ $('#t-go').addEventListener('click', () => {
 onDayEnd = log => {
   const el = $('#dayend');
   const profit = log.income - log.costs - log.wages;
+  const chainRow = log.chain > 0 ? '<dt>Tus otros locales</dt><dd class="pos">+' + soles(log.chain) + '</dd>' : '';
   el.innerHTML = '<div class="dcard"><small>Fin del día ' + log.day + '</small><h2>' + (profit > 0 ? '¡Buen día!' : 'Día difícil') + '</h2>' +
     '<dl><dt>Ventas</dt><dd>' + soles(log.income) + '</dd><dt>Propinas incluidas</dt><dd>' + soles(log.tips) + '</dd><dt>Ingredientes</dt><dd>-' + soles(log.costs) + '</dd><dt>Sueldos del personal</dt><dd>-' + soles(log.wages) + '</dd><dt class="tot">Ganancia</dt><dd class="tot ' + (profit >= 0 ? 'pos' : 'neg') + '">' + soles(profit) + '</dd>' +
-    '<dt>Platos servidos</dt><dd>' + log.served + '</dd><dt>Clientes que se fueron</dt><dd>' + log.lost + '</dd><dt>Calificación</dt><dd>' + log.rating.toFixed(1) + ' ★</dd></dl>' +
+    chainRow + '<dt>Platos servidos</dt><dd>' + log.served + '</dd><dt>Clientes que se fueron</dt><dd>' + log.lost + '</dd><dt>Calificación</dt><dd>' + log.rating.toFixed(1) + ' ★</dd></dl>' +
     (log.lost > 3 ? '<p class="tip">Se fueron ' + log.lost + ' clientes por falta de mesas: compra más.</p>' : '') + '<button class="b g big" id="d-ok">Siguiente día</button></div>';
   el.hidden = false; SFX.cash();
   el.querySelector('#d-ok').onclick = () => { el.hidden = true; SFX.click(); goalCheck(); };
@@ -383,12 +418,13 @@ onDayEnd = log => {
 function offlineEarnings() {
   if (!save.started) return;
   const gap = (Date.now() - (save.lastT || Date.now())) / 1000;
-  if (gap < 90 || (save.profitEma || 0) <= 0) return;
-  const earn = Math.round(save.profitEma * Math.min(gap, 8 * 3600) / DAY_LEN * 0.22);
+  const daily = Math.max(0, save.profitEma || 0) + chainBgDaily();
+  if (gap < 90 || daily <= 0) return;
+  const earn = Math.round(daily * Math.min(gap, 8 * 3600) / DAY_LEN * 0.22);
   if (earn < 5) return;
   save.money += earn; persist();
   const hrs = Math.floor(gap / 3600), mins = Math.floor(gap % 3600 / 60);
-  $('#dayend').innerHTML = '<div class="dcard"><small>Mientras no estabas</small><h2>Tu restaurante siguió vendiendo</h2><p class="big-money">+' + soles(earn) + '</p><p class="tip">Estuviste fuera ' + (hrs ? hrs + ' h ' : '') + mins + ' min. Tu personal atendió solo (hasta 8 horas).</p><button class="b g big" id="d-ok">¡Genial!</button></div>';
+  $('#dayend').innerHTML = '<div class="dcard"><small>Mientras no estabas</small><h2>Tu restaurante siguió vendiendo</h2><p class="big-money">+' + soles(earn) + '</p><p class="tip">Estuviste fuera ' + (hrs ? hrs + ' h ' : '') + mins + ' min. ' + (save.chain.length > 1 ? 'Tus ' + save.chain.length + ' locales atendieron' : 'Tu personal atendió') + ' solo (hasta 8 horas).</p><button class="b g big" id="d-ok">¡Genial!</button></div>';
   $('#dayend').hidden = false; $('#dayend').querySelector('#d-ok').onclick = () => { $('#dayend').hidden = true; SFX.cash(); };
 }
 

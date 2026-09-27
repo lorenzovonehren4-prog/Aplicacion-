@@ -267,13 +267,16 @@ function buildStreet(root) {
   const sw2 = new THREE.Mesh(new THREE.BoxGeometry(6000, 8, 110), M('#FFFFFF', { map: T.walk })); sw2.position.set(0, 4, 875); sw2.receiveShadow = true; root.add(sw2);
   const lot = new THREE.Mesh(new THREE.PlaneGeometry(1700, 1200), M('#FFFFFF', { map: T.concrete })); lot.material.map.repeat.set(12, 9); lot.rotation.x = -Math.PI / 2; lot.position.set(0, -0.4, -190); lot.receiveShadow = true; root.add(lot);
   const grd = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000), M('#6D665C')); grd.rotation.x = -Math.PI / 2; grd.position.y = -1; grd.receiveShadow = true; root.add(grd);
-  const r = mulberry32(42), facs = ['#F2C230', '#2E6BFF', '#19A35A', '#E23B3B', '#FF7A1A', '#EDE6D6', '#7B3FF2', '#3C8D93', '#E8A0B8'];
+  const D = DIST(), r = mulberry32(D.seed), facs = D.facades;
   const nb = (x0, x1, z, face) => { const fl = 2 + Math.floor(r() * 3), Hb = fl * 110, col = pickR(r, facs), tex = facadeTex(col, fl, r() < 0.3, Math.floor(r() * 99)); const n = Math.max(1, Math.round((x1 - x0) / 200)); const key = tex.uuid + 'n' + n; let ft = TC.get(key); if (!ft) { ft = tex.clone(); ft.wrapS = THREE.RepeatWrapping; ft.repeat.set(n, 1); ft.needsUpdate = true; TC.set(key, ft); } const fm = M('#FFFFFF', { map: ft }), sd = M('#FFFFFF', { map: T.brick }); const mats = [sd, sd, M('#9A958D'), sd, sd, sd]; mats[face] = fm; const b = new THREE.Mesh(GB, mats); b.scale.set(x1 - x0, Hb, 300); b.position.set((x0 + x1) / 2, Hb / 2, z); b.castShadow = true; b.receiveShadow = true; root.add(b); };
   let x = -3000; while (x < -820) { const w = 220 + r() * 160; nb(x, Math.min(-820, x + w), 250, 4); x += w + 4; }
   x = 820; while (x < 3000) { const w = 220 + r() * 160; nb(x, x + w, 250, 4); x += w + 4; }
   x = -3000; while (x < 3000) { const w = 220 + r() * 160; nb(x, x + w, 1080, 5); x += w + 4; }
   x = -1600; while (x < 1600) { const w = 260 + r() * 200; nb(x, x + w, -950, 4); x += w + 4; }
-  for (let k = -2800; k < 2800; k += 260) { if (Math.abs(k) < 560) continue; makeTree(root, k, 505, Math.floor(r() * 1e6), 1.3); }
+  for (let k = -2800; k < 2800; k += 260) { if (Math.abs(k) < 560) continue; if (D.palms) makePalm(root, k, 505, Math.floor(r() * 1e6)); else makeTree(root, k, 505, Math.floor(r() * 1e6), 1.3); }
+  // letrero de la calle con el distrito
+  const st = canvasTex('street' + D.street, 256, 96, (x, w, h) => { x.fillStyle = '#1F5FA8'; x.fillRect(0, 0, w, h); x.strokeStyle = '#FFFFFF'; x.lineWidth = 5; x.strokeRect(6, 6, w - 12, h - 12); x.fillStyle = '#FFFFFF'; x.textAlign = 'center'; x.textBaseline = 'middle'; fitFont(x, D.street.toUpperCase(), w - 36, 30, FONT_D); x.fillText(D.street.toUpperCase(), w / 2, 36); x.font = '800 20px Rubik, sans-serif'; x.fillText(D.name, w / 2, 70); });
+  cyl(root, M('#6E7277'), 2.2, 150, 520, 75, 500, true); const sp = plane(root, M('#FFFFFF', { map: st, ds: true }), 84, 32, 520, 140, 500); void sp;
   for (let k = -2600; k < 2600; k += 520) { cyl(root, M('#6E7277'), 2, 140, k, 70, 515, true); box(root, M('#6E7277'), 40, 3, 3, k, 138, 500, false); }
 }
 function rebuildWorld() {

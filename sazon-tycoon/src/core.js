@@ -70,6 +70,20 @@ const DECOR = [
 const WALL_COLORS = ['#F2C230', '#E8A0B8', '#6FB3E0', '#19A35A', '#FF7A1A', '#EDE6D6', '#C0392B', '#7B3FF2'];
 const PRICE_LVL = { barato: { mul: 0.85, carta: 0.7, flow: 1.25, name: 'Barato' }, normal: { mul: 1, carta: 0, flow: 1, name: 'Normal' }, caro: { mul: 1.25, carta: -0.8, flow: 0.78, name: 'Caro' } };
 const DAY_LEN = 180;
+/* ---------- distritos (Etapa 2: cadena de locales) ----------
+   priceMul: cuánto pagan · flow: cuánta gente entra · decoNeed: cuánta decoración exigen
+   decoW: peso de la decoración en la reseña · priceSens: cuánto les importa el nivel de precios
+   dinner: fuerza del pico de la cena · music: bonus de paciencia del parlante */
+const DISTRICTS = {
+  centro: { name: 'Cercado de Lima', short: 'Centro', street: 'Jr. de la Unión', desc: 'Donde empezó todo.', priceMul: 1, flow: 1, decoNeed: 1, decoW: 0.2, priceSens: 1, dinner: 1, music: 0.3, seed: 42, facades: ['#F2C230', '#2E6BFF', '#19A35A', '#E23B3B', '#FF7A1A', '#EDE6D6', '#7B3FF2', '#3C8D93', '#E8A0B8'] },
+  miraflores: { name: 'Miraflores', short: 'Miraflores', street: 'Av. Larco', desc: 'Turistas y oficinistas: pagan más, pero exigen un local bonito.', priceMul: 1.35, flow: 0.9, decoNeed: 1.7, decoW: 0.34, priceSens: 0.6, dinner: 1.1, music: 0.3, seed: 7, palms: true, facades: ['#EDE6D6', '#F4F4F2', '#C9C3B6', '#6FB3E0', '#3C8D93', '#DDE3E8'] },
+  barranco: { name: 'Barranco', short: 'Barranco', street: 'Av. Grau', desc: 'Bohemio y nocturno: se llena en la cena y adora la música criolla.', priceMul: 1.15, flow: 1.05, decoNeed: 1.2, decoW: 0.25, priceSens: 0.9, dinner: 1.9, music: 0.8, seed: 19, facades: ['#E8A0B8', '#F2C230', '#6FB3E0', '#FF7A1A', '#19A35A', '#C0392B', '#F4EAD2'] },
+  gamarra: { name: 'Gamarra', short: 'Gamarra', street: 'Jr. Gamarra', desc: 'Mucha gente apurada: vienen en masa y buscan precio.', priceMul: 0.85, flow: 1.65, decoNeed: 0.6, decoW: 0.1, priceSens: 2.2, dinner: 0.7, music: 0.2, seed: 88, busy: true, facades: ['#A49E94', '#8C857A', '#2E6BFF', '#E23B3B', '#FFE14D', '#6A6474', '#B5553A'] },
+};
+const DIST = () => DISTRICTS[save.district] || DISTRICTS.centro;
+// Para abrir locales nuevos: 4.5 estrellas y S/ 20 000 en la mano; el precio sube con cada local
+const CHAIN_RATING = 4.5, CHAIN_MONEY = 20000;
+const OPEN_COST = [0, 15000, 25000, 40000];
 const GOALS = [
   { id: 'g0', t: 'Toma el pedido de una mesa', r: 10, ok: () => save.stats.ordersTaken >= 1 },
   { id: 'g1', t: 'Lleva tu primer plato a una mesa', r: 20, ok: () => save.stats.served >= 1 },
@@ -89,6 +103,8 @@ const GOALS = [
   { id: 'g14', t: 'Sirve 500 platos', r: 500, ok: () => save.stats.served >= 500 },
   { id: 'g15', t: 'Construye la terraza del tercer piso', r: 800, ok: () => save.floors >= 3 },
   { id: 'g16', t: 'Llega a 5 estrellas', r: 1000, ok: () => save.rating >= 4.9 },
+  { id: 'g17', t: 'Abre tu segundo local', r: 2000, ok: () => save.chain.length >= 2 },
+  { id: 'g18', t: 'Ten locales en 4 distritos', r: 10000, ok: () => save.chain.length >= 4 },
 ];
 
 /* ================== GUARDADO ================== */
@@ -100,21 +116,53 @@ function freshSave() {
     staff: { cocinero: 1 }, train: {}, menu: ['ceviche', 'chicha'], recipe: {}, price: 'normal',
     decor: [{}, {}, {}], wall: ['#EDE6D6', '#EDE6D6', '#EDE6D6'],
     goals: [], stats: { served: 0, cleaned: 0, collected: 0, customers: 0, lost: 0, ordersTaken: 0 },
-    dayLog: { income: 0, costs: 0, served: 0, lost: 0, tips: 0 }, profitEma: 0, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
+    dayLog: { income: 0, costs: 0, served: 0, lost: 0, tips: 0 }, profitEma: 0,
+    district: 'centro', generator: false, chain: [], active: 0, chainDay: 0, chainTold: false, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
   };
 }
 let save = freshSave();
 function loadSave() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && typeof s === 'object') save = Object.assign(freshSave(), s, { stats: Object.assign(freshSave().stats, s.stats || {}), dayLog: Object.assign(freshSave().dayLog, s.dayLog || {}) }); } catch (e) { }
+  if (!Array.isArray(save.chain) || !save.chain.length) { save.chain = [snapshotLocal()]; save.active = 0; }
+  save.active = clamp(save.active | 0, 0, save.chain.length - 1);
 }
-function persist() { try { save.lastT = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } }
+function persist() { try { save.lastT = Date.now(); save.chain[save.active] = snapshotLocal(); localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } }
+
+/* ---------- cadena de locales ----------
+   El local activo vive en los campos de arriba de `save`; save.chain guarda una copia de cada local
+   (la del activo se actualiza al guardar y al cambiar de local). La plata, el día y las metas son de toda la cadena. */
+const LOCAL_KEYS = ['name', 'district', 'register', 'rating', 'reviews', 'floors', 'tables', 'big', 'stations', 'drive', 'motos', 'staff', 'train', 'menu', 'recipe', 'price', 'decor', 'wall', 'profitEma', 'dayLog', 'generator'];
+const clone = v => JSON.parse(JSON.stringify(v));
+function snapshotLocal() { return snapshotLocalFrom(save); }
+function applyLocal(o) { const f = freshSave(); for (const k of LOCAL_KEYS) save[k] = o[k] !== undefined ? clone(o[k]) : f[k]; }
+function chainList() { return save.chain.map((c, i) => i === save.active ? snapshotLocal() : c); }
+function newLocal(district) {
+  const f = freshSave(), base = save.chain[0] ? save.chain[0].name : save.name;
+  return Object.assign(snapshotLocalFrom(f), { name: (base + ' ' + DISTRICTS[district].short).slice(0, 26), district, rating: 3.5, tables: [4, 0, 0], staff: { cocinero: 1, mozo: 1 }, menu: clone(save.menu), recipe: clone(save.recipe) });
+}
+function snapshotLocalFrom(src) { const o = {}; for (const k of LOCAL_KEYS) o[k] = clone(src[k]); return o; }
+// Ganancia diaria estimada de un local que no estás mirando (lo atiende su personal)
+function localeDaily(loc) {
+  const D = DISTRICTS[loc.district] || DISTRICTS.centro, st = loc.staff || {};
+  const nT = loc.tables[0] + loc.tables[1] + loc.tables[2], nB = (loc.big || [0, 0, 0]).reduce((a, b) => a + b, 0);
+  const seats = nT * 2 + nB * 2, cooks = st.cocinero || 0;
+  let price = 0, cost = 0; for (const id of loc.menu) { price += DISH[id].price * (1 + ((loc.recipe || {})[id] || 0) * 0.12); cost += DISH[id].cost; }
+  price = price / loc.menu.length * PRICE_LVL[loc.price].mul * D.priceMul; cost /= loc.menu.length;
+  const service = Math.min(1, ((st.mozo || 0) + 0.5) / Math.max(1, seats / 8));
+  const customers = Math.min(seats * 3.5, cooks * 40) * (0.4 + loc.rating / 5 * 0.6) * service * Math.min(1.4, D.flow);
+  let wages = 0; for (const k of ROLE_KEYS) wages += (st[k] || 0) * ROLES[k].wage;
+  const est = customers * (price * 1.1 - cost) - wages;
+  return Math.max(0, loc.profitEma > 0 ? (loc.profitEma + est) / 2 : est);
+}
+const BG_SHARE = 0.7; // lo que rinde un local sin ti
+function chainBgDaily() { let t = 0; save.chain.forEach((c, i) => { if (i !== save.active) t += localeDaily(c) * BG_SHARE; }); return t; }
 function totalTables() { return save.tables[0] + save.tables[1] + save.tables[2]; }
 function totalBig() { return save.big[0] + save.big[1] + save.big[2]; }
 // La mesa i del piso f es para 4 si ya se agrandó (se agrandan en orden)
 const tableCap = (f, i) => i < (save.big[f] || 0) ? 4 : 2;
 function decoPts(f) { let p = 0; const d = save.decor[f] || {}; for (const it of DECOR) p += (d[it.id] || 0) * it.pts; return p; }
 function recipeLvl(id) { return save.recipe[id] || 0; }
-function dishPrice(id) { return Math.round(DISH[id].price * (1 + recipeLvl(id) * 0.12) * PRICE_LVL[save.price].mul); }
+function dishPrice(id) { return Math.round(DISH[id].price * (1 + recipeLvl(id) * 0.12) * PRICE_LVL[save.price].mul * DIST().priceMul); }
 function checkGoals() { const out = []; for (const g of GOALS) if (!save.goals.includes(g.id) && g.ok()) { save.goals.push(g.id); save.money += g.r; out.push(g); } return out; }
 
 /* ================== AUDIO ================== */

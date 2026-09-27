@@ -29,6 +29,14 @@ Vereda (`walker`) → entra si quiere y hay mesa con sillas suficientes (`freeTa
 - Grupos de 3 y 4 solo llegan si existe alguna mesa para 4. Sillas: `seatPos(t, s)` (0 adelante, 1 atrás, 2 y 3 a los costados); el mozo se para en `waiterSpot(t, s)`.
 - Iconos del personal: `staffActivity()` y `drawIcon()` en `ui.js`, dibujados a mano en el canvas 2D (sin emojis).
 
+## Cadena de locales (Etapa 2)
+
+- `DISTRICTS` en `core.js` define cada distrito (Centro, Miraflores, Barranco, Gamarra): cuánto pagan, cuánta gente entra, cuánta decoración exigen, etc. `DIST()` devuelve el del local activo.
+- El local activo vive en los campos de arriba de `save`. `save.chain` guarda una copia de cada local (`LOCAL_KEYS`) y `save.active` es el índice del activo. La plata, el día y las metas son de toda la cadena.
+- Si agregas un campo que es de cada local, ponlo también en `LOCAL_KEYS`.
+- `switchLocal(i)` (en `ui.js`) guarda el actual, llama a `resetSim()` y reconstruye todo. `openLocal(k)` abre uno nuevo.
+- Los locales que no miras ganan `localeDaily(loc) * BG_SHARE` por día, sumado poco a poco en `updateSim`.
+
 ## Coordenadas
 
 - Unidades: una persona mide unos 38. Y es hacia arriba.

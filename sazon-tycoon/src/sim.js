@@ -64,7 +64,7 @@ function freeTable(n) { const opts = SIM.tables.filter(t => !t.party && !t.dirty
 
 /* ---------- ratings ---------- */
 function cartaScore() { const n = save.menu.length; return clamp(1 + (n >= 11 ? 4 : n >= 8 ? 3.2 : n >= 5 ? 2.4 : n >= 3 ? 1.6 : 0.8) + PRICE_LVL[save.price].carta, 1, 5); }
-function decoScore(f) { const nt = Math.max(2, save.tables[f]); return clamp(1.2 + decoPts(f) / (3 + nt * 1.1) * 3.6, 1, 5); }
+function decoScore(f) { const nt = Math.max(2, save.tables[f]); return clamp(1.2 + decoPts(f) / ((3 + nt * 1.1) * DIST().decoNeed) * 3.6, 1, 5); }
 function cleanScore(f) { const dirtyT = SIM.tables.filter(t => t.f === f && t.dirty).length, spots = SIM.dirt[f].length; return clamp(5 - dirtyT * 0.9 - spots * 0.5, 1, 5); }
 const COMMENTS = {
   food: [['¡Riquísimo el {d}!', '¡El mejor {d} de Lima!', 'Volveré por ese {d}.'], ['El {d} estaba bien.', 'Buen sabor, nada del otro mundo.'], ['El {d} llegó frío.', 'Esperé demasiado mi {d}.', 'Muy lento el servicio.']],
@@ -77,7 +77,7 @@ function makeReview(party, waited, angry) {
   const dish = party.dishes && party.dishes[0];
   const food = angry ? 1 : clamp(2.2 + recipeLvl(dish) * 0.6 + (waited < 14 ? 1.3 : waited < 26 ? 0.6 : waited < 38 ? 0 : -1), 1, 5);
   const carta = cartaScore(), deco = decoScore(f), clean = cleanScore(f);
-  const overall = angry ? 1 : (food * 0.4 + carta * 0.2 + deco * 0.2 + clean * 0.2);
+  const dw = DIST().decoW, overall = angry ? 1 : (food * 0.4 + carta * 0.2 + deco * dw + clean * 0.2) / (0.8 + dw);
   let text;
   const worst = [['food', food], ['clean', clean], ['deco', deco], ['carta', carta]].sort((a, b) => a[1] - b[1])[0];
   if (angry) text = dish ? pick(['¡Me cansé de esperar!', 'Nunca me trajeron mi pedido.', 'Pésimo servicio.']) : pick(['Nadie vino a tomarme el pedido.', '¿Hay mozos aquí o qué?', 'Me ignoraron todo el rato.']);
@@ -132,8 +132,9 @@ function spawnWalker() {
   const p = spawnPerson('walker', randLook(), -dir * 1500, 8, 455 + rand(-20, 20));
   p.dir = dir; p.state = 'walk'; p.path = [{ x: dir * 1500, y: 8, z: p.z }];
   const h = hourNow();
-  const peak = 0.35 + 0.9 * Math.exp(-Math.pow((h - 13) / 1.4, 2)) + 0.8 * Math.exp(-Math.pow((h - 20) / 1.6, 2));
-  const pEnter = clamp(0.3 + (save.rating - 3) * 0.16, 0.1, 0.85) * PRICE_LVL[save.price].flow * Math.min(1.3, peak) * (h > 22.6 ? 0 : 1);
+  const D = DIST();
+  const peak = 0.35 + 0.9 * Math.exp(-Math.pow((h - 13) / 1.4, 2)) + 0.8 * D.dinner * Math.exp(-Math.pow((h - 20) / 1.6, 2));
+  const pEnter = clamp(0.3 + (save.rating - 3) * 0.16, 0.1, 0.85) * Math.pow(PRICE_LVL[save.price].flow, D.priceSens) * Math.min(1.3, peak) * (h > 22.6 ? 0 : 1);
   p.wants = chance(pEnter);
   // grupos de 3 o 4 solo vienen si hay mesas para 4
   const r = Math.random();
@@ -181,7 +182,7 @@ function updateParty(party, dt) {
     party.patience -= dt * 1.2;
     if (party.patience <= 0) { leaveParty(party, true); }
   } else if (party.state === 'wait') {
-    party.patience -= dt * (1.9 - (save.decor[t.f] && save.decor[t.f].parlante ? 0.3 : 0));
+    party.patience -= dt * (1.9 - (save.decor[t.f] && save.decor[t.f].parlante ? DIST().music : 0));
     if (party.patience <= 0) { leaveParty(party, true); }
   } else if (party.state === 'eating') {
     party.t -= dt;
@@ -437,6 +438,14 @@ function updateFx(dt) {
   SIM.texts = SIM.texts.filter(t => t.t < t.life);
 }
 
+/* ---------- cambio de local ---------- */
+// Vacía la simulación (gente, autos, pedidos) antes de reconstruir otro local
+function resetSim() {
+  for (const p of SIM.people.slice()) removePerson(p);
+  for (const c of SIM.cars) if (c.m.parent) c.m.parent.remove(c.m);
+  Object.assign(SIM, { people: [], orders: [], fx: [], texts: [], tables: [], queue: [], cars: [], dirt: [[], [], []], rides: [], deliveries: [], avatar: null, spawnT: 1, carT: 8, delT: 10 });
+}
+
 /* ---------- ciclo del día ---------- */
 let onDayEnd = () => {};
 function updateSim(dt) {
@@ -446,13 +455,15 @@ function updateSim(dt) {
     save.dayT = 0;
     let wages = 0; for (const k of ROLE_KEYS) wages += (save.staff[k] || 0) * ROLES[k].wage;
     save.money -= wages;
-    const log = Object.assign({}, save.dayLog, { wages, day: save.day, rating: save.rating });
+    const log = Object.assign({}, save.dayLog, { wages, day: save.day, rating: save.rating, chain: Math.round(save.chainDay) }); save.chainDay = 0;
     save.profitEma = lerp(save.profitEma || 0, log.income - log.costs - wages, save.day === 1 ? 1 : 0.4);
     save.day++; save.dayLog = { income: 0, costs: 0, served: 0, lost: 0, tips: 0 };
     persist(); onDayEnd(log);
   }
+  // los otros locales de la cadena siguen vendiendo solos
+  if (save.chain.length > 1) { const bg = chainBgDaily() / DAY_LEN * dt; save.money += bg; save.chainDay += bg; }
   SIM.spawnT -= dt;
-  if (SIM.spawnT <= 0) { SIM.spawnT = rand(0.9, 1.9); if (SIM.people.filter(p => p.role === 'walker').length < 24) spawnWalker(); }
+  if (SIM.spawnT <= 0) { SIM.spawnT = rand(0.9, 1.9) / DIST().flow; if (SIM.people.filter(p => p.role === 'walker').length < (DIST().busy ? 32 : 24)) spawnWalker(); }
   for (const p of SIM.people.slice()) { if (p.role === 'walker') updateWalker(p, dt); else if (ROLES[p.role]) updateStaff(p, dt); }
   const parties = new Set(); for (const p of SIM.people) if (p.party && typeof p.party === 'object') parties.add(p.party);
   for (const t of SIM.tables) if (t.party) parties.add(t.party);

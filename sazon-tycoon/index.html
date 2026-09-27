@@ -79,6 +79,9 @@ button{ font-family:inherit; }
 .rbar em{ font-style:normal; text-align:right; font-weight:800; }
 .rlist{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
 .rv{ background:rgba(27,21,35,.05); border-radius:12px; padding:8px 10px; } .rv b{ font-size:13px; margin-right:6px; } .rv span{ color:#E0A800; font-size:12px; } .rv p{ margin:3px 0 0; font-size:13px; font-style:italic; }
+.sub{ font-family:'Bungee', Impact, sans-serif; font-weight:400; font-size:16px; margin:18px 0 4px; }
+.card.loc.here{ background:rgba(255,122,26,.08); border-radius:12px; padding-left:8px; padding-right:8px; }
+#side button[hidden]{ display:none; }
 .goal{ display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-top:1px solid rgba(27,21,35,.1); font-weight:700; font-size:13.5px; }
 .goal em{ font-style:normal; color:#0E8F4A; font-weight:800; white-space:nowrap; } .goal.done{ opacity:.45; } .goal.done span{ text-decoration:line-through; }
 .nrow{ display:flex; gap:8px; margin-bottom:8px; } .nrow input{ flex:1; font-family:inherit; font-weight:700; font-size:15px; padding:8px 10px; border:2px solid rgba(27,21,35,.2); border-radius:10px; min-width:0; }
@@ -147,6 +150,7 @@ button{ font-family:inherit; }
     <button class="ib" id="h-menu" aria-label="Menú">☰</button>
   </div>
   <div id="side">
+    <button data-panel="chain" id="b-chain" hidden><svg viewBox="0 0 24 24"><path d="M3 21V9l5-3v15M8 21V4l7 3v14M15 21V11l6 2v8M2 21h20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Cadena</button>
     <button data-panel="staff"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3.2" fill="currentColor"/><circle cx="17" cy="8" r="2.5" fill="currentColor"/><path d="M3 20c0-4 3-7 6-7s6 3 6 7M14 20c0-3 1.5-5.5 3-5.5s4 2 4 5.5" fill="currentColor"/></svg>Personal</button>
     <button data-panel="carta"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Carta</button>
     <button data-panel="decor"><svg viewBox="0 0 24 24"><path d="M12 21c-3-3-7-5-7-10a5 5 0 0 1 7-4 5 5 0 0 1 7 4c0 5-4 7-7 10z" fill="currentColor"/></svg>Decorar</button>

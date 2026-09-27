@@ -92,6 +92,16 @@ function makeTree(p, x, z, rs, s) {
   p.add(g); return g;
 }
 
+function makePalm(p, x, z, rs) {
+  const r = mulberry32(rs), g = new THREE.Group(); g.position.set(x, 0, z);
+  const trunk = M('#8A6A48'), lean = (r() - 0.5) * 0.25;
+  for (let i = 0; i < 7; i++) cyl(g, trunk, 4 - i * 0.3, 20, lean * i * 20, 10 + i * 19, 0, true);
+  const top = new THREE.Group(); top.position.set(lean * 140, 140, 0); g.add(top);
+  const leaf = M('#3E7A3A', { flat: true });
+  for (let i = 0; i < 7; i++) { const l = box(top, leaf, 8, 2, 62, 0, 0, 0, true); const a = i / 7 * Math.PI * 2; l.position.set(Math.sin(a) * 26, -6, Math.cos(a) * 26); l.rotation.order = 'YXZ'; l.rotation.set(0.45, a, 0); }
+  p.add(g); return g;
+}
+
 function makePerson(look, opts) {
   opts = opts || {};
   const root = new THREE.Group();
