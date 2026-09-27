@@ -100,11 +100,11 @@ function makeTree(p, x, z, rs, s) {
 
 // Extremidades y torso: cápsulas redondeadas (calidad media/alta) o cajas (baja)
 function limb(p, mat, w, h, d, x, y, z, cast) { return QCFG.round ? mesh(p, GCAP, mat, w, h / 2, d, x, y, z, cast !== false) : box(p, mat, w, h, d, x, y, z, cast); }
-// Sombra de contacto suave bajo personas y mesas: da peso aunque no haya sombras reales
+// Sombra de contacto suave bajo mesas (las de las personas van todas juntas en PEOPLE_BLOBS, ui.js)
 let BLOB_MAT = null;
 function blobShadow(p, r) {
   if (!BLOB_MAT) BLOB_MAT = new THREE.MeshBasicMaterial({ color: 0x000000, map: T.soft, transparent: true, opacity: QCFG.shadows ? 0.45 : 0.6, depthWrite: false });
-  const m = new THREE.Mesh(GPL, BLOB_MAT); m.rotation.x = -Math.PI / 2; m.scale.set(r * 2, r * 2, 1); m.position.y = 0.7; m.renderOrder = 1; m.userData.keep = true;
+  const m = new THREE.Mesh(GPL, BLOB_MAT); m.rotation.x = -Math.PI / 2; m.scale.set(r * 2, r * 2, 1); m.position.y = 0.7; m.renderOrder = 1;
   p.add(m); return m;
 }
 
@@ -168,8 +168,9 @@ function makePerson(look, opts) {
   box(head, MAT.dark, 1.1, 1.3, 0.6, -1.7, 5, -4.4, false); box(head, MAT.dark, 1.1, 1.3, 0.6, 1.7, 5, -4.4, false);
   box(head, M(shade(look.skin, -0.25)), 2.6, 0.8, 0.6, 0, 2.6, -4.5, false);
   if (look.clip) box(fores[1], M('#8B5E3C'), 6, 8, 1, 0, -6, -3, false);
-  blobShadow(root, 13);
   root.userData = { legs: thighs, shins, arms, fores, body, head, seed: Math.random() * 10 };
+  // calidad baja: pierna, brazo y cabeza de una sola pieza (5 mallas por persona en vez de 10)
+  if (QCFG.simple) { root.updateMatrixWorld(true); shins.forEach((sh, k) => flatten(thighs[k], sh)); fores.forEach((fa, k) => flatten(arms[k], fa)); flatten(body, head); }
   root.scale.setScalar((look.scale || 1) * (opts.scale || 1));
   return root;
 }
@@ -254,25 +255,35 @@ function flatten(parent, grp) {
   parent.remove(grp);
 }
 
+// Copia un tramo de vértices de una geometría sin índice
+function subGeo(geo, start, count) {
+  const g = new THREE.BufferGeometry();
+  for (const k of ['position', 'normal', 'uv']) { const at = geo.attributes[k]; if (at) g.setAttribute(k, new THREE.BufferAttribute(at.array.slice(start * at.itemSize, (start + count) * at.itemSize), at.itemSize)); }
+  return g;
+}
 function bake(node) {
   const buckets = new Map(); const taken = [];
+  const add = (m, geo, cast) => {
+    const plain = !m.map && !m.transparent && !m.isMeshBasicMaterial && !(m.emissive && m.emissive.getHex());
+    let key, mat;
+    if (plain) { key = m.isMeshStandardMaterial ? 'vs' + m.roughness.toFixed(2) + m.metalness + (m.flatShading ? 'f' : '') : m.isMeshPhongMaterial ? 'vp' : (m.flatShading ? 'vlf' : 'vl'); mat = vcMat(key, m); }
+    else { key = m.uuid; mat = m; }
+    let b = buckets.get(key); if (!b) { b = { mat, geos: [], cast: false }; buckets.set(key, b); }
+    if (plain) { const cnt = geo.attributes.position.count, arr = new Float32Array(cnt * 3), cc = m.color; for (let i = 0; i < cnt; i++) { arr[i * 3] = cc.r; arr[i * 3 + 1] = cc.g; arr[i * 3 + 2] = cc.b; } geo.setAttribute('color', new THREE.BufferAttribute(arr, 3)); }
+    b.geos.push(geo); b.cast = b.cast || cast;
+  };
   for (const ch of node.children.slice()) {
-    if (ch.isMesh && !ch.isInstancedMesh && !ch.userData.keep && !Array.isArray(ch.material) && !(ch.geometry && ch.geometry.type === 'ConeGeometry' && ch.material.blending === THREE.AdditiveBlending)) {
-      const m = ch.material;
-      const plain = !m.map && !m.transparent && !m.isMeshBasicMaterial && !(m.emissive && m.emissive.getHex());
-      let key, mat;
-      if (plain) { key = m.isMeshStandardMaterial ? 'vs' + m.roughness.toFixed(2) + m.metalness + (m.flatShading ? 'f' : '') : m.isMeshPhongMaterial ? 'vp' : (m.flatShading ? 'vlf' : 'vl'); mat = vcMat(key, m); }
-      else { key = m.uuid; mat = m; }
-      let b = buckets.get(key); if (!b) { b = { mat, geos: [], cast: false }; buckets.set(key, b); }
+    if (ch.isMesh && !ch.isInstancedMesh && !ch.userData.keep && !(ch.geometry && ch.geometry.type === 'ConeGeometry' && ch.material.blending === THREE.AdditiveBlending)) {
       ch.updateMatrix();
       const geo = (ch.geometry.index ? ch.geometry.toNonIndexed() : ch.geometry.clone());
       geo.applyMatrix4(ch.matrix);
-      if (plain) { const cnt = geo.attributes.position.count, arr = new Float32Array(cnt * 3), cc = m.color; for (let i = 0; i < cnt; i++) { arr[i * 3] = cc.r; arr[i * 3 + 1] = cc.g; arr[i * 3 + 2] = cc.b; } geo.setAttribute('color', new THREE.BufferAttribute(arr, 3)); }
-      b.geos.push(geo); b.cast = b.cast || ch.castShadow;
+      // varios materiales (p. ej. una caja con la fachada en una sola cara): cada grupo va a su balde
+      if (Array.isArray(ch.material)) { for (const gr of geo.groups) { const m = ch.material[gr.materialIndex]; if (m) add(m, subGeo(geo, gr.start, gr.count), ch.castShadow); } geo.dispose(); }
+      else add(ch.material, geo, ch.castShadow);
       taken.push(ch);
     } else if (!ch.isMesh && !ch.isSprite && ch.children && ch.children.length) bake(ch);
   }
-  if (taken.length < 2) return node;
+  if (taken.length < 2 && !taken.some(t => Array.isArray(t.material))) { for (const b of buckets.values()) for (const g of b.geos) g.dispose(); return node; }
   for (const t of taken) node.remove(t);
   for (const b of buckets.values()) {
     const mm = new THREE.Mesh(mergeGeos(b.geos), b.mat);

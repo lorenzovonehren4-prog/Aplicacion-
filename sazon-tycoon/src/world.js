@@ -117,6 +117,8 @@ function makeTable(f, i, cap) {
   const fpos = [[0, 16], [0, -16], [-18, 0], [18, 0]].slice(0, cap);
   for (const [fx, fz] of fpos) { const fg = new THREE.Group(); fg.position.set(fx, 32.5, fz); fg.visible = false; g.add(fg); food.push(fg); }
   g.userData = { dirty, food, cap };
+  // las sillas no se mueven: se funden con la mesa para dibujarla en pocas llamadas
+  g.updateMatrixWorld(true); for (const c of g.children.slice()) if (c.isGroup && c !== dirty && !food.includes(c)) flatten(g, c);
   return g;
 }
 function setFood(fg, dishId) {
@@ -258,7 +260,7 @@ function makeDecor(kind, f, i) {
     g.position.set(470, 0, 170);
     box(g, MAT.woodD, 40, 40, 140, 0, 20, 0, true);
     const tank = box(g, M('#6FC3E0', { op: 0.45, phong: true, shin: 160 }), 36, 50, 130, 0, 66, 0, false); void tank;
-    for (let k = 0; k < 7; k++) { const fsh = sph(g, M(pick(['#FF7A1A', '#FFE14D', '#FF2E88', '#FFFFFF'])), 3, rand(-10, 10), rand(50, 82), rand(-55, 55), false); fsh.scale.set(2, 2.5, 4.5); g.userData.fish = (g.userData.fish || []).concat([fsh]); }
+    for (let k = 0; k < 7; k++) { const fsh = sph(g, M(pick(['#FF7A1A', '#FFE14D', '#FF2E88', '#FFFFFF'])), 3, rand(-10, 10), rand(50, 82), rand(-55, 55), false); fsh.scale.set(2, 2.5, 4.5); fsh.userData.keep = true; g.userData.fish = (g.userData.fish || []).concat([fsh]); }
   } else if (kind === 'letrero') {
     g.position.set(0, FLOOR_H + 80, 410);
     const nt = canvasTex('neon' + save.name, 1024, 128, (x, w, h) => { x.clearRect(0, 0, w, h); x.shadowColor = '#FF2E88'; x.shadowBlur = 30; x.fillStyle = '#FFD1E6'; x.textAlign = 'center'; x.textBaseline = 'middle'; fitFont(x, save.name, w - 80, 86, FONT_D); x.fillText(save.name, w / 2, h / 2); x.fillText(save.name, w / 2, h / 2); });
@@ -302,7 +304,10 @@ function rebuildWorld() {
   if (WLD.root) scene.remove(WLD.root);
   WLD.root = new THREE.Group(); scene.add(WLD.root);
   WLD.floors = []; WLD.front = []; WLD.tables = [[], [], []]; WLD.stations = []; WLD.deco = [[], [], []]; WLD.steam = []; WLD.lampMats = []; WLD.pops = []; WLD.money = null; WLD.cars = []; WLD.motoModels = [];
-  buildStreet(WLD.root);
+  // la calle es estática: se fusiona entera en pocas mallas
+  const street = new THREE.Group(); WLD.root.add(street); buildStreet(street);
+  for (const c of street.children.slice()) if (c.isGroup) flatten(street, c);
+  bake(street);
   for (let f = 0; f < save.floors; f++) {
     const fg = makeFloorShell(f); WLD.root.add(fg); WLD.floors.push(fg);
     for (let i = 0; i < save.tables[f]; i++) addTableModel(f, i, false);
@@ -319,6 +324,8 @@ function rebuildWorld() {
   if (save.drive) WLD.root.add(makeDriveThru());
   if (save.generator) addGeneratorModel(false);
   for (let i = 0; i < save.motos; i++) addMotoModel(i, false);
+  // fusiona lo estático de cada piso (paredes, ventanas, barandas, mesas, cocina) para dibujar menos veces
+  for (const fg of WLD.floors) bake(fg);
 }
 function addTableModel(f, i, anim) { const [x, z] = SLOTS[f][i]; const t = makeTable(f, i, tableCap(f, i)); t.position.set(x, 0, z); WLD.floors[f].add(t); WLD.tables[f][i] = t; bake(t.userData.dirty.parent === t ? t : t); if (anim) { popIn(t); dust(x, floorY(f), z); } return t; }
 function addStationModel(i, anim) { const s = makeStation(i); s.position.set(STATION_X[i], 0, STATION_Z); WLD.floors[0].add(s); WLD.stations[i] = s; if (anim) { popIn(s); dust(STATION_X[i], 0, STATION_Z); } }

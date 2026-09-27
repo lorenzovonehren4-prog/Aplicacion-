@@ -8,12 +8,21 @@ const CAM = { yawT: 0.3, yawV: 0, distT: 1200, tilt: 0, tiltT: 0, zMin: 560, zMa
 const camT = new THREE.Vector3(0, 0, 60), camP = new THREE.Vector3(), camGoal = new THREE.Vector3(), camLook = new THREE.Vector3();
 const lastAv = { x: 0, z: 0, vx: 0, vz: 0 };
 
+// Resolución dinámica: si el celular no llega a ~45 FPS se baja la resolución interna, y se sube cuando sobra
+let dynScale = 1; const perf = { ema: 1 / 60, t: 0 };
+function adaptResolution(dt) {
+  perf.ema = lerp(perf.ema, dt, 0.05); perf.t += dt; if (perf.t < 2) return; perf.t = 0;
+  const prev = dynScale;
+  if (perf.ema > 1 / 45 && dynScale > 0.6) dynScale = Math.max(0.6, dynScale - 0.1);
+  else if (perf.ema < 1 / 57 && dynScale < 1) dynScale = Math.min(1, dynScale + 0.05);
+  if (dynScale !== prev) { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QCFG.dpr) * dynScale); renderer.setSize(W, H, false); }
+}
 function resize() {
   const vw = window.innerWidth, vh = window.innerHeight;
   stage.style.width = vw + 'px'; stage.style.height = vh + 'px';
   W = vw; H = vh; DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouch ? 1.4 : 2)); renderer.setSize(vw, vh, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QCFG.dpr) * dynScale); renderer.setSize(vw, vh, false);
   camera.aspect = vw / vh; camera.fov = vw / vh < 1 ? 54 : 38; camera.updateProjectionMatrix();
   stage.classList.toggle('portrait', vw / vh < 1);
   if (vw / vh < 1) CAM.distT = Math.max(CAM.distT, 1500);
@@ -147,6 +156,7 @@ function renderPanel() {
     h += GOALS.map(g => '<div class="goal' + (save.goals.includes(g.id) ? ' done' : '') + '"><span>' + esc(g.t) + '</span><em>' + (save.goals.includes(g.id) ? 'Listo' : '+' + soles(g.r)) + '</em></div>').join('');
   } else if (panel === 'options') {
     h += '<div class="card"><div class="ci"><b>Nombre del restaurante</b></div></div><div class="nrow"><input id="rname" maxlength="26" value="' + esc(save.name) + '"><button class="b g" id="rname-ok">Cambiar</button></div>';
+    h += '<div class="card"><div class="ci"><b>Calidad gráfica</b><span>Baja anda fluido en cualquier celular. Alta usa sombras suaves y desenfoque de maqueta.</span></div></div><div class="seg">' + Object.keys(QUALITIES).map(k => '<button data-q="' + k + '" class="' + (QUALITY === k ? 'on' : '') + '">' + QUALITIES[k].name + '</button>').join('') + '</div>';
     h += '<div class="card"><div class="ci"><b>Música</b></div><div class="ca"><button class="b" data-tog="music">' + (save.music ? 'Sí' : 'No') + '</button></div></div>';
     h += '<div class="card"><div class="ci"><b>Sonidos</b></div><div class="ca"><button class="b" data-tog="sfx">' + (save.sfx ? 'Sí' : 'No') + '</button></div></div>';
     h += '<div class="card"><div class="ci"><b>Empezar de cero</b><span>Borra todo tu progreso.</span></div><div class="ca"><button class="b s" id="reset">Borrar</button></div></div>';
@@ -172,6 +182,7 @@ function renderPanel() {
   el.querySelectorAll('[data-wall]').forEach(b => b.onclick = () => { save.wall[decorFloor] = b.dataset.wall; rebuildAll(); SFX.click(); renderPanel(); persist(); });
   el.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { const k = b.dataset.tog; save[k] = !save[k]; setGains(); renderPanel(); persist(); });
   const rn = el.querySelector('#rname-ok'); if (rn) rn.onclick = () => { const v = el.querySelector('#rname').value.trim().slice(0, 26); if (v) { save.name = v; rebuildAll(); persist(); SFX.build(); renderPanel(); } };
+  el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { if (b.dataset.q === QUALITY) return; save.quality = b.dataset.q; persist(); try { sessionStorage.setItem('sazon_autostart', '1'); } catch (e) { } location.reload(); });
   el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => switchLocal(+b.dataset.go));
   el.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openLocal(b.dataset.open));
   const rs = el.querySelector('#reset'); if (rs) rs.onclick = () => { if (rs.dataset.a) { localStorage.removeItem(SAVE_KEY); location.reload(); } else { rs.dataset.a = 1; rs.textContent = '¿Seguro?'; } };
@@ -192,6 +203,44 @@ function openLocal(k) {
   switchLocal(save.chain.length - 1, true); goalCheck();
 }
 function starStr(v) { const n = Math.round(v); return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+/* ---------- tutorial del primer día ---------- */
+// Cada paso: texto, cuándo está hecho y a dónde apunta la flecha ({x, y, z} en el mundo o un botón de la interfaz)
+const TUT = [
+  { t: 'Una mesa te está llamando. Camina hasta ella para anotar su pedido.', wait: 'Ya vienen tus primeros clientes. Cuando una mesa te llame, camina hasta ella para anotar su pedido.', done: () => save.stats.ordersTaken >= 1, at: () => { const t = SIM.tables.find(q => q.party && q.party.state === 'callWaiter'); return t ? { x: t.x, y: floorY(t.f) + 70, z: t.z } : null; } },
+  { t: 'Cuando el cocinero termine, recoge el plato en la barra y llévalo a su mesa.', done: () => save.stats.served >= 1, at: () => { const a = SIM.avatar; if (a && a.carry && a.carry.kind === 'table') { const t = a.carry.ref.table; return { x: t.x, y: floorY(t.f) + 70, z: t.z }; } const o = SIM.orders.find(q => q.status === 'ready' && q.kind === 'table'); if (o) { const pp = pickPoint(o); return { x: pp.x, y: 60, z: PASS_Z }; } return { x: -120, y: 60, z: PASS_Z }; } },
+  { t: 'La mesa quedó sucia. Párate junto a ella para limpiarla.', wait: 'Cuando terminen de comer, la mesa quedará sucia y tendrás que limpiarla.', done: () => save.stats.cleaned >= 1, at: () => { const t = SIM.tables.find(q => q.dirty); return t ? { x: t.x, y: floorY(t.f) + 60, z: t.z } : null; } },
+  { t: 'La plata se junta en la caja. Camina hasta la caja (o tócala) para cobrar.', wait: 'Cuando los clientes paguen, la plata se juntará en la caja.', done: () => save.stats.collected >= 1, at: () => save.register > 0 ? { x: REG.x, y: 110, z: REG.z } : null },
+  { t: 'Pisa el círculo verde de "Mesa nueva" para comprar otra mesa.', done: () => totalTables() >= 3, at: () => { const p = WLD.pads.find(q => q.kind === 'table'); return p ? { x: p.x, y: floorY(p.f) + 40, z: p.z } : null; } },
+  { t: 'Abre Personal y contrata un mozo: anotará pedidos y llevará platos por ti.', done: () => (save.staff.mozo || 0) >= 1, at: () => ({ ui: panel === 'staff' ? '[data-hire="mozo"]' : '[data-panel="staff"]' }), extra: () => save.money < ROLES.mozo.hire ? ' Junta ' + soles(ROLES.mozo.hire) + ' sirviendo más mesas.' : '' },
+];
+let tutTarget = null;
+function updateTutorial() {
+  const el = $('#tut'), on = save.tutorial >= 0 && playing;
+  el.hidden = !on; tutTarget = null;
+  document.querySelectorAll('.tut-glow').forEach(b => b.classList.remove('tut-glow'));
+  if (!on) return;
+  while (save.tutorial < TUT.length && TUT[save.tutorial].done()) { save.tutorial++; if (save.tutorial < TUT.length) SFX.coin(); }
+  if (save.tutorial >= TUT.length) { save.tutorial = -1; save.money += 50; el.hidden = true; banner('¡Tutorial completo!', 'Te ganaste S/ 50. Ahora haz crecer tu restaurante.'); SFX.cash(); persist(); return; }
+  const st = TUT[save.tutorial];
+  $('#tut-n').textContent = 'Paso ' + (save.tutorial + 1) + ' de ' + TUT.length;
+  const tg = st.at();
+  $('#tut-t').textContent = (!tg && st.wait ? st.wait : st.t) + (st.extra ? st.extra() : ''); if (tg && tg.ui) { const b = document.querySelector(tg.ui); if (b) b.classList.add('tut-glow'); } else tutTarget = tg;
+}
+$('#tut-skip').addEventListener('click', () => { save.tutorial = -1; SFX.click(); persist(); updateTutorial(); });
+// Flecha que rebota sobre el objetivo; si está fuera de pantalla, se queda en el borde apuntando hacia él
+function drawTutArrow() {
+  if (!tutTarget) return;
+  const s = proj(tutTarget.x, tutTarget.y, tutTarget.z); if (!s) return;
+  const m = 40, x = clamp(s.x, m, W - m), y = clamp(s.y, m + 70, H - m), off = x !== s.x || y !== s.y;
+  const bob = REDUCED ? 0 : Math.sin(SIM.t * 6) * 6;
+  ctx.save(); ctx.translate(x, y);
+  if (off) ctx.rotate(Math.atan2(s.y - y, s.x - x) - Math.PI / 2); else ctx.translate(0, -18 + bob);
+  ctx.fillStyle = '#FFE14D'; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 16); ctx.lineTo(-16, -4); ctx.lineTo(-7, -4); ctx.lineTo(-7, -22); ctx.lineTo(7, -22); ctx.lineTo(7, -4); ctx.lineTo(16, -4); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  if (!off && !REDUCED) { const k = (SIM.t * 1.2) % 1; ctx.strokeStyle = 'rgba(255,225,77,' + (1 - k).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 20, 18 + k * 26, 7 + k * 10, 0, 0, 7); ctx.stroke(); }
+}
 
 /* ---------- HUD ---------- */
 let hudT = 0;
@@ -223,7 +272,8 @@ function updateHUD(dt) {
   else if (save.register >= 40 && !(save.staff.cajero > 0)) hint = 'Tu caja tiene plata. Ve a cobrarla (o toca la caja).';
   else if (SIM.queue.length >= 2) hint = 'Hay cola en la puerta: compra más mesas.';
   else { const pd = WLD.pads.find(p => save.money >= p.price); if (pd) hint = 'Ya puedes comprar: ' + pd.title + ' (pisa el círculo verde o tócalo).'; }
-  $('#hint').textContent = hint; $('#hint').hidden = !hint;
+  updateTutorial();
+  $('#hint').textContent = hint; $('#hint').hidden = !hint || save.tutorial >= 0;
   if (panel === 'staff' || panel === 'carta' || panel === 'decor' || panel === 'chain') { const t2 = Math.floor(save.money / 10); if (t2 !== renderPanel._m) { renderPanel._m = t2; renderPanel(); } }
 }
 
@@ -318,6 +368,7 @@ function drawOverlay() {
     ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.strokeText(t.text, s.x, s.y); ctx.fillStyle = t.color; ctx.fillText(t.text, s.x, s.y);
   }
   ctx.globalAlpha = 1;
+  drawTutArrow();
   if (SIM.avatar && SIM.avatar.carry) { const a = SIM.avatar, s = proj(a.x, a.y + 65, a.z); if (s) { ctx.font = '800 12px Rubik, sans-serif'; ctx.fillStyle = '#FF2E88'; const txt = DISH[a.carry.dish].name; const w = ctx.measureText(txt).width + 18; rr(s.x - w / 2, s.y - 11, w, 22, 11); ctx.fill(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1); } }
 }
 // Qué está haciendo cada empleado, según su estado ('cook', 'plate', 'order', 'clean'); los que van en camino se ven más suaves
@@ -364,10 +415,15 @@ function drawIcon(kind, x, y) {
   ctx.lineCap = 'butt';
 }
 function rr(x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+// Una sola malla instanciada dibuja la sombra de contacto de todas las personas (1 llamada en vez de 1 por persona)
+let PEOPLE_BLOBS = null; const _o3 = new THREE.Object3D();
 function poseAll(t) {
+  if (!PEOPLE_BLOBS) { blobShadow(new THREE.Group(), 1); PEOPLE_BLOBS = new THREE.InstancedMesh(GPL, BLOB_MAT, 200); PEOPLE_BLOBS.frustumCulled = false; PEOPLE_BLOBS.renderOrder = 1; scene.add(PEOPLE_BLOBS); }
+  let nb = 0;
   for (const p of SIM.people) {
     const m = p.model; if (!m) continue;
     const f = floorOfY(p.y); m.visible = f <= viewFloor && (p.model.visible !== false || p.role !== 'repartidor') && !(p.role === 'repartidor' && p.state === 'riding');
+    if (m.visible && nb < 200) { _o3.position.set(p.x, p.y + 0.8, p.z); _o3.rotation.set(-Math.PI / 2, 0, 0); _o3.scale.set(26, 26, 1); _o3.updateMatrix(); PEOPLE_BLOBS.setMatrixAt(nb++, _o3.matrix); }
     m.position.set(p.x, p.y + (p.seated ? 4 : 0), p.z); m.rotation.y = -p.ang;
     posePerson(m, p.phase, !!p.walking, false, t + p.id, !!p.seated, {});
     const u = m.userData;
@@ -381,6 +437,7 @@ function poseAll(t) {
     p.walking = false; p.cleaning = false; p.taking = false;
   }
   if (SIM.avatar) { SIM.avatar.cleaning = false; SIM.avatar.taking = false; }
+  PEOPLE_BLOBS.count = nb; PEOPLE_BLOBS.instanceMatrix.needsUpdate = true;
 }
 function updateLighting() {
   const h = hourNow();
@@ -442,7 +499,7 @@ $('#t-go').addEventListener('click', () => {
   $('#title').hidden = true; playing = true; stage.classList.remove('intitle'); persist();
   CAM.distT = W / H < 1 ? 1500 : 1150; CAM.tiltT = 0;
   if (!first && $('#dayend').hidden) showEventCard();
-  if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Acércate a las mesas para anotar el pedido. Cuando salga el plato, llévalo a la mesa.'), 400);
+  if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Sigue los pasos de arriba para aprender a atender.'), 400);
 });
 onDayEnd = log => {
   const el = $('#dayend');
@@ -490,6 +547,13 @@ $('#h-reg').addEventListener('click', () => { if (save.register > 0) { collectRe
 $('#h-speed').addEventListener('click', () => { save.speed = save.speed >= 3 ? 1 : save.speed + 1; SFX.click(); });
 $('#h-menu').addEventListener('click', () => { persist(); showTitle(); });
 
+// Al cambiar de pestaña o cerrar (celular, itch.io): guarda y silencia; al volver, reanuda
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (save.started) persist(); if (AU.ctx && AU.ctx.state === 'running') AU.ctx.suspend(); }
+  else { if (AU.ctx && playing) AU.ctx.resume(); last = performance.now(); }
+});
+window.addEventListener('pagehide', () => { if (save.started) persist(); });
+
 /* ---------- bucle ---------- */
 let last = performance.now(), saveT = 0;
 function frame(t) {
@@ -515,6 +579,7 @@ function frame(t) {
   updatePops(dt); updateLighting(); poseAll(SIM.t); updateCamera(dt);
   renderer.render(scene, camera);
   drawOverlay();
+  if (playing && !document.hidden) adaptResolution(dt);
   requestAnimationFrame(frame);
 }
 
@@ -529,6 +594,9 @@ function boot() {
   refreshPads(true);
   document.body.classList.add('ready');
   showTitle(); offlineEarnings();
+  // tras cambiar la calidad se recarga la página: vuelve directo al juego
+  let auto = false; try { auto = sessionStorage.getItem('sazon_autostart') === '1'; sessionStorage.removeItem('sazon_autostart'); } catch (e) { }
+  if (auto && save.started) { $('#t-go').click(); toast('<b>Calidad ' + QCFG.name.toLowerCase() + ' activada</b>'); }
   requestAnimationFrame(frame);
 }
 const fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 40px Fredoka'), document.fonts.load('800 16px Rubik')]) : Promise.resolve();

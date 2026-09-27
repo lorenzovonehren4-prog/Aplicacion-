@@ -17,12 +17,14 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
    Cambiar la calidad guarda y recarga la página. */
 const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window;
 const QUALITIES = {
-  //       pixeles      sombras        tamaño  materiales PBR  personas redondas  gente máx.  desenfoque de maqueta
-  baja: { name: 'Baja', dpr: 1, shadows: false, shadowSize: 0, pbr: false, round: false, walkers: 14, tilt: false, aa: false },
-  media: { name: 'Media', dpr: 1.5, shadows: true, shadowSize: 1024, pbr: true, round: true, walkers: 22, tilt: false, aa: true },
-  alta: { name: 'Alta', dpr: 2, shadows: true, shadowSize: 2048, pbr: true, round: true, walkers: 28, tilt: true, aa: true },
+  // dpr: resolución máx. · pbr: materiales físicos · round: personas con cápsulas · simple: 5 mallas por persona en vez de 10
+  // walkers: gente máx. en la vereda · tilt: desenfoque de maqueta · aa: antialias
+  baja: { name: 'Baja', dpr: 1, shadows: false, shadowSize: 0, pbr: false, round: true, simple: true, walkers: 14, tilt: false, aa: false },
+  media: { name: 'Media', dpr: 1.25, shadows: true, shadowSize: 1024, pbr: true, round: true, simple: false, walkers: 22, tilt: false, aa: true },
+  alta: { name: 'Alta', dpr: 2, shadows: true, shadowSize: 2048, pbr: true, round: true, simple: false, walkers: 28, tilt: true, aa: true },
 };
-const QUALITY = (() => { try { const q = JSON.parse(localStorage.getItem('sazon_tycoon_v1')).quality; if (QUALITIES[q]) return q; } catch (e) { } return IS_TOUCH ? 'media' : 'alta'; })();
+const QUALITY = (() => { try { const q = JSON.parse(localStorage.getItem('sazon_tycoon_v1')).quality; if (QUALITIES[q]) return q; } catch (e) { } // en celular: media si el equipo es potente, si no baja
+  return IS_TOUCH ? ((navigator.hardwareConcurrency || 4) >= 6 && (navigator.deviceMemory || 4) >= 4 ? 'media' : 'baja') : 'alta'; })();
 const QCFG = QUALITIES[QUALITY];
 
 /* ================== DATOS DEL JUEGO ================== */
@@ -138,12 +140,14 @@ function freshSave() {
     decor: [{}, {}, {}], wall: ['#EDE6D6', '#EDE6D6', '#EDE6D6'],
     goals: [], stats: { served: 0, cleaned: 0, collected: 0, customers: 0, lost: 0, ordersTaken: 0 },
     dayLog: { income: 0, costs: 0, served: 0, lost: 0, tips: 0 }, profitEma: 0,
-    district: 'centro', generator: false, chain: [], active: 0, chainDay: 0, chainTold: false, event: null, nextEvent: EVENT_FIRST_DAY, quality: QUALITY, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
+    district: 'centro', generator: false, chain: [], active: 0, chainDay: 0, chainTold: false, event: null, nextEvent: EVENT_FIRST_DAY, quality: QUALITY, tutorial: 0, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
   };
 }
 let save = freshSave();
 function loadSave() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && typeof s === 'object') save = Object.assign(freshSave(), s, { stats: Object.assign(freshSave().stats, s.stats || {}), dayLog: Object.assign(freshSave().dayLog, s.dayLog || {}) }); } catch (e) { }
+  // partidas de antes del tutorial: no se les muestra
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.tutorial === undefined && s.started) save.tutorial = -1; } catch (e) { }
   if (!Array.isArray(save.chain) || !save.chain.length) { save.chain = [snapshotLocal()]; save.active = 0; }
   save.active = clamp(save.active | 0, 0, save.chain.length - 1);
 }

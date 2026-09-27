@@ -9,6 +9,8 @@ Todo el texto del juego está en español de Perú, con humor local. Evitar marc
 - Abrir `index.html` directo en el navegador, o servirlo con `npx serve .` y entrar a la dirección que muestre.
 - No hay paso de compilación. Son scripts clásicos (no módulos ES) que comparten el ámbito global.
 - `vendor/three.min.js` es three.js r160 (versión UMD). No cambiar de versión sin revisar la API.
+- Las fuentes (Fredoka para títulos, Rubik para texto) están en `vendor/fonts/`: el juego no necesita internet. En canvas usa `FONT_D` con peso 700.
+- Para itch.io: `node tools/empaquetar-itch.mjs` arma `dist/sazon-tycoon-itch.zip`. Pasos en `PUBLICAR_ITCH.md`.
 
 ## Estructura
 
@@ -43,6 +45,19 @@ Vereda (`walker`) → entra si quiere y hay mesa con sillas suficientes (`freeTa
 - En `sim.js`: `startEvent()` al cambiar de día, `updateEvents()` en cada tick, `eventOn(id)` para preguntar si hoy toca, y `eventResult()` arma el texto del resumen.
 - El apagón pone `SIM.blackout` (la cocina no avanza) salvo que el local tenga `save.generator`. El crítico es un cliente con `critic: true` y su reseña pesa como 10.
 - `showEventCard()` en `ui.js` muestra el aviso grande. El resultado sale en el resumen del día.
+
+## Gráficos, cámara y rendimiento
+
+- Calidad: `QUALITIES` y `QCFG` en `core.js` (baja, media, alta). Se lee antes de crear el renderizador; cambiarla guarda y recarga. `QCFG.pbr` usa `MeshStandardMaterial` en `M()`, `QCFG.simple` arma personas de 5 mallas, `QCFG.round` usa cápsulas (`limb()`).
+- Tone mapping ACES (`renderer.toneMappingExposure`). Con PBR la luz hemisférica se baja en `updateLighting` porque el mapa de entorno ya ilumina.
+- Cámara (`CAM` en `ui.js`): los controles cambian objetivos (`yawT`, `distT`, `tiltT`) y `updateCamera` los sigue suave, con inercia. El ángulo baja al acercarse. Con la cámara baja se ocultan los objetos de `WLD.front` (fachada).
+- `bake()` fusiona mallas estáticas por material (incluye cajas con varios materiales). `rebuildWorld` fusiona la calle y cada piso; lo que se mueve o cambia de visibilidad debe ir en su propio grupo o marcado con `userData.keep`.
+- Las sombras de contacto de las personas son una sola `InstancedMesh` (`PEOPLE_BLOBS`, en `poseAll`).
+- `adaptResolution()` baja la resolución interna si el juego va a menos de ~45 FPS.
+
+## Tutorial
+
+- `TUT` en `ui.js`: pasos con texto, condición `done()` y objetivo `at()` (punto del mundo o botón). `save.tutorial` es el paso actual (-1 = terminado u omitido). Mientras dura, los clientes tienen el doble de paciencia (`tutSlow()`).
 
 ## Coordenadas
 

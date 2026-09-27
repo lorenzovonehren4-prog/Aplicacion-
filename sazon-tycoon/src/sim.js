@@ -187,10 +187,10 @@ function updateParty(party, dt) {
     party.t -= dt;
     if (party.t <= 0) { party.state = 'callWaiter'; party.callT = SIM.t; party.takeP = 0; }
   } else if (party.state === 'callWaiter') {
-    party.patience -= dt * 1.2;
+    party.patience -= dt * 1.2 * tutSlow();
     if (party.patience <= 0) { leaveParty(party, true); }
   } else if (party.state === 'wait') {
-    party.patience -= dt * (1.9 - (save.decor[t.f] && save.decor[t.f].parlante ? DIST().music : 0));
+    party.patience -= dt * (1.9 - (save.decor[t.f] && save.decor[t.f].parlante ? DIST().music : 0)) * tutSlow();
     if (party.patience <= 0) { leaveParty(party, true); }
   } else if (party.state === 'eating') {
     party.t -= dt;
@@ -219,6 +219,8 @@ function takeOrder(party) {
   save.stats.ordersTaken++;
   const t = party.table; SFX.pick(); floatText(t.x, floorY(t.f) + 70, t.z, '¡Anotado!', '#FFFFFF', 13);
 }
+// durante el tutorial los clientes tienen el doble de paciencia
+const tutSlow = () => save.tutorial >= 0 ? 0.5 : 1;
 function pickDish() { if (eventOn('partido') && save.menu.includes('pollo') && chance(0.8)) return 'pollo'; const foods = save.menu.filter(id => !DISH[id].drink); const pool = foods.length ? foods : save.menu; let tot = 0; for (const id of pool) tot += DISH[id].pop; let r = Math.random() * tot; for (const id of pool) { r -= DISH[id].pop; if (r <= 0) return id; } return pool[0]; }
 function leaveParty(party, angry) {
   const t = party.table;
