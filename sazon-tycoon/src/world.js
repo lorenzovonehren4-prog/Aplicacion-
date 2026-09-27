@@ -259,6 +259,16 @@ function makeDecor(kind, f, i) {
   return g;
 }
 
+const GEN_POS = { x: -440, z: -140 };
+function makeGenerator() {
+  const g = new THREE.Group();
+  box(g, M('#F2C230', { phong: true }), 44, 32, 30, 0, 18, 0, true);
+  box(g, MAT.dark, 46, 4, 32, 0, 2, 0, false); box(g, MAT.dark, 30, 12, 1, 0, 22, 15.5, false);
+  for (let k = 0; k < 4; k++) box(g, M('#8C7418'), 1.5, 10, 1, -10 + k * 6, 22, 16.2, false);
+  cyl(g, MAT.chrome, 2.5, 16, 16, 40, -8, true); box(g, M('#19D46E', { em: '#0E8F4A' }), 5, 3, 1, -16, 28, 15.6, false);
+  return g;
+}
+
 /* ---------- construcción del escenario ---------- */
 function buildStreet(root) {
   const road = new THREE.Mesh(new THREE.PlaneGeometry(6000, 300), M('#FFFFFF', { map: T.asphalt })); road.material.map.repeat.set(30, 1.5); road.rotation.x = -Math.PI / 2; road.position.set(0, 0.2, 670); road.receiveShadow = true; root.add(road);
@@ -298,9 +308,11 @@ function rebuildWorld() {
   const reg = makeRegister(); reg.position.set(REG.x, 0, REG.z); kitchen.add(reg);
   box(kitchen, M('#F4F2EA'), 80, 0.5, 30, 0, 0.6, 385, false);
   if (save.drive) WLD.root.add(makeDriveThru());
+  if (save.generator) addGeneratorModel(false);
   for (let i = 0; i < save.motos; i++) addMotoModel(i, false);
 }
 function addTableModel(f, i, anim) { const [x, z] = SLOTS[f][i]; const t = makeTable(f, i, tableCap(f, i)); t.position.set(x, 0, z); WLD.floors[f].add(t); WLD.tables[f][i] = t; bake(t.userData.dirty.parent === t ? t : t); if (anim) { popIn(t); dust(x, floorY(f), z); } return t; }
 function addStationModel(i, anim) { const s = makeStation(i); s.position.set(STATION_X[i], 0, STATION_Z); WLD.floors[0].add(s); WLD.stations[i] = s; if (anim) { popIn(s); dust(STATION_X[i], 0, STATION_Z); } }
 function addDecorModel(kind, f, k, anim) { const d = makeDecor(kind, f, k); (kind === 'letrero' ? WLD.floors[0] : WLD.floors[f]).add(d); WLD.deco[f].push(d); if (anim) { popIn(d); dust(d.position.x, floorY(f), d.position.z); } }
+function addGeneratorModel(anim) { const g = makeGenerator(); g.position.set(GEN_POS.x - 30, 0, GEN_POS.z - 20); WLD.floors[0].add(g); if (anim) { popIn(g); dust(g.position.x, 0, g.position.z); } }
 function addMotoModel(i, anim) { const m = makeMoto(); m.position.set(620, 0, 180 + i * 80); m.rotation.y = Math.PI / 2; WLD.root.add(m); WLD.motoModels[i] = m; if (anim) popIn(m); }

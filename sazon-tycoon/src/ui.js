@@ -22,6 +22,7 @@ function padList() {
   for (let f = 0; f < save.floors; f++) if (save.tables[f] < SLOTS[f].length) { const i = save.tables[f]; L.push({ kind: 'table', f, i, x: SLOTS[f][i][0], z: SLOTS[f][i][1], title: 'Mesa nueva', price: tableCost(totalTables()) }); }
   // mesa para 4: se agranda la siguiente mesa de 2 del piso (el pad aparece sobre la mesa)
   if (totalTables() >= BIG_UNLOCK) for (let f = 0; f < save.floors; f++) if (save.big[f] < save.tables[f]) { const i = save.big[f]; L.push({ kind: 'big', f, i, x: SLOTS[f][i][0], z: SLOTS[f][i][1], lift: 32, title: 'Mesa para 4', price: bigCost(totalBig()) }); }
+  if (eventOn('apagon') && !save.generator) L.push({ kind: 'gen', f: 0, x: GEN_POS.x, z: GEN_POS.z, title: 'Generador', price: GENERATOR_COST });
   if (save.stations < 6) L.push({ kind: 'station', f: 0, i: save.stations, x: STATION_X[save.stations], z: -238, title: 'Cocina ' + (save.stations + 1), price: STATION_COST[save.stations] });
   if (save.floors < 3) { const f = save.floors - 1; if (save.tables[f] >= 6) L.push({ kind: 'floor', f, x: stairX(f), z: -200, title: save.floors === 1 ? 'Segundo piso' : 'Terraza', price: FLOOR_COST[save.floors] }); }
   if (!save.drive && totalTables() >= 5) L.push({ kind: 'drive', f: 0, x: -620, z: 300, title: 'Drive-thru', price: DRIVE_COST });
@@ -41,6 +42,7 @@ function buy(pd) {
   save.money -= pd.price;
   if (pd.kind === 'table') { save.tables[pd.f]++; syncTables(); addTableModel(pd.f, pd.i, true); banner('¡Nueva mesa!'); }
   else if (pd.kind === 'big') { save.big[pd.f]++; syncTables(); upgradeTableModel(pd.f, pd.i); banner('¡Mesa para 4!', 'Ahora también vienen grupos de 3 y 4 personas.'); }
+  else if (pd.kind === 'gen') { buyGenerator(); }
   else if (pd.kind === 'station') { save.stations++; addStationModel(pd.i, true); banner('¡Nueva estación de cocina!', 'Contrata un cocinero en Personal para usarla.'); }
   else if (pd.kind === 'floor') { save.floors++; save.tables[save.floors - 1] = 2; rebuildAll(); syncTables(); viewFloor = save.floors - 1; WLD.tables[save.floors - 1].forEach((t, k) => popIn(t, 0.2 + k * 0.15)); dust(0, floorY(save.floors - 1), 0); dust(-300, floorY(save.floors - 1), 200); dust(300, floorY(save.floors - 1), -100); banner(save.floors === 2 ? '¡Segundo piso construido!' : '¡Terraza construida!', 'Tus mozos suben por la escalera. Contrata más.'); }
   else if (pd.kind === 'drive') { save.drive = true; const d = makeDriveThru(); WLD.root.add(d); popIn(d); banner('¡Drive-thru abierto!', 'Contrata a alguien para la ventanilla, o atiende tú.'); }
@@ -65,6 +67,12 @@ function rebuildAll() {
   for (const o of SIM.orders) if (o.plateM) WLD.floors[0].add(o.plateM);
   for (let f = 0; f < 3; f++) for (const s of SIM.dirt[f]) if (WLD.floors[f]) WLD.floors[f].add(s.m);
   refreshPads(true);
+}
+
+function buyGenerator(pay) {
+  if (save.generator) return false;
+  if (pay) { if (save.money < GENERATOR_COST) { SFX.no(); toast('<b>Te faltan ' + soles(GENERATOR_COST - save.money) + '</b>'); return false; } save.money -= GENERATOR_COST; SFX.build(); }
+  save.generator = true; addGeneratorModel(true); banner('¡Generador listo!', 'Aunque se vaya la luz, la cocina seguirá.'); persist(); refreshPads(true); return true;
 }
 
 /* ---------- avisos ---------- */
@@ -130,7 +138,7 @@ function renderPanel() {
     const R = save.reviews.slice(0, 20), avg = k => R.length ? R.reduce((a, r) => a + r[k], 0) / R.length : 3;
     h += '<div class="rbig"><b>' + save.rating.toFixed(1) + '</b><span>' + starStr(save.rating) + '</span><small>' + save.stats.customers + ' clientes atendidos</small></div>';
     for (const [k, n] of [['food', 'Comida'], ['carta', 'Carta'], ['deco', 'Decoración'], ['clean', 'Limpieza']]) { const v = avg(k); h += '<div class="rbar"><span>' + n + '</span><div><i style="width:' + (v / 5 * 100).toFixed(0) + '%;background:' + (v >= 4 ? '#19D46E' : v >= 3 ? '#FFE14D' : '#FF6B6B') + '"></i></div><em>' + v.toFixed(1) + '</em></div>'; }
-    h += '<div class="rlist">' + (R.length ? R.map(r => '<div class="rv"><b>' + esc(r.name) + '</b><span>' + starStr(r.stars) + '</span><p>“' + esc(r.text) + '”</p></div>').join('') : '<p class="note">Todavía no hay reseñas.</p>') + '</div>';
+    h += '<div class="rlist">' + (R.length ? R.map(r => '<div class="rv' + (r.critic ? ' critic' : '') + '"><b>' + esc(r.name) + '</b><span>' + starStr(r.stars) + '</span><p>“' + esc(r.text) + '”</p></div>').join('') : '<p class="note">Todavía no hay reseñas.</p>') + '</div>';
   } else if (panel === 'goals') {
     h += GOALS.map(g => '<div class="goal' + (save.goals.includes(g.id) ? ' done' : '') + '"><span>' + esc(g.t) + '</span><em>' + (save.goals.includes(g.id) ? 'Listo' : '+' + soles(g.r)) + '</em></div>').join('');
   } else if (panel === 'options') {
@@ -190,6 +198,8 @@ function updateHUD(dt) {
   const h = hourNow(), hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15;
   $('#h-clock').textContent = hh + ':' + String(mm).padStart(2, '0');
   $('#h-day').textContent = 'Día ' + save.day + (save.chain.length > 1 ? ' · ' + DIST().short : '') + (h >= 12.5 && h < 15 ? ', almuerzo' : h >= 19 && h < 21.5 ? ', cena' : h >= 22.6 ? ', cerrando' : '');
+  const ev = save.event && save.event.day === save.day ? EVENTS[save.event.id] : null, he = $('#h-ev');
+  he.hidden = !ev; if (ev) { he.textContent = ev.short + (SIM.blackout ? ': sin luz' : ''); he.style.background = ev.color; }
   $('#h-dayfill').style.width = (save.dayT / DAY_LEN * 100).toFixed(1) + '%';
   $('#h-rating').textContent = save.rating.toFixed(1); $('#h-stars').textContent = starStr(save.rating);
   const eat = SIM.tables.filter(t => t.party).length; $('#h-busy').textContent = eat + '/' + SIM.tables.length + ' mesas';
@@ -201,7 +211,8 @@ function updateHUD(dt) {
   // pista contextual
   const a = SIM.avatar, ready = SIM.orders.filter(o => o.status === 'ready' && !o.claimed && o.kind !== 'delivery').length;
   let hint = '';
-  if (a && a.carry) hint = a.carry.kind === 'drive' ? 'Lleva el pedido a la ventanilla del drive-thru.' : 'Lleva el plato a la mesa que lo pidió.';
+  if (SIM.blackout) hint = 'Se fue la luz y la cocina está parada. Compra el generador (círculo junto a la cocina).';
+  else if (a && a.carry) hint = a.carry.kind === 'drive' ? 'Lleva el pedido a la ventanilla del drive-thru.' : 'Lleva el plato a la mesa que lo pidió.';
   else if (SIM.tables.some(t => t.party && t.party.state === 'callWaiter') && !(save.staff.mozo > 0)) hint = 'Una mesa quiere pedir. Acércate para anotar su pedido, o contrata un mozo.';
   else if (ready && !(save.staff.mozo > 0)) hint = 'Hay ' + ready + (ready === 1 ? ' plato listo' : ' platos listos') + ' en la barra. Recógelo y llévalo a la mesa.';
   else if (SIM.tables.some(t => t.dirty) && !(save.staff.limpiador > 0)) hint = 'Hay mesas sucias. Acércate a limpiarlas o contrata un limpiador.';
@@ -369,7 +380,8 @@ function updateLighting() {
   hemi.color.setRGB(lerp(0.45, 0.92, dayK), lerp(0.42, 0.94, dayK), lerp(0.6, 0.96, dayK));
   const key = Math.round(dayK * 6) + '_' + Math.round(dusk * 3);
   if (updateLighting.k !== key) { updateLighting.k = key; if (dayK > 0.8) sky('#9FB3C6', '#D4D9DE'); else if (dayK > 0.3) sky('#D9795A', '#F2B38A'); else sky('#141A30', '#3A3350'); scene.fog = new THREE.Fog(dayK > 0.3 ? 0xd4d9de : 0x2a2a40, 2600, 6500); }
-  for (const lm of WLD.lampMats) { if (lm.isSprite) lm.material.opacity = (1 - dayK) * 0.9; }
+  for (const lm of WLD.lampMats) { if (lm.isSprite) lm.material.opacity = SIM.blackout ? 0 : (1 - dayK) * 0.9; }
+  stage.classList.toggle('blackout', !!SIM.blackout);
 }
 function updatePops(dt) {
   for (const p of WLD.pops) { p.t += dt; if (p.t < 0) continue; const k = Math.min(1, p.t / 0.55); const e = 1 + Math.sin(k * Math.PI * 1.5) * (1 - k) * 0.5; p.obj.scale.setScalar(Math.max(0.001, k * e)); }
@@ -402,6 +414,7 @@ $('#t-go').addEventListener('click', () => {
   const nm = $('#t-name').value.trim(); if (nm && nm !== save.name) { save.name = nm.slice(0, 26); rebuildAll(); }
   const first = !save.started; save.started = true;
   $('#title').hidden = true; playing = true; stage.classList.remove('intitle'); persist();
+  if (!first && $('#dayend').hidden) showEventCard();
   if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Acércate a las mesas para anotar el pedido. Cuando salga el plato, llévalo a la mesa.'), 400);
 });
 onDayEnd = log => {
@@ -411,10 +424,25 @@ onDayEnd = log => {
   el.innerHTML = '<div class="dcard"><small>Fin del día ' + log.day + '</small><h2>' + (profit > 0 ? '¡Buen día!' : 'Día difícil') + '</h2>' +
     '<dl><dt>Ventas</dt><dd>' + soles(log.income) + '</dd><dt>Propinas incluidas</dt><dd>' + soles(log.tips) + '</dd><dt>Ingredientes</dt><dd>-' + soles(log.costs) + '</dd><dt>Sueldos del personal</dt><dd>-' + soles(log.wages) + '</dd><dt class="tot">Ganancia</dt><dd class="tot ' + (profit >= 0 ? 'pos' : 'neg') + '">' + soles(profit) + '</dd>' +
     chainRow + '<dt>Platos servidos</dt><dd>' + log.served + '</dd><dt>Clientes que se fueron</dt><dd>' + log.lost + '</dd><dt>Calificación</dt><dd>' + log.rating.toFixed(1) + ' ★</dd></dl>' +
+    (log.event ? '<div class="evres"><small>Resultado del evento</small><b>' + esc(log.event.name) + '</b><p>' + esc(log.event.text) + '</p></div>' : '') +
     (log.lost > 3 ? '<p class="tip">Se fueron ' + log.lost + ' clientes por falta de mesas: compra más.</p>' : '') + '<button class="b g big" id="d-ok">Siguiente día</button></div>';
   el.hidden = false; SFX.cash();
-  el.querySelector('#d-ok').onclick = () => { el.hidden = true; SFX.click(); goalCheck(); };
+  el.querySelector('#d-ok').onclick = () => { el.hidden = true; SFX.click(); goalCheck(); showEventCard(); };
 };
+// Aviso grande al empezar un día con evento
+function showEventCard() {
+  const ev = save.event; if (!ev || ev.day !== save.day || ev.shown) return;
+  ev.shown = true; persist();
+  const E = EVENTS[ev.id], el = $('#dayend');
+  const gen = ev.id === 'apagon' && !save.generator;
+  el.innerHTML = '<div class="dcard evcard" style="--ev:' + E.color + '"><small>Evento de hoy · Día ' + save.day + '</small><h2>' + esc(E.name) + '</h2><p class="evdesc">' + esc(E.desc) + '</p>' +
+    (ev.id === 'partido' && !save.menu.includes('pollo') ? '<p class="tip">No tienes pollo a la brasa en la carta. Agrégalo en Carta.</p>' : '') +
+    (gen ? '<button class="b big" id="ev-gen"' + (save.money < GENERATOR_COST ? ' disabled' : '') + '>Comprar generador ' + soles(GENERATOR_COST) + '</button>' : '') +
+    '<button class="b g big" id="ev-ok">¡Vamos!</button></div>';
+  el.hidden = false; SFX.bell();
+  el.querySelector('#ev-ok').onclick = () => { el.hidden = true; SFX.click(); };
+  const bg = el.querySelector('#ev-gen'); if (bg) bg.onclick = () => { if (buyGenerator(true)) { el.hidden = true; } };
+}
 function offlineEarnings() {
   if (!save.started) return;
   const gap = (Date.now() - (save.lastT || Date.now())) / 1000;

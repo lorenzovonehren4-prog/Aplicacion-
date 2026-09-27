@@ -41,7 +41,7 @@ const ROLE_KEYS = Object.keys(ROLES);
 function roleMax(k) {
   const s = save;
   if (k === 'cocinero') return s.stations;
-  if (k === 'mozo') return 1 + s.floors * 2;
+  if (k === 'mozo') return 2 + s.floors * 2;
   if (k === 'limpiador') return s.floors + 1;
   if (k === 'cajero') return 1;
   if (k === 'ventana') return s.drive ? 1 : 0;
@@ -84,6 +84,14 @@ const DIST = () => DISTRICTS[save.district] || DISTRICTS.centro;
 // Para abrir locales nuevos: 4.5 estrellas y S/ 20 000 en la mano; el precio sube con cada local
 const CHAIN_RATING = 4.5, CHAIN_MONEY = 20000;
 const OPEN_COST = [0, 15000, 25000, 40000];
+/* ---------- eventos (Etapa 3): uno cada 2 o 3 días, duran el día entero ---------- */
+const EVENTS = {
+  partido: { name: '¡Juega la selección!', short: 'Partido', desc: 'Hoy juega Perú y todo el mundo quiere pollo a la brasa. Si no está en tu carta, agrégalo ya.', color: '#E23B3B' },
+  critico: { name: 'Crítico de incógnito', short: 'Crítico', desc: 'Dicen que hoy viene un crítico gastronómico disfrazado de cliente. Su reseña vale por 10. Que todo esté impecable.', color: '#7B3FF2' },
+  apagon: { name: 'Apagón en la tarde', short: 'Apagón', desc: 'La compañía de luz anunció un corte. Sin luz la cocina se detiene… a menos que tengas un generador.', color: '#3A3A44' },
+  feriado: { name: 'Feriado largo', short: 'Feriado', desc: 'Todo Lima salió a comer: hoy llega el doble de clientes. Prepara mesas y personal.', color: '#19A35A' },
+};
+const EVENT_FIRST_DAY = 4, GENERATOR_COST = 800;
 const GOALS = [
   { id: 'g0', t: 'Toma el pedido de una mesa', r: 10, ok: () => save.stats.ordersTaken >= 1 },
   { id: 'g1', t: 'Lleva tu primer plato a una mesa', r: 20, ok: () => save.stats.served >= 1 },
@@ -117,7 +125,7 @@ function freshSave() {
     decor: [{}, {}, {}], wall: ['#EDE6D6', '#EDE6D6', '#EDE6D6'],
     goals: [], stats: { served: 0, cleaned: 0, collected: 0, customers: 0, lost: 0, ordersTaken: 0 },
     dayLog: { income: 0, costs: 0, served: 0, lost: 0, tips: 0 }, profitEma: 0,
-    district: 'centro', generator: false, chain: [], active: 0, chainDay: 0, chainTold: false, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
+    district: 'centro', generator: false, chain: [], active: 0, chainDay: 0, chainTold: false, event: null, nextEvent: EVENT_FIRST_DAY, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
   };
 }
 let save = freshSave();

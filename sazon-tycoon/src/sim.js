@@ -75,7 +75,8 @@ const COMMENTS = {
 function makeReview(party, waited, angry) {
   const f = party.table ? party.table.f : 0;
   const dish = party.dishes && party.dishes[0];
-  const food = angry ? 1 : clamp(2.2 + recipeLvl(dish) * 0.6 + (waited < 14 ? 1.3 : waited < 26 ? 0.6 : waited < 38 ? 0 : -1), 1, 5);
+  const noPollo = eventOn('partido') && !save.menu.includes('pollo');
+  const food = angry ? 1 : clamp(2.2 + recipeLvl(dish) * 0.6 + (waited < 14 ? 1.3 : waited < 26 ? 0.6 : waited < 38 ? 0 : -1) - (noPollo ? 1.2 : 0), 1, 5);
   const carta = cartaScore(), deco = decoScore(f), clean = cleanScore(f);
   const dw = DIST().decoW, overall = angry ? 1 : (food * 0.4 + carta * 0.2 + deco * dw + clean * 0.2) / (0.8 + dw);
   let text;
@@ -84,9 +85,12 @@ function makeReview(party, waited, angry) {
   else if (overall >= 4.3) text = pick(COMMENTS.food[0]).replace('{d}', DISH[dish].name.toLowerCase());
   else if (worst[1] < 2.6) text = worst[0] === 'food' ? pick(COMMENTS.food[2]).replace('{d}', DISH[dish].name.toLowerCase()) : worst[0] === 'clean' ? pick(COMMENTS.clean) : worst[0] === 'deco' ? pick(COMMENTS.deco.slice(0, 2)) : pick(COMMENTS.carta.slice(0, 2));
   else text = pick(COMMENTS.food[1]).replace('{d}', DISH[dish].name.toLowerCase());
-  const r = { name: pick(NAMES), stars: Math.round(overall * 10) / 10, food, carta, deco, clean, text, day: save.day };
+  if (noPollo && !angry && chance(0.6)) text = pick(['¿Día de partido y sin pollo a la brasa?', 'Vine por un pollito y no había.', 'Sin pollo a la brasa no es lo mismo.']);
+  const r = { name: party.critic ? 'Crítico gastronómico' : pick(NAMES), stars: Math.round(overall * 10) / 10, food, carta, deco, clean, text, day: save.day, critic: !!party.critic };
   save.reviews.unshift(r); if (save.reviews.length > 40) save.reviews.length = 40;
-  save.rating = clamp(lerp(save.rating, overall, 0.07), 1, 5);
+  // la reseña del crítico pesa como 10
+  save.rating = clamp(lerp(save.rating, overall, party.critic ? 0.52 : 0.07), 1, 5);
+  if (party.critic && save.event) save.event.review = { stars: r.stars, text: r.text };
   return r;
 }
 
@@ -95,12 +99,14 @@ function newOrder(dish, kind, ref) {
   const o = { id: SIM.nextId++, dish, kind, ref, status: 'queue', t0: SIM.t, cookT: 0, station: -1, plateM: null, claimed: null };
   SIM.orders.push(o);
   const c = DISH[dish].cost; save.money -= c; save.dayLog.costs += c;
+  if (dish === 'pollo' && eventOn('partido')) save.event.pollos = (save.event.pollos || 0) + 1;
   return o;
 }
 function cookSpeed() { return 1 + (save.train.cocinero || 0) * 0.28; }
 function staffSpeed(role) { return 1 + (save.train[role] || 0) * 0.22; }
 function updateKitchen(dt) {
   const cooks = SIM.people.filter(p => p.role === 'cocinero');
+  if (SIM.blackout) { for (const ck of cooks) ck.cooking = false; return; }
   for (const ck of cooks) {
     const st = ck.station;
     const busy = SIM.orders.find(o => o.status === 'cooking' && o.station === st);
@@ -135,7 +141,8 @@ function spawnWalker() {
   const D = DIST();
   const peak = 0.35 + 0.9 * Math.exp(-Math.pow((h - 13) / 1.4, 2)) + 0.8 * D.dinner * Math.exp(-Math.pow((h - 20) / 1.6, 2));
   const pEnter = clamp(0.3 + (save.rating - 3) * 0.16, 0.1, 0.85) * Math.pow(PRICE_LVL[save.price].flow, D.priceSens) * Math.min(1.3, peak) * (h > 22.6 ? 0 : 1);
-  p.wants = chance(pEnter);
+  const evMul = eventOn('feriado') ? 1.3 : eventOn('partido') ? 1.2 : SIM.blackout ? 0.6 : 1;
+  p.wants = chance(pEnter * evMul);
   // grupos de 3 o 4 solo vienen si hay mesas para 4
   const r = Math.random();
   p.party = SIM.tables.some(t => t.cap === 4) ? (r < 0.35 ? 1 : r < 0.7 ? 2 : r < 0.86 ? 3 : 4) : (r < 0.45 ? 2 : 1);
@@ -147,8 +154,9 @@ function updateWalker(p, dt) {
       p.wants = false;
       const t = freeTable(p.party);
       if (t) seatParty(p, t);
+      else if (p.critic) { p.state = 'queue'; SIM.queue.unshift(p); SIM.queue.forEach((q, k) => { q.path = [{ x: 90 + (k + 1) * 40, y: 8, z: 430 }]; }); } // el crítico no se va sin intentar: se pone primero en la cola
       else if (SIM.queue.length < 4) { p.state = 'queue'; SIM.queue.push(p); p.path = [{ x: 90 + SIM.queue.length * 40, y: 8, z: 430 }]; }
-      else { save.stats.lost++; save.dayLog.lost++; floatText(p.x, 60, p.z, 'No hay mesas...', '#FF8FB8', 13); }
+      else { save.stats.lost++; save.dayLog.lost++; floatText(p.x, 60, p.z, 'No hay mesas...', '#FF8FB8', 13); if (p.critic) criticLost(); }
       return;
     }
     if (stepPath(p, dt)) removePerson(p);
@@ -156,11 +164,11 @@ function updateWalker(p, dt) {
     stepPath(p, dt);
     p.qT = (p.qT || 0) + dt;
     if (SIM.queue[0] === p) { const t = freeTable(p.party); if (t) { SIM.queue.shift(); SIM.queue.forEach((q, k) => { q.path = [{ x: 90 + (k + 1) * 40, y: 8, z: 430 }]; }); seatParty(p, t); return; } }
-    if (p.qT > 40) { SIM.queue = SIM.queue.filter(q => q !== p); save.stats.lost++; save.dayLog.lost++; floatText(p.x, 60, p.z, '¡Me voy!', '#FF8FB8', 13); p.state = 'walk'; p.path = [{ x: 1500, y: 8, z: 455 }]; }
+    if (p.qT > 40) { SIM.queue = SIM.queue.filter(q => q !== p); save.stats.lost++; save.dayLog.lost++; floatText(p.x, 60, p.z, '¡Me voy!', '#FF8FB8', 13); if (p.critic) criticLost(); p.state = 'walk'; p.path = [{ x: 1500, y: 8, z: 455 }]; }
   }
 }
 function seatParty(p, t) {
-  const party = { id: SIM.nextId++, table: t, members: [], orders: [], state: 'toTable', t: 0, patience: 100 };
+  const party = { id: SIM.nextId++, table: t, members: [], orders: [], state: 'toTable', t: 0, patience: 100, critic: !!p.critic };
   t.party = party;
   const n = p.party;
   const mem0 = p; mem0.role = 'cust'; mem0.party = party; party.members.push(mem0);
@@ -211,10 +219,10 @@ function takeOrder(party) {
   save.stats.ordersTaken++;
   const t = party.table; SFX.pick(); floatText(t.x, floorY(t.f) + 70, t.z, '¡Anotado!', '#FFFFFF', 13);
 }
-function pickDish() { const foods = save.menu.filter(id => !DISH[id].drink); const pool = foods.length ? foods : save.menu; let tot = 0; for (const id of pool) tot += DISH[id].pop; let r = Math.random() * tot; for (const id of pool) { r -= DISH[id].pop; if (r <= 0) return id; } return pool[0]; }
+function pickDish() { if (eventOn('partido') && save.menu.includes('pollo') && chance(0.8)) return 'pollo'; const foods = save.menu.filter(id => !DISH[id].drink); const pool = foods.length ? foods : save.menu; let tot = 0; for (const id of pool) tot += DISH[id].pop; let r = Math.random() * tot; for (const id of pool) { r -= DISH[id].pop; if (r <= 0) return id; } return pool[0]; }
 function leaveParty(party, angry) {
   const t = party.table;
-  if (angry) { makeReview(party, 60, true); SFX.angry(); floatText(t.x, floorY(t.f) + 80, t.z, '¡Qué lento! ★☆☆☆☆', '#FF6B6B', 15); for (const o of party.orders) if (o.status !== 'done') { o.status = 'cancel'; if (o.plateM && o.plateM.parent) o.plateM.parent.remove(o.plateM); if (o.claimed) dropPlate(o.claimed); } }
+  if (angry) { if (SIM.blackout && save.event) save.event.lostOrders = (save.event.lostOrders || 0) + 1; makeReview(party, 60, true); SFX.angry(); floatText(t.x, floorY(t.f) + 80, t.z, '¡Qué lento! ★☆☆☆☆', '#FF6B6B', 15); for (const o of party.orders) if (o.status !== 'done') { o.status = 'cancel'; if (o.plateM && o.plateM.parent) o.plateM.parent.remove(o.plateM); if (o.claimed) dropPlate(o.claimed); } }
   else { t.dirty = true; const tm = WLD.tables[t.f][t.i]; if (tm) { tm.userData.dirty.visible = true; tm.userData.food.forEach(fg => { fg.visible = false; }); } if (chance(0.3)) addDirt(t.f, t.x + rand(-60, 60), t.z + rand(-60, 60)); }
   const tm = WLD.tables[t.f][t.i]; if (tm && angry) tm.userData.food.forEach(fg => { fg.visible = false; });
   t.party = null; party.waiter = null;
@@ -263,7 +271,7 @@ function updateStaff(p, dt) {
       p.speed = 140 * staffSpeed('mozo');
       const pa = p.job;
       if (pa.state !== 'callWaiter' || pa.waiter !== p) { p.state = 'idle'; p.job = null; p.path = []; return; }
-      if (p.state === 'toOrder') { if (stepPath(p, dt)) { p.state = 'taking'; p.t = 1.4 / staffSpeed('mozo'); p.ang = Math.atan2(pa.table.x - p.x, -(pa.table.z - p.z)); } }
+      if (p.state === 'toOrder') { if (stepPath(p, dt)) { p.state = 'taking'; p.t = 1.0 / staffSpeed('mozo'); p.ang = Math.atan2(pa.table.x - p.x, -(pa.table.z - p.z)); } }
       else { p.t -= dt; if (p.t <= 0) { takeOrder(pa); p.state = 'idle'; p.job = null; } }
     } else if (p.state === 'toPick') {
       p.speed = 140 * staffSpeed('mozo');
@@ -446,6 +454,40 @@ function resetSim() {
   Object.assign(SIM, { people: [], orders: [], fx: [], texts: [], tables: [], queue: [], cars: [], dirt: [[], [], []], rides: [], deliveries: [], avatar: null, spawnT: 1, carT: 8, delT: 10 });
 }
 
+/* ---------- eventos ---------- */
+const eventOn = id => !!(save.event && save.event.id === id && save.event.day === save.day);
+function criticLost() { save.rating = clamp(lerp(save.rating, 1.5, 0.5), 1, 5); if (save.event) save.event.review = { stars: 1.5, text: 'Ni siquiera conseguí mesa. Imperdonable.' }; }
+function eventResult(ev) {
+  if (ev.id === 'partido') { const n = ev.pollos || 0, a = irand(1, 3), b = irand(0, 2); return (save.menu.includes('pollo') || n ? 'Vendiste ' + n + ' pollos a la brasa. ' : 'No tenías pollo a la brasa y la gente se quejó. ') + (a > b ? 'Perú ganó ' + a + '-' + b + ' y todos celebraron en tu local.' : 'Perú empató ' + b + '-' + b + ', pero la barra no paró.'); }
+  if (ev.id === 'critico') return ev.review ? 'El crítico te puso ' + ev.review.stars.toFixed(1) + ' ★: “' + ev.review.text + '”' : 'El crítico nunca apareció. Quizás mañana…';
+  if (ev.id === 'apagon') return ev.genUsed ? 'Tu generador salvó el día: la cocina nunca paró.' : 'Sin luz, la cocina estuvo parada' + (ev.lostOrders ? ' y se ' + (ev.lostOrders === 1 ? 'fue 1 mesa' : 'fueron ' + ev.lostOrders + ' mesas') + ' sin comer.' : '.') + ' Un generador cuesta ' + soles(GENERATOR_COST) + '.';
+  if (ev.id === 'feriado') return 'Atendiste a ' + (save.stats.customers - (ev.c0 || 0)) + ' clientes en el feriado.';
+  return '';
+}
+function startEvent() {
+  const ids = Object.keys(EVENTS).filter(k => !save.event || k !== save.event.id);
+  const id = pick(ids), ev = { id, day: save.day, shown: false, c0: save.stats.customers };
+  if (id === 'critico') ev.hour = rand(12.5, 18.5);
+  if (id === 'apagon') { ev.h0 = rand(13.2, 15); ev.h1 = ev.h0 + rand(3, 4); }
+  save.event = ev; save.nextEvent = save.day + irand(2, 3);
+}
+function updateEvents() {
+  const ev = save.event; if (!ev || ev.day !== save.day) { SIM.blackout = false; return; }
+  const h = hourNow();
+  if (ev.id === 'critico' && !ev.spawned && h >= ev.hour) {
+    ev.spawned = true; spawnWalker(); const p = SIM.people[SIM.people.length - 1];
+    p.wants = true; p.party = 1; p.critic = true; // de incógnito: se ve como cualquier cliente
+  }
+  if (ev.id === 'apagon') {
+    const dark = h >= ev.h0 && h < ev.h1;
+    if (dark && save.generator) ev.genUsed = true;
+    const bo = dark && !save.generator;
+    if (bo && !SIM.blackout) { banner('¡Se fue la luz!', save.generator ? '' : 'La cocina se detuvo. Compra un generador.'); SFX.no(); }
+    if (!bo && SIM.blackout) banner(save.generator ? '¡Generador encendido!' : '¡Volvió la luz!', 'La cocina vuelve a funcionar.');
+    SIM.blackout = bo;
+  } else SIM.blackout = false;
+}
+
 /* ---------- ciclo del día ---------- */
 let onDayEnd = () => {};
 function updateSim(dt) {
@@ -456,14 +498,18 @@ function updateSim(dt) {
     let wages = 0; for (const k of ROLE_KEYS) wages += (save.staff[k] || 0) * ROLES[k].wage;
     save.money -= wages;
     const log = Object.assign({}, save.dayLog, { wages, day: save.day, rating: save.rating, chain: Math.round(save.chainDay) }); save.chainDay = 0;
+    if (save.event && save.event.day === save.day) log.event = { name: EVENTS[save.event.id].name, text: eventResult(save.event) };
     save.profitEma = lerp(save.profitEma || 0, log.income - log.costs - wages, save.day === 1 ? 1 : 0.4);
     save.day++; save.dayLog = { income: 0, costs: 0, served: 0, lost: 0, tips: 0 };
+    if (save.day >= save.nextEvent) startEvent();
     persist(); onDayEnd(log);
   }
   // los otros locales de la cadena siguen vendiendo solos
   if (save.chain.length > 1) { const bg = chainBgDaily() / DAY_LEN * dt; save.money += bg; save.chainDay += bg; }
+  updateEvents();
+  const fer = eventOn('feriado');
   SIM.spawnT -= dt;
-  if (SIM.spawnT <= 0) { SIM.spawnT = rand(0.9, 1.9) / DIST().flow; if (SIM.people.filter(p => p.role === 'walker').length < (DIST().busy ? 32 : 24)) spawnWalker(); }
+  if (SIM.spawnT <= 0) { SIM.spawnT = rand(0.9, 1.9) / DIST().flow / (fer ? 2 : 1); if (SIM.people.filter(p => p.role === 'walker').length < (DIST().busy ? 32 : 24) * (fer ? 1.5 : 1)) spawnWalker(); }
   for (const p of SIM.people.slice()) { if (p.role === 'walker') updateWalker(p, dt); else if (ROLES[p.role]) updateStaff(p, dt); }
   const parties = new Set(); for (const p of SIM.people) if (p.party && typeof p.party === 'object') parties.add(p.party);
   for (const t of SIM.tables) if (t.party) parties.add(t.party);

@@ -82,6 +82,13 @@ button{ font-family:inherit; }
 .sub{ font-family:'Bungee', Impact, sans-serif; font-weight:400; font-size:16px; margin:18px 0 4px; }
 .card.loc.here{ background:rgba(255,122,26,.08); border-radius:12px; padding-left:8px; padding-right:8px; }
 #side button[hidden]{ display:none; }
+#h-ev{ margin-top:5px; align-self:flex-start; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:8px; color:#fff; }
+#h-ev[hidden]{ display:none; }
+#game{ transition:filter .8s; } .blackout #game{ filter:brightness(.55) saturate(.6) hue-rotate(-10deg); }
+.dcard.evcard{ border-top:8px solid var(--ev); text-align:left; } .dcard.evcard h2{ font-size:30px; color:var(--ev); } .evdesc{ font-size:15px; line-height:1.45; font-weight:600; margin:0 0 14px; }
+.evcard .b.big + .b.big{ margin-top:8px; }
+.evres{ background:rgba(27,21,35,.06); border-radius:12px; padding:10px 12px; margin:0 0 12px; } .evres b{ display:block; font-size:15px; margin:2px 0; } .evres p{ margin:0; font-size:13.5px; }
+.rv.critic{ background:rgba(123,63,242,.1); border:1px solid rgba(123,63,242,.35); } .rv.critic b{ color:#7B3FF2; }
 .goal{ display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-top:1px solid rgba(27,21,35,.1); font-weight:700; font-size:13.5px; }
 .goal em{ font-style:normal; color:#0E8F4A; font-weight:800; white-space:nowrap; } .goal.done{ opacity:.45; } .goal.done span{ text-decoration:line-through; }
 .nrow{ display:flex; gap:8px; margin-bottom:8px; } .nrow input{ flex:1; font-family:inherit; font-weight:700; font-size:15px; padding:8px 10px; border:2px solid rgba(27,21,35,.2); border-radius:10px; min-width:0; }
@@ -143,7 +150,7 @@ button{ font-family:inherit; }
   <div id="loading">Prendiendo la cocina...</div>
   <div id="top">
     <div class="chip" id="c-money"><small>Tu plata</small><b id="h-money">S/ 0</b><button id="h-reg">Caja vacía</button></div>
-    <div class="chip" id="c-day"><small id="h-day">Día 1</small><div class="row"><b id="h-clock">11:00</b><span id="h-busy" style="font-size:12px;font-weight:800;opacity:.75"></span></div><div class="dbar"><i id="h-dayfill"></i></div></div>
+    <div class="chip" id="c-day"><small id="h-day">Día 1</small><div class="row"><b id="h-clock">11:00</b><span id="h-busy" style="font-size:12px;font-weight:800;opacity:.75"></span></div><div class="dbar"><i id="h-dayfill"></i></div><span id="h-ev" hidden></span></div>
     <div class="chip" id="c-rate"><small>Calificación</small><b id="h-rating">3.0</b><span id="h-stars"></span></div>
     <span class="sp"></span>
     <button class="ib" id="h-speed" aria-label="Velocidad">x1</button>
