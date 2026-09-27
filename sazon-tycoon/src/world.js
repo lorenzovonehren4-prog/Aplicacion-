@@ -84,15 +84,21 @@ function makePad(kind, title, price) {
   g.userData = { disk, ring, lab, glow, ok };
   return g;
 }
-function makeTable(f, i) {
+// Distancia de las sillas al centro según el tamaño de la mesa
+const seatDist = cap => cap === 4 ? 56 : 50;
+function makeTable(f, i, cap) {
+  cap = cap || 2;
   const g = new THREE.Group();
   const cloth = f === 2 ? '#FFFFFF' : ['#E23B3B', '#FFFFFF', '#2E6BFF', '#19A35A'][(i + f) % 4];
-  cyl(g, M(cloth, { phong: true }), 34, 2.5, 0, 30, 0, true);
-  cyl(g, MAT.woodD, 35, 1.5, 0, 28.5, 0, false);
+  const r = cap === 4 ? 42 : 34, sd = seatDist(cap);
+  cyl(g, M(cloth, { phong: true }), r, 2.5, 0, 30, 0, true);
+  cyl(g, MAT.woodD, r + 1, 1.5, 0, 28.5, 0, false);
   cyl(g, MAT.dark, 3, 27, 0, 14, 0, true); cyl(g, MAT.dark, 14, 2, 0, 1, 0, false);
-  for (const sz of [-1, 1]) {
-    const ch = new THREE.Group(); ch.position.set(0, 0, sz * 50); g.add(ch);
-    box(ch, MAT.wood, 26, 3, 24, 0, 18, 0, true); box(ch, MAT.wood, 26, 26, 3, 0, 32, sz * 12, true);
+  // sillas: adelante y atrás; en la mesa para 4 también a los costados (girada, el respaldo mira hacia afuera)
+  const chairs = [[0, sd, 0], [0, -sd, Math.PI]]; if (cap === 4) chairs.push([-sd, 0, -Math.PI / 2], [sd, 0, Math.PI / 2]);
+  for (const [cx, cz, ry] of chairs) {
+    const ch = new THREE.Group(); ch.position.set(cx, 0, cz); ch.rotation.y = ry; g.add(ch);
+    box(ch, MAT.wood, 26, 3, 24, 0, 18, 0, true); box(ch, MAT.wood, 26, 26, 3, 0, 32, 12, true);
     for (const [lx, lz] of [[-11, -10], [11, -10], [-11, 10], [11, 10]]) box(ch, MAT.woodD, 2.5, 17, 2.5, lx, 8.5, lz, false);
   }
   if (f === 2) { cyl(g, MAT.chrome, 1.5, 70, 0, 65, 0, false); const u = mesh(g, new THREE.ConeGeometry(1, 1, 12, 1, true), M('#FFFFFF', { map: stripeTex('#FF2E88', '#FFFFFF', 12), ds: true }), 62, 20, 62, 0, 104, 0, true); void u; }
@@ -100,8 +106,10 @@ function makeTable(f, i) {
   for (const [x, z] of [[-10, -12], [12, 10], [4, -2]]) { cyl(dirty, MAT.plate, 8, 1.5, x, 33, z, false); cyl(dirty, M('#B0874A'), 4, 1, x + 1, 34, z, false); }
   sph(dirty, M('#6E5A3A'), 2, 16, 34, -14, false); box(dirty, M('#E8E0CC'), 6, 0.5, 5, -16, 33, 12, false);
   const food = [];
-  for (const sz of [-1, 1]) { const fg = new THREE.Group(); fg.position.set(0, 32.5, sz * 16); fg.visible = false; g.add(fg); food.push(fg); }
-  g.userData = { dirty, food };
+  // un plato frente a cada silla, en el mismo orden que seatPos()
+  const fpos = [[0, 16], [0, -16], [-18, 0], [18, 0]].slice(0, cap);
+  for (const [fx, fz] of fpos) { const fg = new THREE.Group(); fg.position.set(fx, 32.5, fz); fg.visible = false; g.add(fg); food.push(fg); }
+  g.userData = { dirty, food, cap };
   return g;
 }
 function setFood(fg, dishId) {
@@ -289,7 +297,7 @@ function rebuildWorld() {
   if (save.drive) WLD.root.add(makeDriveThru());
   for (let i = 0; i < save.motos; i++) addMotoModel(i, false);
 }
-function addTableModel(f, i, anim) { const [x, z] = SLOTS[f][i]; const t = makeTable(f, i); t.position.set(x, 0, z); WLD.floors[f].add(t); WLD.tables[f][i] = t; bake(t.userData.dirty.parent === t ? t : t); if (anim) { popIn(t); dust(x, floorY(f), z); } return t; }
+function addTableModel(f, i, anim) { const [x, z] = SLOTS[f][i]; const t = makeTable(f, i, tableCap(f, i)); t.position.set(x, 0, z); WLD.floors[f].add(t); WLD.tables[f][i] = t; bake(t.userData.dirty.parent === t ? t : t); if (anim) { popIn(t); dust(x, floorY(f), z); } return t; }
 function addStationModel(i, anim) { const s = makeStation(i); s.position.set(STATION_X[i], 0, STATION_Z); WLD.floors[0].add(s); WLD.stations[i] = s; if (anim) { popIn(s); dust(STATION_X[i], 0, STATION_Z); } }
 function addDecorModel(kind, f, k, anim) { const d = makeDecor(kind, f, k); (kind === 'letrero' ? WLD.floors[0] : WLD.floors[f]).add(d); WLD.deco[f].push(d); if (anim) { popIn(d); dust(d.position.x, floorY(f), d.position.z); } }
 function addMotoModel(i, anim) { const m = makeMoto(); m.position.set(620, 0, 180 + i * 80); m.rotation.y = Math.PI / 2; WLD.root.add(m); WLD.motoModels[i] = m; if (anim) popIn(m); }

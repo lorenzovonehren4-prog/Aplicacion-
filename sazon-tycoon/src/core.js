@@ -31,7 +31,7 @@ const DISHES = [
 const DISH = Object.fromEntries(DISHES.map(d => [d.id, d]));
 const ROLES = {
   cocinero: { name: 'Cocinero', desc: 'Cocina los pedidos en su estación.', hire: 150, wage: 45, shirt: '#FFFFFF', pants: '#2A2A2E', hat: 'chef' },
-  mozo: { name: 'Mozo', desc: 'Lleva los platos de la barra a las mesas.', hire: 100, wage: 35, shirt: '#F4F4F4', pants: '#1B1523', hat: null, vest: '#1B1523' },
+  mozo: { name: 'Mozo', desc: 'Toma los pedidos en la mesa y lleva los platos.', hire: 100, wage: 35, shirt: '#F4F4F4', pants: '#1B1523', hat: null, vest: '#1B1523' },
   limpiador: { name: 'Limpiador', desc: 'Limpia mesas sucias y el piso.', hire: 80, wage: 25, shirt: '#2E6BFF', pants: '#23324A', hat: 'gorra', hatColor: '#2E6BFF' },
   cajero: { name: 'Cajero', desc: 'Cobra la caja solo y la pasa a tu cuenta.', hire: 120, wage: 35, shirt: '#E23B3B', pants: '#2A2A2E', hat: null },
   ventana: { name: 'Ventanilla', desc: 'Atiende a los autos del drive-thru.', hire: 150, wage: 40, shirt: '#FF7A1A', pants: '#2A2A2E', hat: 'gorra', hatColor: '#FF7A1A' },
@@ -53,6 +53,9 @@ const STATION_COST = [0, 300, 700, 1200, 2000, 3200];
 const FLOOR_COST = [0, 3000, 9000];
 const DRIVE_COST = 2000, DELIVERY_COST = 1500, MOTO_COST = 900;
 function tableCost(n) { return n < 2 ? 0 : Math.round(60 * Math.pow(1.24, n - 2) / 5) * 5; }
+// Mesas para 4: se compran agrandando una mesa de 2 cuando ya tienes 6 mesas
+const BIG_UNLOCK = 6;
+function bigCost(n) { return Math.round(250 * Math.pow(1.3, n) / 5) * 5; }
 // Decoración: cada objeto suma puntos al piso donde está
 const DECOR = [
   { id: 'planta', name: 'Plantas', desc: 'Macetas verdes en las esquinas.', cost: 40, pts: 1, max: 4, icon: 'planta' },
@@ -68,6 +71,7 @@ const WALL_COLORS = ['#F2C230', '#E8A0B8', '#6FB3E0', '#19A35A', '#FF7A1A', '#ED
 const PRICE_LVL = { barato: { mul: 0.85, carta: 0.7, flow: 1.25, name: 'Barato' }, normal: { mul: 1, carta: 0, flow: 1, name: 'Normal' }, caro: { mul: 1.25, carta: -0.8, flow: 0.78, name: 'Caro' } };
 const DAY_LEN = 180;
 const GOALS = [
+  { id: 'g0', t: 'Toma el pedido de una mesa', r: 10, ok: () => save.stats.ordersTaken >= 1 },
   { id: 'g1', t: 'Lleva tu primer plato a una mesa', r: 20, ok: () => save.stats.served >= 1 },
   { id: 'g2', t: 'Limpia una mesa sucia', r: 10, ok: () => save.stats.cleaned >= 1 },
   { id: 'g3', t: 'Cobra la plata de la caja', r: 10, ok: () => save.stats.collected >= 1 },
@@ -77,6 +81,7 @@ const GOALS = [
   { id: 'g7', t: 'Contrata un limpiador', r: 40, ok: () => (save.staff.limpiador || 0) >= 1 },
   { id: 'g8', t: 'Llega a 4 estrellas de calificación', r: 60, ok: () => save.rating >= 4 },
   { id: 'g9', t: 'Ten 8 mesas', r: 80, ok: () => totalTables() >= 8 },
+  { id: 'g9b', t: 'Compra una mesa para 4', r: 100, ok: () => totalBig() >= 1 },
   { id: 'g10', t: 'Compra la segunda estación de cocina', r: 80, ok: () => save.stations >= 2 },
   { id: 'g11', t: 'Abre el drive-thru', r: 150, ok: () => save.drive },
   { id: 'g12', t: 'Construye el segundo piso', r: 300, ok: () => save.floors >= 2 },
@@ -91,10 +96,10 @@ const SAVE_KEY = 'sazon_tycoon_v1';
 function freshSave() {
   return {
     name: 'El Rincón Criollo', money: 200, register: 0, rating: 3, reviews: [], day: 1, dayT: 0,
-    floors: 1, tables: [2, 0, 0], stations: 1, drive: false, motos: 0,
+    floors: 1, tables: [2, 0, 0], big: [0, 0, 0], stations: 1, drive: false, motos: 0,
     staff: { cocinero: 1 }, train: {}, menu: ['ceviche', 'chicha'], recipe: {}, price: 'normal',
     decor: [{}, {}, {}], wall: ['#EDE6D6', '#EDE6D6', '#EDE6D6'],
-    goals: [], stats: { served: 0, cleaned: 0, collected: 0, customers: 0, lost: 0 },
+    goals: [], stats: { served: 0, cleaned: 0, collected: 0, customers: 0, lost: 0, ordersTaken: 0 },
     dayLog: { income: 0, costs: 0, served: 0, lost: 0, tips: 0 }, profitEma: 0, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
   };
 }
@@ -104,6 +109,9 @@ function loadSave() {
 }
 function persist() { try { save.lastT = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } }
 function totalTables() { return save.tables[0] + save.tables[1] + save.tables[2]; }
+function totalBig() { return save.big[0] + save.big[1] + save.big[2]; }
+// La mesa i del piso f es para 4 si ya se agrandó (se agrandan en orden)
+const tableCap = (f, i) => i < (save.big[f] || 0) ? 4 : 2;
 function decoPts(f) { let p = 0; const d = save.decor[f] || {}; for (const it of DECOR) p += (d[it.id] || 0) * it.pts; return p; }
 function recipeLvl(id) { return save.recipe[id] || 0; }
 function dishPrice(id) { return Math.round(DISH[id].price * (1 + recipeLvl(id) * 0.12) * PRICE_LVL[save.price].mul); }

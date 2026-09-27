@@ -20,6 +20,8 @@ window.addEventListener('resize', resize);
 function padList() {
   const L = [];
   for (let f = 0; f < save.floors; f++) if (save.tables[f] < SLOTS[f].length) { const i = save.tables[f]; L.push({ kind: 'table', f, i, x: SLOTS[f][i][0], z: SLOTS[f][i][1], title: 'Mesa nueva', price: tableCost(totalTables()) }); }
+  // mesa para 4: se agranda la siguiente mesa de 2 del piso (el pad aparece sobre la mesa)
+  if (totalTables() >= BIG_UNLOCK) for (let f = 0; f < save.floors; f++) if (save.big[f] < save.tables[f]) { const i = save.big[f]; L.push({ kind: 'big', f, i, x: SLOTS[f][i][0], z: SLOTS[f][i][1], lift: 32, title: 'Mesa para 4', price: bigCost(totalBig()) }); }
   if (save.stations < 6) L.push({ kind: 'station', f: 0, i: save.stations, x: STATION_X[save.stations], z: -238, title: 'Cocina ' + (save.stations + 1), price: STATION_COST[save.stations] });
   if (save.floors < 3) { const f = save.floors - 1; if (save.tables[f] >= 6) L.push({ kind: 'floor', f, x: stairX(f), z: -200, title: save.floors === 1 ? 'Segundo piso' : 'Terraza', price: FLOOR_COST[save.floors] }); }
   if (!save.drive && totalTables() >= 5) L.push({ kind: 'drive', f: 0, x: -620, z: 300, title: 'Drive-thru', price: DRIVE_COST });
@@ -32,17 +34,28 @@ function refreshPads(force) {
   const key = L.map(p => p.kind + p.f + p.i + p.price + (save.money >= p.price)).join('|');
   if (key === padKey && !force) return; padKey = key;
   for (const p of WLD.pads) if (p.m.parent) p.m.parent.remove(p.m);
-  WLD.pads = L.map(pd => { const m = makePad(pd.kind, pd.title, pd.price); m.position.set(pd.x, floorY(pd.f) + 1, pd.z); WLD.root.add(m); return Object.assign(pd, { m, dwell: 0 }); });
+  WLD.pads = L.map(pd => { const m = makePad(pd.kind, pd.title, pd.price); m.position.set(pd.x, floorY(pd.f) + 1 + (pd.lift || 0), pd.z); WLD.root.add(m); return Object.assign(pd, { m, dwell: 0 }); });
 }
 function buy(pd) {
   if (save.money < pd.price) { SFX.no(); toast('<b>Te faltan ' + soles(pd.price - save.money) + '</b><small>Sirve más platos y cobra la caja.</small>'); return false; }
   save.money -= pd.price;
   if (pd.kind === 'table') { save.tables[pd.f]++; syncTables(); addTableModel(pd.f, pd.i, true); banner('¡Nueva mesa!'); }
+  else if (pd.kind === 'big') { save.big[pd.f]++; syncTables(); upgradeTableModel(pd.f, pd.i); banner('¡Mesa para 4!', 'Ahora también vienen grupos de 3 y 4 personas.'); }
   else if (pd.kind === 'station') { save.stations++; addStationModel(pd.i, true); banner('¡Nueva estación de cocina!', 'Contrata un cocinero en Personal para usarla.'); }
   else if (pd.kind === 'floor') { save.floors++; save.tables[save.floors - 1] = 2; rebuildAll(); syncTables(); viewFloor = save.floors - 1; WLD.tables[save.floors - 1].forEach((t, k) => popIn(t, 0.2 + k * 0.15)); dust(0, floorY(save.floors - 1), 0); dust(-300, floorY(save.floors - 1), 200); dust(300, floorY(save.floors - 1), -100); banner(save.floors === 2 ? '¡Segundo piso construido!' : '¡Terraza construida!', 'Tus mozos suben por la escalera. Contrata más.'); }
   else if (pd.kind === 'drive') { save.drive = true; const d = makeDriveThru(); WLD.root.add(d); popIn(d); banner('¡Drive-thru abierto!', 'Contrata a alguien para la ventanilla, o atiende tú.'); }
   else if (pd.kind === 'moto') { save.motos++; addMotoModel(save.motos - 1, true); banner(save.motos === 1 ? '¡Delivery abierto!' : '¡Nueva moto!', 'Contrata un motorizado en Personal.'); }
   SFX.build(); shake = 8; persist(); refreshPads(true); goalCheck(); return true;
+}
+// Cambia el modelo de una mesa por el de su nuevo tamaño sin perder lo que pasa encima
+function upgradeTableModel(f, i) {
+  const old = WLD.tables[f][i]; if (old && old.parent) old.parent.remove(old);
+  const tm = addTableModel(f, i, true), t = SIM.tables.find(q => q.f === f && q.i === i);
+  if (!t) return;
+  tm.userData.dirty.visible = t.dirty;
+  if (t.party) {
+    t.party.members.forEach((m, k) => { if (m.seated) { const sp = seatPos(t, m.seat); m.x = sp.x; m.z = sp.z; m.ang = sp.ang; } if (m.served && m.dishes && tm.userData.food[k]) { setFood(tm.userData.food[k], m.dishes[0]); tm.userData.food[k].visible = true; } });
+  }
 }
 function rebuildAll() {
   rebuildWorld();
@@ -114,7 +127,7 @@ function renderPanel() {
   el.innerHTML = h + '</div>';
   el.querySelector('#pclose').onclick = () => openPanel(panel);
   el.querySelectorAll('[data-hire]').forEach(b => b.onclick = () => { const k = b.dataset.hire; if (save.money < ROLES[k].hire) return; save.money -= ROLES[k].hire; save.staff[k] = (save.staff[k] || 0) + 1; syncStaff(); SFX.build(); toast('<b>¡Contrataste un ' + ROLES[k].name.toLowerCase() + '!</b>'); goalCheck(); renderPanel(); persist(); });
-  el.querySelectorAll('[data-fire]').forEach(b => b.onclick = () => { const k = b.dataset.fire; save.staff[k]--; const p = SIM.people.filter(q => q.role === k).pop(); if (p) { if (p.job && p.job.claimed === p) p.job.claimed = null; if (p.carry) { p.carry.claimed = null; p.carry.status = 'ready'; } removePerson(p); } SFX.click(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-fire]').forEach(b => b.onclick = () => { const k = b.dataset.fire; save.staff[k]--; const p = SIM.people.filter(q => q.role === k).pop(); if (p) { if (p.job && p.job.claimed === p) p.job.claimed = null; if (p.job && p.job.waiter === p) p.job.waiter = null; if (p.job && p.job.t) p.job.t.cleaner = null; if (p.job && p.job.s) p.job.s.cleaner = null; if (p.carry) { p.carry.claimed = null; p.carry.status = 'ready'; } removePerson(p); } SFX.click(); renderPanel(); persist(); });
   el.querySelectorAll('[data-train]').forEach(b => b.onclick = () => { const k = b.dataset.train, c = TRAIN_COST(save.train[k] || 0); if (save.money < c) return; save.money -= c; save.train[k] = (save.train[k] || 0) + 1; SFX.build(); renderPanel(); persist(); });
   el.querySelectorAll('[data-price]').forEach(b => b.onclick = () => { save.price = b.dataset.price; SFX.click(); renderPanel(); persist(); });
   el.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const d = DISH[b.dataset.add]; if (save.money < d.unlock) return; save.money -= d.unlock; save.menu.push(d.id); SFX.build(); toast('<b>' + d.name + ' ya está en la carta</b>'); goalCheck(); renderPanel(); persist(); });
@@ -155,6 +168,7 @@ function updateHUD(dt) {
   const a = SIM.avatar, ready = SIM.orders.filter(o => o.status === 'ready' && !o.claimed && o.kind !== 'delivery').length;
   let hint = '';
   if (a && a.carry) hint = a.carry.kind === 'drive' ? 'Lleva el pedido a la ventanilla del drive-thru.' : 'Lleva el plato a la mesa que lo pidió.';
+  else if (SIM.tables.some(t => t.party && t.party.state === 'callWaiter') && !(save.staff.mozo > 0)) hint = 'Una mesa quiere pedir. Acércate para anotar su pedido, o contrata un mozo.';
   else if (ready && !(save.staff.mozo > 0)) hint = 'Hay ' + ready + (ready === 1 ? ' plato listo' : ' platos listos') + ' en la barra. Recógelo y llévalo a la mesa.';
   else if (SIM.tables.some(t => t.dirty) && !(save.staff.limpiador > 0)) hint = 'Hay mesas sucias. Acércate a limpiarlas o contrata un limpiador.';
   else if (save.register >= 40 && !(save.staff.cajero > 0)) hint = 'Tu caja tiene plata. Ve a cobrarla (o toca la caja).';
@@ -220,15 +234,16 @@ function drawOverlay() {
   // pedidos en espera
   for (const t of SIM.tables) {
     if (t.f !== viewFloor) continue;
-    if (t.party && (t.party.state === 'wait' || t.party.state === 'order')) {
+    if (t.party && (t.party.state === 'wait' || t.party.state === 'order' || t.party.state === 'callWaiter')) {
       const s = proj(t.x, floorY(t.f) + 95, t.z); if (!s) continue;
-      const pa = t.party, txt = pa.state === 'order' ? '...' : (DISH[pa.dishes[0]].name + (pa.orders.length > 1 ? ' +' + (pa.orders.length - 1) : ''));
+      const pa = t.party, txt = pa.state === 'order' ? '...' : pa.state === 'callWaiter' ? '¡Quiere pedir!' : (DISH[pa.dishes[0]].name + (pa.orders.length > 1 ? ' +' + (pa.orders.length - 1) : ''));
       ctx.font = '800 12px Rubik, sans-serif'; const w = ctx.measureText(txt).width + 34;
       ctx.fillStyle = 'rgba(255,255,255,0.95)'; rr(s.x - w / 2, s.y - 13, w, 26, 13); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
       const pc = clamp(pa.patience / 100, 0, 1); ctx.strokeStyle = pc > 0.5 ? '#19D46E' : pc > 0.25 ? '#FFB800' : '#FF3B30'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(s.x - w / 2 + 14, s.y, 7, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pc); ctx.stroke();
       ctx.fillStyle = INK; ctx.fillText(txt, s.x + 8, s.y + 1);
     } else if (t.dirty) { const s = proj(t.x, floorY(t.f) + 60, t.z); if (s) { ctx.font = '800 11px Rubik, sans-serif'; ctx.fillStyle = '#8B5E3C'; rr(s.x - 26, s.y - 10, 52, 20, 10); ctx.fill(); ctx.fillStyle = '#FFF'; ctx.fillText('Sucia', s.x, s.y + 1); } }
   }
+  drawStaffIcons();
   const ready = SIM.orders.filter(o => o.status === 'ready' && o.kind !== 'delivery').length;
   if (ready && viewFloor === 0) { const s = proj(-120, 90, PASS_Z); if (s) { ctx.font = '800 13px Rubik, sans-serif'; const txt = ready + (ready === 1 ? ' plato listo' : ' platos listos'); const w = ctx.measureText(txt).width + 22; ctx.fillStyle = '#FFE14D'; rr(s.x - w / 2, s.y - 13, w, 26, 13); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = INK; ctx.fillText(txt, s.x, s.y + 1); } }
   if (save.register > 0 && viewFloor === 0) { const s = proj(REG.x, 120, REG.z); if (s) { ctx.font = '15px ' + FONT_D; const txt = soles(save.register); const w = ctx.measureText(txt).width + 24; const bob = Math.sin(SIM.t * 5) * 3; ctx.fillStyle = '#19D46E'; rr(s.x - w / 2, s.y - 15 + bob, w, 30, 15); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1 + bob); } }
@@ -249,6 +264,49 @@ function drawOverlay() {
   ctx.globalAlpha = 1;
   if (SIM.avatar && SIM.avatar.carry) { const a = SIM.avatar, s = proj(a.x, a.y + 65, a.z); if (s) { ctx.font = '800 12px Rubik, sans-serif'; ctx.fillStyle = '#FF2E88'; const txt = DISH[a.carry.dish].name; const w = ctx.measureText(txt).width + 18; rr(s.x - w / 2, s.y - 11, w, 22, 11); ctx.fill(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1); } }
 }
+// Qué está haciendo cada empleado, según su estado ('cook', 'plate', 'order', 'clean'); los que van en camino se ven más suaves
+function staffActivity(p) {
+  if (p.role === 'cocinero') return p.cooking ? ['cook', 1] : null;
+  if (p.carryM) return ['plate', 1];
+  if (p.role === 'mozo') return p.state === 'taking' ? ['order', 1] : p.state === 'toOrder' ? ['order', 0.55] : p.state === 'toPick' ? ['plate', 0.55] : null;
+  if (p.role === 'limpiador') return p.state === 'clean' ? ['clean', 1] : p.state === 'go' ? ['clean', 0.55] : null;
+  if (p.role === 'ventana' || p.role === 'repartidor') return p.state === 'toPick' ? ['plate', 0.55] : null;
+  return null;
+}
+const ICON_BG = { cook: '#FF7A1A', plate: '#FFE14D', order: '#FFFFFF', clean: '#6FC3E0' };
+function drawStaffIcons() {
+  for (const p of SIM.people) {
+    if (!ROLES[p.role] || !p.model || !p.model.visible || floorOfY(p.y) !== viewFloor) continue;
+    const act = staffActivity(p); if (!act) continue;
+    const s = proj(p.x, p.y + 64, p.z); if (!s) continue;
+    const y = s.y + (REDUCED ? 0 : Math.sin(SIM.t * 4 + p.id) * 2);
+    ctx.globalAlpha = act[1]; drawIcon(act[0], s.x, y); ctx.globalAlpha = 1;
+  }
+}
+// Iconos dibujados a mano (no dependen de emojis del sistema)
+function drawIcon(kind, x, y) {
+  ctx.fillStyle = ICON_BG[kind]; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, 13, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineCap = 'round';
+  if (kind === 'cook') { // sartén con vapor
+    ctx.beginPath(); ctx.ellipse(x - 2, y + 3, 6.5, 3.5, 0, 0, 7); ctx.fill();
+    ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + 4, y + 2); ctx.lineTo(x + 10, y - 1); ctx.stroke();
+    ctx.lineWidth = 1.6; for (const dx of [-5, -1]) { ctx.beginPath(); ctx.moveTo(x + dx, y - 1); ctx.quadraticCurveTo(x + dx + 2.5, y - 4, x + dx, y - 8); ctx.stroke(); }
+  } else if (kind === 'plate') { // campana de plato
+    ctx.beginPath(); ctx.arc(x, y + 3, 7.5, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 10, y + 5); ctx.lineTo(x + 10, y + 5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y - 6, 1.8, 0, 7); ctx.fill();
+  } else if (kind === 'order') { // libreta con lápiz
+    ctx.lineWidth = 1.8; ctx.strokeRect(x - 6, y - 8, 11, 15);
+    ctx.lineWidth = 1.3; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x - 4, y - 4 + k * 4); ctx.lineTo(x + 3, y - 4 + k * 4); ctx.stroke(); }
+    ctx.strokeStyle = '#FF2E88'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + 2, y + 6); ctx.lineTo(x + 9, y - 3); ctx.stroke();
+  } else if (kind === 'clean') { // escoba con burbujas
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 6, y - 9); ctx.lineTo(x - 1, y + 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 2, y + 5); ctx.lineTo(x - 4, y + 10); ctx.lineTo(x - 9, y + 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = 1.2; for (const [bx, by, br] of [[x + 6, y + 5, 2.4], [x + 8, y], [x - 7, y - 6, 2]]) { ctx.beginPath(); ctx.arc(bx, by, br || 1.6, 0, 7); ctx.fill(); ctx.stroke(); }
+  }
+  ctx.lineCap = 'butt';
+}
 function rr(x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function poseAll(t) {
   for (const p of SIM.people) {
@@ -260,12 +318,13 @@ function poseAll(t) {
     if (p.role === 'cocinero' && p.cooking) { u.arms[0].rotation.x = u.arms[1].rotation.x = 1.1 + Math.sin(t * 12 + p.id) * 0.35; u.fores[0].rotation.x = u.fores[1].rotation.x = 0.6; }
     if (p.carryM) { u.arms[0].rotation.x = u.arms[1].rotation.x = 1.25; u.fores[0].rotation.x = u.fores[1].rotation.x = 0.35; }
     if (p.cleaning) { u.arms[1].rotation.x = 1.1; u.arms[1].rotation.z = Math.sin(t * 14) * 0.6; }
+    if (p.taking || p.state === 'taking') { u.arms[0].rotation.x = 1.0; u.fores[0].rotation.x = 1.2; u.arms[1].rotation.x = 0.9 + Math.sin(t * 16) * 0.12; u.fores[1].rotation.x = 1.3; }
     if (p.role === 'cajero') { u.arms[0].rotation.x = u.arms[1].rotation.x = 0.8; }
     if (p.party && p.party.state === 'eating' && p.seated) { u.arms[1].rotation.x = 1.2 + Math.sin(t * 6 + p.id) * 0.4; u.fores[1].rotation.x = 1.2; }
     if (p.party && p.party.state === 'wait' && p.seated && p.party.patience < 30) { u.head.rotation.y = Math.sin(t * 8 + p.id) * 0.5; }
-    p.walking = false; p.cleaning = false;
+    p.walking = false; p.cleaning = false; p.taking = false;
   }
-  if (SIM.avatar) SIM.avatar.cleaning = false;
+  if (SIM.avatar) { SIM.avatar.cleaning = false; SIM.avatar.taking = false; }
 }
 function updateLighting() {
   const h = hourNow();
@@ -309,7 +368,7 @@ $('#t-go').addEventListener('click', () => {
   const nm = $('#t-name').value.trim(); if (nm && nm !== save.name) { save.name = nm.slice(0, 26); rebuildAll(); }
   const first = !save.started; save.started = true;
   $('#title').hidden = true; playing = true; stage.classList.remove('intitle'); persist();
-  if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Tu cocinero ya está listo. Cuando salga un plato, llévalo a la mesa.'), 400);
+  if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Acércate a las mesas para anotar el pedido. Cuando salga el plato, llévalo a la mesa.'), 400);
 });
 onDayEnd = log => {
   const el = $('#dayend');

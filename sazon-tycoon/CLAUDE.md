@@ -21,6 +21,14 @@ El orden de carga en `index.html` importa: `core.js` → `world.js` → `helpers
 - `src/ui.js`: cámara (orbitar arrastrando, zoom con rueda o pellizco), controles (WASD, tocar para caminar, joystick táctil), pads de compra (`padList`, `buy`), paneles (Personal, Carta, Decoración, Reseñas, Metas, Opciones), HUD, textos flotantes en un canvas 2D encima del 3D (`drawOverlay`), resumen del día, ganancias fuera de línea y el bucle principal (`frame`).
 - `index.html`: HTML y CSS de toda la interfaz.
 
+## Flujo de un cliente
+
+Vereda (`walker`) → entra si quiere y hay mesa con sillas suficientes (`freeTable(n)`), si no hace cola (máx. 4, se va a los 40 s) → camina a su silla (`toTable`) → mira la carta (`order`, 1,2 s) → llama al mozo (`callWaiter`, la paciencia baja 1,2/s) → un mozo o el jugador anota el pedido (`takeOrder`, recién ahí se crean los pedidos en `SIM.orders` y se cobran los ingredientes) → espera el plato (`wait`, paciencia 1,9/s) → come (`eating`) → paga a la caja (`save.register`) y deja reseña → la mesa queda sucia.
+
+- Mesas: `save.tables[f]` cuenta las mesas por piso; `save.big[f]` cuántas de ellas (las primeras) ya son para 4. Usa `tableCap(f, i)`. El pad "Mesa para 4" aparece con `BIG_UNLOCK` (6) mesas y cuesta `bigCost()`.
+- Grupos de 3 y 4 solo llegan si existe alguna mesa para 4. Sillas: `seatPos(t, s)` (0 adelante, 1 atrás, 2 y 3 a los costados); el mozo se para en `waiterSpot(t, s)`.
+- Iconos del personal: `staffActivity()` y `drawIcon()` en `ui.js`, dibujados a mano en el canvas 2D (sin emojis).
+
 ## Coordenadas
 
 - Unidades: una persona mide unos 38. Y es hacia arriba.

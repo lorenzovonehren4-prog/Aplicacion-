@@ -45,11 +45,22 @@ function syncTables() {
   for (let f = 0; f < save.floors; f++) for (let i = 0; i < save.tables[f]; i++) {
     const prev = old.find(t => t.f === f && t.i === i);
     const [x, z] = SLOTS[f][i];
-    SIM.tables.push(prev || { f, i, x, z, party: null, dirty: false, cleanP: 0 });
+    const t = prev || { f, i, x, z, party: null, dirty: false, cleanP: 0 };
+    t.cap = tableCap(f, i);
+    SIM.tables.push(t);
   }
 }
-function seatPos(t, s) { return { x: t.x, z: t.z + (s ? -50 : 50), ang: s ? Math.PI : 0 }; }
-function freeTable() { const opts = SIM.tables.filter(t => !t.party && !t.dirty); if (!opts.length) return null; opts.sort((a, b) => a.f - b.f || Math.random() - 0.5); return opts[0]; }
+// Sillas: 0 adelante, 1 atrás, 2 izquierda, 3 derecha (las dos últimas solo en mesas para 4)
+function seatPos(t, s) {
+  const d = seatDist(t.cap);
+  if (s === 2) return { x: t.x - d, z: t.z, ang: Math.PI / 2 };
+  if (s === 3) return { x: t.x + d, z: t.z, ang: -Math.PI / 2 };
+  return { x: t.x, z: t.z + (s ? -d : d), ang: s ? Math.PI : 0 };
+}
+// Esquina libre de la mesa donde se para el mozo para atender la silla s
+function waiterSpot(t, s) { const k = seatDist(t.cap) * 0.8; return { x: t.x + (s === 2 ? -k : k), z: t.z + (s === 1 || s === 3 ? -k : k) }; }
+// Mesa libre donde entre el grupo; se prefiere la más chica que alcance
+function freeTable(n) { const opts = SIM.tables.filter(t => !t.party && !t.dirty && t.cap >= (n || 1)); if (!opts.length) return null; opts.sort((a, b) => a.cap - b.cap || a.f - b.f || Math.random() - 0.5); return opts[0]; }
 
 /* ---------- ratings ---------- */
 function cartaScore() { const n = save.menu.length; return clamp(1 + (n >= 11 ? 4 : n >= 8 ? 3.2 : n >= 5 ? 2.4 : n >= 3 ? 1.6 : 0.8) + PRICE_LVL[save.price].carta, 1, 5); }
@@ -63,13 +74,13 @@ const COMMENTS = {
 };
 function makeReview(party, waited, angry) {
   const f = party.table ? party.table.f : 0;
-  const dish = party.dishes[0];
+  const dish = party.dishes && party.dishes[0];
   const food = angry ? 1 : clamp(2.2 + recipeLvl(dish) * 0.6 + (waited < 14 ? 1.3 : waited < 26 ? 0.6 : waited < 38 ? 0 : -1), 1, 5);
   const carta = cartaScore(), deco = decoScore(f), clean = cleanScore(f);
   const overall = angry ? 1 : (food * 0.4 + carta * 0.2 + deco * 0.2 + clean * 0.2);
   let text;
   const worst = [['food', food], ['clean', clean], ['deco', deco], ['carta', carta]].sort((a, b) => a[1] - b[1])[0];
-  if (angry) text = pick(['¡Me cansé de esperar!', 'Nunca me trajeron mi pedido.', 'Pésimo servicio.']);
+  if (angry) text = dish ? pick(['¡Me cansé de esperar!', 'Nunca me trajeron mi pedido.', 'Pésimo servicio.']) : pick(['Nadie vino a tomarme el pedido.', '¿Hay mozos aquí o qué?', 'Me ignoraron todo el rato.']);
   else if (overall >= 4.3) text = pick(COMMENTS.food[0]).replace('{d}', DISH[dish].name.toLowerCase());
   else if (worst[1] < 2.6) text = worst[0] === 'food' ? pick(COMMENTS.food[2]).replace('{d}', DISH[dish].name.toLowerCase()) : worst[0] === 'clean' ? pick(COMMENTS.clean) : worst[0] === 'deco' ? pick(COMMENTS.deco.slice(0, 2)) : pick(COMMENTS.carta.slice(0, 2));
   else text = pick(COMMENTS.food[1]).replace('{d}', DISH[dish].name.toLowerCase());
@@ -106,7 +117,7 @@ function serveOrder(p, o) {
     const seat = party.members.findIndex(m => m.dishes && m.dishes.includes(o.dish) && !m.served && true);
     const mi = seat >= 0 ? seat : party.members.findIndex(m => !m.served);
     const mem = party.members[Math.max(0, mi)]; if (mem) mem.served = true;
-    const fg = WLD.tables[t.f][t.i] && WLD.tables[t.f][t.i].userData.food[Math.max(0, mi) % 2]; if (fg) { setFood(fg, o.dish); fg.visible = true; }
+    const tm = WLD.tables[t.f][t.i], foods = tm ? tm.userData.food : []; const fg = foods[Math.max(0, mi) % Math.max(1, foods.length)]; if (fg) { setFood(fg, o.dish); fg.visible = true; }
     party.servedN = (party.servedN || 0) + 1;
     if (party.servedN >= party.orders.length) { party.state = 'eating'; party.t = rand(7, 11); party.waited = SIM.t - party.orderT; }
     save.stats.served++; save.dayLog.served++;
@@ -124,14 +135,16 @@ function spawnWalker() {
   const peak = 0.35 + 0.9 * Math.exp(-Math.pow((h - 13) / 1.4, 2)) + 0.8 * Math.exp(-Math.pow((h - 20) / 1.6, 2));
   const pEnter = clamp(0.3 + (save.rating - 3) * 0.16, 0.1, 0.85) * PRICE_LVL[save.price].flow * Math.min(1.3, peak) * (h > 22.6 ? 0 : 1);
   p.wants = chance(pEnter);
-  p.party = chance(0.45) ? 2 : 1;
+  // grupos de 3 o 4 solo vienen si hay mesas para 4
+  const r = Math.random();
+  p.party = SIM.tables.some(t => t.cap === 4) ? (r < 0.35 ? 1 : r < 0.7 ? 2 : r < 0.86 ? 3 : 4) : (r < 0.45 ? 2 : 1);
 }
 function hourNow() { return 11 + save.dayT / DAY_LEN * 12; }
 function updateWalker(p, dt) {
   if (p.state === 'walk') {
     if (p.wants && Math.abs(p.x - DOOR.x) < 40) {
       p.wants = false;
-      const t = freeTable();
+      const t = freeTable(p.party);
       if (t) seatParty(p, t);
       else if (SIM.queue.length < 4) { p.state = 'queue'; SIM.queue.push(p); p.path = [{ x: 90 + SIM.queue.length * 40, y: 8, z: 430 }]; }
       else { save.stats.lost++; save.dayLog.lost++; floatText(p.x, 60, p.z, 'No hay mesas...', '#FF8FB8', 13); }
@@ -141,7 +154,7 @@ function updateWalker(p, dt) {
   } else if (p.state === 'queue') {
     stepPath(p, dt);
     p.qT = (p.qT || 0) + dt;
-    if (SIM.queue[0] === p) { const t = freeTable(); if (t) { SIM.queue.shift(); SIM.queue.forEach((q, k) => { q.path = [{ x: 90 + (k + 1) * 40, y: 8, z: 430 }]; }); seatParty(p, t); return; } }
+    if (SIM.queue[0] === p) { const t = freeTable(p.party); if (t) { SIM.queue.shift(); SIM.queue.forEach((q, k) => { q.path = [{ x: 90 + (k + 1) * 40, y: 8, z: 430 }]; }); seatParty(p, t); return; } }
     if (p.qT > 40) { SIM.queue = SIM.queue.filter(q => q !== p); save.stats.lost++; save.dayLog.lost++; floatText(p.x, 60, p.z, '¡Me voy!', '#FF8FB8', 13); p.state = 'walk'; p.path = [{ x: 1500, y: 8, z: 455 }]; }
   }
 }
@@ -150,7 +163,7 @@ function seatParty(p, t) {
   t.party = party;
   const n = p.party;
   const mem0 = p; mem0.role = 'cust'; mem0.party = party; party.members.push(mem0);
-  if (n === 2) { const q = spawnPerson('cust', randLook(), p.x + 30, p.y, p.z); q.party = party; party.members.push(q); }
+  for (let k = 1; k < n; k++) { const q = spawnPerson('cust', randLook(), p.x + 30 * k, p.y, p.z + (k % 2) * 16); q.party = party; party.members.push(q); }
   party.members.forEach((m, k) => { m.state = 'toTable'; m.seat = k; const sp = seatPos(t, k); m.path = [{ x: DOOR.x, y: 8, z: 430 }, { x: DOOR.x, y: 0, z: 360 }]; const tail = []; const tmp = { x: 0, y: 0, z: 360, path: [] }; route(tmp, sp.x, sp.z, t.f); m.path = m.path.concat(tmp.path); });
   save.stats.customers += n;
 }
@@ -161,12 +174,12 @@ function updateParty(party, dt) {
     for (const m of party.members) { if (!m.seated) { if (stepPath(m, dt)) { m.seated = true; const sp = seatPos(t, m.seat); m.ang = sp.ang; m.x = sp.x; m.z = sp.z; } else all = false; } }
     if (all) { party.state = 'order'; party.t = 1.2; }
   } else if (party.state === 'order') {
+    // miran la carta y luego llaman al mozo
     party.t -= dt;
-    if (party.t <= 0) {
-      for (const m of party.members) { const d = pickDish(); m.dishes = [d]; party.orders.push(newOrder(d, 'table', party)); if (chance(0.35)) { const dr = save.menu.find(id => DISH[id].drink); if (dr && d !== dr) { m.dishes.push(dr); party.orders.push(newOrder(dr, 'table', party)); } } }
-      party.dishes = party.orders.map(o => o.dish);
-      party.state = 'wait'; party.orderT = SIM.t;
-    }
+    if (party.t <= 0) { party.state = 'callWaiter'; party.callT = SIM.t; party.takeP = 0; }
+  } else if (party.state === 'callWaiter') {
+    party.patience -= dt * 1.2;
+    if (party.patience <= 0) { leaveParty(party, true); }
   } else if (party.state === 'wait') {
     party.patience -= dt * (1.9 - (save.decor[t.f] && save.decor[t.f].parlante ? 0.3 : 0));
     if (party.patience <= 0) { leaveParty(party, true); }
@@ -188,13 +201,22 @@ function updateParty(party, dt) {
     if (gone) party.state = 'gone';
   }
 }
+// El mozo (o tú) anota el pedido: recién ahí llega a la cocina
+function takeOrder(party) {
+  if (party.state !== 'callWaiter') return;
+  for (const m of party.members) { const d = pickDish(); m.dishes = [d]; party.orders.push(newOrder(d, 'table', party)); if (chance(0.35)) { const dr = save.menu.find(id => DISH[id].drink); if (dr && d !== dr) { m.dishes.push(dr); party.orders.push(newOrder(dr, 'table', party)); } } }
+  party.dishes = party.orders.map(o => o.dish);
+  party.state = 'wait'; party.orderT = SIM.t; party.waiter = null;
+  save.stats.ordersTaken++;
+  const t = party.table; SFX.pick(); floatText(t.x, floorY(t.f) + 70, t.z, '¡Anotado!', '#FFFFFF', 13);
+}
 function pickDish() { const foods = save.menu.filter(id => !DISH[id].drink); const pool = foods.length ? foods : save.menu; let tot = 0; for (const id of pool) tot += DISH[id].pop; let r = Math.random() * tot; for (const id of pool) { r -= DISH[id].pop; if (r <= 0) return id; } return pool[0]; }
 function leaveParty(party, angry) {
   const t = party.table;
   if (angry) { makeReview(party, 60, true); SFX.angry(); floatText(t.x, floorY(t.f) + 80, t.z, '¡Qué lento! ★☆☆☆☆', '#FF6B6B', 15); for (const o of party.orders) if (o.status !== 'done') { o.status = 'cancel'; if (o.plateM && o.plateM.parent) o.plateM.parent.remove(o.plateM); if (o.claimed) dropPlate(o.claimed); } }
   else { t.dirty = true; const tm = WLD.tables[t.f][t.i]; if (tm) { tm.userData.dirty.visible = true; tm.userData.food.forEach(fg => { fg.visible = false; }); } if (chance(0.3)) addDirt(t.f, t.x + rand(-60, 60), t.z + rand(-60, 60)); }
   const tm = WLD.tables[t.f][t.i]; if (tm && angry) tm.userData.food.forEach(fg => { fg.visible = false; });
-  t.party = null;
+  t.party = null; party.waiter = null;
   party.state = 'leaving';
   for (const m of party.members) { m.seated = false; m.state = 'leave'; const tmp = { x: m.x, y: m.y, z: m.z, path: [] }; route(tmp, DOOR.x, 360, 0); m.path = tmp.path.concat([{ x: DOOR.x, y: 8, z: 440 }, { x: chance(0.5) ? 1500 : -1500, y: 8, z: 460 }]); }
 }
@@ -232,12 +254,20 @@ function updateStaff(p, dt) {
   if (k === 'mozo') {
     if (p.state === 'idle') {
       const o = SIM.orders.filter(o2 => o2.status === 'ready' && o2.kind === 'table' && !o2.claimed).sort((a, b) => a.readyT - b.readyT)[0];
+      const pa = o ? null : SIM.tables.filter(t => t.party && t.party.state === 'callWaiter' && !t.party.waiter).map(t => t.party).sort((a, b) => a.callT - b.callT)[0];
       if (o) { o.claimed = p; p.job = o; const pp = pickPoint(o); const tmp = { x: p.x, y: p.y, z: p.z, path: [] }; route(tmp, pp.x, pp.z, 0); p.path = tmp.path; p.state = 'toPick'; }
+      else if (pa) { pa.waiter = p; p.job = pa; const ws = waiterSpot(pa.table, 0); const tmp = { x: p.x, y: p.y, z: p.z, path: [] }; route(tmp, ws.x, ws.z, pa.table.f); p.path = tmp.path; p.state = 'toOrder'; }
       else if (Math.hypot(p.x - p.home.x, p.z - p.home.z) > 5 || p.y > 1) { if (!p.path.length) { const tmp = { x: p.x, y: p.y, z: p.z, path: [] }; route(tmp, p.home.x, p.home.z, 0); p.path = tmp.path; } p.speed = 135 * staffSpeed('mozo'); stepPath(p, dt); }
+    } else if (p.state === 'toOrder' || p.state === 'taking') {
+      p.speed = 140 * staffSpeed('mozo');
+      const pa = p.job;
+      if (pa.state !== 'callWaiter' || pa.waiter !== p) { p.state = 'idle'; p.job = null; p.path = []; return; }
+      if (p.state === 'toOrder') { if (stepPath(p, dt)) { p.state = 'taking'; p.t = 1.4 / staffSpeed('mozo'); p.ang = Math.atan2(pa.table.x - p.x, -(pa.table.z - p.z)); } }
+      else { p.t -= dt; if (p.t <= 0) { takeOrder(pa); p.state = 'idle'; p.job = null; } }
     } else if (p.state === 'toPick') {
       p.speed = 140 * staffSpeed('mozo');
       if (p.job.status === 'cancel') { p.state = 'idle'; p.job = null; return; }
-      if (stepPath(p, dt)) { takePlate(p, p.job); const party = p.job.ref, t = party.table; const mi = party.members.findIndex(m => !m.served); const sp = seatPos(t, Math.max(0, mi) % 2); const tmp = { x: p.x, y: p.y, z: p.z, path: [] }; route(tmp, sp.x + 26, sp.z + (mi % 2 ? 14 : -14), t.f); p.path = tmp.path; p.state = 'toTable'; }
+      if (stepPath(p, dt)) { takePlate(p, p.job); const party = p.job.ref, t = party.table; const mi = party.members.findIndex(m => !m.served); const ws = waiterSpot(t, Math.max(0, mi)); const tmp = { x: p.x, y: p.y, z: p.z, path: [] }; route(tmp, ws.x, ws.z, t.f); p.path = tmp.path; p.state = 'toTable'; }
     } else if (p.state === 'toTable') {
       p.speed = 140 * staffSpeed('mozo');
       if (p.job.status === 'cancel') { dropPlate(p); p.state = 'idle'; p.job = null; return; }
@@ -391,6 +421,7 @@ function updateAvatar(dt, camYaw) {
     else if (o.kind === 'drive' && f === 0 && Math.hypot(a.x + 470, a.z + 300) < 70) { const pj = { job: o }; handDrive(Object.assign(a, pj)); a.job = null; }
   } else {
     if (f === 0) for (const o of SIM.orders) if (o.status === 'ready' && !o.claimed && o.kind !== 'delivery') { const pp = pickPoint(o); if (Math.hypot(a.x - pp.x, a.z - pp.z) < 55) { takePlate(a, o); floatText(a.x, 70, a.z, 'Llévalo a ' + (o.kind === 'drive' ? 'la ventanilla' : 'su mesa'), '#FFFFFF', 13); break; } }
+    for (const t of SIM.tables) { const pa = t.party; if (pa && pa.state === 'callWaiter' && t.f === f && Math.hypot(a.x - t.x, a.z - t.z) < 85) { pa.takeP = (pa.takeP || 0) + dt; a.taking = true; if (pa.takeP > 0.7) { if (pa.waiter && pa.waiter !== a) { const w = pa.waiter; w.state = 'idle'; w.job = null; w.path = []; } takeOrder(pa); } break; } }
     for (const t of SIM.tables) if (t.dirty && !t.cleaner && t.f === f && Math.hypot(a.x - t.x, a.z - t.z) < 80) { t.cleanP += dt; if (t.cleanP > 1.1) { t.cleanP = 0; cleanTable(t); } a.cleaning = true; }
     for (const s of SIM.dirt[f]) if (!s.cleaner && Math.hypot(a.x - s.x, a.z - s.z) < 40) { s.p += dt; if (s.p > 0.8) cleanSpot(f, s); break; }
   }
