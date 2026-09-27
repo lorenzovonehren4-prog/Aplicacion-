@@ -36,6 +36,10 @@ const list = {
   viajesmovil: [390, 844, `(() => { const C = window.__combi; C.save.tripUnlocked = 12; C.save.tutDone = true; C.show('modos'); })()`],
   banner: [1280, 720, `(() => { const C = window.__combi; C.save.tutDone = true; C.startRun({ mode: 'viaje', ti: 11 }); })()`],
   banner2: [1280, 720, `(() => { const C = window.__combi; C.save.tutDone = true; C.startRun({ mode: 'viaje', ti: 0 }); return new Promise(r => setTimeout(r, 2200)); })()`],
+  parada: [1280, 720, `(() => { const C = window.__combi; C.save.tutDone = true; C.startRun({ mode: 'viaje', ti: 4 }); const g = C.G; g.countdown = 0; const st = g.stops[0]; g.p.wy = st.wy - 900; g.p.v = 250; C.step(40); C.snap(); })()`],
+  paradamovil: [390, 844, `(() => { const C = window.__combi; C.save.tutDone = true; C.startRun({ mode: 'viaje', ti: 4 }); const g = C.G; g.countdown = 0; const st = g.stops[0]; g.p.wy = st.wy - 900; g.p.v = 250; C.step(40); C.snap(); })()`],
+  hueco: [1280, 720, `(() => { const C = window.__combi; C.save.tutDone = true; C.startRun({ mode: 'viaje', ti: 6 }); const g = C.G; g.countdown = 0; const b = g.baches.find(b => b.cones) || g.baches[3]; g.p.wy = b.wy - 620; g.p.x = 270 + (b.x > 270 ? -40 : 40); g.p.v = 150; C.step(2); C.snap(); })()`],
+  ayuda: [1280, 720, `(() => { window.__combi.show('ayuda'); })()`],
   noche: [1280, 720, trip(1, 'noche', 250)],
   nochegarua: [1280, 720, trip(3, 'noche', 350)],
 };

@@ -19,7 +19,22 @@ node combi-rush/tools/smoke.mjs
 node combi-rush/tools/shots.mjs combi-rush/shots
 ```
 
-## Mejoras de esta versión
+## Versión 3: jugabilidad más clara
+
+- **Paraderos con información:** tarjeta flotante sobre el próximo paradero (cuántos esperan, cuántos bajan, asientos libres o "¡Combi llena!") e indicación de qué hacer ("Pásate al carril derecho", "Frena sobre la marca amarilla").
+- **Asientos en el HUD:** una fila de asientos que se llena, con VACÍA / N libres / ¡LLENA!, y aviso de asientos que quedan cada vez que sube alguien.
+- **Pasajeros que bajan antes:** algunos llevan la etiqueta BAJA/P2 y se bajan en un paradero intermedio (pagan y dejan propina). Si te pasas su paradero, se molestan.
+- La combi ya no arranca llena: sale al ~60% para que puedas recoger gente.
+- **Huecos y conos visibles:** borde de asfalto roto, piedras, conos altos con cinta y cartel "¡HUECO!", y un triángulo de aviso sobre cada hueco que viene.
+- **Carros bot que esquivan:** cambian de carril ante huecos y conos, frenan si no pueden, y rebotan si caen en uno.
+- **Minimapa estilo Waze:** mapa claro, ruta celeste, reportes de huecos, policía y fiscalizador, tráfico lento en rojo/naranja y "Llegas en…".
+- **Consejos la primera vez:** paradero, hueco, semáforo, curva, combi llena, pasajero que baja y racha.
+- **¿Cómo se juega?** con 4 tarjetas ilustradas; los consejos largos van plegados.
+- **Progresión visible:** ficha de tu combi en el menú (velocidad, asientos, motor), insignia "¡Mejora!" en el Taller cuando te alcanza, y tarjeta de mejora con botón al Taller en los resultados.
+- **Menús animados:** logo que entra, botones en cascada, brillo en Jugar, listas que aparecen por partes.
+- Líneas de velocidad y viñeta al ir rápido; árboles y postes ya no tapan la combi.
+
+## Versión 2
 
 **Gráficos**
 - Mapeo de tonos ACES y exposición por ambiente: colores con más cuerpo, luces sin quemarse.
