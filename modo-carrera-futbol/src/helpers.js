@@ -96,7 +96,7 @@ function makePerson(look, opts) {
   opts = opts || {};
   const root = new THREE.Group();
   const cast = !isTouch;
-  const skin = M(look.skin), shirt = M(look.shirt), pants = M(look.pants || '#2A3550'), hair = M(look.hair || '#1A1110');
+  const skin = M(look.skin), shirt = look.shirtMat || M(look.shirt), pants = M(look.pants || '#2A3550'), hair = M(look.hair || '#1A1110');
   // piernas con rodilla
   const thighs = [], shins = [];
   for (const sx of [-2.7, 2.7]) {
@@ -142,6 +142,9 @@ function makePerson(look, opts) {
   box(head, MAT.dark, 1.1, 1.3, 0.6, -1.7, 5, -4.4, false); box(head, MAT.dark, 1.1, 1.3, 0.6, 1.7, 5, -4.4, false);
   box(head, M(shade(look.skin, -0.25)), 2.6, 0.8, 0.6, 0, 2.6, -4.5, false);
   if (look.clip) box(fores[1], M('#8B5E3C'), 6, 8, 1, 0, -6, -3, false);
+  if (look.glasses) { box(head, M('#0B0B10', { phong: true, shin: 150 }), 8, 1.9, 0.8, 0, 5, -4.7, false); }
+  if (look.tie) { box(body, M(look.tie), 1.6, 8, 0.6, 0, 8, -3.45, false); box(body, M('#FFFFFF'), 4, 3, 0.5, 0, 12, -3.4, false); }
+  if (look.num) { const nt = canvasTex('num' + look.num + look.numCol, 64, 64, (x, w, h) => { x.fillStyle = look.numCol || '#FFFFFF'; x.font = '44px ' + FONT_D; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(look.num), w / 2, h / 2 + 3); }); plane(body, M('#FFFFFF', { map: nt, basic: true, op: 1 }), 7, 7, 0, 8, 3.4); }
   root.userData = { legs: thighs, shins, arms, fores, body, head, seed: Math.random() * 10 };
   root.scale.setScalar((look.scale || 1) * (opts.scale || 1));
   return root;
