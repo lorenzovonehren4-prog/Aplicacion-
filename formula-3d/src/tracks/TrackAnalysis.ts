@@ -32,16 +32,8 @@ export interface Corner {
   brakingPoint: number | null;
 }
 
-export interface TrackAnalysis {
+export interface TrackAnalysis extends SpeedProfile {
   corners: Corner[];
-  /** Velocidad límite por curvatura en cada muestra (m/s). */
-  cornerLimit: Float32Array;
-  /** Perfil de velocidad de una vuelta rápida (m/s). */
-  speed: Float32Array;
-  /** 1 si en esa muestra se está frenando para la curva siguiente. */
-  braking: Uint8Array;
-  /** Tiempo teórico de vuelta con el perfil (s). */
-  lapTime: number;
 }
 
 /** Curvatura mínima (1/m) para considerar que hay curva: radio < 500 m. */
@@ -70,15 +62,32 @@ function longitudinalLimit(v: number, lateral: number, model: PerformanceModel):
   return model.longitudinalGrip * load * Math.sqrt(1 - usage * usage);
 }
 
+export interface SpeedProfile {
+  /** Velocidad límite por curvatura en cada muestra (m/s). */
+  cornerLimit: Float32Array;
+  /** Velocidad de una vuelta rápida (m/s). */
+  speed: Float32Array;
+  /** 1 si en esa muestra se está frenando para la curva siguiente. */
+  braking: Uint8Array;
+  /** Tiempo teórico de la vuelta (s). */
+  lapTime: number;
+}
+
 /**
- * Analiza el circuito. `startS` es la línea de meta: las curvas se numeran a
- * partir de ahí (la curva 1 es la primera después de la largada).
+ * Perfil de velocidad de una vuelta cerrada.
+ * @param curvature curvatura en cada muestra (1/m)
+ * @param spacing distancia de cada muestra a la siguiente (m), o una sola si es uniforme
  */
-export function analyzeTrack(geometry: TrackGeometry, model: PerformanceModel, startS = 0): TrackAnalysis {
-  const n = geometry.count;
-  const ds = geometry.ds;
+export function speedProfile(
+  curvature: ArrayLike<number>,
+  spacing: ArrayLike<number> | number,
+  model: PerformanceModel,
+): SpeedProfile {
+  const n = curvature.length;
+  const step = (i: number): number =>
+    typeof spacing === 'number' ? spacing : (spacing[((i % n) + n) % n] ?? 1);
   const cornerLimit = new Float32Array(n);
-  for (let i = 0; i < n; i++) cornerLimit[i] = cornerSpeed(geometry.curvature[i] ?? 0, model);
+  for (let i = 0; i < n; i++) cornerLimit[i] = cornerSpeed(curvature[i] ?? 0, model);
 
   // Pasada hacia adelante (acelerar). Dos vueltas para que el cierre se estabilice.
   const forward = new Float32Array(n);
@@ -86,11 +95,11 @@ export function analyzeTrack(geometry: TrackGeometry, model: PerformanceModel, s
   for (let lap = 0; lap < 2; lap++) {
     for (let i = 0; i < n; i++) {
       const limit = cornerLimit[i] ?? 0;
-      const lateral = v * v * Math.abs(geometry.curvature[i] ?? 0);
+      const lateral = v * v * Math.abs(curvature[i] ?? 0);
       const tractionLeft = longitudinalLimit(v, lateral, model);
       const powerAccel = model.powerPerMass / Math.max(v, 5);
       const accel = Math.min(tractionLeft, powerAccel) - model.dragPerMass * v * v;
-      v = Math.min(limit, Math.sqrt(Math.max(0, v * v + 2 * Math.max(0, accel) * ds)));
+      v = Math.min(limit, Math.sqrt(Math.max(0, v * v + 2 * Math.max(0, accel) * step(i - 1))));
       forward[i] = v;
     }
   }
@@ -101,10 +110,10 @@ export function analyzeTrack(geometry: TrackGeometry, model: PerformanceModel, s
   let next = speed[0] ?? 0;
   for (let lap = 0; lap < 2; lap++) {
     for (let i = n - 1; i >= 0; i--) {
-      const lateral = next * next * Math.abs(geometry.curvature[i] ?? 0);
+      const lateral = next * next * Math.abs(curvature[i] ?? 0);
       // Se frena al 92 % de lo posible: margen realista para un piloto.
       const brakeAccel = longitudinalLimit(next, lateral, model) * 0.92 + model.dragPerMass * next * next;
-      const reachable = Math.sqrt(next * next + 2 * brakeAccel * ds);
+      const reachable = Math.sqrt(next * next + 2 * brakeAccel * step(i));
       const current = speed[i] ?? 0;
       if (reachable < current) {
         speed[i] = reachable;
@@ -115,14 +124,19 @@ export function analyzeTrack(geometry: TrackGeometry, model: PerformanceModel, s
   }
 
   let lapTime = 0;
-  for (let i = 0; i < n; i++) lapTime += ds / Math.max(1, speed[i] ?? 1);
+  for (let i = 0; i < n; i++) lapTime += step(i) / Math.max(1, speed[i] ?? 1);
+  return { cornerLimit, speed, braking, lapTime };
+}
 
+/**
+ * Analiza el circuito. `startS` es la línea de meta: las curvas se numeran a
+ * partir de ahí (la curva 1 es la primera después de la largada).
+ */
+export function analyzeTrack(geometry: TrackGeometry, model: PerformanceModel, startS = 0): TrackAnalysis {
+  const profile = speedProfile(geometry.curvature, geometry.ds, model);
   return {
-    corners: findCorners(geometry, speed, startS),
-    cornerLimit,
-    speed,
-    braking,
-    lapTime,
+    corners: findCorners(geometry, profile.speed, startS),
+    ...profile,
   };
 }
 

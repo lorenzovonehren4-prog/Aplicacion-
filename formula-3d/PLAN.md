@@ -87,10 +87,12 @@ formula-3d/
     │   ├── camera/RaceCamera.ts  [2] cockpit, T-cam, persecución, fundido, cabeza por G, sacudidas
     │   ├── render/               [2] CarRig (física → modelo, interpolación) y volante con LEDs y pantalla
     │   ├── audio/RaceAudio.ts    [2] motor en tiempo real + derrape, pianos, grava, viento, cambios, choques
-    │   ├── session/LapTimer.ts   [2] vueltas, sectores, delta en vivo, validez · [3] semáforo
-    │   ├── PracticeSession.ts    [2] práctica libre: física + cronómetro + DRS + límites de pista
-    │   ├── RaceWorld.ts          [2] escena 3D de la sesión (circuito + auto + cámaras) = vista del renderer
-    │   ├── ai/                   [4] bots: seguimiento de línea, adelantar, defender, errores
+    │   ├── session/LapTimer.ts   [2] vueltas, sectores, delta en vivo, validez · [3] largada detenida y bandera
+    │   ├── session/StartLights.ts [3] semáforo de 5 luces con pausa aleatoria
+    │   ├── Session.ts            [2] práctica libre · [3] carrera a N vueltas: ayudas, semáforo, bandera, enfriamiento
+    │   ├── RaceWorld.ts          [2] escena 3D de la sesión (circuito + auto + cámaras) · [3] trazada y semáforo del pórtico
+    │   ├── ai/LineFollower.ts    [3] sigue una línea con un perfil de velocidad (enfriamiento, pruebas; base de los bots)
+    │   ├── ai/                   [4] bots: adelantar, defender, errores
     │   └── fx/                   [9] chispas, humo, calor, bandera a cuadros
     ├── tracks/                   datos y generación de circuitos
     │   ├── TrackDefinition.ts    [2] formato de datos de un circuito (tramos rectos y curvas "de tortuga")
@@ -101,7 +103,7 @@ formula-3d/
     │   ├── Track.ts              [2] circuito listo: geometría + análisis + entorno, meta, sectores, DRS, parrilla
     │   ├── TrackBuilder.ts       [2] arma la escena por etapas con progreso real
     │   ├── build/                [2] texturas, cintas, superficies, muros, escenario, cielo
-    │   ├── RacingLine.ts         [3] trazada ideal (mínima curvatura)
+    │   ├── RacingLine.ts         [3] trazada ideal (curvatura mínima), su perfil y sus colores fijos
     │   ├── data/australia.ts     [2]
     │   ├── data/monza.ts         [5]
     │   └── registry.ts           [2] catálogo de circuitos (agregar uno = agregar un archivo)
@@ -117,13 +119,13 @@ formula-3d/
     │   ├── xp.ts                 [6] cálculo de XP por carrera
     │   ├── seasonPass.ts         [6] 50 niveles y recompensas
     │   └── unlocks.ts            [6] reglas de desbloqueo
-    ├── assists/                  [3] niveles de ayudas, frenado, TC, ABS, línea de trazada
+    ├── assists/                  [3] niveles y XP (presets), ayuda de frenado, malla y shader de la trazada
     ├── ui/
     │   ├── dom.ts                [1] creación de elementos tipada (`h`)
     │   ├── nav/FocusNavigator.ts [1] navegación espacial con teclado/gamepad + ratón
     │   ├── anim/                 [1] barrido diagonal, stagger, contadores
-    │   ├── components/           [1] botón de menú, slider, selector, pestañas, tarjeta de piloto, FPS
-    │   ├── race/                 [2] HUD (tiempos, minimapa, tablero), pantalla de carga, pausa
+    │   ├── components/           [1] botón de menú, slider, selector, pestañas, tarjeta de piloto, FPS · [3] tarjetas de ayudas
+    │   ├── race/                 [2] HUD (tiempos, minimapa, tablero), carga, pausa · [3] semáforo, radio, fin de carrera
     │   └── screens/              [1] Splash, Menú principal, Ajustes · [2] Carrera · [3..8] el resto
     ├── audio/
     │   ├── AudioManager.ts       [1] contexto, buses y volúmenes
@@ -134,6 +136,7 @@ formula-3d/
     └── data/
         ├── game.ts               [1] nombre, versión, textos del menú
         ├── teams.ts              [4] equipos y pilotos ficticios
+        ├── radio.ts              [3] frases del ingeniero (radio del equipo)
         └── tips.ts               [2] consejos de las pantallas de carga
 ```
 
@@ -406,22 +409,44 @@ Nada más cambia.
 | Avanzado | Baja | No | Sí | Sólo curvas | Dinámica | ×1.5 |
 | Personalizado | Off/Baja/Media/Completa | Off/Medio/Completo | On/Off | Off/Curvas/Completa | Fija/Dinámica | calculado |
 
-- **Ayuda de frenado**: mira adelante sobre el perfil de velocidad; si tu
-  velocidad supera la segura para la próxima curva más la distancia de frenada,
-  aplica freno (Completa: todo lo necesario; Media: 50 % y sólo si vas muy
-  pasado; Baja: 25 % y sólo en emergencias).
+- **Ayuda de frenado**: compara tu velocidad con un perfil de referencia un
+  poco más adelante (tiempo de reacción). Los perfiles ya incluyen las curvas
+  de frenada, así que "velocidad del perfil aquí" = la máxima con la que
+  todavía se llega a la próxima curva. Hay dos referencias: la del centro de la
+  pista (prudente) y la de la trazada ideal (bastante más rápida: con 14 m de
+  ancho la línea abre mucho las curvas). Completa usa el centro, anticipa
+  0,3 s y además levanta el acelerador; Media mezcla ambas, anticipa 0,15 s y
+  frena hasta 50 %; Baja usa la ideal sin anticipación (sólo cuando ya no se
+  llega ni frenando a fondo) y frena hasta 25 %. Prueba: con Completa, un
+  piloto que nunca suelta el acelerador da la vuelta sin salirse.
+- **Dirección asistida** (sólo Principiante): volante más suave (teclado ×0,8,
+  stick más filtrado) y **control de estabilidad** en la física: si la cola
+  desliza más que el tren delantero, un momento de guiñada la endereza (sin él,
+  un sobreviraje a fondo en 3.ª termina en trompo de 80°; con él, 13°).
 - **Control de tracción**: limita el acelerador cuando el deslizamiento de las
   ruedas traseras supera un umbral (Medio: umbral alto; Completo: sin patinar).
 - **ABS**: limita la presión de freno por eje antes del bloqueo (sin ABS las
   ruedas se bloquean: humo, pérdida de dirección).
-- **XP personalizado**: `1.0 + 0.1·(frenado quitado) + 0.1·(tracción quitada) +
-  0.05·(sin ABS) + 0.1·(línea reducida) + 0.05·(línea dinámica)`, tope ×1.6.
+- **XP personalizado**: 1,0 + frenado (media 0,1 · baja 0,2 · off 0,3) +
+  tracción (medio 0,07 · off 0,15) + sin ABS 0,05 + línea (curvas 0,1 · off
+  0,2) + dinámica 0,05, tope ×1,6. Los pesos hacen que armar a mano un nivel
+  predefinido dé su mismo multiplicador (Intermedio = 1,25; Avanzado = 1,5).
+- **Cambiar una ayuda a mano** (Ajustes → Ayudas) pasa a Personalizado
+  partiendo de los valores del nivel que estaba elegido. Se aplica en caliente,
+  incluso con la carrera en pausa.
 - **Línea de trazada**: cinta sobre el asfalto siguiendo la trazada ideal
   (`BufferGeometry` con color por vértice + shader propio: brillo suave,
   transparencia, bordes difuminados y chevrones animados). Fija = color por
   tramo desde el perfil (verde acelerar / amarillo levantar / rojo frenar).
-  Dinámica = uniforme por tramo recalculado cada fotograma comparando tu
-  velocidad con la segura de la próxima curva, con transición suave (sin saltos).
+  Dinámica = cada fotograma, para los 260 m de adelante, qué fracción de la
+  frenada disponible haría falta para llegar a la velocidad de cada punto;
+  cada punto muestra lo peor que tiene adelante (verde < 33 %, amarillo hasta
+  72 %, rojo "frena ya" más allá), con transición suave de colores.
+- **Trazada ideal** (`tracks/RacingLine.ts`): desplazamiento lateral d(s) que
+  minimiza la suma de segundas diferencias al cuadrado (≈ curvatura²) con
+  descenso por coordenadas, de grueso a fino (puntos cada 32 → 16 → 8 → 4 m),
+  dentro de los bordes y usando parte de los pianos. Se calcula en ~60 ms al
+  cargar el circuito.
   "Sólo curvas" oculta la cinta en rectas con un desvanecido en los extremos.
 - HUD: íconos de ayudas activas que se iluminan cuando actúan.
 
@@ -446,8 +471,13 @@ Nada más cambia.
 ### 5.6 Reglas y modos (`race/rules/`)
 
 - Semáforo de 5 luces (una por segundo, sonido en cada una), pausa aleatoria de
-  0,5–2,5 s, "¡APAGADAS!". Salida anticipada: aviso (sin penalización en
-  Principiante).
+  0,5–2,5 s, "¡APAGADAS!". En la parrilla el embrague automático retiene el
+  auto: el acelerador sólo sube las vueltas del motor y se larga al apagarse
+  las luces. Por eso no hay salidas anticipadas (decisión de la Fase 3: con
+  caja y embrague automáticos no hay un gesto del jugador que las provoque).
+- En carrera el DRS se habilita desde la vuelta 2 (como en la realidad); en
+  práctica, en cualquier zona. La largada detenida cuenta el tiempo desde las
+  luces; cruzar la línea desde la parrilla no abre otra vuelta.
 - Vueltas, tiempo por vuelta y por sector, mejor vuelta, delta en vivo contra tu
   mejor vuelta (verde/rojo), posiciones por `vueltas × longitud + s`, gaps.
 - Fin: el líder cruza la meta en la última vuelta → bandera a cuadros → el resto
@@ -599,15 +629,29 @@ revisión propia del código + resumen y espera de confirmación.
       guardado, límites de pista, pausa, presentación del circuito y volver a
       pista con R.
 
-### Fase 3 — HUD completo, semáforo y ayudas
+### Fase 3 — HUD, vueltas, semáforo, pausa y ayudas ✅
 
-- [ ] HUD completo (sección 9 del documento de diseño): posiciones, gaps,
-      ayudas activas; sobre la base de `ui/race/Hud.ts`.
-- [x] Vueltas, tiempos, sectores, delta, mejor vuelta (Fase 2).
-- [ ] Semáforo de 5 luces con sonido (el pórtico ya tiene las luces).
-- [x] Pausa con desenfoque (continuar, reiniciar, ajustes, salir) (Fase 2).
-- [ ] Sistema de ayudas completo + línea de trazada fija y dinámica.
-- [ ] Ajustes: pestaña Ayudas. (Unidades km/h / mph: Fase 2.)
+- [x] Carrera rápida (temporal: Albert Park a 3 vueltas, sin rivales hasta la
+      Fase 4; la Fase 5 agrega la selección de circuito, vueltas y clima).
+- [x] Semáforo de 5 luces en el pórtico y en pantalla, pitido por luz, pausa de
+      tensión, "¡APAGADAS!" con el público; auto retenido en la parrilla.
+- [x] Vueltas X/N, "ÚLTIMA VUELTA", "VUELTA RÁPIDA", "DRS ACTIVADO", bandera a
+      cuadros, vuelta de enfriamiento automática y panel de fin de carrera
+      (tiempo total que cuenta, tabla de vueltas con sectores, repetir o salir).
+- [x] Radio del equipo en texto animado (letra por letra, con chasquido).
+- [x] Ayudas completas: frenado (4 niveles), tracción (3), ABS, dirección
+      asistida con control de estabilidad; niveles Principiante / Intermedio /
+      Avanzado / Personalizado con multiplicador de XP.
+- [x] Trazada ideal por curvatura mínima + línea en el asfalto con shader
+      (brillo, bordes difuminados, chevrones), fija o dinámica, completa o
+      sólo curvas.
+- [x] HUD: íconos de las ayudas activadas que se encienden al actuar (TC
+      parpadea al cortar potencia).
+- [x] Ajustes → Ayudas: tarjetas grandes animadas por nivel + opciones
+      personalizadas; la pausa abre Ajustes directo en esa pestaña.
+- [x] Vueltas, tiempos, sectores, delta, mejor vuelta y pausa (desde la Fase 2).
+- [ ] Posición (P3/20), tabla lateral con gaps y minimapa con posiciones:
+      necesitan rivales → Fase 4.
 
 ### Fase 4 — Bots, colisiones y posiciones
 
@@ -662,17 +706,19 @@ revisión propia del código + resumen y espera de confirmación.
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
 | Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 5, 6, 7, 8 |
-| Parámetros de pantallas nuevas | `core/screens/params.ts`: splash, menú, ajustes y carrera (`mode: 'practice'`) | 3 en adelante |
-| Ajustes: Ayudas y volumen de Música | No se muestran hasta que tengan efecto | 3, 8 |
-| Tutorial inicial | El splash va siempre al menú; se agrega el desvío al tutorial la primera vez | 8 |
+| Carrera rápida configurable | Fija: Albert Park, 3 vueltas (`OPENERS.quickRace`); `RaceParams.laps` ya existe | 5 |
+| Posición, tabla lateral con gaps y minimapa con posiciones | El HUD tiene el lugar; faltan los rivales | 4 |
+| Pantalla de resultados con XP y recompensas | Por ahora el panel de fin de carrera (`FinishPanel`) | 6 |
+| Volumen de Música | No se muestra hasta que haya música | 8 |
+| Manual de ayudas | Los textos de cada ayuda ya están en `assists/presets.ts` | 8 |
+| Tutorial inicial | El splash va siempre al menú; las ayudas arrancan en Principiante | 8 |
 | Nombre del piloto editable | Por ahora "PILOTO" | 8 (tutorial y perfil) |
 | Música de menú | — | 8 |
 | Patrones de livery y materiales | El auto usa la livery base del jugador | 7 |
 | Autos de bots livianos (piezas compartidas, LOD) | `CarModel` crea sus propias texturas | 4 |
-| Semáforo de largada | `StartGantry.lights` (materiales de las 10 luces) listo para encender | 3 |
-| DRS con detección (a menos de 1 s del de adelante) | En práctica se permite en toda la zona; `DrsZone.detection` ya está en los datos | 4 |
+| DRS con detección (a menos de 1 s del de adelante) | En práctica, toda la zona; en carrera, desde la vuelta 2; `DrsZone.detection` ya está en los datos | 4 |
 | Rebufo | `Vehicle.slipstream` existe y reduce el arrastre; nadie lo fija todavía | 4 |
-| Nivel de TC/ABS elegible | `Vehicle.electronics` (TC 0,6 y ABS fijos) | 3 |
+| Bots sobre la trazada | `LineFollower` ya sigue la trazada con un perfil de velocidad | 4 |
 
 ### Notas de pruebas
 
@@ -683,10 +729,13 @@ revisión propia del código + resumen y espera de confirmación.
   paso fijo tiene un tope de 8 pasos por cuadro): se verifica que el auto
   arranque, no una vuelta entera. Las vueltas completas se prueban sin
   navegador (`tests/physics.test.ts`, `tests/session.test.ts`).
-- El piloto automático de las pruebas (`tests/helpers/autopilot.ts`) sigue el
-  centro de la pista con el perfil de velocidad del análisis; el "piloto de
-  teclado" (`tests/helpers/keyboardPilot.ts`) lo traduce a flechas pulsadas y
-  pasa por las mismas rampas que el juego.
+- El piloto automático de las pruebas (`tests/helpers/autopilot.ts`) es el
+  `LineFollower` del juego por el centro de la pista; el "piloto de teclado"
+  (`tests/helpers/keyboardPilot.ts`) lo traduce a flechas pulsadas y pasa por
+  las mismas rampas que el juego.
+- Para jugar sin instalar nada: `npm run build:artifact` arma un solo HTML
+  (JS, CSS y fuentes incrustados) en `dist-artifact/`, que se publica como
+  página de claude.ai.
 
 ## 9. Riesgos y cómo se mitigan
 
@@ -703,4 +752,5 @@ revisión propia del código + resumen y espera de confirmación.
 ## 10. Estado
 
 - **Fase 1**: completa.
-- **Fase 2**: completa. A la espera de confirmación para empezar la Fase 3.
+- **Fase 2**: completa.
+- **Fase 3**: completa. A la espera de confirmación para empezar la Fase 4.

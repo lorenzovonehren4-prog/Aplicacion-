@@ -18,7 +18,10 @@ export type PauseChoice = 'resume' | 'restart' | 'settings' | 'exit';
 
 export interface PauseSummary {
   trackName: string;
+  /** Vueltas completadas. */
   laps: number;
+  /** Vueltas de la carrera (null en práctica). */
+  totalLaps: number | null;
   bestLap: number | null;
 }
 
@@ -74,7 +77,13 @@ export class PauseMenu {
     this.setExitLabel('Salir al menú');
     this.summary.replaceChildren(
       h('span', { class: 'pause__track', text: summary.trackName }),
-      h('span', { class: 'pause__stat', text: `${summary.laps} ${summary.laps === 1 ? 'vuelta' : 'vueltas'}` }),
+      h('span', {
+        class: 'pause__stat',
+        text:
+          summary.totalLaps === null
+            ? `${summary.laps} ${summary.laps === 1 ? 'vuelta' : 'vueltas'}`
+            : `Vuelta ${Math.min(summary.laps + 1, summary.totalLaps)} de ${summary.totalLaps}`,
+      }),
       h('span', { class: 'pause__stat', text: `Mejor ${summary.bestLap === null ? '–:––.–––' : formatLapTime(summary.bestLap)}` }),
     );
     this.root.classList.add('is-visible');

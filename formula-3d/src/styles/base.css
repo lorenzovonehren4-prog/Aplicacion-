@@ -124,6 +124,9 @@ p {
 .screen {
   position: absolute;
   inset: 0;
+  /* Cada pantalla es su propio contexto de apilado: los z-index internos (pausa,
+     paneles) no se escapan por encima de la pantalla que se apila después. */
+  isolation: isolate;
 }
 
 /* ─── Error fatal (sin WebGL 2, fallo al arrancar) ─────────────────────── */

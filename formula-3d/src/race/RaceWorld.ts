@@ -7,11 +7,13 @@
 import { MathUtils, Scene, Vector3 } from 'three';
 import type { RenderView } from '../core/render/RenderHost';
 import { shadowMapSize } from '../core/render/quality';
-import type { CameraMode, GraphicsSettings } from '../core/save/schema';
+import { RacingLineMesh } from '../assists/RacingLineMesh';
+import type { CameraMode, GraphicsSettings, LineMode, LineType } from '../core/save/schema';
 import { clamp } from '../core/utils/math';
 import { PLAYER_DEFAULT_LIVERY } from '../garage/livery';
 import { buildTrackScene, type BuildOptions, type TrackScene } from '../tracks/TrackBuilder';
 import { RaceCamera } from './camera/RaceCamera';
+import { performanceModel } from './physics/CarSpec';
 import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
 
@@ -26,6 +28,8 @@ export class RaceWorld implements RenderView {
   readonly bloomThreshold = 1.2;
   readonly rig: CarRig;
   readonly raceCamera: RaceCamera;
+  /** La ayuda de la línea de trazada. */
+  readonly racingLine: RacingLineMesh;
   private introTime = -1;
   private time = 0;
 
@@ -42,6 +46,21 @@ export class RaceWorld implements RenderView {
     this.rig = new CarRig(vehicle, PLAYER_DEFAULT_LIVERY, anisotropy);
     this.scene.add(this.rig.root);
     this.raceCamera = new RaceCamera(this.rig, cameraMode);
+    this.racingLine = new RacingLineMesh(vehicle.track.racingLine, performanceModel(vehicle.spec));
+    this.scene.add(this.racingLine.mesh);
+  }
+
+  /** Muestra la línea de trazada según la ayuda elegida. */
+  configureLine(mode: LineMode, type: LineType): void {
+    this.racingLine.configure(mode, type);
+  }
+
+  /** Enciende las primeras `lit` columnas del semáforo del pórtico (0 = apagado). */
+  setStartLights(lit: number): void {
+    this.trackScene.gantry.lights.forEach((material, column) => {
+      material.emissiveIntensity = column < lit ? 6 : 0;
+      material.color.set(column < lit ? '#ff2a36' : '#2a0508');
+    });
   }
 
   /** Construye el circuito por etapas y arma el mundo. */
@@ -99,6 +118,7 @@ export class RaceWorld implements RenderView {
     }
     const shift = this.vehicle.spec.shiftRpm;
     this.rig.wheel.update(this.vehicle.steerAngle, (telemetry.rpm - (shift - 3200)) / 3200, telemetry.limiter, this.time);
+    this.racingLine.update(dt, this.time, this.vehicle.projection.s, Math.max(0, this.vehicle.vx));
     this.trackScene.sky.follow(this.rig.pose.x, this.rig.pose.z);
     this.trackScene.update(this.time);
   }
@@ -113,6 +133,7 @@ export class RaceWorld implements RenderView {
   }
 
   dispose(): void {
+    this.racingLine.dispose();
     this.rig.dispose();
     this.trackScene.dispose();
     this.scene.clear();

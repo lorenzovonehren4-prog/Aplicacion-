@@ -1,7 +1,7 @@
 /**
  * Ajustes (se apila sobre el menú y sobre la pausa de la carrera).
- * Pestañas: Gráficos, Sonido, Controles y Juego. Ayudas se suma en la Fase 3,
- * cuando tenga efecto real. Todo se aplica y se guarda al instante.
+ * Pestañas: Gráficos, Sonido, Controles, Ayudas y Juego. Todo se aplica y se
+ * guarda al instante (las ayudas, incluso en plena carrera).
  */
 
 import gsap from 'gsap';
@@ -10,8 +10,14 @@ import type { Game } from '../../core/Game';
 import type { UiAction } from '../../core/input/actions';
 import { detectQuality, QUALITY_PRESETS, type FpsTarget, type QualityLevel, type ShadowLevel } from '../../core/render/quality';
 import {
+  BRAKING_ASSISTS,
+  LINE_MODES,
+  LINE_TYPES,
+  TRACTION_ASSISTS,
+  createDefaultAssists,
   createDefaultAudio,
   createDefaultControls,
+  type AssistConfig,
   createDefaultGame,
   createDefaultGraphics,
   type CameraMode,
@@ -21,14 +27,24 @@ import type { ScreenParams, SettingsTab } from '../../core/screens/params';
 import { Disposer } from '../../core/utils/Disposer';
 import { h, prefersReducedMotion } from '../dom';
 import { finished } from '../anim/finished';
+import { assistCards } from '../components/AssistCards';
 import { ControlHints } from '../components/ControlHints';
 import { actionRow, selectorRow, sliderRow, toggleRow, type RowContext, type SettingRow } from '../components/SettingRows';
+import {
+  BRAKING_LABELS,
+  LINE_LABELS,
+  LINE_TYPE_LABELS,
+  TRACTION_LABELS,
+  activeAssists,
+  assistConfig,
+} from '../../assists/presets';
 import { BaseScreen } from './BaseScreen';
 
 const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
   { id: 'graphics', label: 'Gráficos' },
   { id: 'audio', label: 'Sonido' },
   { id: 'controls', label: 'Controles' },
+  { id: 'assists', label: 'Ayudas' },
   { id: 'game', label: 'Juego' },
 ];
 
@@ -172,6 +188,8 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         return this.audioRows(ctx);
       case 'controls':
         return this.controlRows(ctx);
+      case 'assists':
+        return this.assistRows(ctx);
       case 'game':
         return this.gameRows(ctx);
     }
@@ -342,6 +360,61 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         help: 'Teclado: ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · C cámara · R volver a pista · Esc pausa. Gamepad: RT/LT, stick izquierdo, X, Y, Select y Start.',
         icon: 'reset',
         run: () => this.game.updateSettings((s) => (s.controls = createDefaultControls())),
+      }),
+    ];
+  }
+
+  private assistRows(ctx: RowContext): SettingRow[] {
+    const effective = (): AssistConfig => assistConfig(activeAssists(this.game.settings.assists));
+    /** Cambiar una ayuda a mano pasa a Personalizado, partiendo de lo que había. */
+    const change = <K extends keyof AssistConfig>(key: K, value: AssistConfig[K]): void =>
+      this.game.updateSettings((s) => {
+        s.assists = { level: 'custom', custom: { ...assistConfig(activeAssists(s.assists)), [key]: value } };
+      });
+    return [
+      assistCards(ctx, {
+        get: () => this.game.settings.assists,
+        select: (level) => this.game.updateSettings((s) => (s.assists.level = level)),
+      }),
+      selectorRow(ctx, {
+        label: 'Ayuda de frenado',
+        help: 'Frena por ti antes de las curvas si vas demasiado rápido. Completa: todo lo necesario. Media: la mitad, si vas muy pasado. Baja: sólo emergencias.',
+        options: BRAKING_ASSISTS.map((value) => ({ value, label: BRAKING_LABELS[value] })),
+        get: () => effective().braking,
+        set: (value) => change('braking', value),
+      }),
+      selectorRow(ctx, {
+        label: 'Control de tracción',
+        help: 'Corta potencia cuando las ruedas traseras patinan. Completo: nunca patinan. Medio: dejan patinar un poco.',
+        options: TRACTION_ASSISTS.map((value) => ({ value, label: TRACTION_LABELS[value] })),
+        get: () => effective().traction,
+        set: (value) => change('traction', value),
+      }),
+      toggleRow(ctx, {
+        label: 'ABS',
+        help: 'Evita que las ruedas se bloqueen al frenar fuerte. Sin ABS, un bloqueo te quita dirección.',
+        get: () => effective().abs,
+        set: (value) => change('abs', value),
+      }),
+      selectorRow(ctx, {
+        label: 'Línea de trazada',
+        help: 'La trazada ideal pintada en el asfalto: verde acelera, amarillo levanta, rojo frena. "Sólo curvas" la oculta en las rectas.',
+        options: LINE_MODES.map((value) => ({ value, label: LINE_LABELS[value] })),
+        get: () => effective().line,
+        set: (value) => change('line', value),
+      }),
+      selectorRow(ctx, {
+        label: 'Tipo de línea',
+        help: 'Fija: el color depende del punto de la pista. Dinámica: cambia en tiempo real según tu velocidad frente a la que pide la curva.',
+        options: LINE_TYPES.map((value) => ({ value, label: LINE_TYPE_LABELS[value] })),
+        get: () => effective().lineType,
+        set: (value) => change('lineType', value),
+      }),
+      actionRow(ctx, {
+        label: 'Restablecer ayudas',
+        help: 'Vuelve al nivel Principiante (el recomendado para empezar).',
+        icon: 'reset',
+        run: () => this.game.updateSettings((s) => (s.assists = createDefaultAssists())),
       }),
     ];
   }

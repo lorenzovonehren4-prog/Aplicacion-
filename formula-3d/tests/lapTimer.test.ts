@@ -113,4 +113,21 @@ describe('LapTimer', () => {
     expect(events).toHaveLength(0);
     expect(timer.lap).toBe(1);
   });
+
+  it('en carrera: la largada detenida no abre otra vuelta y la bandera detiene el cronómetro', () => {
+    const timer = new LapTimer({ length: LENGTH, sectorEnds: [300, 650], personalBest: null, lapLimit: 2 });
+    // Parrilla 6 m detrás de la línea: la vuelta 1 empieza al apagarse el semáforo.
+    timer.step(LENGTH - 6, DT);
+    expect(timer.beginRace()).toEqual({ kind: 'lapStarted', number: 1 });
+    const events = [...drive(timer, LENGTH - 6, 50, 45).events];
+    const started = events.filter((e) => e.kind === 'lapStarted');
+    const completed = events.filter((e) => e.kind === 'lapCompleted');
+    expect(started.map((e) => (e.kind === 'lapStarted' ? e.number : 0))).toEqual([2]);
+    expect(completed).toHaveLength(2);
+    expect(timer.finished).toBe(true);
+    expect(timer.lap).toBe(2);
+    // Vuelta 1: 1006 m a 50 m/s; vuelta 2: 1000 m.
+    expect(timer.laps[0]?.time).toBeCloseTo(20.12, 1);
+    expect(timer.laps[1]?.time).toBeCloseTo(20, 1);
+  });
 });

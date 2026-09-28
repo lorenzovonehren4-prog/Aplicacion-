@@ -5,8 +5,10 @@
  *
  * Recorre: splash → menú → Ajustes (cambia calidad y volumen) → vuelve →
  * recarga → comprueba que lo guardado sigue ahí → Práctica libre (carga del
- * circuito, presentación, manejo, cambio de cámara, pausa) → sale al menú. Falla si aparece cualquier
- * error o advertencia en la consola. Guarda capturas en e2e/capturas/.
+ * circuito, presentación, manejo, cambio de cámara, pausa) → sale al menú →
+ * Carrera rápida (semáforo, largada, Ajustes → Ayudas desde la pausa). Falla
+ * si aparece cualquier error o advertencia en la consola. Guarda capturas en
+ * e2e/capturas/.
  *
  * Chromium: usa el de Playwright (`npx playwright-core install chromium`) o el
  * que indique la variable CHROMIUM_PATH. Sin GPU (servidores, CI) Chromium
@@ -149,6 +151,46 @@ async function main() {
     await page.keyboard.press('Enter');
     await waitForScreen(page, 'menu');
     log('pausa → salir al menú');
+
+    // ─── Carrera rápida: semáforo, largada y pestaña Ayudas desde la pausa ───
+    step = 'carrera: semáforo';
+    // Desde Práctica libre (primer acceso), ↓ va a Carrera rápida.
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.screen--race .loading', { state: 'attached' });
+    await waitForScreen(page, 'race');
+    await page.waitForSelector('.loading', { state: 'detached' });
+    await page.waitForSelector('.race__intro-title');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.hud__lights.is-visible');
+    await page.keyboard.down('ArrowUp');
+    await page.waitForFunction(() => document.querySelectorAll('.hud__lamp.is-on').length === 10, null, { polling: 200 });
+    await page.screenshot({ path: `${shots}09-semaforo.png` });
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('.hud__message-title')].some((e) => e.textContent?.includes('APAGADAS')),
+      null,
+      { polling: 150 },
+    );
+    await page.waitForFunction(() => Number(document.querySelector('.dash__speed')?.textContent ?? 0) > 5, null, { polling: 250 });
+    await page.keyboard.up('ArrowUp');
+    await expectText(page, '.timing__lap', 'VUELTA 1/3');
+    await page.screenshot({ path: `${shots}10-largada.png` });
+    log('semáforo de 5 luces → ¡apagadas! → vuelta 1/3');
+
+    step = 'carrera: ayudas';
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.pause.is-visible');
+    for (let i = 0; i < 2; i++) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await waitForScreen(page, 'settings');
+    await page.waitForSelector('.acard.is-selected');
+    await page.screenshot({ path: `${shots}11-ayudas.png` });
+    const level = await page.locator('.acard.is-selected .acard__name').textContent();
+    await page.keyboard.press('Escape');
+    await waitForScreen(page, 'race');
+    await page.keyboard.press('Escape'); // continúa la carrera
+    await page.waitForSelector('.pause', { state: 'hidden' });
+    log(`Ajustes → Ayudas desde la pausa (nivel ${level}) y vuelta a la carrera`);
 
     // ─── Respaldo: sin IndexedDB, el guardado va a localStorage ───
     step = 'respaldo localStorage';

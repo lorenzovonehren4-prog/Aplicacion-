@@ -53,6 +53,7 @@ npm run preview    # sirve dist/
 npm run check      # typecheck + lint + pruebas unitarias + build
 npm test           # pruebas unitarias (Vitest)
 npm run smoke      # prueba de humo en Chromium real (necesita `npm run build` antes)
+npm run build:artifact  # todo el juego en un solo HTML (dist-artifact/apice-gp.html)
 ```
 
 La prueba de humo usa `playwright-core`. Si no tienes un Chromium de Playwright
@@ -61,6 +62,8 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Fase 2 de 9: práctica libre en Albert Park con física de monoplaza, tres
-cámaras, sonido del motor y efectos, HUD con tiempos y récord guardado, pausa y
-ajustes de controles y juego. Ver la sección **Fases** de `PLAN.md`.
+Fase 3 de 9: práctica libre y carrera rápida (3 vueltas con semáforo) en
+Albert Park, con física de monoplaza, tres cámaras, sonido, HUD completo con
+radio del equipo, sistema de ayudas por niveles y línea de trazada fija o
+dinámica. Los rivales llegan en la Fase 4. Ver la sección **Fases** de
+`PLAN.md`.

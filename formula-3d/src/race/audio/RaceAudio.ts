@@ -121,6 +121,105 @@ class EffectsGraph {
     thump.onended = cleanup;
   }
 
+  /** Una luz del semáforo: pitido corto y seco. */
+  startLight(): void {
+    const now = this.ctx.currentTime;
+    const tone = this.ctx.createOscillator();
+    tone.type = 'square';
+    tone.frequency.value = 880;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 2400;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.01);
+    gain.gain.setValueAtTime(0.22, now + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    tone.connect(filter).connect(gain).connect(this.out);
+    tone.start(now);
+    tone.stop(now + 0.26);
+    tone.onended = () => {
+      tone.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
+  }
+
+  /** ¡Apagadas!: el público estalla (ruido filtrado que crece y se apaga). */
+  lightsOut(): void {
+    const now = this.ctx.currentTime;
+    const roar = this.ctx.createBufferSource();
+    roar.buffer = this.noise;
+    roar.loop = true;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 900;
+    filter.Q.value = 0.6;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.3, now + 0.35);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 2.6);
+    roar.connect(filter).connect(gain).connect(this.out);
+    roar.start(now, Math.random() * 1.5);
+    roar.stop(now + 2.7);
+    roar.onended = () => {
+      roar.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
+  }
+
+  /** El flap del DRS se abre: soplido neumático corto. */
+  drs(): void {
+    const now = this.ctx.currentTime;
+    const puff = this.ctx.createBufferSource();
+    puff.buffer = this.noise;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(3000, now);
+    filter.frequency.exponentialRampToValueAtTime(900, now + 0.18);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    puff.connect(filter).connect(gain).connect(this.out);
+    puff.start(now, Math.random(), 0.22);
+    puff.onended = () => {
+      puff.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
+  }
+
+  /** Radio del equipo: "chasquido" de apertura del canal. */
+  radio(): void {
+    const now = this.ctx.currentTime;
+    const click = this.ctx.createBufferSource();
+    click.buffer = this.noise;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1800;
+    filter.Q.value = 1.4;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.14, now);
+    gain.gain.setValueAtTime(0.14, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    const beep = this.ctx.createOscillator();
+    beep.frequency.value = 1250;
+    const beepGain = this.ctx.createGain();
+    beepGain.gain.setValueAtTime(0, now + 0.12);
+    beepGain.gain.linearRampToValueAtTime(0.06, now + 0.13);
+    beepGain.gain.setValueAtTime(0.06, now + 0.2);
+    beepGain.gain.linearRampToValueAtTime(0, now + 0.22);
+    click.connect(filter).connect(gain).connect(this.out);
+    beep.connect(beepGain).connect(this.out);
+    click.start(now, Math.random(), 0.13);
+    beep.start(now + 0.12);
+    beep.stop(now + 0.24);
+    beep.onended = () => {
+      for (const node of [click, filter, gain, beep, beepGain]) node.disconnect();
+    };
+  }
+
   /** "Clac" corto de la caja al pasar de marcha. */
   shift(): void {
     const now = this.ctx.currentTime;
@@ -203,6 +302,27 @@ export class RaceAudio {
       this.lastGear = tel.gear;
     }
     if (impact > 1.5) this.effects.impact(impact / 25);
+  }
+
+  /** Sonidos de un momento de la carrera (semáforo, DRS, radio). */
+  cue(kind: 'light' | 'lightsOut' | 'drs' | 'radio'): void {
+    this.ensure();
+    const effects = this.effects;
+    if (!effects) return;
+    switch (kind) {
+      case 'light':
+        effects.startLight();
+        break;
+      case 'lightsOut':
+        effects.lightsOut();
+        break;
+      case 'drs':
+        effects.drs();
+        break;
+      case 'radio':
+        effects.radio();
+        break;
+    }
   }
 
   /** Pausa: el motor baja a ralentí y los efectos se callan. */

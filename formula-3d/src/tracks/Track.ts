@@ -4,6 +4,7 @@
  */
 
 import { F1_SPEC, performanceModel, type CarSpec } from '../race/physics/CarSpec';
+import { RacingLine } from './RacingLine';
 import { analyzeTrack, type TrackAnalysis } from './TrackAnalysis';
 import type { Side, TrackDefinition } from './TrackDefinition';
 import { TrackGeometry } from './TrackGeometry';
@@ -31,6 +32,8 @@ export class Track {
   readonly geometry: TrackGeometry;
   readonly analysis: TrackAnalysis;
   readonly trackside: Trackside;
+  /** Trazada ideal (curvatura mínima) con su perfil de velocidad. */
+  readonly racingLine: RacingLine;
   /** Línea de meta (s). */
   readonly startS: number;
   /** Fin de los sectores 1 y 2 (s). */
@@ -45,8 +48,10 @@ export class Track {
     this.geometry = TrackGeometry.build(def);
     const g = this.geometry;
     this.startS = g.designToS(def.startLine);
-    this.analysis = analyzeTrack(g, performanceModel(spec), this.startS);
+    const model = performanceModel(spec);
+    this.analysis = analyzeTrack(g, model, this.startS);
     this.trackside = planTrackside(def, g, this.analysis);
+    this.racingLine = RacingLine.compute(g, this.trackside, model);
     this.sectorEnds = [g.designToS(def.sectors[0]), g.designToS(def.sectors[1])];
     this.drsZones = def.drsZones.map((zone) => ({
       detection: g.designToS(zone.detection),
@@ -62,6 +67,16 @@ export class Track {
 
   get length(): number {
     return this.geometry.length;
+  }
+
+  /** Velocidad del perfil por la línea central en s (m/s): referencia prudente. */
+  centerSpeedAt(s: number): number {
+    const g = this.geometry;
+    const f = g.wrapS(s) / g.ds;
+    const i = Math.floor(f);
+    const a = this.analysis.speed[g.wrapIndex(i)] ?? 0;
+    const b = this.analysis.speed[g.wrapIndex(i + 1)] ?? 0;
+    return a + (b - a) * (f - i);
   }
 
   /** Superficie bajo un punto dado en coordenadas de pista. */

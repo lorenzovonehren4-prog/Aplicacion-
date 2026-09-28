@@ -1,20 +1,24 @@
 /**
- * Pantalla de carrera (Fase 2: práctica libre).
+ * Pantalla de carrera: práctica libre o carrera a N vueltas.
  *
  * Estados: carga → presentación (vuelta de cámara, se salta con ENTER/A) →
- * en pista ⇄ pausa. La carga no bloquea la transición: la pantalla aparece
- * enseguida con la barra de progreso real y el circuito se arma por etapas.
+ * en pista (en carrera: parrilla con semáforo) ⇄ pausa → (en carrera)
+ * bandera a cuadros y panel de fin de carrera. La carga no bloquea la
+ * transición: la pantalla aparece enseguida con la barra de progreso real y
+ * el circuito se arma por etapas.
  */
 
 import gsap from 'gsap';
+import { activeAssists, type ActiveAssists } from '../../assists/presets';
 import type { Game } from '../../core/Game';
 import type { UiAction } from '../../core/input/actions';
 import type { RaceParams } from '../../core/screens/params';
 import { clamp } from '../../core/utils/math';
 import { formatLapTime } from '../../core/utils/format';
+import { ENGINEER_NAME, RADIO_LINES, type RadioMoment } from '../../data/radio';
 import { DrivingInput, type DrivingEvent } from '../../race/input/DrivingInput';
 import { F1_SPEC } from '../../race/physics/CarSpec';
-import { PracticeSession, type SessionEvent } from '../../race/PracticeSession';
+import { Session, type RaceResult, type SessionEvent } from '../../race/Session';
 import { RaceAudio, type SurfaceMix } from '../../race/audio/RaceAudio';
 import { CAMERA_LABELS } from '../../race/camera/RaceCamera';
 import { INTRO_DURATION, RaceWorld } from '../../race/RaceWorld';
@@ -23,26 +27,45 @@ import { getTrack } from '../../tracks/registry';
 import { Track } from '../../tracks/Track';
 import { h, prefersReducedMotion } from '../dom';
 import { ControlHints } from '../components/ControlHints';
-import { Hud } from '../race/Hud';
+import { FinishPanel, type FinishChoice } from '../race/FinishPanel';
+import { Hud, type HudAssists } from '../race/Hud';
 import { LoadingOverlay } from '../race/LoadingOverlay';
 import { PauseMenu, type PauseChoice } from '../race/PauseMenu';
 import { BaseScreen } from './BaseScreen';
 
-type Phase = 'loading' | 'intro' | 'running' | 'paused' | 'error' | 'leaving';
+type Phase = 'loading' | 'intro' | 'running' | 'paused' | 'results' | 'error' | 'leaving';
 
 /** Cada cuánto se renueva la vibración del gamepad (ms). */
 const RUMBLE_INTERVAL = 90;
+/** Vueltas de la carrera si no se indican. */
+const DEFAULT_RACE_LAPS = 3;
+/** Espera entre la bandera a cuadros y el panel de fin de carrera (ms). */
+const FINISH_PANEL_DELAY = 2600;
+/** Choque (m/s) que merece un mensaje del ingeniero, y tiempo mínimo entre dos (ms). */
+const RADIO_IMPACT = 14;
+const RADIO_IMPACT_GAP = 20_000;
+
+/** Qué íconos de ayudas se muestran en el tablero. */
+function hudAssists(assists: ActiveAssists): HudAssists {
+  return {
+    braking: assists.braking !== 'off',
+    traction: assists.traction !== 'off',
+    abs: assists.abs,
+    stability: assists.steering,
+  };
+}
 
 export class RaceScreen extends BaseScreen<RaceParams> {
   readonly id = 'race';
   private phase: Phase = 'loading';
   private params: RaceParams = { trackId: 'australia', mode: 'practice' };
   private track: Track | null = null;
-  private session: PracticeSession | null = null;
+  private session: Session | null = null;
   private world: RaceWorld | null = null;
   private loading: LoadingOverlay | null = null;
   private hud: Hud | null = null;
   private pause: PauseMenu | null = null;
+  private finish: FinishPanel | null = null;
   private driving: DrivingInput | null = null;
   private readonly audio: RaceAudio;
   private readonly surfaces: SurfaceMix = { grass: 0, gravel: 0, kerb: 0 };
@@ -53,6 +76,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private introTimeline: gsap.core.Timeline | null = null;
   private cancelled = false;
   private lastRumble = 0;
+  private lastImpactRadio = -Infinity;
+  /** Resultado de la carrera que espera para mostrarse en el panel final. */
+  private pendingFinish: RaceResult | null = null;
+  private readonly lastRadioLine = new Map<RadioMoment, string>();
   private covered = false;
 
   constructor(game: Game) {
@@ -82,7 +109,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const session = this.session;
     const world = this.world;
     const driving = this.driving;
-    if (this.phase !== 'running' || !session || !world || !driving) return;
+    if ((this.phase !== 'running' && this.phase !== 'results') || !session || !world || !driving) return;
     world.beforeStep();
     const events = session.step(step, driving.controls, driving.drsRequested);
     if (events.length > 0) this.handleSessionEvents(events);
@@ -104,7 +131,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       if (this.introElapsed >= INTRO_DURATION) this.finishIntro();
     }
 
-    world.update(dt, this.phase === 'running' ? alpha : 1, tel);
+    const simulating = this.phase === 'running' || this.phase === 'results';
+    world.update(dt, simulating ? alpha : 1, tel);
 
     // Superficies bajo las ruedas (sonido y vibración).
     let grass = 0;
@@ -119,11 +147,16 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.surfaces.gravel = gravel;
     this.surfaces.kerb = kerb;
 
-    if (this.phase === 'running') {
+    if (simulating) {
       const impact = session.takeImpact();
       this.audio.update(tel, this.surfaces, impact);
       if (impact > 3) world.raceCamera.kick(clamp(impact / 20, 0.2, 1.2));
-      this.rumble(tel.rumble, impact);
+      if (this.phase === 'running') this.rumble(tel.rumble, impact);
+      const now = performance.now();
+      if (impact > RADIO_IMPACT && now - this.lastImpactRadio > RADIO_IMPACT_GAP) {
+        this.lastImpactRadio = now;
+        this.radio('bigImpact');
+      }
     }
 
     this.updateHud();
@@ -140,6 +173,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     }
     if (this.phase === 'paused') {
       this.pause?.onAction(action);
+      return;
+    }
+    if (this.phase === 'results') {
+      this.finish?.onAction(action);
       return;
     }
     if (this.phase === 'running' && action === 'back') this.setPaused(true);
@@ -168,6 +205,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.driving?.dispose();
     this.hud?.dispose();
     this.pause?.dispose();
+    this.finish?.dispose();
     this.loading?.dispose();
     this.world?.dispose();
     super.exit();
@@ -180,7 +218,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const settings = game.settings;
     try {
       const record = game.save.data.records[track.def.id]?.bestLap ?? null;
-      const session = new PracticeSession(track, F1_SPEC, record);
+      const laps = this.params.mode === 'race' ? (this.params.laps ?? DEFAULT_RACE_LAPS) : null;
+      const assists = activeAssists(settings.assists);
+      const session = new Session(track, F1_SPEC, record, { mode: this.params.mode, laps }, assists);
       const world = await RaceWorld.create(session.vehicle, settings.game.defaultCamera, {
         renderer: game.render.renderer,
         quality: settings.graphics.quality,
@@ -195,6 +235,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.session = session;
       this.world = world;
       world.raceCamera.shakeEnabled = !prefersReducedMotion();
+      world.configureLine(assists.line, assists.lineType);
 
       // Precompila los shaders con la cámara de presentación (evita tirones al arrancar).
       this.loading?.setProgress(0.95, 'Preparando sombreadores');
@@ -237,20 +278,30 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.nav.focusFirst();
   }
 
-  private buildInterface(track: Track, session: PracticeSession): void {
+  private buildInterface(track: Track, session: Session): void {
     const settings = this.game.settings;
     this.hud = new Hud(track, settings.game.units);
+    this.hud.configure(session.config.laps, hudAssists(session.activeAssists));
     this.hud.setVisible(false);
     this.pause = new PauseMenu({
       onChoice: (choice) => this.onPauseChoice(choice),
       onMove: () => this.game.playUi('move'),
     });
-    this.driving = new DrivingInput(this.game.input, () => this.game.settings.controls);
+    this.finish = new FinishPanel({
+      onChoice: (choice) => this.onFinishChoice(choice),
+      onMove: () => this.game.playUi('move'),
+    });
+    this.driving = new DrivingInput(
+      this.game.input,
+      () => this.game.settings.controls,
+      () => this.session?.activeAssists.steering ?? false,
+    );
     this.own.add(this.driving.onEvent((event) => this.onDrivingEvent(event)));
 
     const def = track.def;
+    const laps = session.config.laps;
     this.introCard.replaceChildren(
-      h('span', { class: 'race__intro-kicker', text: 'PRÁCTICA LIBRE' }),
+      h('span', { class: 'race__intro-kicker', text: laps === null ? 'PRÁCTICA LIBRE' : `CARRERA · ${laps} VUELTAS` }),
       h('span', { class: 'race__intro-title', text: def.grandPrix }),
       h('span', { class: 'race__intro-track', text: `${def.name} · ${def.lengthKm.toFixed(3)} km` }),
       h('span', {
@@ -285,6 +336,11 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.own.add(
       this.game.events.on('settings:changed', ({ settings: next }) => {
         this.hud?.setUnits(next.game.units);
+        // Las ayudas se cambian en caliente (desde la pausa → Ajustes → Ayudas).
+        const assists = activeAssists(next.assists);
+        this.session?.setAssists(assists);
+        this.world?.configureLine(assists.line, assists.lineType);
+        this.hud?.configure(session.config.laps, hudAssists(assists));
       }),
     );
     // Si la ventana pierde el foco en plena vuelta, se pausa.
@@ -292,7 +348,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       if (this.phase === 'running') this.setPaused(true);
     });
 
-    this.root.append(this.hud.root, this.introCard, this.skipHint, this.startHints.element, this.pause.root);
+    this.root.append(this.hud.root, this.introCard, this.skipHint, this.startHints.element, this.pause.root, this.finish.root);
   }
 
   // ─── Presentación ──────────────────────────────────────────────────────
@@ -331,7 +387,12 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       tl.to(hints, { opacity: 0, duration: 0.8 }, '+=7');
       this.own.tween(tl);
     }
-    this.hud.message('A PISTA', 'Vuelta de salida: el cronómetro arranca en la línea de meta', 'info');
+    if (this.session?.isRace) {
+      this.hud.message('A LA PARRILLA', 'Acelera para subir las vueltas del motor y espera las luces', 'info');
+    } else {
+      this.hud.message('A PISTA', 'Vuelta de salida: el cronómetro arranca en la línea de meta', 'info');
+      this.own.timeout(() => this.radio('practiceStart'), 1500);
+    }
   }
 
   // ─── Eventos del manejo y de la sesión ─────────────────────────────────
@@ -354,6 +415,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         break;
       }
       case 'reset': {
+        if (session.phase !== 'running') break;
         this.handleSessionEvents(session.resetToTrack());
         world.snap();
         this.driving?.release();
@@ -364,7 +426,12 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         if (this.driving?.drsRequested && !session.vehicle.drsAllowed) {
           // Sólo se abre dentro de una zona: se descarta el pedido.
           if (this.driving) this.driving.drsRequested = false;
-          this.hud?.message('DRS NO DISPONIBLE', 'Sólo en las zonas marcadas en verde en el mapa', 'bad');
+          const early = session.isRace && session.timer.lap < 2;
+          this.hud?.message(
+            'DRS NO DISPONIBLE',
+            early ? 'En carrera se habilita desde la vuelta 2' : 'Sólo en las zonas marcadas en verde en el mapa',
+            'bad',
+          );
         }
         break;
     }
@@ -372,26 +439,35 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
   private handleSessionEvents(events: SessionEvent[]): void {
     const hud = this.hud;
-    if (!hud) return;
+    const session = this.session;
+    const world = this.world;
+    if (!hud || !session || !world) return;
+    // La vuelta que termina la carrera se anuncia con la bandera, no como una vuelta más.
+    const finishing = events.some((e) => e.kind === 'finished');
     for (const event of events) {
       switch (event.kind) {
+        case 'light':
+          hud.setLights(event.index + 1);
+          world.setStartLights(event.index + 1);
+          this.audio.cue('light');
+          break;
+        case 'lightsOut':
+          hud.lightsOut();
+          world.setStartLights(0);
+          this.audio.cue('lightsOut');
+          this.own.timeout(() => this.radio('raceStart'), 1800);
+          break;
         case 'lapStarted':
           hud.clearSectors();
           break;
         case 'sector':
           hud.setSector(event.index, event.result);
           break;
-        case 'lapCompleted': {
+        case 'lapCompleted':
           hud.setSector(2, event.sector3);
-          const time = formatLapTime(event.lap.time);
-          if (!event.lap.valid) hud.message(`VUELTA ${event.lap.number} · ${time}`, 'Anulada: no cuenta para el récord', 'bad');
-          else if (event.personalBest) {
-            hud.message('¡NUEVO RÉCORD PERSONAL!', time, 'best');
-            this.saveRecord(event.lap.time);
-          } else if (event.bestOfSession) hud.message('MEJOR VUELTA DE LA SESIÓN', time, 'good');
-          else hud.message(`VUELTA ${event.lap.number}`, time, 'info');
+          if (event.personalBest) this.saveRecord(event.lap.time);
+          if (!finishing) this.announceLap(event.lap.number, event.lap.time, event.lap.valid, event.personalBest, event.bestOfSession);
           break;
-        }
         case 'invalidated':
           if (event.reason === 'trackLimits') hud.message('VUELTA ANULADA', 'Límites de pista: las cuatro ruedas afuera', 'bad');
           break;
@@ -399,8 +475,89 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           // Al salir de la zona, el pedido de DRS se cancela.
           if (!event.entered && this.driving) this.driving.drsRequested = false;
           break;
+        case 'drsOpened':
+          hud.message('DRS ACTIVADO', '', 'good');
+          this.audio.cue('drs');
+          break;
+        case 'drsEnabled':
+          this.radio('drsEnabled');
+          break;
+        case 'lastLap':
+          hud.message('ÚLTIMA VUELTA', '', 'gold');
+          this.own.timeout(() => this.radio('lastLap'), 1200);
+          break;
+        case 'finished':
+          this.onFinished(event.result);
+          break;
       }
     }
+  }
+
+  /** Mensaje y radio al completar una vuelta. */
+  private announceLap(number: number, time: number, valid: boolean, personalBest: boolean, bestOfSession: boolean): void {
+    const hud = this.hud;
+    const session = this.session;
+    if (!hud || !session) return;
+    const text = formatLapTime(time);
+    if (!valid) {
+      hud.message(`VUELTA ${number} · ${text}`, 'Anulada: no cuenta para el récord', 'bad');
+      this.radio('invalidLap');
+    } else if (personalBest) {
+      hud.message('¡NUEVO RÉCORD PERSONAL!', text, 'best');
+      this.radio('personalBest');
+    } else if (bestOfSession && number > 1) {
+      hud.message('VUELTA RÁPIDA', text, 'best');
+      this.radio('goodLap');
+    } else {
+      hud.message(`VUELTA ${number}`, text, 'info');
+      const best = session.timer.bestLap?.time ?? null;
+      if (best !== null && time > best + 1.5) this.radio('slowerLap');
+    }
+  }
+
+  /** Bandera a cuadros: mensaje, radio y, al rato, el panel de fin de carrera. */
+  private onFinished(result: RaceResult): void {
+    this.hud?.message('BANDERA A CUADROS', `Tiempo total ${formatLapTime(result.totalTime)}`, 'gold');
+    this.own.timeout(() => this.radio('finished'), 900);
+    if (this.driving) this.driving.drsRequested = false;
+    this.pendingFinish = result;
+    this.own.timeout(() => this.showFinish(), FINISH_PANEL_DELAY);
+  }
+
+  /**
+   * Muestra el panel de fin de carrera pendiente. Si el jugador está en pausa,
+   * espera a que la cierre; si reinició la carrera, ya no hay nada pendiente.
+   */
+  private showFinish(): void {
+    const result = this.pendingFinish;
+    if (!result || this.phase !== 'running' || !this.finish || !this.session) return;
+    this.pendingFinish = null;
+    this.phase = 'results';
+    this.driving?.release();
+    this.hud?.setVisible(false);
+    const personalBest = result.laps.some((lap) => lap.valid && lap.time === this.session?.timer.personalBest);
+    this.finish.show(result, personalBest);
+  }
+
+  private onFinishChoice(choice: FinishChoice): void {
+    this.game.playUi('confirm');
+    if (choice === 'again') {
+      this.restartSession();
+    } else {
+      void this.game.screens.goTo('menu', undefined);
+    }
+  }
+
+  /** Mensaje del ingeniero (sin repetir la misma frase dos veces seguidas). */
+  private radio(moment: RadioMoment): void {
+    if (this.phase === 'leaving' || !this.hud) return;
+    const lines = RADIO_LINES[moment];
+    const last = this.lastRadioLine.get(moment);
+    const options = lines.length > 1 ? lines.filter((line) => line !== last) : lines;
+    const line = options[Math.floor(Math.random() * options.length)] ?? lines[0] ?? '';
+    this.lastRadioLine.set(moment, line);
+    this.hud.radio(ENGINEER_NAME, line);
+    this.audio.cue('radio');
   }
 
   private saveRecord(time: number): void {
@@ -422,9 +579,11 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.stopRumble();
       this.game.playUi('confirm');
       this.hud?.setVisible(false);
+      const total = this.session.config.laps;
       this.pause.show({
         trackName: this.track.def.name,
         laps: this.session.timer.laps.length,
+        totalLaps: total,
         bestLap: this.session.timer.bestLap?.time ?? null,
       });
     } else if (!paused && this.phase === 'paused') {
@@ -434,6 +593,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.game.playUi('back');
       this.hud?.setVisible(true);
       void this.pause.hide();
+      // Si la bandera cayó y se pausó antes del panel, se muestra ahora.
+      if (this.pendingFinish) this.own.timeout(() => this.showFinish(), 700);
     }
   }
 
@@ -447,7 +608,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         break;
       case 'settings':
         this.game.playUi('confirm');
-        void this.game.screens.push('settings', { tab: 'controls' });
+        void this.game.screens.push('settings', { tab: 'assists' });
         break;
       case 'exit':
         this.game.playUi('confirm');
@@ -461,10 +622,21 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const world = this.world;
     if (!session || !world) return;
     session.restart();
+    this.pendingFinish = null;
     world.snap();
+    world.setStartLights(0);
+    this.hud?.setLights(0);
     this.hud?.clearSectors();
-    this.setPaused(false);
-    this.hud?.message('SESIÓN REINICIADA', 'Vuelta de salida', 'info');
+    this.driving?.release();
+    if (this.phase === 'results') {
+      void this.finish?.hide();
+      this.phase = 'running';
+      this.hud?.setVisible(true);
+    } else {
+      this.setPaused(false);
+    }
+    if (session.isRace) this.hud?.message('A LA PARRILLA', 'Nueva largada: espera las luces', 'info');
+    else this.hud?.message('SESIÓN REINICIADA', 'Vuelta de salida', 'info');
   }
 
   // ─── HUD y vibración ───────────────────────────────────────────────────
@@ -490,6 +662,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       drs: session.drsState,
       tcActive: tel.tcActive,
       absActive: tel.absActive,
+      brakeAssistActive: session.brakingAssist.active,
+      stabilityActive: tel.stabilityActive,
+      onGrid: session.phase === 'grid',
       lap: timer.lap,
       lapTime: timer.lap > 0 ? timer.lapTime : null,
       lapValid: timer.valid,

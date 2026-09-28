@@ -24,6 +24,7 @@ import { BaseScreen } from './BaseScreen';
  */
 const OPENERS: Partial<Record<MenuItemId, (game: Game) => Promise<boolean>>> = {
   practice: (game) => game.screens.goTo('race', { trackId: 'australia', mode: 'practice' }),
+  quickRace: (game) => game.screens.goTo('race', { trackId: 'australia', mode: 'race', laps: 3 }),
   settings: (game) => game.screens.push('settings', undefined),
 };
 

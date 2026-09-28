@@ -35,6 +35,8 @@ export interface LapTimerOptions {
   sectorEnds: readonly [number, number];
   /** Mejor vuelta histórica del jugador en este circuito (s), para marcar récords. */
   personalBest: number | null;
+  /** Vueltas de la carrera: al completar la última el cronómetro se detiene (null = sin límite). */
+  lapLimit?: number | null;
 }
 
 export class LapTimer {
@@ -53,6 +55,10 @@ export class LapTimer {
   readonly bestSectors: [number | null, number | null, number | null] = [null, null, null];
 
   private lastDistance: number | null = null;
+  /** Se completó la última vuelta de la carrera: el cronómetro no sigue. */
+  finished = false;
+  /** Largada detenida: el reloj corre pero la vuelta 1 empieza detrás de la línea. */
+  private awaitingLine = false;
   private sectorStart = 0;
   private nextSector = 0;
   /** Tiempo de vuelta en cada tramo de DELTA_STEP m (vuelta en curso y mejor vuelta). */
@@ -70,6 +76,7 @@ export class LapTimer {
    */
   step(distance: number, dt: number): LapEvent[] {
     const events: LapEvent[] = [];
+    if (this.finished) return events;
     const length = this.options.length;
     const previous = this.lastDistance;
     this.lastDistance = distance;
@@ -79,6 +86,15 @@ export class LapTimer {
     // Cruce de la línea hacia adelante: de cerca del final a cerca del inicio.
     const crossedForward = previous > length - CROSSING_WINDOW && distance < CROSSING_WINDOW;
     const crossedBackward = previous < CROSSING_WINDOW && distance > length - CROSSING_WINDOW;
+    if (this.awaitingLine) {
+      // Desde la parrilla hasta la línea: el cruce no abre otra vuelta.
+      if (crossedForward) {
+        this.awaitingLine = false;
+        // La traza del delta arranca en la línea, con el tiempo que llevó llegar.
+        this.trace = [this.lapTime];
+      }
+      return events;
+    }
     if (crossedBackward) {
       // Marcha atrás sobre la línea: la vuelta ya no puede ser válida.
       if (this.lap > 0 && this.valid) {
@@ -95,6 +111,13 @@ export class LapTimer {
       const overshoot = travelled > 0 ? (distance / travelled) * dt : 0;
       if (this.lap > 0 && this.nextSector === 2) {
         this.completeLap(this.lapTime - overshoot, events);
+        const limit = this.options.lapLimit ?? null;
+        if (limit !== null && this.lap >= limit) {
+          // Bandera a cuadros: no hay otra vuelta.
+          this.finished = true;
+          this.lapTime -= overshoot;
+          return events;
+        }
       } else if (this.lap > 0) {
         // Cruzó sin completar los sectores (cortó camino o dio la vuelta): no cuenta.
         this.valid = false;
@@ -122,9 +145,12 @@ export class LapTimer {
     return events;
   }
 
-  /** Delta en vivo contra la mejor vuelta de la sesión (s, + = más lento) o null si no hay referencia. */
+  /**
+   * Delta en vivo contra la mejor vuelta de la sesión (s, + = más lento) o null
+   * si no hay referencia (o si la carrera ya terminó: no hay vuelta en curso).
+   */
   delta(distance: number): number | null {
-    if (!this.bestTrace || this.lap === 0) return null;
+    if (!this.bestTrace || this.lap === 0 || this.finished || this.awaitingLine) return null;
     const position = distance / DELTA_STEP;
     const i = Math.floor(position);
     const a = this.bestTrace[i];
@@ -139,6 +165,16 @@ export class LapTimer {
     if (this.lap === 0 || !this.valid) return null;
     this.valid = false;
     return { kind: 'invalidated', reason };
+  }
+
+  /**
+   * Largada detenida: la vuelta 1 empieza ahora (al apagarse el semáforo),
+   * aunque el auto todavía esté unos metros detrás de la línea.
+   */
+  beginRace(): LapEvent {
+    this.startLap(0, []);
+    this.awaitingLine = true;
+    return { kind: 'lapStarted', number: this.lap };
   }
 
   /** Tras volver a la pista con R: se pierde la referencia del cruce (no cuenta como vuelta). */

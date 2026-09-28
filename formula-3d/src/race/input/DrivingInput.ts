@@ -64,9 +64,14 @@ export class DrivingInput {
   /** El último mando usado para manejar fue el gamepad. */
   private padInUse = false;
 
+  /**
+   * @param assisted devuelve true con la dirección asistida (Principiante):
+   *   el volante gira más despacio y el stick se suaviza más.
+   */
   constructor(
     private readonly input: InputManager,
     private readonly settings: () => ControlSettings,
+    private readonly assisted: () => boolean = () => false,
   ) {
     this.offKey = input.onKey((code) => {
       const event = KEY_EVENTS[code];
@@ -110,12 +115,13 @@ export class DrivingInput {
     c.throttle = Math.max(ramp(c.throttle, keyThrottle ? 1 : 0, THROTTLE_UP, THROTTLE_DOWN, dt), padThrottle > 0.02 ? padThrottle : 0);
     c.brake = Math.max(ramp(c.brake, keyBrake ? 1 : 0, BRAKE_UP, BRAKE_DOWN, dt), padBrake > 0.02 ? padBrake : 0);
 
+    const assisted = this.assisted();
     if (this.padInUse && pad) {
-      c.steer = damp(c.steer, padSteer, 20, dt);
+      c.steer = damp(c.steer, padSteer, assisted ? 11 : 20, dt);
     } else {
       const target = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0);
       // Más rápido a baja velocidad (maniobrar) y más suave a alta (estabilidad).
-      const rate = (3.8 - 2.1 * clamp(speed / 80, 0, 1)) * settings.steeringSensitivity;
+      const rate = (3.8 - 2.1 * clamp(speed / 80, 0, 1)) * settings.steeringSensitivity * (assisted ? 0.8 : 1);
       if (target === 0) {
         c.steer = moveTowards(c.steer, 0, STEER_RETURN * dt);
       } else {

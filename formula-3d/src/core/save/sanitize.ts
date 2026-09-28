@@ -8,12 +8,18 @@
 import { MAX_LEVEL, xpToNextLevel } from '../../progression/levels';
 import { FPS_TARGETS, QUALITY_LEVELS, SHADOW_LEVELS } from '../render/quality';
 import {
+  ASSIST_LEVELS,
+  BRAKING_ASSISTS,
+  LINE_MODES,
+  LINE_TYPES,
+  TRACTION_ASSISTS,
   DEFAULT_PILOT_NAME,
   EXPERIENCE_LEVELS,
   PROFILE_NAME_MAX_LENGTH,
   SAVE_VERSION,
   CAMERA_MODES,
   SPEED_UNITS,
+  type AssistSettings,
   type AudioSettings,
   type ControlSettings,
   type ExperienceLevel,
@@ -115,6 +121,21 @@ function sanitizeControls(raw: unknown, defaults: ControlSettings): ControlSetti
   };
 }
 
+function sanitizeAssists(raw: unknown, defaults: AssistSettings): AssistSettings {
+  const r = record(raw);
+  const custom = record(r.custom);
+  return {
+    level: oneOf(r.level, ASSIST_LEVELS, defaults.level),
+    custom: {
+      braking: oneOf(custom.braking, BRAKING_ASSISTS, defaults.custom.braking),
+      traction: oneOf(custom.traction, TRACTION_ASSISTS, defaults.custom.traction),
+      abs: bool(custom.abs, defaults.custom.abs),
+      line: oneOf(custom.line, LINE_MODES, defaults.custom.line),
+      lineType: oneOf(custom.lineType, LINE_TYPES, defaults.custom.lineType),
+    },
+  };
+}
+
 function sanitizeGame(raw: unknown, defaults: GameSettings): GameSettings {
   const r = record(raw);
   return {
@@ -156,6 +177,7 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
       graphics: sanitizeGraphics(settings.graphics, defaults.settings.graphics),
       audio: sanitizeAudio(settings.audio, defaults.settings.audio),
       controls: sanitizeControls(settings.controls, defaults.settings.controls),
+      assists: sanitizeAssists(settings.assists, defaults.settings.assists),
       game: sanitizeGame(settings.game, defaults.settings.game),
     },
     records: sanitizeRecords(r.records, defaults.records),

@@ -38,6 +38,11 @@ export interface Electronics {
   /** Control de tracción: 0 = apagado, 1 = no patina nunca. */
   tractionControl: number;
   abs: boolean;
+  /**
+   * Control de estabilidad (0–1): cuando la cola se va, aplica un momento que
+   * la endereza. Es la "dirección asistida más estable" del nivel Principiante.
+   */
+  stability: number;
 }
 
 /** Agarre relativo, arrastre y vibración de cada superficie. */
@@ -81,6 +86,7 @@ export interface Telemetry {
   /** Actúan las ayudas en este instante (para iluminar sus íconos). */
   tcActive: boolean;
   absActive: boolean;
+  stabilityActive: boolean;
   /** Velocidad de un impacto contra un muro en este paso (m/s, 0 = ninguno). */
   impact: number;
   /** Rueda con el rev limiter (corte). */
@@ -94,6 +100,8 @@ const WALL_RESTITUTION = 0.18;
 const WALL_FRICTION = 0.32;
 /** Giro máximo que puede provocar un solo impacto (rad/s): el auto real absorbe energía. */
 const MAX_IMPACT_SPIN = 2.2;
+/** Rapidez (1/s) con la que el control de estabilidad corrige la guiñada. */
+const STABILITY_GAIN = 7;
 /** Puntos del contorno del auto relativos al CG (x adelante, y izquierda). */
 const HULL: ReadonlyArray<readonly [number, number]> = [
   [3.1, 0.95],
@@ -149,10 +157,16 @@ export class Vehicle {
     wheelsOff: 0,
     tcActive: false,
     absActive: false,
+    stabilityActive: false,
     impact: 0,
     limiter: false,
   };
-  electronics: Electronics = { tractionControl: 0.6, abs: true };
+  electronics: Electronics = { tractionControl: 0.6, abs: true, stability: 0 };
+  /**
+   * Retenido en la parrilla (embrague automático): no avanza, pero el motor
+   * sube de vueltas con el acelerador. Se suelta al apagarse el semáforo.
+   */
+  held = false;
 
   private rpm: number;
   private smoothedAx = 0;
@@ -206,6 +220,11 @@ export class Vehicle {
     this.telemetry.impact = 0;
     this.telemetry.tcActive = false;
     this.telemetry.absActive = false;
+    this.telemetry.stabilityActive = false;
+    if (this.held) {
+      this.holdOnGrid(dt, input);
+      return;
+    }
     const h = dt / SUBSTEPS;
     for (let i = 0; i < SUBSTEPS; i++) this.substep(h, input);
     this.telemetry.speed = this.speed;
@@ -376,7 +395,7 @@ export class Vehicle {
     const ay = fy / spec.mass - this.yawRate * this.vx;
     this.vx += ax * dt;
     this.vy += ay * dt;
-    this.yawRate += (mz / spec.yawInertia) * dt;
+    this.yawRate += ((mz + this.stabilityMoment(slipFront, slipRear, capFront + capRear)) / spec.yawInertia) * dt;
 
     // Detenido: sin deslizamiento residual.
     if (stopped && Math.abs(this.vx) < 0.3) {
@@ -419,6 +438,52 @@ export class Vehicle {
     t.rumble = speed > 3 ? rumble : 0;
     t.wheelsOff = wheelsOff;
     t.limiter = limiter;
+  }
+
+  /**
+   * Control de estabilidad: si la cola desliza más que el tren delantero
+   * (sobreviraje), un momento lleva la guiñada hacia la que pide la dirección.
+   */
+  private stabilityMoment(slipFront: number, slipRear: number, lateralCapacity: number): number {
+    const gain = this.electronics.stability;
+    const speed = this.vx;
+    if (gain <= 0 || speed < 8) return 0;
+    const peak = this.spec.peakSlipAngle;
+    const oversteer = Math.abs(slipRear) - Math.max(Math.abs(slipFront), peak * 0.6);
+    if (oversteer <= 0) return 0;
+    // Guiñada de referencia: la geométrica, limitada por el agarre disponible.
+    const maxYaw = lateralCapacity / (this.spec.mass * speed);
+    const reference = Math.max(-maxYaw, Math.min(maxYaw, (speed * Math.tan(this.steerAngle)) / this.wheelbase));
+    const error = this.yawRate - reference;
+    this.telemetry.stabilityActive = true;
+    // Más corrección cuanto más se cruza la cola (proporcional al exceso de deriva).
+    const strength = Math.min(1, oversteer / (peak * 0.5));
+    return -gain * strength * STABILITY_GAIN * error * this.spec.yawInertia;
+  }
+
+  /** En la parrilla: quieto, con el motor subiendo de vueltas según el acelerador. */
+  private holdOnGrid(dt: number, input: DriverInput): void {
+    const spec = this.spec;
+    this.vx = 0;
+    this.vy = 0;
+    this.yawRate = 0;
+    const target = spec.idleRpm + input.throttle * (spec.shiftRpm - 1100 - spec.idleRpm);
+    this.rpm += (target - this.rpm) * Math.min(1, dt * 8);
+    this.updateWheelPositions();
+    this.updateProjections();
+    const t = this.telemetry;
+    t.speed = 0;
+    t.rpm = this.rpm;
+    t.gear = this.gearbox.gear;
+    t.throttle = input.throttle;
+    t.brake = input.brake;
+    t.ax = 0;
+    t.ay = 0;
+    t.wheelspin = 0;
+    t.lockup = 0;
+    t.slide = 0;
+    t.rumble = 0;
+    t.limiter = false;
   }
 
   private handleReverse(dt: number, input: DriverInput): void {

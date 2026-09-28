@@ -570,15 +570,16 @@
 
 .dash__flags {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 5px;
   margin-top: 10px;
 }
 
 .dash__drs,
 .dash__aid {
-  padding: 2px 10px;
+  padding: 2px 7px;
   font-family: var(--font-num);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--c-text-3);
@@ -601,10 +602,34 @@
   box-shadow: 0 0 12px rgba(39, 224, 107, 0.6);
 }
 
+/* Las ayudas sólo muestran ícono si están activadas; se iluminan (y la de
+   tracción parpadea) cuando actúan. */
+.dash__aid {
+  display: none;
+}
+
+.dash__aid.is-enabled {
+  display: inline-block;
+}
+
 .dash__aid.is-active {
   color: #1a1300;
   background: var(--c-gold);
   border-color: var(--c-gold);
+  box-shadow: 0 0 10px rgba(245, 197, 66, 0.55);
+  animation: aid-blink 0.18s steps(2) infinite;
+}
+
+@keyframes aid-blink {
+  50% {
+    background: rgba(245, 197, 66, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash__aid.is-active {
+    animation: none;
+  }
 }
 
 /* Avisos */
@@ -657,6 +682,16 @@
   color: var(--c-text-2);
 }
 
+.hud__message--gold {
+  border-color: var(--c-gold);
+  box-shadow: 0 0 30px rgba(245, 197, 66, 0.3);
+}
+
+.hud__message--gold .hud__message-title {
+  font-size: 24px;
+  color: var(--c-gold);
+}
+
 .hud__message--best .hud__message-detail,
 .hud__message--good .hud__message-detail {
   font-family: var(--font-num);
@@ -696,6 +731,223 @@
   background: rgba(10, 11, 15, 0.7);
   translate: -50% 0;
   opacity: 0;
+}
+
+/* Semáforo en pantalla: 5 columnas de 2 luces sobre una placa oscura. */
+
+.hud__lights {
+  position: absolute;
+  top: calc(var(--gutter) + 8px);
+  left: 50%;
+  display: none;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #16181d, #0b0c10);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 16px 40px rgba(0, 0, 0, 0.5);
+  translate: -50% 0;
+}
+
+.hud__lights.is-visible {
+  display: flex;
+}
+
+.hud__lights-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 7px;
+  background: #050608;
+  border-radius: 8px;
+}
+
+.hud__lamp {
+  width: clamp(22px, 3vw, 34px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3a0d12, #1a0507 70%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  transition: background 0.08s;
+}
+
+.hud__lamp.is-on {
+  background: radial-gradient(circle at 35% 30%, #ffb3b9, #ff2438 45%, #b0101e 80%);
+  box-shadow:
+    0 0 18px rgba(255, 36, 56, 0.85),
+    0 0 40px rgba(255, 36, 56, 0.45);
+}
+
+/* Radio del equipo */
+
+.radio {
+  position: absolute;
+  top: calc(var(--gutter) + 250px);
+  left: var(--gutter);
+  width: min(320px, 70vw);
+  padding: 10px 14px 12px;
+  background: linear-gradient(90deg, rgba(10, 11, 15, 0.9), rgba(10, 11, 15, 0.72));
+  border-left: 3px solid #3d7dff;
+  backdrop-filter: blur(8px);
+  opacity: 0;
+}
+
+.radio__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #7fb0ff;
+}
+
+.radio__icon {
+  font-size: 16px;
+}
+
+.radio__from {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--c-text-3);
+}
+
+.radio__text {
+  min-height: 1.4em;
+  margin-top: 6px;
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--c-text);
+}
+
+/* ─── Fin de carrera ───────────────────────────────────────────────────── */
+
+.finish {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+}
+
+.finish.is-visible {
+  display: block;
+}
+
+.finish__backdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(270deg, rgba(5, 6, 8, 0.9) 0%, rgba(5, 6, 8, 0.6) 55%, rgba(5, 6, 8, 0.2) 100%);
+  backdrop-filter: blur(4px);
+}
+
+.finish__panel {
+  position: absolute;
+  top: 50%;
+  right: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(520px, calc(100% - 2 * var(--gutter)));
+  translate: 0 -50%;
+}
+
+.finish__flag {
+  height: 18px;
+  background: repeating-conic-gradient(#f3f4f6 0 25%, #0b0c10 0 50%) 0 0 / 16px 16px;
+  transform: skewX(var(--skew));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.finish__title {
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.finish__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 36px;
+}
+
+.finish__total,
+.finish__best {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.finish__label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--c-text-3);
+}
+
+.finish__total-value {
+  font-family: var(--font-num);
+  font-size: clamp(30px, 3.4vw, 42px);
+  font-weight: 700;
+  color: var(--c-gold);
+}
+
+.finish__best-value {
+  font-family: var(--font-num);
+  font-size: clamp(20px, 2.2vw, 26px);
+  font-weight: 700;
+  color: #c98bff;
+}
+
+.finish__table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.finish__row {
+  display: grid;
+  grid-template-columns: 0.6fr 1.3fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 7px 12px;
+  font-family: var(--font-num);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.finish__row--head {
+  font-family: var(--font-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--c-text-3);
+  background: none;
+}
+
+.finish__row.is-best {
+  background: rgba(176, 76, 255, 0.16);
+  box-shadow: inset 3px 0 0 #b04cff;
+}
+
+.finish__row.is-invalid .finish__time {
+  color: var(--c-text-3);
+  text-decoration: line-through;
+}
+
+.finish__note {
+  min-height: 1.2em;
+  font-size: 14px;
+  color: var(--c-text-2);
+}
+
+.finish__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ─── Pausa ────────────────────────────────────────────────────────────── */
@@ -796,5 +1048,15 @@
 
   .minimap {
     width: 110px;
+  }
+
+  .radio {
+    top: auto;
+    bottom: calc(var(--gutter) + 150px);
+  }
+
+  .finish__row {
+    grid-template-columns: 0.5fr 1.3fr 1fr 1fr 1fr;
+    font-size: 11px;
   }
 }

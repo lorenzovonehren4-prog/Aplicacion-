@@ -91,12 +91,18 @@ describe('sanitizeSave', () => {
         settings: {
           controls: { steeringSensitivity: 9, steeringDeadzone: -1, vibration: 'no' },
           game: { defaultCamera: 'helicóptero', units: 'mph' },
+          assists: { level: 'experto', custom: { braking: 'low', traction: 'total', abs: 'sí', line: 'corners', lineType: 'dynamic' } },
         },
         records: { australia: { bestLap: 81.5 }, 'MAL CLAVE!': { bestLap: 80 }, monza: { bestLap: -3 } },
       },
       defaults(),
     );
     expect(data.settings.controls).toEqual({ steeringSensitivity: 1.5, steeringDeadzone: 0, vibration: true });
+    // Ayudas: lo inválido vuelve al valor por defecto campo por campo.
+    expect(data.settings.assists).toEqual({
+      level: 'beginner',
+      custom: { braking: 'low', traction: 'medium', abs: true, line: 'corners', lineType: 'dynamic' },
+    });
     expect(data.settings.game).toEqual({ defaultCamera: 'cockpit', units: 'mph' });
     expect(data.records).toEqual({ australia: { bestLap: 81.5 }, monza: { bestLap: null } });
   });

@@ -16,7 +16,8 @@ import { Disposer } from '../../core/utils/Disposer';
 import { formatDelta, formatLapTime } from '../../core/utils/format';
 import type { Track } from '../../tracks/Track';
 import type { SectorResult } from '../../race/session/LapTimer';
-import { h, prefersReducedMotion } from '../dom';
+import { LIGHT_COUNT } from '../../race/session/StartLights';
+import { h, prefersReducedMotion, svg } from '../dom';
 
 const LED_COUNT = 15;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -32,6 +33,10 @@ export interface HudState {
   drs: 'off' | 'available' | 'open';
   tcActive: boolean;
   absActive: boolean;
+  brakeAssistActive: boolean;
+  stabilityActive: boolean;
+  /** En la parrilla, esperando el semáforo. */
+  onGrid: boolean;
   lap: number;
   lapTime: number | null;
   lapValid: boolean;
@@ -45,7 +50,20 @@ export interface HudState {
   wrongWay: boolean;
 }
 
-type MessageTone = 'info' | 'good' | 'bad' | 'best';
+type MessageTone = 'info' | 'good' | 'bad' | 'best' | 'gold';
+
+/** Ayudas que muestran ícono en el tablero (sólo si están activadas). */
+export interface HudAssists {
+  braking: boolean;
+  traction: boolean;
+  abs: boolean;
+  stability: boolean;
+}
+
+/** Ondas de radio para el mensaje del equipo. */
+const RADIO_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 13v8M9 21h6"/><circle cx="12" cy="10" r="2"/><path d="M8.5 6.5a5 5 0 0 0 0 7M15.5 6.5a5 5 0 0 1 0 7M5.7 3.7a9 9 0 0 0 0 12.6M18.3 3.7a9 9 0 0 1 0 12.6"/></svg>`;
+/** Letras por segundo del mensaje de radio. */
+const RADIO_TYPE_SPEED = 45;
 
 /** Escribe texto en un elemento sólo si cambió. */
 function setText(element: HTMLElement, text: string): void {
@@ -167,8 +185,26 @@ export class Hud {
   private readonly throttleBar = h('span', { class: 'dash__pedal-fill dash__pedal-fill--throttle' });
   private readonly brakeBar = h('span', { class: 'dash__pedal-fill dash__pedal-fill--brake' });
   private readonly drs = h('span', { class: 'dash__drs', text: 'DRS' });
-  private readonly tc = h('span', { class: 'dash__aid', text: 'TC' });
-  private readonly abs = h('span', { class: 'dash__aid', text: 'ABS' });
+  private readonly brakeAid = h('span', { class: 'dash__aid', text: 'FRENO', attrs: { title: 'Ayuda de frenado' } });
+  private readonly tc = h('span', { class: 'dash__aid', text: 'TC', attrs: { title: 'Control de tracción' } });
+  private readonly abs = h('span', { class: 'dash__aid', text: 'ABS', attrs: { title: 'Antibloqueo de frenos' } });
+  private readonly stability = h('span', { class: 'dash__aid', text: 'EST', attrs: { title: 'Control de estabilidad' } });
+
+  // Semáforo en pantalla.
+  private readonly lamps: HTMLSpanElement[] = [];
+  private readonly lights = h('div', { class: 'hud__lights', attrs: { 'aria-hidden': 'true' } });
+
+  // Radio del equipo.
+  private readonly radioText = h('p', { class: 'radio__text' });
+  private readonly radioFrom = h('span', { class: 'radio__from' });
+  private readonly radioBox = h(
+    'div',
+    { class: 'hud__radio radio', attrs: { role: 'status', 'aria-live': 'polite' } },
+    h('div', { class: 'radio__head' }, svg(RADIO_ICON, 'icon radio__icon'), h('span', { class: 'radio__label', text: 'RADIO' }), this.radioFrom),
+    this.radioText,
+  );
+  private radioTimeline: gsap.core.Timeline | null = null;
+  private totalLaps: number | null = null;
 
   // Avisos.
   private readonly messages = h('div', { class: 'hud__messages' });
@@ -218,11 +254,42 @@ export class Hud {
         this.gear,
         h('div', { class: 'dash__speedo' }, this.speed, this.unitLabel),
       ),
-      h('div', { class: 'dash__flags' }, this.drs, this.tc, this.abs),
+      h('div', { class: 'dash__flags' }, this.drs, this.brakeAid, this.tc, this.abs, this.stability),
     );
 
-    this.root = h('div', { class: 'hud' }, timing, this.minimap.element, dash, this.messages, this.wrongWay, this.cameraLabel);
+    // Semáforo: 5 columnas de 2 luces, como el del pórtico.
+    for (let c = 0; c < LIGHT_COUNT; c++) {
+      const column = h('span', { class: 'hud__lights-column' });
+      for (let r = 0; r < 2; r++) {
+        const lamp = h('span', { class: 'hud__lamp' });
+        this.lamps.push(lamp);
+        column.append(lamp);
+      }
+      this.lights.append(column);
+    }
+
+    this.root = h(
+      'div',
+      { class: 'hud' },
+      timing,
+      this.minimap.element,
+      dash,
+      this.lights,
+      this.messages,
+      this.radioBox,
+      this.wrongWay,
+      this.cameraLabel,
+    );
     setText(this.unitLabel, units === 'kmh' ? 'KM/H' : 'MPH');
+  }
+
+  /** Vueltas totales (null en práctica) y ayudas con ícono en el tablero. */
+  configure(totalLaps: number | null, assists: HudAssists): void {
+    this.totalLaps = totalLaps;
+    toggle(this.brakeAid, 'is-enabled', assists.braking);
+    toggle(this.tc, 'is-enabled', assists.traction);
+    toggle(this.abs, 'is-enabled', assists.abs);
+    toggle(this.stability, 'is-enabled', assists.stability);
   }
 
   setUnits(units: SpeedUnit): void {
@@ -250,9 +317,21 @@ export class Hud {
     toggle(this.drs, 'is-open', state.drs === 'open');
     toggle(this.tc, 'is-active', state.tcActive);
     toggle(this.abs, 'is-active', state.absActive);
+    toggle(this.brakeAid, 'is-active', state.brakeAssistActive);
+    toggle(this.stability, 'is-active', state.stabilityActive);
 
     // Tiempos.
-    setText(this.lapLabel, state.lap === 0 ? 'VUELTA DE SALIDA' : `VUELTA ${state.lap}`);
+    const total = this.totalLaps;
+    setText(
+      this.lapLabel,
+      state.onGrid
+        ? 'PARRILLA DE SALIDA'
+        : state.lap === 0
+          ? 'VUELTA DE SALIDA'
+          : total === null
+            ? `VUELTA ${state.lap}`
+            : `VUELTA ${Math.min(state.lap, total)}/${total}`,
+    );
     setText(this.lapTime, state.lapTime === null ? '–:––.–––' : formatLapTime(state.lapTime));
     toggle(this.invalid, 'is-visible', state.lap > 0 && !state.lapValid);
     if (state.delta === null) {
@@ -298,6 +377,62 @@ export class Hud {
     const tl = gsap.timeline({ onComplete: () => element.remove() });
     tl.fromTo(element, { y: 16, opacity: 0, scale: 0.96 }, { y: 0, opacity: 1, scale: 1, duration: quick ? 0.01 : 0.35, ease: 'back.out(2)' });
     tl.to(element, { opacity: 0, y: -10, duration: quick ? 0.01 : 0.4, ease: 'power2.in' }, '+=2.4');
+    this.own.tween(tl);
+  }
+
+  /** Enciende `lit` luces del semáforo en pantalla (0 = apagado). */
+  setLights(lit: number): void {
+    toggle(this.lights, 'is-visible', lit > 0);
+    this.lamps.forEach((lamp, i) => {
+      const on = Math.floor(i / 2) < lit;
+      if (on && !lamp.classList.contains('is-on') && !prefersReducedMotion()) {
+        this.own.tween(gsap.fromTo(lamp, { scale: 1.35 }, { scale: 1, duration: 0.25, ease: 'power2.out' }));
+      }
+      toggle(lamp, 'is-on', on);
+    });
+  }
+
+  /** ¡Apagadas! Las luces se apagan de golpe y el semáforo sale de pantalla. */
+  lightsOut(): void {
+    for (const lamp of this.lamps) toggle(lamp, 'is-on', false);
+    const quick = prefersReducedMotion();
+    this.own.tween(
+      gsap.to(this.lights, {
+        opacity: 0,
+        y: -20,
+        duration: quick ? 0.01 : 0.5,
+        delay: quick ? 0 : 0.6,
+        ease: 'power2.in',
+        onComplete: () => {
+          toggle(this.lights, 'is-visible', false);
+          gsap.set(this.lights, { clearProps: 'opacity,transform' });
+        },
+      }),
+    );
+    this.message('¡APAGADAS!', '', 'gold');
+  }
+
+  /** Mensaje de radio del equipo: aparece, se escribe letra por letra y se va. */
+  radio(from: string, text: string): void {
+    this.radioTimeline?.kill();
+    this.radioFrom.textContent = from;
+    const quick = prefersReducedMotion();
+    const typing = { chars: quick ? text.length : 0 };
+    this.radioText.textContent = quick ? text : '';
+    const tl = gsap.timeline();
+    tl.fromTo(this.radioBox, { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: quick ? 0.01 : 0.35, ease: 'power3.out' });
+    if (!quick) {
+      tl.to(typing, {
+        chars: text.length,
+        duration: text.length / RADIO_TYPE_SPEED,
+        ease: 'none',
+        onUpdate: () => {
+          this.radioText.textContent = text.slice(0, Math.round(typing.chars));
+        },
+      });
+    }
+    tl.to(this.radioBox, { x: -20, opacity: 0, duration: quick ? 0.01 : 0.4, ease: 'power2.in' }, '+=3.2');
+    this.radioTimeline = tl;
     this.own.tween(tl);
   }
 

@@ -4,14 +4,19 @@
  * fase agrega las suyas.
  */
 
-export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'game';
+export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'assists' | 'game';
 
-/** Modos de sesión en pista. La Fase 2 trae la práctica libre; carrera y contrarreloj llegan en la Fase 5. */
-export type SessionMode = 'practice';
+/**
+ * Modos de sesión en pista: práctica libre (Fase 2) y carrera (Fase 3, sin
+ * rivales hasta la Fase 4). Contrarreloj y campeonato llegan en la Fase 5.
+ */
+export type SessionMode = 'practice' | 'race';
 
 export interface RaceParams {
   trackId: string;
   mode: SessionMode;
+  /** Vueltas de la carrera (sólo en modo carrera). */
+  laps?: number;
 }
 
 export interface ScreenParams {

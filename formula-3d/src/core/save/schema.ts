@@ -59,10 +59,43 @@ export interface GameSettings {
   units: SpeedUnit;
 }
 
+// ─── Ayudas (ver PLAN.md §5.4) ────────────────────────────────────────────
+
+export const ASSIST_LEVELS = ['beginner', 'intermediate', 'advanced', 'custom'] as const;
+export type AssistLevel = (typeof ASSIST_LEVELS)[number];
+
+export const BRAKING_ASSISTS = ['off', 'low', 'medium', 'full'] as const;
+export type BrakingAssist = (typeof BRAKING_ASSISTS)[number];
+
+export const TRACTION_ASSISTS = ['off', 'medium', 'full'] as const;
+export type TractionAssist = (typeof TRACTION_ASSISTS)[number];
+
+export const LINE_MODES = ['off', 'corners', 'full'] as const;
+export type LineMode = (typeof LINE_MODES)[number];
+
+export const LINE_TYPES = ['fixed', 'dynamic'] as const;
+export type LineType = (typeof LINE_TYPES)[number];
+
+/** Valor de cada ayuda. */
+export interface AssistConfig {
+  braking: BrakingAssist;
+  traction: TractionAssist;
+  abs: boolean;
+  line: LineMode;
+  lineType: LineType;
+}
+
+export interface AssistSettings {
+  level: AssistLevel;
+  /** Valores del nivel Personalizado (se conservan aunque se elija otro nivel). */
+  custom: AssistConfig;
+}
+
 export interface Settings {
   graphics: GraphicsSettings;
   audio: AudioSettings;
   controls: ControlSettings;
+  assists: AssistSettings;
   game: GameSettings;
 }
 
@@ -122,6 +155,14 @@ export function createDefaultControls(): ControlSettings {
   return { steeringSensitivity: 1, steeringDeadzone: 0.08, vibration: true };
 }
 
+/** "¿Nuevo? Empieza en Principiante": el tutorial de la Fase 8 recomienda otro si hace falta. */
+export function createDefaultAssists(): AssistSettings {
+  return {
+    level: 'beginner',
+    custom: { braking: 'medium', traction: 'medium', abs: true, line: 'full', lineType: 'fixed' },
+  };
+}
+
 export function createDefaultGame(): GameSettings {
   return { defaultCamera: 'cockpit', units: 'kmh' };
 }
@@ -143,6 +184,7 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
       graphics: createDefaultGraphics(quality),
       audio: createDefaultAudio(),
       controls: createDefaultControls(),
+      assists: createDefaultAssists(),
       game: createDefaultGame(),
     },
     records: {},
