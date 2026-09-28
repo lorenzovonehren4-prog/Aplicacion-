@@ -7,8 +7,8 @@
  * modulación de amplitud a la frecuencia de encendido (pulsos de combustión).
  * Todo pasa por una distorsión suave y un pasa-bajos que se abre con las rpm.
  *
- * En la Fase 1 se usa para el acelerón del splash; en la Fase 2 se liga a la
- * física (rpm y acelerador en cada fotograma).
+ * Dos modos: secuencias programadas (acelerón del splash, muestra de volumen)
+ * y tiempo real (`setState` cada fotograma con las rpm de la física).
  */
 
 import { createNoiseBuffer } from './UiSounds';
@@ -54,6 +54,7 @@ export class EngineSynth {
   private readonly nodes: AudioNode[];
   private started = false;
   private stopped = false;
+  private lastRpm = 0;
 
   constructor(
     private readonly ctx: AudioContext,
@@ -154,6 +155,19 @@ export class EngineSynth {
       previousWasDrop = frame.curve === 'drop';
     }
     return previous;
+  }
+
+  /**
+   * Modo tiempo real: sigue las rpm y la carga del motor. Una constante de
+   * tiempo corta suaviza los saltos entre fotogramas sin notarse el retraso;
+   * los cambios de marcha (caídas grandes) se siguen más rápido.
+   */
+  setState(rpm: number, throttle: number): void {
+    this.start();
+    const now = this.ctx.currentTime;
+    const drop = rpm < this.lastRpm - 600;
+    this.lastRpm = rpm;
+    this.applyRpm(rpm, throttle, now, drop ? DROP_TIME_CONSTANT : 0.03);
   }
 
   /** Baja el volumen y libera todo al terminar. */

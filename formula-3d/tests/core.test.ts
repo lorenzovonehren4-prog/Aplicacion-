@@ -5,7 +5,7 @@ import { InputManager } from '../src/core/input/InputManager';
 import type { UiAction } from '../src/core/input/actions';
 import { detectQuality, shadowMapSize } from '../src/core/render/quality';
 import { Disposer } from '../src/core/utils/Disposer';
-import { formatInteger, formatPercent } from '../src/core/utils/format';
+import { formatDelta, formatInteger, formatLapTime, formatPercent } from '../src/core/utils/format';
 import { clamp, damp, lerp } from '../src/core/utils/math';
 import { levelProgress, MAX_LEVEL, xpToNextLevel } from '../src/progression/levels';
 
@@ -29,6 +29,15 @@ describe('formato', () => {
   it('usa separador de miles de Perú', () => {
     expect(formatInteger(12500)).toBe('12,500');
     expect(formatPercent(0.855)).toBe('86 %');
+  });
+
+  it('formatea tiempos de vuelta y deltas', () => {
+    expect(formatLapTime(83.456)).toBe('1:23.456');
+    expect(formatLapTime(65.0004)).toBe('1:05.000');
+    expect(formatLapTime(9.5)).toBe('9.500');
+    expect(formatLapTime(59.9996)).toBe('1:00.000');
+    expect(formatDelta(0.2341)).toBe('+0.234');
+    expect(formatDelta(-1.5)).toBe('−1.500');
   });
 });
 

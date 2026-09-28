@@ -4,7 +4,8 @@
  *   npm run build && npm run smoke
  *
  * Recorre: splash → menú → Ajustes (cambia calidad y volumen) → vuelve →
- * recarga → comprueba que lo guardado sigue ahí. Falla si aparece cualquier
+ * recarga → comprueba que lo guardado sigue ahí → Práctica libre (carga del
+ * circuito, presentación, manejo, cambio de cámara, pausa) → sale al menú. Falla si aparece cualquier
  * error o advertencia en la consola. Guarda capturas en e2e/capturas/.
  *
  * Chromium: usa el de Playwright (`npx playwright-core install chromium`) o el
@@ -110,6 +111,44 @@ async function main() {
     await page.keyboard.press('KeyE');
     await expectText(page, '.srow.is-focused .slider__value', '75 %');
     log('el guardado sobrevivió a la recarga (IndexedDB)');
+
+    // ─── Práctica libre ───
+    step = 'práctica: carga';
+    await page.keyboard.press('Escape');
+    await waitForScreen(page, 'menu');
+    // Desde Ajustes (último acceso), ↓ da la vuelta hasta el primero: Práctica libre.
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.screen--race .loading', { state: 'attached' });
+    // Sin GPU el barrido de la transición es lento: la carga puede terminar antes de verse.
+    if (await page.locator('.loading').isVisible()) await page.screenshot({ path: `${shots}05-carga.png` });
+    await waitForScreen(page, 'race');
+    await page.waitForSelector('.loading', { state: 'detached' });
+    await page.waitForSelector('.race__intro-title');
+    await page.screenshot({ path: `${shots}06-presentacion.png` });
+    log('circuito cargado; presentación en pantalla');
+
+    step = 'práctica: manejo';
+    await page.keyboard.press('Enter'); // salta la presentación
+    await page.waitForSelector('.hud:not(.is-hidden)');
+    await page.keyboard.down('ArrowUp');
+    await page.waitForFunction(() => Number(document.querySelector('.dash__speed')?.textContent ?? 0) > 5, null, { polling: 250 });
+    await page.keyboard.up('ArrowUp');
+    await page.keyboard.press('KeyC');
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: `${shots}07-en-pista.png` });
+    log(`en pista a ${await page.locator('.dash__speed').textContent()} km/h; cámara cambiada`);
+
+    step = 'práctica: pausa';
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.pause.is-visible');
+    await page.screenshot({ path: `${shots}08-pausa.png` });
+    // Salir al menú: 3 × ↓ hasta "Salir al menú", confirmar dos veces.
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+    await waitForScreen(page, 'menu');
+    log('pausa → salir al menú');
 
     // ─── Respaldo: sin IndexedDB, el guardado va a localStorage ───
     step = 'respaldo localStorage';

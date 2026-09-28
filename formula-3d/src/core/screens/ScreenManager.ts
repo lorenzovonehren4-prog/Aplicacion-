@@ -145,8 +145,13 @@ export class ScreenManager<Params extends object> {
   }
 
   /** Actualiza todas las pantallas de la pila (la de abajo puede seguir animando su 3D). */
-  update(dt: number): void {
-    for (const screen of this.stack) screen.update?.(dt);
+  update(dt: number, alpha = 1): void {
+    for (const screen of this.stack) screen.update?.(dt, alpha);
+  }
+
+  /** Paso fijo de simulación para todas las pantallas de la pila. */
+  fixedUpdate(step: number): void {
+    for (const screen of this.stack) screen.fixedUpdate?.(step);
   }
 
   /** Entrega una acción de UI a la pantalla de arriba (se ignora durante un cambio). */

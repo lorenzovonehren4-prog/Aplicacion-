@@ -1,8 +1,7 @@
 /**
- * Ajustes (se apila sobre el menú y, desde la Fase 3, sobre la pausa).
- * Fase 1: pestañas Gráficos y Sonido. Controles, Ayudas y Juego se suman en las
- * fases 2, 3 y 8, cuando tengan efecto real. Todo se aplica y se guarda al
- * instante.
+ * Ajustes (se apila sobre el menú y sobre la pausa de la carrera).
+ * Pestañas: Gráficos, Sonido, Controles y Juego. Ayudas se suma en la Fase 3,
+ * cuando tenga efecto real. Todo se aplica y se guarda al instante.
  */
 
 import gsap from 'gsap';
@@ -10,7 +9,14 @@ import { EngineSynth } from '../../audio/EngineSynth';
 import type { Game } from '../../core/Game';
 import type { UiAction } from '../../core/input/actions';
 import { detectQuality, QUALITY_PRESETS, type FpsTarget, type QualityLevel, type ShadowLevel } from '../../core/render/quality';
-import { createDefaultAudio, createDefaultGraphics } from '../../core/save/schema';
+import {
+  createDefaultAudio,
+  createDefaultControls,
+  createDefaultGame,
+  createDefaultGraphics,
+  type CameraMode,
+  type SpeedUnit,
+} from '../../core/save/schema';
 import type { ScreenParams, SettingsTab } from '../../core/screens/params';
 import { Disposer } from '../../core/utils/Disposer';
 import { h, prefersReducedMotion } from '../dom';
@@ -22,6 +28,8 @@ import { BaseScreen } from './BaseScreen';
 const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
   { id: 'graphics', label: 'Gráficos' },
   { id: 'audio', label: 'Sonido' },
+  { id: 'controls', label: 'Controles' },
+  { id: 'game', label: 'Juego' },
 ];
 
 /** Tiempo mínimo entre dos muestras del motor al mover su volumen (ms). */
@@ -136,7 +144,7 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
       },
       play: (sound) => this.game.playUi(sound),
     };
-    this.rows = tab === 'graphics' ? this.graphicsRows(ctx) : this.audioRows(ctx);
+    this.rows = this.rowsFor(tab, ctx);
     this.rowsHost.replaceChildren(...this.rows.map((row) => row.element));
     this.nav.focusFirst();
     if (withSound) this.own.tween(this.animateRows());
@@ -154,6 +162,19 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
 
   private refreshRows(): void {
     for (const row of this.rows) row.refresh?.();
+  }
+
+  private rowsFor(tab: SettingsTab, ctx: RowContext): SettingRow[] {
+    switch (tab) {
+      case 'graphics':
+        return this.graphicsRows(ctx);
+      case 'audio':
+        return this.audioRows(ctx);
+      case 'controls':
+        return this.controlRows(ctx);
+      case 'game':
+        return this.gameRows(ctx);
+    }
   }
 
   private graphicsRows(ctx: RowContext): SettingRow[] {
@@ -263,6 +284,15 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         },
       }),
       sliderRow(ctx, {
+        label: 'Efectos',
+        help: 'Chirrido de neumáticos, pianos, grava, viento, cambios de marcha y choques.',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        get: () => a().effects,
+        set: (v) => this.game.updateSettings((s) => (s.audio.effects = v)),
+      }),
+      sliderRow(ctx, {
         label: 'Interfaz',
         help: 'Sonidos de menús y transiciones.',
         min: 0,
@@ -276,6 +306,75 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         help: 'Vuelve a los volúmenes de fábrica.',
         icon: 'reset',
         run: () => this.game.updateSettings((s) => (s.audio = createDefaultAudio())),
+      }),
+    ];
+  }
+
+  private controlRows(ctx: RowContext): SettingRow[] {
+    const c = (): Game['settings']['controls'] => this.game.settings.controls;
+    return [
+      sliderRow(ctx, {
+        label: 'Sensibilidad de dirección',
+        help: 'Con teclado: qué tan rápido gira el volante al mantener ←/→. Con gamepad: la curva del stick (más alta = respuesta más directa en el centro).',
+        min: 0.5,
+        max: 1.5,
+        step: 0.05,
+        get: () => c().steeringSensitivity,
+        set: (v) => this.game.updateSettings((s) => (s.controls.steeringSensitivity = v)),
+      }),
+      sliderRow(ctx, {
+        label: 'Zona muerta del stick',
+        help: 'Cuánto hay que mover el stick del gamepad antes de que el auto doble. Súbela si el auto se va solo hacia un lado.',
+        min: 0,
+        max: 0.3,
+        step: 0.01,
+        get: () => c().steeringDeadzone,
+        set: (v) => this.game.updateSettings((s) => (s.controls.steeringDeadzone = v)),
+      }),
+      toggleRow(ctx, {
+        label: 'Vibración',
+        help: 'El gamepad vibra en los pianos, la grava y los choques (si tu mando y tu navegador lo permiten).',
+        get: () => c().vibration,
+        set: (on) => this.game.updateSettings((s) => (s.controls.vibration = on)),
+      }),
+      actionRow(ctx, {
+        label: 'Restablecer controles',
+        help: 'Teclado: ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · C cámara · R volver a pista · Esc pausa. Gamepad: RT/LT, stick izquierdo, X, Y, Select y Start.',
+        icon: 'reset',
+        run: () => this.game.updateSettings((s) => (s.controls = createDefaultControls())),
+      }),
+    ];
+  }
+
+  private gameRows(ctx: RowContext): SettingRow[] {
+    const gm = (): Game['settings']['game'] => this.game.settings.game;
+    return [
+      selectorRow<CameraMode>(ctx, {
+        label: 'Cámara por defecto',
+        help: 'La cámara con la que sales a pista. Durante la carrera se cambia con C (o Y en el gamepad).',
+        options: [
+          { value: 'cockpit', label: 'Cockpit' },
+          { value: 'tcam', label: 'T-cam' },
+          { value: 'chase', label: 'Persecución' },
+        ],
+        get: () => gm().defaultCamera,
+        set: (camera) => this.game.updateSettings((s) => (s.game.defaultCamera = camera)),
+      }),
+      selectorRow<SpeedUnit>(ctx, {
+        label: 'Unidades de velocidad',
+        help: 'Kilómetros o millas por hora en el tablero y en el volante.',
+        options: [
+          { value: 'kmh', label: 'km/h' },
+          { value: 'mph', label: 'mph' },
+        ],
+        get: () => gm().units,
+        set: (units) => this.game.updateSettings((s) => (s.game.units = units)),
+      }),
+      actionRow(ctx, {
+        label: 'Restablecer juego',
+        help: 'Vuelve a la cámara cockpit y a km/h.',
+        icon: 'reset',
+        run: () => this.game.updateSettings((s) => (s.game = createDefaultGame())),
       }),
     ];
   }

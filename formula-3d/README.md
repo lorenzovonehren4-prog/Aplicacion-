@@ -31,6 +31,19 @@ Abrir <http://localhost:5173>.
 
 El ratón también funciona en todos los menús.
 
+### En pista
+
+| Acción | Teclado | Gamepad |
+|---|---|---|
+| Acelerar / frenar | ↑ / ↓ | RT / LT |
+| Doblar | ← / → | Stick izquierdo |
+| DRS (en las zonas) | D | X |
+| Cambiar cámara | C | Y |
+| Volver a la pista | R | Select |
+| Pausa | Esc o P | Start (o B) |
+
+La caja de cambios es automática (8 marchas).
+
 ## Comandos
 
 ```bash
@@ -48,6 +61,6 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Fase 1 de 9: estructura, máquina de estados de pantallas, guardado, menú
-principal con el monoplaza en 3D y ajustes de gráficos y sonido. Ver la sección
-**Fases** de `PLAN.md`.
+Fase 2 de 9: práctica libre en Albert Park con física de monoplaza, tres
+cámaras, sonido del motor y efectos, HUD con tiempos y récord guardado, pausa y
+ajustes de controles y juego. Ver la sección **Fases** de `PLAN.md`.

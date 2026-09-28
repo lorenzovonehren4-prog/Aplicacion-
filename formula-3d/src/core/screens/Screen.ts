@@ -4,7 +4,7 @@ import type { ScreenId } from './flow';
 /**
  * Contrato de una pantalla. El `ScreenManager` llama a los métodos en este orden:
  *
- *   enter(params) → reveal() → [update(dt) / onAction() / onCovered() / onUncovered()]*
+ *   enter(params) → reveal() → [fixedUpdate(step) / update(dt, alpha) / onAction() / onCovered() / onUncovered()]*
  *   → hide() (sólo al hacer `pop`) → exit()
  *
  * Los métodos opcionales sólo se implementan si la pantalla los necesita.
@@ -23,8 +23,14 @@ export interface Screen<P = unknown> {
   /** Arranca las animaciones de entrada (se llama al destapar). */
   reveal?(): void;
 
-  /** Se llama cada fotograma mientras la pantalla está en la pila. */
-  update?(dt: number): void;
+  /** Se llama a paso fijo (120 Hz) mientras la pantalla está en la pila: simulación. */
+  fixedUpdate?(step: number): void;
+
+  /**
+   * Se llama cada fotograma mientras la pantalla está en la pila. `alpha` (0–1)
+   * es cuánto se avanzó hacia el próximo paso fijo, para interpolar lo que se dibuja.
+   */
+  update?(dt: number, alpha: number): void;
 
   /** Acción de interfaz (teclado / gamepad). Sólo la recibe la pantalla de arriba. */
   onAction?(action: UiAction): void;

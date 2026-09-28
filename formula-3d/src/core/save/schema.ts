@@ -34,12 +34,42 @@ export interface GraphicsSettings {
 export interface AudioSettings {
   master: number;
   engine: number;
+  /** Derrapes, pianos, viento, choques. */
+  effects: number;
   ui: number;
+}
+
+export interface ControlSettings {
+  /** Sensibilidad de la dirección, de 0.5 a 1.5. */
+  steeringSensitivity: number;
+  /** Zona muerta del stick del gamepad, de 0 a 0.3. */
+  steeringDeadzone: number;
+  /** Vibración del gamepad en pianos y choques. */
+  vibration: boolean;
+}
+
+export const CAMERA_MODES = ['cockpit', 'tcam', 'chase'] as const;
+export type CameraMode = (typeof CAMERA_MODES)[number];
+
+export const SPEED_UNITS = ['kmh', 'mph'] as const;
+export type SpeedUnit = (typeof SPEED_UNITS)[number];
+
+export interface GameSettings {
+  defaultCamera: CameraMode;
+  units: SpeedUnit;
 }
 
 export interface Settings {
   graphics: GraphicsSettings;
   audio: AudioSettings;
+  controls: ControlSettings;
+  game: GameSettings;
+}
+
+/** Récords del jugador en un circuito. */
+export interface TrackRecord {
+  /** Mejor vuelta (s) o null si todavía no completó ninguna. */
+  bestLap: number | null;
 }
 
 export interface Profile {
@@ -65,6 +95,8 @@ export interface SaveData {
   profile: Profile;
   progression: Progression;
   settings: Settings;
+  /** Récords por circuito (clave = id del circuito). */
+  records: Record<string, TrackRecord>;
 }
 
 export const PROFILE_NAME_MAX_LENGTH = 16;
@@ -83,7 +115,15 @@ export function createDefaultGraphics(quality: QualityLevel): GraphicsSettings {
 }
 
 export function createDefaultAudio(): AudioSettings {
-  return { master: 0.8, engine: 0.8, ui: 0.6 };
+  return { master: 0.8, engine: 0.8, effects: 0.8, ui: 0.6 };
+}
+
+export function createDefaultControls(): ControlSettings {
+  return { steeringSensitivity: 1, steeringDeadzone: 0.08, vibration: true };
+}
+
+export function createDefaultGame(): GameSettings {
+  return { defaultCamera: 'cockpit', units: 'kmh' };
 }
 
 export function createDefaultSave(now: number, quality: QualityLevel): SaveData {
@@ -102,6 +142,9 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
     settings: {
       graphics: createDefaultGraphics(quality),
       audio: createDefaultAudio(),
+      controls: createDefaultControls(),
+      game: createDefaultGame(),
     },
+    records: {},
   };
 }

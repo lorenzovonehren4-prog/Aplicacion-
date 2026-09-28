@@ -83,7 +83,9 @@ describe('tabla de flujo', () => {
     expect(canGoTo(SCREEN_FLOW, 'race', 'results')).toBe(true);
     expect(canGoTo(SCREEN_FLOW, 'results', 'podium')).toBe(true);
     expect(canGoTo(SCREEN_FLOW, 'podium', 'menu')).toBe(true);
-    expect(canGoTo(SCREEN_FLOW, 'menu', 'race')).toBe(false);
+    // Práctica libre: del menú directo a la pista.
+    expect(canGoTo(SCREEN_FLOW, 'menu', 'race')).toBe(true);
+    expect(canGoTo(SCREEN_FLOW, 'menu', 'results')).toBe(false);
     expect(canPush(SCREEN_FLOW, 'menu', 'settings')).toBe(true);
     expect(canPush(SCREEN_FLOW, 'race', 'settings')).toBe(true);
     expect(canPush(SCREEN_FLOW, 'raceSelect', 'assistsManual')).toBe(true);
@@ -222,18 +224,22 @@ describe('ScreenManager', () => {
     expect(cover).toHaveBeenCalledTimes(1);
   });
 
-  it('update llega a todas las pantallas de la pila', async () => {
+  it('update y fixedUpdate llegan a todas las pantallas de la pila', async () => {
     const { manager } = setup();
     await manager.goTo('splash', undefined);
     await manager.goTo('menu', undefined);
     const menuUpdate = vi.fn();
+    const menuFixed = vi.fn();
     (manager.top as Screen).update = menuUpdate;
+    (manager.top as Screen).fixedUpdate = menuFixed;
     await manager.push('settings', undefined);
     const settingsUpdate = vi.fn();
     (manager.top as Screen).update = settingsUpdate;
-    manager.update(0.016);
-    expect(menuUpdate).toHaveBeenCalledWith(0.016);
-    expect(settingsUpdate).toHaveBeenCalledWith(0.016);
+    manager.update(0.016, 0.4);
+    manager.fixedUpdate(1 / 120);
+    expect(menuUpdate).toHaveBeenCalledWith(0.016, 0.4);
+    expect(settingsUpdate).toHaveBeenCalledWith(0.016, 0.4);
+    expect(menuFixed).toHaveBeenCalledWith(1 / 120);
   });
 
   it('destroy cierra todas las pantallas', async () => {

@@ -324,6 +324,15 @@ function mirrorX(geometry: BufferGeometry): BufferGeometry {
   return mirrored;
 }
 
+/** Invierte la U de una pieza con UV planares (para la copia espejada de una placa con logo). */
+function flipPlanarU(geometry: BufferGeometry): BufferGeometry {
+  const uv = geometry.getAttribute('uv');
+  if (!uv) return geometry;
+  for (let i = 0; i < uv.count; i++) uv.setX(i, 1 - uv.getX(i));
+  uv.needsUpdate = true;
+  return geometry;
+}
+
 /**
  * Junta piezas fijas por material y al final las fusiona en una malla por
  * material: pocas draw calls aunque el auto tenga cientos de piezas.
@@ -610,7 +619,9 @@ export class CarModel {
       [2.44, 1.03],
       [2.3, 0.94],
     ];
-    batch.addMirrored('endplate', plate(endplate, 0.49, 0.012));
+    // La copia del otro lado invierte U: si no, el logo se leería espejado.
+    const rightPlate = plate(endplate, 0.49, 0.012);
+    batch.add('endplate', rightPlate, flipPlanarU(mirrorX(rightPlate)));
     // Soporte central "cuello de cisne".
     batch.add('carbon', plate([[2.12, 0.3], [2.3, 0.3], [2.52, 0.86], [2.4, 0.86]], 0, 0.02));
     // Luz trasera.

@@ -16,6 +16,7 @@ import './styles/transitions.css';
 import './styles/screens/splash.css';
 import './styles/screens/menu.css';
 import './styles/screens/settings.css';
+import './styles/screens/race.css';
 
 import { Game, type GameLayers } from './core/Game';
 import { GAME_NAME } from './data/game';

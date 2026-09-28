@@ -80,22 +80,28 @@ formula-3d/
     │   ├── save/                 [1] almacenamiento, esquema, saneo, migraciones
     │   ├── input/                [1] teclado + gamepad (UI) · [2] acciones de manejo · [8] reasignación
     │   ├── render/               [1] renderer compartido, calidad, postprocesado, entorno
-    │   └── utils/                [1] matemáticas, Disposer, formato de números
-    ├── race/                     física, IA, cámaras, HUD, reglas de carrera
-    │   ├── physics/              [2] vehículo, caja automática, superficies · [4] colisiones
-    │   ├── cameras/              [2] cockpit, T-cam, persecución, sacudida
-    │   ├── hud/                  [3] velocímetro, marcha, RPM, posiciones, minimapa, mensajes
-    │   ├── rules/                [3] semáforo, vueltas, tiempos, delta · [4] posiciones · [5] modos
+    │   └── utils/                [1] matemáticas, Disposer, formato · [2] aleatorio con semilla, tiempos
+    ├── race/                     física, IA, cámaras, sesión y reglas de carrera
+    │   ├── physics/              [2] CarSpec (datos y modelo de rendimiento), Gearbox, Vehicle · [4] colisiones auto-auto
+    │   ├── input/DrivingInput.ts [2] teclado con rampas + gamepad (gatillos, stick con zona muerta)
+    │   ├── camera/RaceCamera.ts  [2] cockpit, T-cam, persecución, fundido, cabeza por G, sacudidas
+    │   ├── render/               [2] CarRig (física → modelo, interpolación) y volante con LEDs y pantalla
+    │   ├── audio/RaceAudio.ts    [2] motor en tiempo real + derrape, pianos, grava, viento, cambios, choques
+    │   ├── session/LapTimer.ts   [2] vueltas, sectores, delta en vivo, validez · [3] semáforo
+    │   ├── PracticeSession.ts    [2] práctica libre: física + cronómetro + DRS + límites de pista
+    │   ├── RaceWorld.ts          [2] escena 3D de la sesión (circuito + auto + cámaras) = vista del renderer
     │   ├── ai/                   [4] bots: seguimiento de línea, adelantar, defender, errores
-    │   ├── fx/                   [9] chispas, humo, calor, bandera a cuadros
-    │   └── RaceScreen.ts         [2] pantalla de carrera
+    │   └── fx/                   [9] chispas, humo, calor, bandera a cuadros
     ├── tracks/                   datos y generación de circuitos
-    │   ├── TrackDefinition.ts    [2] formato de datos de un circuito
+    │   ├── TrackDefinition.ts    [2] formato de datos de un circuito (tramos rectos y curvas "de tortuga")
+    │   ├── layout.ts             [2] trazado de los tramos y cierre de la vuelta
     │   ├── TrackGeometry.ts      [2] spline → muestras, curvatura, sistema de coordenadas de pista
-    │   ├── TrackAnalysis.ts      [2] curvas: frenada, velocidad segura, ápice · [3] perfil de velocidad
+    │   ├── TrackAnalysis.ts      [2] perfil de velocidad, curvas, frenadas, ápices, tiempo teórico
+    │   ├── Trackside.ts          [2] pianos, escapatorias y muros por muestra (lo comparten física y mallas)
+    │   ├── Track.ts              [2] circuito listo: geometría + análisis + entorno, meta, sectores, DRS, parrilla
+    │   ├── TrackBuilder.ts       [2] arma la escena por etapas con progreso real
+    │   ├── build/                [2] texturas, cintas, superficies, muros, escenario, cielo
     │   ├── RacingLine.ts         [3] trazada ideal (mínima curvatura)
-    │   ├── TrackBuilder.ts       [2] mallas: asfalto, pianos, líneas, grava, pasto, muros, gradas...
-    │   ├── Minimap.ts            [3]
     │   ├── data/australia.ts     [2]
     │   ├── data/monza.ts         [5]
     │   └── registry.ts           [2] catálogo de circuitos (agregar uno = agregar un archivo)
@@ -117,13 +123,13 @@ formula-3d/
     │   ├── nav/FocusNavigator.ts [1] navegación espacial con teclado/gamepad + ratón
     │   ├── anim/                 [1] barrido diagonal, stagger, contadores
     │   ├── components/           [1] botón de menú, slider, selector, pestañas, tarjeta de piloto, FPS
-    │   └── screens/              [1] Splash, Menú principal, Ajustes · [2..8] el resto
+    │   ├── race/                 [2] HUD (tiempos, minimapa, tablero), pantalla de carga, pausa
+    │   └── screens/              [1] Splash, Menú principal, Ajustes · [2] Carrera · [3..8] el resto
     ├── audio/
     │   ├── AudioManager.ts       [1] contexto, buses y volúmenes
-    │   ├── EngineSynth.ts        [1] motor sintetizado (rev del splash) · [2] ligado a la física
+    │   ├── EngineSynth.ts        [1] motor sintetizado (rev del splash) · [2] modo en tiempo real
     │   ├── UiSounds.ts           [1] sonidos de interfaz sintetizados
     │   ├── SpatialEngines.ts     [4] motores de bots con PannerNode
-    │   ├── Sfx.ts                [2..8] derrape, pianos, choques, semáforo, DRS
     │   └── MenuMusic.ts          [8] música generativa
     └── data/
         ├── game.ts               [1] nombre, versión, textos del menú
@@ -381,7 +387,7 @@ Nada más cambia.
   0–100 km/h ≈ 2,6 s, punta ≈ 330 km/h (345 con DRS), frenada de 300 a 80 km/h
   en ≈ 110 m.
 
-### 5.3 Cámaras (`race/cameras/`)
+### 5.3 Cámaras (`race/camera/`)
 
 - **Cockpit** (por defecto): en el casco. Se ven volante (con luces de RPM),
   halo y morro. Inclinación de cabeza por fuerzas G (lateral y longitudinal, con
@@ -557,32 +563,51 @@ revisión propia del código + resumen y espera de confirmación.
 - [x] 53 pruebas unitarias + prueba de humo en Chromium (flujo completo,
       persistencia tras recargar y respaldo en localStorage).
 
-### Fase 2 — Australia, auto y cámaras
+### Fase 2 — Australia, auto y cámaras ✅
 
-- [ ] Formato `TrackDefinition` y registro de circuitos.
-- [ ] Albert Park por spline: asfalto, pianos, líneas, grava, pasto, muros,
-      gradas, árboles instanciados, lago, pórtico de meta y pits.
-- [ ] Coordenadas de pista `(s, d)` y análisis de curvas.
-- [ ] Física del monoplaza (sección 5.2) con caja automática de 8 marchas.
-- [ ] Acciones de manejo (teclado con suavizado + gamepad).
-- [ ] Cámaras cockpit (volante, halo, morro, cabeza por G), T-cam y
-      persecución, con transición suave (C / Y).
-- [ ] Motor sintetizado ligado a rpm y marchas; derrape y pianos.
-- [ ] Pantalla de carga (silueta del auto, barra, consejos).
-- [ ] Acceso temporal "Carrera rápida → práctica libre en Australia" hasta que
-      la Fase 5 agregue la selección completa (se reemplaza, no queda código muerto).
-- [ ] Ajustes: pestaña Controles (sensibilidad de dirección, gamepad), volumen de
-      Efectos, cámara por defecto.
-- [ ] Sesión dedicada de ajuste del manejo.
+- [x] Formato `TrackDefinition` (tramos rectos y curvas con radio y ángulo) y
+      registro de circuitos; el trazado se cierra solo y se escala a la
+      longitud real.
+- [x] Albert Park por spline (5,278 km, 14 curvas): asfalto con textura y
+      relieve, líneas de borde, parrilla y meta a cuadros, pianos elevados,
+      grava y escapatorias asfaltadas donde hacen falta según el análisis,
+      muros con publicidad ficticia y barreras de neumáticos, alambrado con
+      postes, tribunas con público instanciado, arboledas instanciadas (3
+      especies), lago con ondas, pórtico de largada con semáforo, boxes con
+      garajes de colores, carteles de 150/100/50 m, ciudad a lo lejos y cielo
+      físico con nubes, niebla y sombras que siguen al auto.
+- [x] Coordenadas de pista `(s, d)`, perfil de velocidad, detección de curvas,
+      puntos de frenada y ápices.
+- [x] Física del monoplaza (sección 5.2) con caja automática de 8 marchas,
+      carga aerodinámica, superficies por rueda, TC/ABS y choques con muros.
+- [x] Mandos de manejo: teclado con rampas + gamepad analógico.
+- [x] Cámaras cockpit (halo, volante con LEDs de cambio y pantalla, espejos,
+      cabeza por G), T-cam y persecución, con fundido suave (C / Y).
+- [x] Motor sintetizado en tiempo real; derrape, pianos, grava/pasto, viento,
+      cambios de marcha, choques; vibración del gamepad.
+- [x] Pantalla de carga con el trazado dibujándose, datos del circuito,
+      progreso real por etapa y consejos (en vez de la silueta del auto).
+- [x] Acceso "Práctica libre" en el menú (Albert Park). La Fase 5 lo convierte
+      en un modo más de la selección de carrera.
+- [x] Ajustes: pestañas Controles (sensibilidad, zona muerta, vibración) y
+      Juego (cámara por defecto, km/h o mph), y volumen de Efectos.
+- [x] Sesión de ajuste del manejo: vuelta completa con piloto automático
+      (108 s, sin salirse) y con mandos digitales de teclado (117 s, deriva
+      máx. 4°), 0–100 km/h < 3,2 s, frenada 200→0 en ~80 m.
+- [x] Adelantado de la Fase 3: HUD básico (tiempos, sectores, delta en vivo,
+      tablero con LEDs, pedales, DRS/TC/ABS, minimapa), vueltas y récord
+      guardado, límites de pista, pausa, presentación del circuito y volver a
+      pista con R.
 
-### Fase 3 — HUD, vueltas, semáforo, pausa y ayudas
+### Fase 3 — HUD completo, semáforo y ayudas
 
-- [ ] HUD completo (sección 9 del documento de diseño) y mensajes animados.
-- [ ] Vueltas, tiempos, sectores, delta, mejor vuelta.
-- [ ] Semáforo de 5 luces con sonido.
-- [ ] Pausa con desenfoque (continuar, reiniciar, ajustes, salir).
+- [ ] HUD completo (sección 9 del documento de diseño): posiciones, gaps,
+      ayudas activas; sobre la base de `ui/race/Hud.ts`.
+- [x] Vueltas, tiempos, sectores, delta, mejor vuelta (Fase 2).
+- [ ] Semáforo de 5 luces con sonido (el pórtico ya tiene las luces).
+- [x] Pausa con desenfoque (continuar, reiniciar, ajustes, salir) (Fase 2).
 - [ ] Sistema de ayudas completo + línea de trazada fija y dinámica.
-- [ ] Ajustes: pestaña Ayudas y unidades (km/h / mph).
+- [ ] Ajustes: pestaña Ayudas. (Unidades km/h / mph: Fase 2.)
 
 ### Fase 4 — Bots, colisiones y posiciones
 
@@ -624,7 +649,8 @@ revisión propia del código + resumen y espera de confirmación.
 
 ### Fase 9 — Pulido final
 
-- [ ] Presentación del circuito (vuelo de cámara, ficha, parrilla).
+- [ ] Presentación del circuito completa (vuelo por el trazado, parrilla con
+      rivales); la Fase 2 ya tiene la vuelta de cámara alrededor del auto.
 - [ ] Podio 3D (confeti, champán, fuegos artificiales, cámara girando).
 - [ ] Postprocesado completo (motion blur, calor, FOV), partículas.
 - [ ] Optimización y revisión general de bugs.
@@ -635,21 +661,32 @@ revisión propia del código + resumen y espera de confirmación.
 
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
-| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 2, 5, 6, 7, 8 |
-| Parámetros de pantallas nuevas | `core/screens/params.ts` sólo tiene splash, menú y ajustes | 2 en adelante |
-| Ajustes: Controles, Ayudas, Juego, volumen de Efectos y Música | No se muestran hasta que tengan efecto | 2, 3, 8 |
+| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 5, 6, 7, 8 |
+| Parámetros de pantallas nuevas | `core/screens/params.ts`: splash, menú, ajustes y carrera (`mode: 'practice'`) | 3 en adelante |
+| Ajustes: Ayudas y volumen de Música | No se muestran hasta que tengan efecto | 3, 8 |
 | Tutorial inicial | El splash va siempre al menú; se agrega el desvío al tutorial la primera vez | 8 |
 | Nombre del piloto editable | Por ahora "PILOTO" | 8 (tutorial y perfil) |
 | Música de menú | — | 8 |
 | Patrones de livery y materiales | El auto usa la livery base del jugador | 7 |
-| Liberar el estudio 3D al entrar a una carrera | El estudio vive mientras dura la sesión (es liviano) | 2 |
 | Autos de bots livianos (piezas compartidas, LOD) | `CarModel` crea sus propias texturas | 4 |
+| Semáforo de largada | `StartGantry.lights` (materiales de las 10 luces) listo para encender | 3 |
+| DRS con detección (a menos de 1 s del de adelante) | En práctica se permite en toda la zona; `DrsZone.detection` ya está en los datos | 4 |
+| Rebufo | `Vehicle.slipstream` existe y reduce el arrastre; nadie lo fija todavía | 4 |
+| Nivel de TC/ABS elegible | `Vehicle.electronics` (TC 0,6 y ABS fijos) | 3 |
 
 ### Notas de pruebas
 
 - Chromium sin GPU (CI, servidores) dibuja por software a 1–2 FPS: la prueba de
   humo emula `prefers-reduced-motion` para que las animaciones sean cortas.
 - Las capturas de la prueba de humo quedan en `e2e/capturas/` (fuera de git).
+- Por ese mismo motivo, en la prueba de humo la simulación avanza lento (el
+  paso fijo tiene un tope de 8 pasos por cuadro): se verifica que el auto
+  arranque, no una vuelta entera. Las vueltas completas se prueban sin
+  navegador (`tests/physics.test.ts`, `tests/session.test.ts`).
+- El piloto automático de las pruebas (`tests/helpers/autopilot.ts`) sigue el
+  centro de la pista con el perfil de velocidad del análisis; el "piloto de
+  teclado" (`tests/helpers/keyboardPilot.ts`) lo traduce a flechas pulsadas y
+  pasa por las mismas rampas que el juego.
 
 ## 9. Riesgos y cómo se mitigan
 
@@ -665,4 +702,5 @@ revisión propia del código + resumen y espera de confirmación.
 
 ## 10. Estado
 
-- **Fase 1**: completa. A la espera de confirmación para empezar la Fase 2.
+- **Fase 1**: completa.
+- **Fase 2**: completa. A la espera de confirmación para empezar la Fase 3.

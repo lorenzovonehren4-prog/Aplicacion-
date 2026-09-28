@@ -3,9 +3,9 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '0.1.0';
+export const GAME_VERSION = '0.2.0';
 /** Fase de desarrollo actual (se muestra junto a la versión). */
-export const DEV_PHASE = 1;
+export const DEV_PHASE = 2;
 
 /** Títulos del piloto (el pase de temporada agrega más en la Fase 6). */
 export const PLAYER_TITLES: Readonly<Record<string, string>> = {
@@ -13,6 +13,7 @@ export const PLAYER_TITLES: Readonly<Record<string, string>> = {
 };
 
 export type MenuItemId =
+  | 'practice'
   | 'quickRace'
   | 'timeTrial'
   | 'championship'
@@ -41,11 +42,18 @@ export const MAIN_MENU: readonly MenuGroup[] = [
     title: 'Competir',
     items: [
       {
+        id: 'practice',
+        label: 'Práctica libre',
+        icon: 'helmet',
+        description: 'Sal solo a Albert Park, aprende el circuito y marca tu mejor vuelta.',
+        phase: 2,
+      },
+      {
         id: 'quickRace',
         label: 'Carrera rápida',
         icon: 'flag',
         description: 'Elige circuito, vueltas, rivales y clima, y sal a pista.',
-        phase: 2,
+        phase: 5,
       },
       {
         id: 'timeTrial',
@@ -103,7 +111,7 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'settings',
         label: 'Ajustes',
         icon: 'gear',
-        description: 'Gráficos y sonido. Controles, ayudas y juego llegan en las próximas fases.',
+        description: 'Gráficos, sonido, controles y opciones de juego. Las ayudas llegan en la Fase 3.',
         phase: 1,
       },
     ],

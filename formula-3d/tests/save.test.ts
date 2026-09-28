@@ -81,8 +81,24 @@ describe('sanitizeSave', () => {
       resolutionScale: 1,
       showFps: true,
     });
-    expect(data.settings.audio).toEqual({ master: 1, engine: 0.8, ui: 0.3 });
+    expect(data.settings.audio).toEqual({ master: 1, engine: 0.8, effects: 0.8, ui: 0.3 });
     expect(data.updatedAt).toBe(NOW + 10);
+  });
+
+  it('controles, juego y récords (Fase 2)', () => {
+    const data = sanitizeSave(
+      {
+        settings: {
+          controls: { steeringSensitivity: 9, steeringDeadzone: -1, vibration: 'no' },
+          game: { defaultCamera: 'helicóptero', units: 'mph' },
+        },
+        records: { australia: { bestLap: 81.5 }, 'MAL CLAVE!': { bestLap: 80 }, monza: { bestLap: -3 } },
+      },
+      defaults(),
+    );
+    expect(data.settings.controls).toEqual({ steeringSensitivity: 1.5, steeringDeadzone: 0, vibration: true });
+    expect(data.settings.game).toEqual({ defaultCamera: 'cockpit', units: 'mph' });
+    expect(data.records).toEqual({ australia: { bestLap: 81.5 }, monza: { bestLap: null } });
   });
 
   it('recorta el nombre y acota la XP al nivel', () => {

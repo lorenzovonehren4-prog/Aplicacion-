@@ -1,0 +1,127 @@
+/**
+ * Une la física con el modelo 3D: interpola la pose entre pasos fijos (el
+ * auto se mueve suave a cualquier FPS), gira y dobla las ruedas, abre el
+ * flap del DRS, inclina la carrocería con las fuerzas G y enciende la luz
+ * trasera al recuperar energía en las frenadas.
+ */
+
+import type { Group } from 'three';
+import { CarModel } from '../../garage/CarModel';
+import type { LiveryConfig } from '../../garage/livery';
+import { clamp, damp } from '../../core/utils/math';
+import type { Vehicle } from '../physics/Vehicle';
+import { SteeringWheel } from './SteeringWheel';
+
+/** El origen del modelo está 0,2 m delante del centro de gravedad. */
+const MODEL_OFFSET = 0.2;
+/** Inclinación visual (rad) por m/s² de aceleración. */
+const PITCH_PER_ACCEL = 0.0011;
+const ROLL_PER_ACCEL = 0.0013;
+
+export interface PoseSnapshot {
+  x: number;
+  z: number;
+  heading: number;
+}
+
+/** Interpola ángulos por el camino corto. */
+function lerpAngle(a: number, b: number, t: number): number {
+  let delta = b - a;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  return a + delta * t;
+}
+
+export class CarRig {
+  readonly model: CarModel;
+  readonly wheel: SteeringWheel;
+  /** Pose interpolada (lo que se dibuja): la usa la cámara. */
+  readonly pose: PoseSnapshot = { x: 0, z: 0, heading: 0 };
+  /** Inclinación de la carrocería (para la cámara cockpit). */
+  pitch = 0;
+  roll = 0;
+  private readonly previous: PoseSnapshot = { x: 0, z: 0, heading: 0 };
+  private time = 0;
+
+  constructor(
+    private readonly vehicle: Vehicle,
+    livery: LiveryConfig,
+    anisotropy: number,
+  ) {
+    this.model = new CarModel({ livery, anisotropy });
+    this.wheel = new SteeringWheel();
+    this.model.root.add(this.wheel.root);
+    this.snap();
+  }
+
+  get root(): Group {
+    return this.model.root;
+  }
+
+  /** Guarda la pose antes de un paso fijo (para interpolar). */
+  beforeStep(): void {
+    this.previous.x = this.vehicle.x;
+    this.previous.z = this.vehicle.z;
+    this.previous.heading = this.vehicle.heading;
+  }
+
+  /** Sin interpolación (al colocar o reiniciar el auto). */
+  snap(): void {
+    this.beforeStep();
+    this.pitch = 0;
+    this.roll = 0;
+    this.apply(1, 0);
+  }
+
+  /** Dibuja la pose interpolada con `alpha` entre el paso anterior y el actual. */
+  update(dt: number, alpha: number): void {
+    this.time += dt;
+    this.apply(alpha, dt);
+  }
+
+  /** Muestra u oculta el casco (en la cámara cockpit la cámara está adentro). */
+  setDriverVisible(visible: boolean): void {
+    this.model.driver.visible = visible;
+  }
+
+  dispose(): void {
+    this.wheel.dispose();
+    this.model.dispose();
+  }
+
+  private apply(alpha: number, dt: number): void {
+    const v = this.vehicle;
+    const t = clamp(alpha, 0, 1);
+    const x = this.previous.x + (v.x - this.previous.x) * t;
+    const z = this.previous.z + (v.z - this.previous.z) * t;
+    const heading = lerpAngle(this.previous.heading, v.heading, t);
+    this.pose.x = x;
+    this.pose.z = z;
+    this.pose.heading = heading;
+
+    // Inclinación por fuerzas G (frenar baja la trompa; doblar inclina hacia afuera).
+    const tel = v.telemetry;
+    if (dt > 0) {
+      this.pitch = damp(this.pitch, clamp(-tel.ax * PITCH_PER_ACCEL, -0.035, 0.035), 8, dt);
+      this.roll = damp(this.roll, clamp(tel.ay * ROLL_PER_ACCEL, -0.04, 0.04), 8, dt);
+    }
+
+    const root = this.model.root;
+    const sin = Math.sin(heading);
+    const cos = Math.cos(heading);
+    // Adelante = (−sin ψ, −cos ψ).
+    root.position.set(x - sin * MODEL_OFFSET, 0.001, z - cos * MODEL_OFFSET);
+    root.rotation.set(this.pitch, heading, this.roll, 'YXZ');
+
+    // Ruedas: giro de rodado (derecha gira en −X local; la izquierda está espejada).
+    const wheels = this.model.wheels;
+    for (const rig of [wheels.fl, wheels.fr]) rig.spin.rotation.x = -v.wheelSpinFront * rig.side;
+    for (const rig of [wheels.rl, wheels.rr]) rig.spin.rotation.x = -v.wheelSpinRear * rig.side;
+    this.model.setSteer(v.steerAngle);
+    this.model.setDrs(v.drs);
+
+    // Luz trasera: parpadea al recuperar energía (frenando o soltando a alta velocidad).
+    const harvesting = tel.brake > 0.2 || (tel.throttle < 0.05 && tel.speed > 30);
+    this.model.setRearLight(harvesting ? (Math.floor(this.time * 8) % 2 === 0 ? 1 : 0.1) : 0.12);
+  }
+}

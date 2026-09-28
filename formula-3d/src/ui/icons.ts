@@ -9,6 +9,12 @@ const stroke = (paths: string): string =>
 export const ICONS = {
   /** Bandera a cuadros: carrera rápida. */
   flag: `<svg viewBox="0 0 24 24" fill="none"><path d="M5 21V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 4h14v10H5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path fill="currentColor" d="M5 4h3.5v2.5H5zM12 4h3.5v2.5H12zM8.5 6.5H12V9H8.5zM15.5 6.5H19V9h-3.5zM5 9h3.5v2.5H5zM12 9h3.5v2.5H12zM8.5 11.5H12V14H8.5zM15.5 11.5H19V14h-3.5z"/></svg>`,
+  /** Casco: práctica libre. */
+  helmet: stroke('<path d="M3.5 15a8.5 8.5 0 0 1 17 0v2.5a1.5 1.5 0 0 1-1.5 1.5H7a3.5 3.5 0 0 1-3.5-3.5z"/><path d="M11 11.5h9.3M11 11.5V15h9.5"/>'),
+  play: stroke('<path d="M7 4.5v15l12-7.5z"/>'),
+  pause: stroke('<path d="M8 5v14M16 5v14"/>'),
+  exit: stroke('<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>'),
+  camera: stroke('<rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/>'),
   stopwatch: stroke('<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5M12 2.5v3.5M18.5 6.5l1.5-1.5"/>'),
   trophy: stroke(
     '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5.5H4.5a3 3 0 0 0 3.5 4M16 5.5h3.5a3 3 0 0 1-3.5 4"/><path d="M12 13v3.5M8.5 20h7M9.5 20l.5-3.5h4l.5 3.5"/>',

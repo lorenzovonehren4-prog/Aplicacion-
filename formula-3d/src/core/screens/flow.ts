@@ -42,7 +42,8 @@ export const SCREEN_FLOW: FlowTable = {
   goTo: {
     splash: ['tutorial', 'menu'],
     tutorial: ['menu'],
-    menu: ['garage', 'pass', 'profile', 'raceSelect'],
+    // Práctica libre: directo del menú a la pista (Fase 2).
+    menu: ['garage', 'pass', 'profile', 'raceSelect', 'race'],
     garage: ['menu'],
     pass: ['menu'],
     profile: ['menu'],

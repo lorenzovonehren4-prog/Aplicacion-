@@ -29,6 +29,13 @@ import { QUALITY_PRESETS } from './quality';
 export interface RenderView {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
+  /** Exposición del tone mapping (1 por defecto; un cielo físico pide menos). */
+  readonly exposure?: number;
+  /**
+   * Umbral de luminancia del bloom (lineal, antes del tone mapping). Una escena
+   * a cielo abierto lo sube para que sólo brillen los reflejos del sol.
+   */
+  readonly bloomThreshold?: number;
   /** Ajustes gráficos nuevos (sombras, reflejos...). */
   onGraphicsChanged?(graphics: GraphicsSettings): void;
   /** Tamaño nuevo del lienzo en píxeles CSS y densidad de píxeles efectiva. */
@@ -112,6 +119,8 @@ export class RenderHost {
     if (view) {
       this.renderPass.scene = view.scene;
       this.renderPass.camera = view.camera;
+      this.renderer.toneMappingExposure = view.exposure ?? 1;
+      this.bloomPass.threshold = view.bloomThreshold ?? BLOOM.threshold;
       view.camera.aspect = this.width / this.height;
       view.camera.updateProjectionMatrix();
       view.onGraphicsChanged?.(this.graphics);

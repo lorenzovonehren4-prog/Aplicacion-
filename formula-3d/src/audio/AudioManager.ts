@@ -1,7 +1,7 @@
 /**
  * Audio del juego con Web Audio. Ver PLAN.md §4.8.
  *
- * Grafo: fuentes → buses (motor, interfaz; en fases siguientes efectos y música)
+ * Grafo: fuentes → buses (motor, efectos, interfaz; música en la Fase 8)
  * → master → compresor → salida. El contexto se crea en el primer gesto del
  * usuario (los navegadores bloquean el audio antes de eso).
  */
@@ -9,7 +9,7 @@
 import type { AudioSettings } from '../core/save/schema';
 import { UiSounds } from './UiSounds';
 
-export type AudioBus = 'engine' | 'ui';
+export type AudioBus = 'engine' | 'effects' | 'ui';
 
 /** Tiempo de las rampas de volumen (s): los cambios nunca hacen "clic". */
 const VOLUME_RAMP = 0.08;
@@ -71,6 +71,7 @@ export class AudioManager {
     const now = this.ctx.currentTime;
     this.master.gain.setTargetAtTime(perceptual(volumes.master), now, VOLUME_RAMP / 3);
     this.buses.get('engine')?.gain.setTargetAtTime(perceptual(volumes.engine), now, VOLUME_RAMP / 3);
+    this.buses.get('effects')?.gain.setTargetAtTime(perceptual(volumes.effects), now, VOLUME_RAMP / 3);
     this.buses.get('ui')?.gain.setTargetAtTime(perceptual(volumes.ui), now, VOLUME_RAMP / 3);
   }
 
@@ -113,6 +114,11 @@ export class AudioManager {
     engine.gain.value = perceptual(this.volumes.engine);
     engine.connect(this.master);
     this.buses.set('engine', engine);
+
+    const effects = ctx.createGain();
+    effects.gain.value = perceptual(this.volumes.effects);
+    effects.connect(this.master);
+    this.buses.set('effects', effects);
 
     const ui = ctx.createGain();
     ui.gain.value = perceptual(this.volumes.ui);

@@ -12,8 +12,13 @@ import {
   EXPERIENCE_LEVELS,
   PROFILE_NAME_MAX_LENGTH,
   SAVE_VERSION,
+  CAMERA_MODES,
+  SPEED_UNITS,
   type AudioSettings,
+  type ControlSettings,
   type ExperienceLevel,
+  type GameSettings,
+  type TrackRecord,
   type GraphicsSettings,
   type Profile,
   type Progression,
@@ -96,8 +101,41 @@ function sanitizeAudio(raw: unknown, defaults: AudioSettings): AudioSettings {
   return {
     master: num(r.master, defaults.master, 0, 1),
     engine: num(r.engine, defaults.engine, 0, 1),
+    effects: num(r.effects, defaults.effects, 0, 1),
     ui: num(r.ui, defaults.ui, 0, 1),
   };
+}
+
+function sanitizeControls(raw: unknown, defaults: ControlSettings): ControlSettings {
+  const r = record(raw);
+  return {
+    steeringSensitivity: num(r.steeringSensitivity, defaults.steeringSensitivity, 0.5, 1.5),
+    steeringDeadzone: num(r.steeringDeadzone, defaults.steeringDeadzone, 0, 0.3),
+    vibration: bool(r.vibration, defaults.vibration),
+  };
+}
+
+function sanitizeGame(raw: unknown, defaults: GameSettings): GameSettings {
+  const r = record(raw);
+  return {
+    defaultCamera: oneOf(r.defaultCamera, CAMERA_MODES, defaults.defaultCamera),
+    units: oneOf(r.units, SPEED_UNITS, defaults.units),
+  };
+}
+
+/** Récords por circuito: claves con forma de id y tiempos plausibles (10 s – 10 min). */
+function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): Record<string, TrackRecord> {
+  const source = isRecord(raw) ? raw : defaults;
+  const records: Record<string, TrackRecord> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (!/^[a-z0-9-]{1,32}$/.test(key)) continue;
+    const r = record(value);
+    const lap = r.bestLap;
+    records[key] = {
+      bestLap: typeof lap === 'number' && Number.isFinite(lap) && lap >= 10 && lap <= 600 ? lap : null,
+    };
+  }
+  return records;
 }
 
 /**
@@ -117,6 +155,9 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
     settings: {
       graphics: sanitizeGraphics(settings.graphics, defaults.settings.graphics),
       audio: sanitizeAudio(settings.audio, defaults.settings.audio),
+      controls: sanitizeControls(settings.controls, defaults.settings.controls),
+      game: sanitizeGame(settings.game, defaults.settings.game),
     },
+    records: sanitizeRecords(r.records, defaults.records),
   };
 }

@@ -41,6 +41,8 @@ export class Game {
   private readonly own = new Disposer();
   private studioPromise: Promise<StudioScene> | null = null;
   private studio: StudioScene | null = null;
+  /** Se incrementa al crear o liberar el estudio (descarta creaciones viejas). */
+  private studioGeneration = 0;
   private appliedGraphics = '';
 
   private constructor(
@@ -60,9 +62,10 @@ export class Game {
     this.fpsMeter = new FpsMeter(layers.overlay);
 
     this.loop = new GameLoop({
-      update: (dt) => {
+      fixedUpdate: (step) => this.screens.fixedUpdate(step),
+      update: (dt, alpha) => {
         this.input.update();
-        this.screens.update(dt);
+        this.screens.update(dt, alpha);
         this.fpsMeter.update(dt, this.loop.fps, this.loop.frameMs, this.render.stats);
       },
       render: () => this.render.render(),
@@ -131,7 +134,9 @@ export class Game {
    * precompilan sus shaders para que el menú aparezca sin tirones.
    */
   getStudio(): Promise<StudioScene> {
-    this.studioPromise ??= (async () => {
+    if (this.studioPromise) return this.studioPromise;
+    const generation = ++this.studioGeneration;
+    const promise = (async () => {
       const studio = new StudioScene(this.render.renderer, { livery: PLAYER_DEFAULT_LIVERY }, this.render.maxAnisotropy);
       studio.onGraphicsChanged(this.render.currentGraphics);
       // Con compilación paralela de shaders se espera sin trabar la animación;
@@ -142,10 +147,27 @@ export class Game {
       } else {
         renderer.compile(studio.scene, studio.camera);
       }
-      this.studio = studio;
+      // Si se liberó mientras se creaba, `releaseStudio` se encarga de éste.
+      if (this.studioGeneration === generation) this.studio = studio;
       return studio;
     })();
-    return this.studioPromise;
+    this.studioPromise = promise;
+    return promise;
+  }
+
+  /**
+   * Libera el estudio (al salir a pista: su mapa de entorno, reflejos y el auto
+   * ocupan memoria de video que el circuito necesita). El menú lo vuelve a crear.
+   */
+  releaseStudio(): void {
+    const pending = this.studioPromise;
+    const ready = this.studio;
+    this.studioGeneration++;
+    this.studioPromise = null;
+    this.studio = null;
+    if (ready) ready.dispose();
+    // Si todavía se estaba creando, se libera en cuanto termine.
+    else pending?.then((studio) => studio.dispose()).catch(() => undefined);
   }
 
   start(): void {

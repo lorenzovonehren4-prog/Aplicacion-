@@ -1,5 +1,6 @@
 import type { Game } from '../../core/Game';
 import { MainMenuScreen } from './MainMenuScreen';
+import { RaceScreen } from './RaceScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { SplashScreen } from './SplashScreen';
 
@@ -8,4 +9,5 @@ export function registerScreens(game: Game): void {
   game.screens.register('splash', () => new SplashScreen(game));
   game.screens.register('menu', () => new MainMenuScreen(game));
   game.screens.register('settings', () => new SettingsScreen(game));
+  game.screens.register('race', () => new RaceScreen(game));
 }

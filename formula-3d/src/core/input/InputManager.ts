@@ -1,6 +1,7 @@
 /**
- * Entrada de interfaz: teclado y gamepad → acciones de UI (`UiAction`).
- * Ver PLAN.md §4.7. En la Fase 2 se suman las acciones de manejo.
+ * Entrada: teclado y gamepad → acciones de UI (`UiAction`), más el estado
+ * crudo (teclas mantenidas, gamepad activo) que usa el manejo
+ * (`race/input/DrivingInput.ts`). Ver PLAN.md §4.7.
  */
 
 import type { InputDevice, UiAction } from './actions';
@@ -47,6 +48,8 @@ const REPEAT_DELAY_MS = 380;
 const REPEAT_INTERVAL_MS = 95;
 
 export type ActionHandler = (action: UiAction) => void;
+/** Tecla física pulsada (sin repeticiones automáticas). */
+export type KeyHandler = (code: string) => void;
 
 export interface InputManagerOptions {
   /** Devuelve los gamepads conectados (inyectable para pruebas). */
@@ -62,6 +65,9 @@ export class InputManager {
   private readonly anyInputHandlers = new Set<() => void>();
   private readonly deviceHandlers = new Set<(device: InputDevice) => void>();
   private readonly padHeld = new Map<UiAction, HeldState>();
+  private readonly keyHandlers = new Set<KeyHandler>();
+  private readonly keysDown = new Set<string>();
+  private pad: Gamepad | null = null;
   private readonly getGamepads: () => ReadonlyArray<Gamepad | null>;
   private device: InputDevice = 'keyboard';
   private padConnected = false;
@@ -77,6 +83,23 @@ export class InputManager {
     target.addEventListener('keyup', this.onKeyUp);
     target.addEventListener('pointerdown', this.onPointer);
     target.addEventListener('pointermove', this.onPointerMove);
+    target.addEventListener('blur', this.onBlur);
+  }
+
+  /** ¿Está mantenida esta tecla física? */
+  isKeyDown(code: string): boolean {
+    return this.keysDown.has(code);
+  }
+
+  /** Gamepad activo en este fotograma (null si no hay). */
+  get gamepad(): Gamepad | null {
+    return this.pad;
+  }
+
+  /** Escucha pulsaciones de teclas físicas (para atajos del manejo: cámara, DRS…). */
+  onKey(handler: KeyHandler): () => void {
+    this.keyHandlers.add(handler);
+    return () => this.keyHandlers.delete(handler);
   }
 
   /** Último dispositivo usado (para mostrar las ayudas de controles correctas). */
@@ -115,6 +138,7 @@ export class InputManager {
       }
     }
     this.padConnected = pad !== null;
+    this.pad = pad;
     if (!pad) {
       this.padHeld.clear();
       return;
@@ -153,6 +177,8 @@ export class InputManager {
     this.target.removeEventListener('keyup', this.onKeyUp);
     this.target.removeEventListener('pointerdown', this.onPointer);
     this.target.removeEventListener('pointermove', this.onPointerMove);
+    this.target.removeEventListener('blur', this.onBlur);
+    this.keyHandlers.clear();
     this.actionHandlers.clear();
     this.anyInputHandlers.clear();
     this.deviceHandlers.clear();
@@ -163,7 +189,11 @@ export class InputManager {
     if (isTypingTarget(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
     const action = KEY_ACTIONS[event.code];
     this.setDevice('keyboard');
-    if (!event.repeat && !IGNORED_FOR_ANY.test(event.key)) this.emitAny();
+    this.keysDown.add(event.code);
+    if (!event.repeat) {
+      if (!IGNORED_FOR_ANY.test(event.key)) this.emitAny();
+      for (const handler of [...this.keyHandlers]) handler(event.code);
+    }
     if (!action) return;
     // Evita que Enter/Espacio "cliqueen" además el botón enfocado, y el scroll con flechas.
     event.preventDefault();
@@ -172,8 +202,14 @@ export class InputManager {
   };
 
   private readonly onKeyUp = (event: KeyboardEvent): void => {
+    this.keysDown.delete(event.code);
     if (isTypingTarget(event.target)) return;
     if (KEY_ACTIONS[event.code]) event.preventDefault();
+  };
+
+  /** Al perder el foco la ventana no llegan los keyup: se sueltan todas las teclas. */
+  private readonly onBlur = (): void => {
+    this.keysDown.clear();
   };
 
   private readonly onPointer = (): void => {

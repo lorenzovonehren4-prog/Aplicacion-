@@ -23,6 +23,7 @@ import { BaseScreen } from './BaseScreen';
  * se muestra bloqueado con su fase. Cada fase agrega aquí los suyos.
  */
 const OPENERS: Partial<Record<MenuItemId, (game: Game) => Promise<boolean>>> = {
+  practice: (game) => game.screens.goTo('race', { trackId: 'australia', mode: 'practice' }),
   settings: (game) => game.screens.push('settings', undefined),
 };
 
@@ -46,7 +47,7 @@ export class MainMenuScreen extends BaseScreen {
   private readonly detail = h('div', { class: 'menu__detail' }, this.detailTitle, this.detailText, this.detailNote);
   private card: PlayerCard | null = null;
   private hints: ControlHints | null = null;
-  private lastFocused: MenuItemId = 'quickRace';
+  private lastFocused: MenuItemId = 'practice';
 
   constructor(game: Game) {
     super(game, 'screen--menu');
@@ -161,7 +162,7 @@ export class MainMenuScreen extends BaseScreen {
 
   /** En el menú raíz, "volver" regresa al primer acceso. */
   protected onBack(): void {
-    const first = this.buttons.get('quickRace');
+    const first = this.buttons.get('practice');
     if (first && this.nav.focused !== first) {
       this.nav.focus(first, false);
     }
