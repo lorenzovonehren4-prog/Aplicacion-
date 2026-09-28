@@ -1,0 +1,663 @@
+/* ================== INTERFAZ ================== */
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+let viewFloor = 0, camYaw = 0.3, camDist = 1200, camPitch = 1.08, playing = false, panel = null, decorFloor = 0;
+// Cámara: los controles cambian los objetivos (…T) y la cámara los sigue con suavidad.
+// yawV es la inercia al soltar el giro; tilt es la inclinación extra que pone el jugador arrastrando en vertical.
+const CAM = { yawT: 0.3, yawV: 0, distT: 1200, tilt: 0, tiltT: 0, zMin: 560, zMax: 2400 };
+const camT = new THREE.Vector3(0, 0, 60), camP = new THREE.Vector3(), camGoal = new THREE.Vector3(), camLook = new THREE.Vector3();
+const lastAv = { x: 0, z: 0, vx: 0, vz: 0 };
+
+// Resolución dinámica: si el celular no llega a ~45 FPS se baja la resolución interna, y se sube cuando sobra
+let dynScale = 1; const perf = { ema: 1 / 60, t: 0 };
+function adaptResolution(dt) {
+  perf.ema = lerp(perf.ema, dt, 0.05); perf.t += dt; if (perf.t < 2) return; perf.t = 0;
+  const prev = dynScale;
+  if (perf.ema > 1 / 45 && dynScale > 0.6) dynScale = Math.max(0.6, dynScale - 0.1);
+  else if (perf.ema < 1 / 57 && dynScale < 1) dynScale = Math.min(1, dynScale + 0.05);
+  if (dynScale !== prev) { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QCFG.dpr) * dynScale); renderer.setSize(W, H, false); }
+}
+function resize() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  stage.style.width = vw + 'px'; stage.style.height = vh + 'px';
+  W = vw; H = vh; DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QCFG.dpr) * dynScale); renderer.setSize(vw, vh, false);
+  camera.aspect = vw / vh; camera.fov = vw / vh < 1 ? 54 : 38; camera.updateProjectionMatrix();
+  stage.classList.toggle('portrait', vw / vh < 1);
+  if (vw / vh < 1) CAM.distT = Math.max(CAM.distT, 1500);
+}
+window.addEventListener('resize', resize);
+
+/* ---------- pads de compra ---------- */
+function padList() {
+  const L = [];
+  for (let f = 0; f < save.floors; f++) if (save.tables[f] < SLOTS[f].length) { const i = save.tables[f]; L.push({ kind: 'table', f, i, x: SLOTS[f][i][0], z: SLOTS[f][i][1], title: 'Mesa nueva', price: tableCost(totalTables()) }); }
+  // mesa para 4: se agranda la siguiente mesa de 2 del piso (el pad aparece sobre la mesa)
+  if (totalTables() >= BIG_UNLOCK) for (let f = 0; f < save.floors; f++) if (save.big[f] < save.tables[f]) { const i = save.big[f]; L.push({ kind: 'big', f, i, x: SLOTS[f][i][0], z: SLOTS[f][i][1], lift: 32, title: 'Mesa para 4', price: bigCost(totalBig()) }); }
+  if (eventOn('apagon') && !save.generator) L.push({ kind: 'gen', f: 0, x: GEN_POS.x, z: GEN_POS.z, title: 'Generador', price: GENERATOR_COST });
+  if (save.stations < 6) L.push({ kind: 'station', f: 0, i: save.stations, x: STATION_X[save.stations], z: -238, title: 'Cocina ' + (save.stations + 1), price: STATION_COST[save.stations] });
+  if (save.floors < 3) { const f = save.floors - 1; if (save.tables[f] >= 6) L.push({ kind: 'floor', f, x: stairX(f), z: -200, title: save.floors === 1 ? 'Segundo piso' : 'Terraza', price: FLOOR_COST[save.floors] }); }
+  if (!save.drive && totalTables() >= 5) L.push({ kind: 'drive', f: 0, x: -620, z: 300, title: 'Drive-thru', price: DRIVE_COST });
+  if (save.motos < 3 && totalTables() >= 4) L.push({ kind: 'moto', f: 0, x: 620, z: 180 + save.motos * 80, title: save.motos ? 'Otra moto' : 'Delivery', price: save.motos ? MOTO_COST : DELIVERY_COST });
+  return L;
+}
+let padKey = '';
+function refreshPads(force) {
+  const L = padList();
+  const key = L.map(p => p.kind + p.f + p.i + p.price + (save.money >= p.price)).join('|');
+  if (key === padKey && !force) return; padKey = key;
+  for (const p of WLD.pads) if (p.m.parent) p.m.parent.remove(p.m);
+  WLD.pads = L.map(pd => { const m = makePad(pd.kind, pd.title, pd.price); m.position.set(pd.x, floorY(pd.f) + 1 + (pd.lift || 0), pd.z); WLD.root.add(m); return Object.assign(pd, { m, dwell: 0 }); });
+}
+function buy(pd) {
+  if (save.money < pd.price) { SFX.no(); toast('<b>Te faltan ' + soles(pd.price - save.money) + '</b><small>Sirve más platos y cobra la caja.</small>'); return false; }
+  save.money -= pd.price;
+  if (pd.kind === 'table') { save.tables[pd.f]++; syncTables(); addTableModel(pd.f, pd.i, true); banner('¡Nueva mesa!'); }
+  else if (pd.kind === 'big') { save.big[pd.f]++; syncTables(); upgradeTableModel(pd.f, pd.i); banner('¡Mesa para 4!', 'Ahora también vienen grupos de 3 y 4 personas.'); }
+  else if (pd.kind === 'gen') { buyGenerator(); }
+  else if (pd.kind === 'station') { save.stations++; addStationModel(pd.i, true); banner('¡Nueva estación de cocina!', 'Contrata un cocinero en Personal para usarla.'); }
+  else if (pd.kind === 'floor') { save.floors++; save.tables[save.floors - 1] = 2; rebuildAll(); syncTables(); viewFloor = save.floors - 1; WLD.tables[save.floors - 1].forEach((t, k) => popIn(t, 0.2 + k * 0.15)); dust(0, floorY(save.floors - 1), 0); dust(-300, floorY(save.floors - 1), 200); dust(300, floorY(save.floors - 1), -100); banner(save.floors === 2 ? '¡Segundo piso construido!' : '¡Terraza construida!', 'Tus mozos suben por la escalera. Contrata más.'); }
+  else if (pd.kind === 'drive') { save.drive = true; const d = makeDriveThru(); WLD.root.add(d); popIn(d); banner('¡Drive-thru abierto!', 'Contrata a alguien para la ventanilla, o atiende tú.'); }
+  else if (pd.kind === 'moto') { save.motos++; addMotoModel(save.motos - 1, true); banner(save.motos === 1 ? '¡Delivery abierto!' : '¡Nueva moto!', 'Contrata un motorizado en Personal.'); }
+  SFX.build(); shake = 8; gainXP(XP.buy); const sp = proj(pd.x, floorY(pd.f) + 30, pd.z); if (sp) { sparkle(sp.x, sp.y, 26, '#19D46E'); confetti(sp.x, sp.y, 24, 0.8); }
+  persist(); refreshPads(true); goalCheck(); return true;
+}
+// Cambia el modelo de una mesa por el de su nuevo tamaño sin perder lo que pasa encima
+function upgradeTableModel(f, i) {
+  const old = WLD.tables[f][i]; if (old && old.parent) old.parent.remove(old);
+  const tm = addTableModel(f, i, true), t = SIM.tables.find(q => q.f === f && q.i === i);
+  if (!t) return;
+  tm.userData.dirty.visible = t.dirty;
+  if (t.party) {
+    t.party.members.forEach((m, k) => { if (m.seated) { const sp = seatPos(t, m.seat); m.x = sp.x; m.z = sp.z; m.ang = sp.ang; } if (m.served && m.dishes && tm.userData.food[k]) { setFood(tm.userData.food[k], m.dishes[0]); tm.userData.food[k].visible = true; } });
+  }
+}
+function rebuildAll() {
+  rebuildWorld();
+  for (const p of SIM.people) WLD.root.add(p.model);
+  for (const c of SIM.cars) WLD.root.add(c.m);
+  for (const t of SIM.tables) { const tm = WLD.tables[t.f] && WLD.tables[t.f][t.i]; if (tm) tm.userData.dirty.visible = t.dirty; }
+  for (const o of SIM.orders) if (o.plateM) WLD.floors[0].add(o.plateM);
+  for (let f = 0; f < 3; f++) for (const s of SIM.dirt[f]) if (WLD.floors[f]) WLD.floors[f].add(s.m);
+  refreshPads(true);
+}
+
+function buyGenerator(pay) {
+  if (save.generator) return false;
+  if (pay) { if (save.money < GENERATOR_COST) { SFX.no(); toast('<b>Te faltan ' + soles(GENERATOR_COST - save.money) + '</b>'); return false; } save.money -= GENERATOR_COST; SFX.build(); }
+  save.generator = true; addGeneratorModel(true); banner('¡Generador listo!', 'Aunque se vaya la luz, la cocina seguirá.'); persist(); refreshPads(true); return true;
+}
+
+/* ---------- avisos ---------- */
+let toastT = 0, shake = 0;
+function toast(html, kind) { const el = $('#toast'); el.dataset.kind = kind || ''; el.innerHTML = '<i class="tico"></i><div>' + html + '</div>'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2600); }
+function banner(t, sub) { const el = $('#banner'); el.innerHTML = '<b>' + esc(t) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : ''); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
+function goalCheck() { const d = checkGoals(); if (d.length) { gainXP(XP.goal * d.length); setTimeout(() => { toast('<small>¡Meta cumplida!</small><b>' + esc(d[0].t) + '</b><em>+' + soles(d[0].r) + ' · +' + XP.goal + ' fama</em>', 'goal'); SFX.cash(); const tt = elCenter($('#toast')); confetti(tt.x, tt.y, 40); }, 400); persist(); } }
+
+/* ---------- paneles ---------- */
+const PANELS = { chain: 'Mi cadena', staff: 'Personal', carta: 'Carta', decor: 'Decoración', reviews: 'Reseñas', goals: 'Metas', options: 'Opciones' };
+const PANEL_SUB = { chain: 'Tus locales en Lima', staff: 'Tu equipo y sus sueldos', carta: 'Platos, recetas y precios', decor: 'El ambiente suma estrellas', reviews: 'Lo que dicen tus clientes', goals: 'Cumple metas y gana fama', options: 'Ajustes del juego' };
+const PANEL_COLOR = { chain: '#7B3FF2', staff: '#2E6BFF', carta: '#FF7A1A', decor: '#FF2E88', reviews: '#E0A800', goals: '#19A35A', options: '#6A6474' };
+function openPanel(k) {
+  panel = panel === k ? null : k; SFX.click(); renderPanel();
+  const el = $('#panel'); el.classList.remove('enter'); if (panel) { void el.offsetWidth; el.classList.add('enter'); clearTimeout(openPanel.t); openPanel.t = setTimeout(() => el.classList.remove('enter'), 900); }
+}
+function renderPanel() {
+  const el = $('#panel');
+  document.querySelectorAll('[data-panel]').forEach(b => b.classList.toggle('on', b.dataset.panel === panel));
+  if (!panel) { el.hidden = true; return; }
+  el.hidden = false;
+  el.style.setProperty('--pc', PANEL_COLOR[panel]);
+  const ico = document.querySelector('[data-panel="' + panel + '"] svg');
+  let h = '<div class="ph"><span class="pico">' + (ico ? ico.outerHTML : '') + '</span><div class="pt"><h2>' + PANELS[panel] + '</h2><small>' + PANEL_SUB[panel] + '</small></div><button class="x" id="pclose" aria-label="Cerrar">✕</button></div><div class="pb">';
+  if (panel === 'chain') {
+    const L = chainList(), best = Math.max(...L.map(c => c.rating)), unlocked = best >= CHAIN_RATING;
+    h += '<p class="note">Tu plata es una sola para todos los locales. Los que no estás mirando siguen vendiendo con su personal (rinden un ' + Math.round(BG_SHARE * 100) + ' %).</p>';
+    L.forEach((c, i) => {
+      const D = DISTRICTS[c.district] || DISTRICTS.centro, here = i === save.active, nT = c.tables[0] + c.tables[1] + c.tables[2];
+      h += '<div class="card loc' + (here ? ' here' : '') + '"><div class="ci"><b>' + esc(c.name) + '</b><span>' + D.name + ' · ' + c.rating.toFixed(1) + ' ★ · ' + nT + ' mesas</span><small>' + (here ? 'Estás aquí' : 'Gana unos ' + soles(localeDaily(c) * BG_SHARE) + ' por día sin ti') + '</small></div><div class="ca">' +
+        (here ? '<span class="need ok">Aquí</span>' : '<button class="b g" data-go="' + i + '">Ir</button>') + '</div></div>';
+    });
+    const open = L.map(c => c.district), cost = OPEN_COST[Math.min(L.length, OPEN_COST.length - 1)];
+    const left = Object.keys(DISTRICTS).filter(k => !open.includes(k));
+    if (left.length) {
+      h += '<h3 class="sub">Abrir un nuevo local</h3>';
+      if (!unlocked || save.money < CHAIN_MONEY) h += '<p class="note">Para crecer necesitas un local con <b>' + CHAIN_RATING + ' ★</b> (tu mejor: ' + best.toFixed(1) + ') y <b>' + soles(CHAIN_MONEY) + '</b> en la mano (tienes ' + soles(save.money) + ').</p>';
+      for (const k of left) { const D = DISTRICTS[k], can = unlocked && save.money >= Math.max(CHAIN_MONEY, cost); h += '<div class="card' + (can ? '' : ' lock') + '"><div class="ci"><b>' + D.name + '</b><span>' + D.desc + '</span><small>' + (D.priceMul > 1 ? 'Pagan ' + Math.round((D.priceMul - 1) * 100) + ' % más' : 'Precios ' + Math.round((1 - D.priceMul) * 100) + ' % más bajos') + ' · ' + (D.flow > 1.2 ? 'mucha gente' : D.dinner > 1.5 ? 'fuerte en la cena' : 'exigen decoración') + '</small></div><div class="ca"><button class="b g" data-open="' + k + '"' + (can ? '' : ' disabled') + '>Abrir ' + soles(cost) + '</button></div></div>'; }
+    }
+  } else if (panel === 'staff') {
+    for (const k of ROLE_KEYS) {
+      const R = ROLES[k], n = save.staff[k] || 0, mx = roleMax(k), lv = save.train[k] || 0;
+      const lock = mx === 0;
+      h += '<div class="card' + (lock ? ' lock' : '') + '"><div class="ci"><b>' + R.name + ' <em>' + n + '/' + mx + '</em></b><span>' + R.desc + '</span><small>Sueldo ' + soles(R.wage) + ' por día. Nivel de entrenamiento ' + lv + '/4</small></div><div class="ca">' +
+        (lock ? '<span class="need">' + (k === 'ventana' ? 'Abre el drive-thru' : k === 'repartidor' ? 'Abre el delivery' : 'Compra más estaciones') + '</span>' :
+          '<button class="b g" data-hire="' + k + '"' + (n >= mx || save.money < R.hire ? ' disabled' : '') + '>Contratar ' + soles(R.hire) + '</button>' +
+          (lv < 4 ? '<button class="b" data-train="' + k + '"' + (n === 0 || save.money < TRAIN_COST(lv) ? ' disabled' : '') + '>Entrenar ' + soles(TRAIN_COST(lv)) + '</button>' : '<span class="need ok">Experto</span>') +
+          (n > 0 && !(k === 'cocinero' && n === 1) ? '<button class="b s" data-fire="' + k + '">Despedir</button>' : '')) + '</div></div>';
+    }
+  } else if (panel === 'carta') {
+    h += '<div class="seg">' + Object.keys(PRICE_LVL).map(k => '<button data-price="' + k + '" class="' + (save.price === k ? 'on' : '') + '">' + PRICE_LVL[k].name + '</button>').join('') + '</div><p class="note">Precios bajos traen más clientes; precios altos dejan más plata pero bajan la nota de la carta.</p>';
+    for (const d of DISHES) {
+      const has = save.menu.includes(d.id), lv = recipeLvl(d.id), uc = Math.round(d.price * 22 * (lv + 1));
+      h += '<div class="card dish"><i class="dot" style="background:' + d.col + '"></i><div class="ci"><b>' + d.name + ' <em>' + soles(dishPrice(d.id)) + '</em></b><small>' + (has ? 'En la carta. Receta nivel ' + lv + '/3. Cocción ' + d.cook + ' s.' : 'Nuevo plato para tu carta.') + '</small></div><div class="ca">' +
+        (has ? (lv < 3 ? '<button class="b" data-recipe="' + d.id + '"' + (save.money < uc ? ' disabled' : '') + '>Mejorar ' + soles(uc) + '</button>' : '<span class="need ok">Receta maestra</span>') + (save.menu.length > 1 ? '<button class="b s" data-drop="' + d.id + '">Quitar</button>' : '')
+          : '<button class="b g" data-add="' + d.id + '"' + (save.money < d.unlock ? ' disabled' : '') + '>' + (d.unlock ? 'Agregar ' + soles(d.unlock) : 'Agregar') + '</button>') + '</div></div>';
+    }
+  } else if (panel === 'decor') {
+    h += '<div class="seg">' + Array.from({ length: save.floors }, (_, f) => '<button data-dfloor="' + f + '" class="' + (decorFloor === f ? 'on' : '') + '">Piso ' + (f + 1) + '</button>').join('') + '</div>';
+    const f = decorFloor, d = save.decor[f] || (save.decor[f] = {});
+    h += '<p class="note">Nota de decoración del piso ' + (f + 1) + ': <b>' + decoScore(f).toFixed(1) + ' / 5</b>. Más mesas piden más decoración.</p>';
+    for (const it of DECOR) {
+      if (it.floor0 && f !== 0) continue;
+      if (f === 2 && ['cuadro', 'lampara', 'pintura', 'acuario'].includes(it.id)) continue;
+      const n = d[it.id] || 0, full = n >= it.max;
+      h += '<div class="card"><div class="ci"><b>' + it.name + ' <em>' + n + '/' + it.max + '</em></b><span>' + it.desc + ' (+' + it.pts + ' de ambiente)</span></div><div class="ca"><button class="b g" data-decor="' + it.id + '"' + (full || save.money < it.cost ? ' disabled' : '') + '>' + (full ? 'Listo' : 'Comprar ' + soles(it.cost)) + '</button></div></div>';
+      if (it.id === 'pintura' && n > 0) h += '<div class="swrow">' + WALL_COLORS.map(c => '<button class="sw' + (save.wall[f] === c ? ' on' : '') + '" style="--c:' + c + '" data-wall="' + c + '" aria-label="Color"></button>').join('') + '</div>';
+    }
+  } else if (panel === 'reviews') {
+    const R = save.reviews.slice(0, 20), avg = k => R.length ? R.reduce((a, r) => a + r[k], 0) / R.length : 3;
+    h += '<div class="rbig"><b>' + save.rating.toFixed(1) + '</b><span>' + starStr(save.rating) + '</span><small>' + save.stats.customers + ' clientes atendidos</small></div>';
+    for (const [k, n] of [['food', 'Comida'], ['carta', 'Carta'], ['deco', 'Decoración'], ['clean', 'Limpieza']]) { const v = avg(k); h += '<div class="rbar"><span>' + n + '</span><div><i style="width:' + (v / 5 * 100).toFixed(0) + '%;background:' + (v >= 4 ? '#19D46E' : v >= 3 ? '#FFE14D' : '#FF6B6B') + '"></i></div><em>' + v.toFixed(1) + '</em></div>'; }
+    h += '<div class="rlist">' + (R.length ? R.map(r => '<div class="rv' + (r.critic ? ' critic' : '') + '"><b>' + esc(r.name) + '</b><span>' + starStr(r.stars) + '</span><p>“' + esc(r.text) + '”</p></div>').join('') : '<p class="note">Todavía no hay reseñas.</p>') + '</div>';
+  } else if (panel === 'goals') {
+    const nd = GOALS.filter(g => save.goals.includes(g.id)).length;
+    h += '<div class="gprog"><div><b>' + nd + ' de ' + GOALS.length + '</b> metas cumplidas</div><div class="xpbar"><i style="width:' + (nd / GOALS.length * 100).toFixed(0) + '%"></i></div></div>';
+    h += '<div class="fama"><span class="fl">' + save.level + '</span><div><b>' + esc(famaTitle(save.level)) + '</b><small>Fama ' + save.xp + ' / ' + xpNeed(save.level) + ' · próximo nivel +' + soles(levelReward(save.level + 1)) + '</small><div class="xpbar"><i style="width:' + (clamp(save.xp / xpNeed(save.level), 0, 1) * 100).toFixed(0) + '%"></i></div></div></div>';
+    h += GOALS.map(g => '<div class="goal' + (save.goals.includes(g.id) ? ' done' : '') + '"><span>' + esc(g.t) + '</span><em>' + (save.goals.includes(g.id) ? 'Listo' : '+' + soles(g.r)) + '</em></div>').join('');
+  } else if (panel === 'options') {
+    h += '<div class="card"><div class="ci"><b>Nombre del restaurante</b></div></div><div class="nrow"><input id="rname" maxlength="26" value="' + esc(save.name) + '"><button class="b g" id="rname-ok">Cambiar</button></div>';
+    h += '<div class="card"><div class="ci"><b>Calidad gráfica</b><span>Baja anda fluido en cualquier celular. Alta usa sombras suaves y desenfoque de maqueta.</span></div></div><div class="seg">' + Object.keys(QUALITIES).map(k => '<button data-q="' + k + '" class="' + (QUALITY === k ? 'on' : '') + '">' + QUALITIES[k].name + '</button>').join('') + '</div>';
+    h += '<div class="card"><div class="ci"><b>Música</b></div><div class="ca"><button class="b" data-tog="music">' + (save.music ? 'Sí' : 'No') + '</button></div></div>';
+    h += '<div class="card"><div class="ci"><b>Sonidos</b></div><div class="ca"><button class="b" data-tog="sfx">' + (save.sfx ? 'Sí' : 'No') + '</button></div></div>';
+    h += '<div class="card"><div class="ci"><b>Empezar de cero</b><span>Borra todo tu progreso.</span></div><div class="ca"><button class="b s" id="reset">Borrar</button></div></div>';
+  }
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('.pb > *').forEach((c, i) => c.style.setProperty('--i', Math.min(i, 14)));
+  el.querySelector('#pclose').onclick = () => openPanel(panel);
+  el.querySelectorAll('[data-hire]').forEach(b => b.onclick = () => { const k = b.dataset.hire; if (save.money < ROLES[k].hire) return; save.money -= ROLES[k].hire; save.staff[k] = (save.staff[k] || 0) + 1; syncStaff(); SFX.build(); toast('<b>¡Contrataste un ' + ROLES[k].name.toLowerCase() + '!</b>'); goalCheck(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-fire]').forEach(b => b.onclick = () => { const k = b.dataset.fire; save.staff[k]--; const p = SIM.people.filter(q => q.role === k).pop(); if (p) { if (p.job && p.job.claimed === p) p.job.claimed = null; if (p.job && p.job.waiter === p) p.job.waiter = null; if (p.job && p.job.t) p.job.t.cleaner = null; if (p.job && p.job.s) p.job.s.cleaner = null; if (p.carry) { p.carry.claimed = null; p.carry.status = 'ready'; } removePerson(p); } SFX.click(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-train]').forEach(b => b.onclick = () => { const k = b.dataset.train, c = TRAIN_COST(save.train[k] || 0); if (save.money < c) return; save.money -= c; save.train[k] = (save.train[k] || 0) + 1; SFX.build(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-price]').forEach(b => b.onclick = () => { save.price = b.dataset.price; SFX.click(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const d = DISH[b.dataset.add]; if (save.money < d.unlock) return; save.money -= d.unlock; save.menu.push(d.id); SFX.build(); toast('<b>' + d.name + ' ya está en la carta</b>'); goalCheck(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-drop]').forEach(b => b.onclick = () => { save.menu = save.menu.filter(x => x !== b.dataset.drop); SFX.click(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-recipe]').forEach(b => b.onclick = () => { const id = b.dataset.recipe, lv = recipeLvl(id), c = Math.round(DISH[id].price * 22 * (lv + 1)); if (save.money < c) return; save.money -= c; save.recipe[id] = lv + 1; SFX.build(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-dfloor]').forEach(b => b.onclick = () => { decorFloor = +b.dataset.dfloor; renderPanel(); });
+  el.querySelectorAll('[data-decor]').forEach(b => b.onclick = () => {
+    const it = DECOR.find(x => x.id === b.dataset.decor), f = decorFloor, d = save.decor[f];
+    if (save.money < it.cost || (d[it.id] || 0) >= it.max) return;
+    save.money -= it.cost; d[it.id] = (d[it.id] || 0) + 1;
+    if (it.id === 'piso' || it.id === 'pintura') { if (it.id === 'pintura') save.wall[f] = pick(WALL_COLORS.slice(0, 5)); rebuildAll(); }
+    else addDecorModel(it.id, f, d[it.id] - 1, true);
+    SFX.build(); renderPanel(); persist();
+  });
+  el.querySelectorAll('[data-wall]').forEach(b => b.onclick = () => { save.wall[decorFloor] = b.dataset.wall; rebuildAll(); SFX.click(); renderPanel(); persist(); });
+  el.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { const k = b.dataset.tog; save[k] = !save[k]; setGains(); renderPanel(); persist(); });
+  const rn = el.querySelector('#rname-ok'); if (rn) rn.onclick = () => { const v = el.querySelector('#rname').value.trim().slice(0, 26); if (v) { save.name = v; rebuildAll(); persist(); SFX.build(); renderPanel(); } };
+  el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { if (b.dataset.q === QUALITY) return; save.quality = b.dataset.q; persist(); try { sessionStorage.setItem('sazon_autostart', '1'); } catch (e) { } location.reload(); });
+  el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => switchLocal(+b.dataset.go));
+  el.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openLocal(b.dataset.open));
+  const rs = el.querySelector('#reset'); if (rs) rs.onclick = () => { if (rs.dataset.a) { localStorage.removeItem(SAVE_KEY); location.reload(); } else { rs.dataset.a = 1; rs.textContent = '¿Seguro?'; } };
+}
+// Cambia al local i: guarda el actual, carga el otro y reconstruye el mundo
+function switchLocal(i, isNew) {
+  if (i === save.active) return;
+  save.chain[save.active] = snapshotLocal(); save.active = i; applyLocal(save.chain[i]);
+  resetSim(); rebuildWorld(); syncTables(); syncStaff(); makeAvatar(); refreshPads(true);
+  viewFloor = 0; decorFloor = 0; panel = null; renderPanel(); updateLighting.k = null;
+  SFX.build(); persist();
+  banner(isNew ? '¡Nuevo local en ' + DIST().name + '!' : save.name, isNew ? DIST().desc : DIST().name + ' · ' + save.rating.toFixed(1) + ' ★');
+}
+function openLocal(k) {
+  const cost = OPEN_COST[Math.min(save.chain.length, OPEN_COST.length - 1)];
+  if (Math.max(...chainList().map(c => c.rating)) < CHAIN_RATING || save.money < Math.max(CHAIN_MONEY, cost)) { SFX.no(); return; }
+  save.money -= cost; save.chain[save.active] = snapshotLocal(); save.chain.push(newLocal(k));
+  switchLocal(save.chain.length - 1, true); goalCheck();
+}
+function starStr(v) { const n = Math.round(v); return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+/* ---------- tutorial del primer día ---------- */
+// Cada paso: texto, cuándo está hecho y a dónde apunta la flecha ({x, y, z} en el mundo o un botón de la interfaz)
+const TUT = [
+  { t: 'Una mesa te está llamando. Camina hasta ella para anotar su pedido.', wait: 'Ya vienen tus primeros clientes. Cuando una mesa te llame, camina hasta ella para anotar su pedido.', done: () => save.stats.ordersTaken >= 1, at: () => { const t = SIM.tables.find(q => q.party && q.party.state === 'callWaiter'); return t ? { x: t.x, y: floorY(t.f) + 70, z: t.z } : null; } },
+  { t: 'Cuando el cocinero termine, recoge el plato en la barra y llévalo a su mesa.', done: () => save.stats.served >= 1, at: () => { const a = SIM.avatar; if (a && a.carry && a.carry.kind === 'table') { const t = a.carry.ref.table; return { x: t.x, y: floorY(t.f) + 70, z: t.z }; } const o = SIM.orders.find(q => q.status === 'ready' && q.kind === 'table'); if (o) { const pp = pickPoint(o); return { x: pp.x, y: 60, z: PASS_Z }; } return { x: -120, y: 60, z: PASS_Z }; } },
+  { t: 'La mesa quedó sucia. Párate junto a ella para limpiarla.', wait: 'Cuando terminen de comer, la mesa quedará sucia y tendrás que limpiarla.', done: () => save.stats.cleaned >= 1, at: () => { const t = SIM.tables.find(q => q.dirty); return t ? { x: t.x, y: floorY(t.f) + 60, z: t.z } : null; } },
+  { t: 'La plata se junta en la caja. Camina hasta la caja (o tócala) para cobrar.', wait: 'Cuando los clientes paguen, la plata se juntará en la caja.', done: () => save.stats.collected >= 1, at: () => save.register > 0 ? { x: REG.x, y: 110, z: REG.z } : null },
+  { t: 'Pisa el círculo verde de "Mesa nueva" para comprar otra mesa.', done: () => totalTables() >= 3, at: () => { const p = WLD.pads.find(q => q.kind === 'table'); return p ? { x: p.x, y: floorY(p.f) + 40, z: p.z } : null; } },
+  { t: 'Abre Personal y contrata un mozo: anotará pedidos y llevará platos por ti.', done: () => (save.staff.mozo || 0) >= 1, at: () => ({ ui: panel === 'staff' ? '[data-hire="mozo"]' : '[data-panel="staff"]' }), extra: () => save.money < ROLES.mozo.hire ? ' Junta ' + soles(ROLES.mozo.hire) + ' sirviendo más mesas.' : '' },
+];
+let tutTarget = null;
+function updateTutorial() {
+  const el = $('#tut'), on = save.tutorial >= 0 && playing;
+  el.hidden = !on; tutTarget = null;
+  document.querySelectorAll('.tut-glow').forEach(b => b.classList.remove('tut-glow'));
+  if (!on) return;
+  while (save.tutorial < TUT.length && TUT[save.tutorial].done()) { save.tutorial++; if (save.tutorial < TUT.length) SFX.coin(); }
+  if (save.tutorial >= TUT.length) { save.tutorial = -1; save.money += 50; el.hidden = true; banner('¡Tutorial completo!', 'Te ganaste S/ 50. Ahora haz crecer tu restaurante.'); SFX.cash(); persist(); return; }
+  const st = TUT[save.tutorial];
+  $('#tut-n').textContent = 'Paso ' + (save.tutorial + 1) + ' de ' + TUT.length;
+  const tg = st.at();
+  $('#tut-t').textContent = (!tg && st.wait ? st.wait : st.t) + (st.extra ? st.extra() : ''); if (tg && tg.ui) { const b = document.querySelector(tg.ui); if (b) b.classList.add('tut-glow'); } else tutTarget = tg;
+}
+$('#tut-skip').addEventListener('click', () => { save.tutorial = -1; SFX.click(); persist(); updateTutorial(); });
+// Flecha que rebota sobre el objetivo; si está fuera de pantalla, se queda en el borde apuntando hacia él
+function drawTutArrow() {
+  if (!tutTarget) return;
+  const s = proj(tutTarget.x, tutTarget.y, tutTarget.z); if (!s) return;
+  const m = 40, x = clamp(s.x, m, W - m), y = clamp(s.y, m + 70, H - m), off = x !== s.x || y !== s.y;
+  const bob = REDUCED ? 0 : Math.sin(SIM.t * 6) * 6;
+  ctx.save(); ctx.translate(x, y);
+  if (off) ctx.rotate(Math.atan2(s.y - y, s.x - x) - Math.PI / 2); else ctx.translate(0, -18 + bob);
+  ctx.fillStyle = '#FFE14D'; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 16); ctx.lineTo(-16, -4); ctx.lineTo(-7, -4); ctx.lineTo(-7, -22); ctx.lineTo(7, -22); ctx.lineTo(7, -4); ctx.lineTo(16, -4); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  if (!off && !REDUCED) { const k = (SIM.t * 1.2) % 1; ctx.strokeStyle = 'rgba(255,225,77,' + (1 - k).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 20, 18 + k * 26, 7 + k * 10, 0, 0, 7); ctx.stroke(); }
+}
+
+/* ---------- HUD ---------- */
+let hudT = 0;
+function updateHUD(dt) {
+  hudT -= dt; if (hudT > 0) return; hudT = 0.15;
+  const need = xpNeed(save.level), pr = clamp(save.xp / need, 0, 1);
+  $('#h-lvl').textContent = save.level; $('#h-title').textContent = famaTitle(save.level); $('#h-xp').style.strokeDashoffset = (113.1 * (1 - pr)).toFixed(1);
+  $('#c-lvl').title = 'Fama: ' + save.xp + ' / ' + need + ' para el nivel ' + (save.level + 1);
+  const reg = $('#h-reg'); reg.textContent = save.register > 0 ? 'Caja: ' + soles(save.register) : 'Caja vacía'; reg.classList.toggle('hot', save.register >= 40 && !(save.staff.cajero > 0));
+  const h = hourNow(), hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15;
+  $('#h-clock').textContent = hh + ':' + String(mm).padStart(2, '0');
+  $('#h-day').textContent = 'Día ' + save.day + (save.chain.length > 1 ? ' · ' + DIST().short : '') + (h >= 12.5 && h < 15 ? ', almuerzo' : h >= 19 && h < 21.5 ? ', cena' : h >= 22.6 ? ', cerrando' : '');
+  const ev = save.event && save.event.day === save.day ? EVENTS[save.event.id] : null, he = $('#h-ev');
+  he.hidden = !ev; if (ev) { he.textContent = ev.short + (SIM.blackout ? ': sin luz' : ''); he.style.background = ev.color; }
+  $('#h-dayfill').style.width = (save.dayT / DAY_LEN * 100).toFixed(1) + '%';
+  $('#h-rating').textContent = save.rating.toFixed(1); $('#h-stars').textContent = starStr(save.rating);
+  const eat = SIM.tables.filter(t => t.party).length; $('#h-busy').textContent = eat + '/' + SIM.tables.length + ' mesas';
+  $('#h-speed').textContent = 'x' + save.speed;
+  document.querySelectorAll('[data-floor]').forEach(b => { const f = +b.dataset.floor; b.hidden = f >= save.floors; b.classList.toggle('on', f === viewFloor); });
+  $('#floors').hidden = save.floors < 2;
+  $('#b-chain').hidden = !(save.chain.length > 1 || save.rating >= 4 || save.money >= 10000);
+  if (!save.chainTold && save.chain.length < 4 && save.rating >= CHAIN_RATING && save.money >= CHAIN_MONEY) { save.chainTold = true; banner('¡Ya puedes abrir otro local!', 'Entra a Mi cadena y elige un distrito.'); SFX.cash(); }
+  // pista contextual
+  const a = SIM.avatar, ready = SIM.orders.filter(o => o.status === 'ready' && !o.claimed && o.kind !== 'delivery').length;
+  let hint = '';
+  if (SIM.blackout) hint = 'Se fue la luz y la cocina está parada. Compra el generador (círculo junto a la cocina).';
+  else if (a && a.carry) hint = a.carry.kind === 'drive' ? 'Lleva el pedido a la ventanilla del drive-thru.' : 'Lleva el plato a la mesa que lo pidió.';
+  else if (SIM.tables.some(t => t.party && t.party.state === 'callWaiter') && !(save.staff.mozo > 0)) hint = 'Una mesa quiere pedir. Acércate para anotar su pedido, o contrata un mozo.';
+  else if (ready && !(save.staff.mozo > 0)) hint = 'Hay ' + ready + (ready === 1 ? ' plato listo' : ' platos listos') + ' en la barra. Recógelo y llévalo a la mesa.';
+  else if (SIM.tables.some(t => t.dirty) && !(save.staff.limpiador > 0)) hint = 'Hay mesas sucias. Acércate a limpiarlas o contrata un limpiador.';
+  else if (save.register >= 40 && !(save.staff.cajero > 0)) hint = 'Tu caja tiene plata. Ve a cobrarla (o toca la caja).';
+  else if (SIM.queue.length >= 2) hint = 'Hay cola en la puerta: compra más mesas.';
+  else { const pd = WLD.pads.find(p => save.money >= p.price); if (pd) hint = 'Ya puedes comprar: ' + pd.title + ' (pisa el círculo verde o tócalo).'; }
+  updateTutorial();
+  $('#hint').textContent = hint; $('#hint').hidden = !hint || save.tutorial >= 0;
+  if (panel === 'staff' || panel === 'carta' || panel === 'decor' || panel === 'chain') { const t2 = Math.floor(save.money / 10); if (t2 !== renderPanel._m) { renderPanel._m = t2; renderPanel(); } }
+}
+
+/* ---------- controles ---------- */
+const keys = {};
+window.addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  keys[e.code] = true;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code) && playing) e.preventDefault();
+  if (e.code === 'KeyQ') CAM.yawT -= 0.4; if (e.code === 'KeyE') CAM.yawT += 0.4;
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+function readMove() {
+  MOVE.x = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  MOVE.z = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
+  if (joy.on) { MOVE.x = joy.x; MOVE.z = joy.y; }
+}
+const joy = { on: false, x: 0, y: 0 };
+const ptrs = new Map(); let drag = null, pinch0 = 0;
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+cv3.addEventListener('pointerdown', e => { if (!playing) return; audioInit(); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (ptrs.size === 1) { drag = { x: e.clientX, y: e.clientY, yaw: CAM.yawT, tilt: CAM.tiltT, moved: false, lx: e.clientX, lt: performance.now() }; CAM.yawV = 0; } if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); drag = null; } cv3.setPointerCapture(e.pointerId); });
+cv3.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) CAM.distT = clamp(CAM.distT * pinch0 / d, CAM.zMin, CAM.zMax); pinch0 = d; return; }
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) > 7 || Math.abs(dy) > 7) drag.moved = true;
+    if (drag.moved) {
+      CAM.yawT = drag.yaw - dx * 0.006; CAM.tiltT = clamp(drag.tilt + dy * 0.0025, -0.3, 0.3);
+      const now = performance.now(), ddt = Math.max(1, now - drag.lt) / 1000; CAM.yawV = lerp(CAM.yawV, -(e.clientX - drag.lx) * 0.006 / ddt, 0.5); drag.lx = e.clientX; drag.lt = now;
+    }
+  }
+});
+cv3.addEventListener('pointerup', e => { ptrs.delete(e.pointerId); if (drag && !drag.moved && ptrs.size === 0) tap(e.clientX, e.clientY); if (drag && performance.now() - drag.lt > 80) CAM.yawV = 0; if (ptrs.size === 0) drag = null; pinch0 = 0; });
+cv3.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); drag = null; });
+cv3.addEventListener('wheel', e => { e.preventDefault(); CAM.distT = clamp(CAM.distT * (1 + clamp(e.deltaY, -100, 100) * 0.0015), CAM.zMin, CAM.zMax); }, { passive: false });
+function tap(cx, cy) {
+  const r = cv3.getBoundingClientRect(); ndc.set((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const padHits = ray.intersectObjects(WLD.pads.filter(p => p.f === viewFloor).map(p => p.m), true);
+  if (padHits.length) { let o = padHits[0].object; while (o && !WLD.pads.find(p => p.m === o)) o = o.parent; const pd = WLD.pads.find(p => p.m === o); if (pd) { buy(pd); return; } }
+  if (WLD.money && viewFloor === 0) { const regHit = ray.intersectObject(WLD.money.parent, true); if (regHit.length) { if (save.register > 0) collectRegister(false); goalCheck(); return; } }
+  const pl = new THREE.Plane(new THREE.Vector3(0, 1, 0), -floorY(viewFloor)); const pt = new THREE.Vector3();
+  if (ray.ray.intersectPlane(pl, pt) && SIM.avatar) {
+    const f = viewFloor; let x = clamp(pt.x, -485, 485), z = clamp(pt.z, f === 0 ? -180 : -385, f === 0 ? 420 : 385);
+    route(SIM.avatar, x, z, f);
+    marker.position.set(x, floorY(f) + 2, z); marker.visible = true; marker.userData.t = 0.8;
+  }
+}
+let marker;
+$('#joy').addEventListener('pointerdown', e => { joy.on = true; joy.id = e.pointerId; $('#joy').setPointerCapture(e.pointerId); moveJoy(e); });
+$('#joy').addEventListener('pointermove', e => { if (joy.on) moveJoy(e); });
+const endJoy = () => { joy.on = false; joy.x = joy.y = 0; $('#joy-k').style.transform = ''; };
+$('#joy').addEventListener('pointerup', endJoy); $('#joy').addEventListener('pointercancel', endJoy);
+function moveJoy(e) { const r = $('#joy').getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2; let dx = (e.clientX - cx) / (r.width / 2), dy = (e.clientY - cy) / (r.height / 2); const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } joy.x = Math.abs(dx) > 0.15 ? dx : 0; joy.y = Math.abs(dy) > 0.15 ? dy : 0; $('#joy-k').style.transform = 'translate(' + dx * 30 + 'px,' + dy * 30 + 'px)'; }
+
+/* ---------- render ---------- */
+const _v = new THREE.Vector3();
+function proj(x, y, z) { _v.set(x, y, z).project(camera); if (_v.z > 1) return null; return { x: (_v.x + 1) / 2 * W, y: (1 - _v.y) / 2 * H }; }
+function drawOverlay() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  // pedidos en espera
+  for (const t of SIM.tables) {
+    if (t.f !== viewFloor) continue;
+    if (t.party && (t.party.state === 'wait' || t.party.state === 'order' || t.party.state === 'callWaiter')) {
+      const s = proj(t.x, floorY(t.f) + 95, t.z); if (!s) continue;
+      const pa = t.party, txt = pa.state === 'order' ? '...' : pa.state === 'callWaiter' ? '¡Quiere pedir!' : (DISH[pa.dishes[0]].name + (pa.orders.length > 1 ? ' +' + (pa.orders.length - 1) : ''));
+      ctx.font = '800 12px Rubik, sans-serif'; const w = ctx.measureText(txt).width + 34;
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'; rr(s.x - w / 2, s.y - 13, w, 26, 13); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
+      const pc = clamp(pa.patience / 100, 0, 1); ctx.strokeStyle = pc > 0.5 ? '#19D46E' : pc > 0.25 ? '#FFB800' : '#FF3B30'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(s.x - w / 2 + 14, s.y, 7, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pc); ctx.stroke();
+      ctx.fillStyle = INK; ctx.fillText(txt, s.x + 8, s.y + 1);
+    } else if (t.dirty) { const s = proj(t.x, floorY(t.f) + 60, t.z); if (s) { ctx.font = '800 11px Rubik, sans-serif'; ctx.fillStyle = '#8B5E3C'; rr(s.x - 26, s.y - 10, 52, 20, 10); ctx.fill(); ctx.fillStyle = '#FFF'; ctx.fillText('Sucia', s.x, s.y + 1); } }
+  }
+  drawStaffIcons();
+  const ready = SIM.orders.filter(o => o.status === 'ready' && o.kind !== 'delivery').length;
+  if (ready && viewFloor === 0) { const s = proj(-120, 90, PASS_Z); if (s) { ctx.font = '800 13px Rubik, sans-serif'; const txt = ready + (ready === 1 ? ' plato listo' : ' platos listos'); const w = ctx.measureText(txt).width + 22; ctx.fillStyle = '#FFE14D'; rr(s.x - w / 2, s.y - 13, w, 26, 13); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = INK; ctx.fillText(txt, s.x, s.y + 1); } }
+  if (save.register > 0 && viewFloor === 0) { const s = proj(REG.x, 120, REG.z); if (s) { ctx.font = '700 15px ' + FONT_D; const txt = soles(save.register); const w = ctx.measureText(txt).width + 24; const bob = Math.sin(SIM.t * 5) * 3; ctx.fillStyle = '#19D46E'; rr(s.x - w / 2, s.y - 15 + bob, w, 30, 15); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1 + bob); } }
+  if (viewFloor === 0) for (const c of SIM.cars) if (c.state === 'in' && c.ordered) { const s = proj(-615, 80, c.z); if (s) { const pc = c.patience / 100; ctx.strokeStyle = pc > 0.5 ? '#19D46E' : pc > 0.25 ? '#FFB800' : '#FF3B30'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(s.x, s.y, 9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pc); ctx.stroke(); } }
+  for (const f of SIM.fx) {
+    let x = f.x, y = f.y, z = f.z;
+    if (f.type === 'fly') { if (f.t < 0) continue; const k = f.t / f.life; x = lerp(f.x, f.tx, k); z = lerp(f.z, f.tz, k); y = lerp(f.y, f.ty, k) + Math.sin(k * Math.PI) * 80; }
+    const s = proj(x, y, z); if (!s) continue;
+    if (f.type === 'dust') { ctx.fillStyle = 'rgba(200,190,170,' + (1 - f.t / f.life).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(s.x, s.y, 7 + f.t * 14, 0, 7); ctx.fill(); }
+    else { ctx.fillStyle = '#FFE14D'; ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, 7); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+  for (const t of SIM.texts) {
+    const s = proj(t.x, t.y, t.z); if (!s) continue;
+    const k = t.t / t.life; ctx.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
+    ctx.font = (t.size > 16 ? '700 ' + t.size + 'px ' + FONT_D : '800 ' + t.size + 'px Rubik, sans-serif');
+    // aparece con un pequeño rebote (escala 0 → 1.25 → 1)
+    const pk = REDUCED ? 1 : t.t < 0.12 ? t.t / 0.12 * 1.25 : t.t < 0.24 ? 1.25 - (t.t - 0.12) / 0.12 * 0.25 : 1;
+    ctx.save(); ctx.translate(s.x, s.y); ctx.scale(pk, pk);
+    ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.strokeText(t.text, 0, 0); ctx.fillStyle = t.color; ctx.fillText(t.text, 0, 0); ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  drawTutArrow();
+  drawJuice();
+  if (SIM.avatar && SIM.avatar.carry) { const a = SIM.avatar, s = proj(a.x, a.y + 65, a.z); if (s) { ctx.font = '800 12px Rubik, sans-serif'; ctx.fillStyle = '#FF2E88'; const txt = DISH[a.carry.dish].name; const w = ctx.measureText(txt).width + 18; rr(s.x - w / 2, s.y - 11, w, 22, 11); ctx.fill(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1); } }
+}
+// Qué está haciendo cada empleado, según su estado ('cook', 'plate', 'order', 'clean'); los que van en camino se ven más suaves
+function staffActivity(p) {
+  if (p.role === 'cocinero') return p.cooking ? ['cook', 1] : null;
+  if (p.carryM) return ['plate', 1];
+  if (p.role === 'mozo') return p.state === 'taking' ? ['order', 1] : p.state === 'toOrder' ? ['order', 0.55] : p.state === 'toPick' ? ['plate', 0.55] : null;
+  if (p.role === 'limpiador') return p.state === 'clean' ? ['clean', 1] : p.state === 'go' ? ['clean', 0.55] : null;
+  if (p.role === 'ventana' || p.role === 'repartidor') return p.state === 'toPick' ? ['plate', 0.55] : null;
+  return null;
+}
+const ICON_BG = { cook: '#FF7A1A', plate: '#FFE14D', order: '#FFFFFF', clean: '#6FC3E0' };
+function drawStaffIcons() {
+  for (const p of SIM.people) {
+    if (!ROLES[p.role] || !p.model || !p.model.visible || floorOfY(p.y) !== viewFloor) continue;
+    const act = staffActivity(p); if (!act) continue;
+    const s = proj(p.x, p.y + 64, p.z); if (!s) continue;
+    const y = s.y + (REDUCED ? 0 : Math.sin(SIM.t * 4 + p.id) * 2);
+    ctx.globalAlpha = act[1]; drawIcon(act[0], s.x, y); ctx.globalAlpha = 1;
+  }
+}
+// Iconos dibujados a mano (no dependen de emojis del sistema)
+function drawIcon(kind, x, y) {
+  ctx.fillStyle = ICON_BG[kind]; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, 13, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineCap = 'round';
+  if (kind === 'cook') { // sartén con vapor
+    ctx.beginPath(); ctx.ellipse(x - 2, y + 3, 6.5, 3.5, 0, 0, 7); ctx.fill();
+    ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + 4, y + 2); ctx.lineTo(x + 10, y - 1); ctx.stroke();
+    ctx.lineWidth = 1.6; for (const dx of [-5, -1]) { ctx.beginPath(); ctx.moveTo(x + dx, y - 1); ctx.quadraticCurveTo(x + dx + 2.5, y - 4, x + dx, y - 8); ctx.stroke(); }
+  } else if (kind === 'plate') { // campana de plato
+    ctx.beginPath(); ctx.arc(x, y + 3, 7.5, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 10, y + 5); ctx.lineTo(x + 10, y + 5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y - 6, 1.8, 0, 7); ctx.fill();
+  } else if (kind === 'order') { // libreta con lápiz
+    ctx.lineWidth = 1.8; ctx.strokeRect(x - 6, y - 8, 11, 15);
+    ctx.lineWidth = 1.3; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x - 4, y - 4 + k * 4); ctx.lineTo(x + 3, y - 4 + k * 4); ctx.stroke(); }
+    ctx.strokeStyle = '#FF2E88'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + 2, y + 6); ctx.lineTo(x + 9, y - 3); ctx.stroke();
+  } else if (kind === 'clean') { // escoba con burbujas
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 6, y - 9); ctx.lineTo(x - 1, y + 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 2, y + 5); ctx.lineTo(x - 4, y + 10); ctx.lineTo(x - 9, y + 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = 1.2; for (const [bx, by, br] of [[x + 6, y + 5, 2.4], [x + 8, y], [x - 7, y - 6, 2]]) { ctx.beginPath(); ctx.arc(bx, by, br || 1.6, 0, 7); ctx.fill(); ctx.stroke(); }
+  }
+  ctx.lineCap = 'butt';
+}
+function rr(x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+// Una sola malla instanciada dibuja la sombra de contacto de todas las personas (1 llamada en vez de 1 por persona)
+let PEOPLE_BLOBS = null; const _o3 = new THREE.Object3D();
+function poseAll(t) {
+  if (!PEOPLE_BLOBS) { blobShadow(new THREE.Group(), 1); PEOPLE_BLOBS = new THREE.InstancedMesh(GPL, BLOB_MAT, 200); PEOPLE_BLOBS.frustumCulled = false; PEOPLE_BLOBS.renderOrder = 1; scene.add(PEOPLE_BLOBS); }
+  let nb = 0;
+  for (const p of SIM.people) {
+    const m = p.model; if (!m) continue;
+    const f = floorOfY(p.y); m.visible = f <= viewFloor && (p.model.visible !== false || p.role !== 'repartidor') && !(p.role === 'repartidor' && p.state === 'riding');
+    if (m.visible && nb < 200) { _o3.position.set(p.x, p.y + 0.8, p.z); _o3.rotation.set(-Math.PI / 2, 0, 0); _o3.scale.set(26, 26, 1); _o3.updateMatrix(); PEOPLE_BLOBS.setMatrixAt(nb++, _o3.matrix); }
+    m.position.set(p.x, p.y + (p.seated ? 4 : 0), p.z); m.rotation.y = -p.ang;
+    posePerson(m, p.phase, !!p.walking, false, t + p.id, !!p.seated, {});
+    const u = m.userData;
+    if (p.role === 'cocinero' && p.cooking) { u.arms[0].rotation.x = u.arms[1].rotation.x = 1.1 + Math.sin(t * 12 + p.id) * 0.35; u.fores[0].rotation.x = u.fores[1].rotation.x = 0.6; }
+    if (p.carryM) { u.arms[0].rotation.x = u.arms[1].rotation.x = 1.25; u.fores[0].rotation.x = u.fores[1].rotation.x = 0.35; }
+    if (p.cleaning) { u.arms[1].rotation.x = 1.1; u.arms[1].rotation.z = Math.sin(t * 14) * 0.6; }
+    if (p.taking || p.state === 'taking') { u.arms[0].rotation.x = 1.0; u.fores[0].rotation.x = 1.2; u.arms[1].rotation.x = 0.9 + Math.sin(t * 16) * 0.12; u.fores[1].rotation.x = 1.3; }
+    if (p.role === 'cajero') { u.arms[0].rotation.x = u.arms[1].rotation.x = 0.8; }
+    if (p.party && p.party.state === 'eating' && p.seated) { u.arms[1].rotation.x = 1.2 + Math.sin(t * 6 + p.id) * 0.4; u.fores[1].rotation.x = 1.2; }
+    if (p.party && p.party.state === 'wait' && p.seated && p.party.patience < 30) { u.head.rotation.y = Math.sin(t * 8 + p.id) * 0.5; }
+    p.walking = false; p.cleaning = false; p.taking = false;
+  }
+  if (SIM.avatar) { SIM.avatar.cleaning = false; SIM.avatar.taking = false; }
+  PEOPLE_BLOBS.count = nb; PEOPLE_BLOBS.instanceMatrix.needsUpdate = true;
+}
+function updateLighting() {
+  const h = hourNow();
+  const dayK = clamp((19.2 - h) / 1.4, 0, 1);
+  const dusk = clamp(1 - Math.abs(h - 18.6) / 1.2, 0, 1);
+  // con materiales PBR el mapa de entorno ya aporta luz ambiente: la hemisférica se baja para no lavar los colores
+  const amb = QCFG.pbr ? 0.5 : 1;
+  sun.intensity = 0.25 + 1.85 * dayK; hemi.intensity = (0.55 + 0.8 * dayK) * amb; fill.intensity = 0.15 + 0.3 * dayK;
+  sun.color.setRGB(1, lerp(0.75, 0.94, dayK), lerp(0.55, 0.86, dayK));
+  hemi.color.setRGB(lerp(0.45, 0.92, dayK), lerp(0.42, 0.94, dayK), lerp(0.6, 0.96, dayK));
+  const key = Math.round(dayK * 6) + '_' + Math.round(dusk * 3);
+  if (updateLighting.k !== key) { updateLighting.k = key; if (dayK > 0.8) sky('#9FB3C6', '#D4D9DE'); else if (dayK > 0.3) sky('#D9795A', '#F2B38A'); else sky('#141A30', '#3A3350'); scene.fog = new THREE.Fog(dayK > 0.3 ? 0xd4d9de : 0x2a2a40, 2600, 6500); }
+  for (const lm of WLD.lampMats) { if (lm.isSprite) lm.material.opacity = SIM.blackout ? 0 : (1 - dayK) * 0.9; }
+  stage.classList.toggle('blackout', !!SIM.blackout);
+}
+function updatePops(dt) {
+  for (const p of WLD.pops) { p.t += dt; if (p.t < 0) continue; const k = Math.min(1, p.t / 0.55); const e = 1 + Math.sin(k * Math.PI * 1.5) * (1 - k) * 0.5; p.obj.scale.setScalar(Math.max(0.001, k * e)); }
+  WLD.pops = WLD.pops.filter(p => p.t < 0.6); for (const p of WLD.pops) if (p.t >= 0.6) p.obj.scale.setScalar(1);
+  for (const pd of WLD.pads) { const u = pd.m.userData; u.ring.rotation.z += dt * 1.5; u.lab.position.y = 70 + Math.sin(SIM.t * 3 + pd.x) * 4; pd.m.visible = pd.f === viewFloor; }
+  for (const st of WLD.steam) { st.position.y = 70 + (SIM.t * 30 % 40); st.material.opacity = 0.35 * (1 - (SIM.t * 30 % 40) / 40); }
+  if (marker && marker.visible) { marker.userData.t -= dt; marker.scale.setScalar(1 + (0.8 - marker.userData.t)); marker.material.opacity = Math.max(0, marker.userData.t); if (marker.userData.t <= 0) marker.visible = false; }
+  for (const d of WLD.deco[0].concat(WLD.deco[1] || [])) if (d.userData.fish) d.userData.fish.forEach((fsh, i) => { fsh.position.z = Math.sin(SIM.t * 0.7 + i) * 55; fsh.rotation.y = Math.cos(SIM.t * 0.7 + i) > 0 ? 0 : Math.PI; });
+}
+function updateCamera(dt) {
+  const a = SIM.avatar, k = 1 - Math.exp(-dt * 6);
+  // inercia del giro al soltar el dedo o el mouse
+  if (!drag && Math.abs(CAM.yawV) > 0.001) { CAM.yawT += CAM.yawV * dt; CAM.yawV *= Math.exp(-dt * 3.5); }
+  camYaw = lerp(camYaw, CAM.yawT, k); camDist = lerp(camDist, CAM.distT, 1 - Math.exp(-dt * 5)); CAM.tilt = lerp(CAM.tilt, CAM.tiltT, k);
+  // más cerca = ángulo más bajo y cinematográfico; más lejos = vista de planta
+  const zk = clamp((camDist - CAM.zMin) / (CAM.zMax - CAM.zMin), 0, 1);
+  camPitch = clamp(lerp(0.66, 1.12, zk) + CAM.tilt, 0.42, 1.36);
+  // sigue a tu personaje y mira un poco hacia donde camina
+  let tx = 0, tz = 60;
+  if (a) {
+    const vx = (a.x - lastAv.x) / Math.max(dt, 1e-3), vz = (a.z - lastAv.z) / Math.max(dt, 1e-3); lastAv.x = a.x; lastAv.z = a.z;
+    lastAv.vx = lerp(lastAv.vx, clamp(vx, -300, 300), 1 - Math.exp(-dt * 4)); lastAv.vz = lerp(lastAv.vz, clamp(vz, -300, 300), 1 - Math.exp(-dt * 4));
+    tx = a.x * 0.85 + lastAv.vx * 0.35; tz = a.z * 0.85 + 30 + lastAv.vz * 0.35;
+  }
+  camGoal.set(tx, floorY(viewFloor), tz);
+  camT.lerp(camGoal, 1 - Math.exp(-dt * 3.2));
+  camP.set(camT.x + Math.sin(camYaw) * Math.cos(camPitch) * camDist, camT.y + Math.sin(camPitch) * camDist, camT.z + Math.cos(camYaw) * Math.cos(camPitch) * camDist);
+  camera.position.copy(camP);
+  if (shake > 0 && !REDUCED) { camera.position.x += rand(-1, 1) * shake; camera.position.y += rand(-1, 1) * shake; shake = Math.max(0, shake - dt * 30); }
+  camLook.copy(camT); camLook.y += 18; camera.lookAt(camLook);
+  sun.position.set(camT.x - 700, 1400, camT.z + 500); sun.target.position.copy(camT);
+}
+
+/* ---------- pantallas ---------- */
+function showTitle() {
+  $('#title').hidden = false; playing = false; stage.classList.add('intitle'); if (panel) { panel = null; renderPanel(); }
+  $('#t-name').value = save.name;
+  $('#t-go').textContent = save.started ? 'Continuar' : 'Abrir mi restaurante';
+  $('#t-sub').textContent = save.started ? 'Tu restaurante te espera.' : 'Empieza con un local chico y conviértelo en el restaurante más famoso de Lima.';
+  const st = $('#t-stats'); st.hidden = !save.started;
+  if (save.started) st.innerHTML = '<div class="ts-lvl"><b>' + save.level + '</b><span><small>Nivel de fama</small>' + esc(famaTitle(save.level)) + '</span></div>' +
+    '<div class="ts-row"><span><b>Día ' + save.day + '</b>jugando</span><span><b>' + save.rating.toFixed(1) + ' ★</b>calificación</span><span><b>' + save.chain.length + '</b>' + (save.chain.length === 1 ? 'local' : 'locales') + '</span><span><b>' + (save.bestDay || 0).toLocaleString('es-PE') + '</b>récord</span></div>';
+}
+// Letras del logo en spans para animarlas una por una
+document.querySelectorAll('.logo .ln').forEach((ln, j) => { ln.innerHTML = [...ln.textContent].map((c, i) => '<span style="--i:' + (i + j * 5) + '">' + c + '</span>').join(''); });
+$('#t-go').addEventListener('click', () => {
+  audioInit(); SFX.click();
+  const nm = $('#t-name').value.trim(); if (nm && nm !== save.name) { save.name = nm.slice(0, 26); rebuildAll(); }
+  const first = !save.started; save.started = true;
+  $('#title').hidden = true; playing = true; stage.classList.remove('intitle'); persist();
+  CAM.distT = W / H < 1 ? 1500 : 1150; CAM.tiltT = 0;
+  if (!first && $('#dayend').hidden) showEventCard();
+  if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Sigue los pasos de arriba para aprender a atender.'), 400);
+});
+const GRADE_TEXT = { S: '¡Día perfecto!', A: '¡Gran día!', B: 'Buen día', C: 'Día regular', D: 'Día difícil' };
+onDayEnd = log => {
+  const el = $('#dayend');
+  const profit = log.income - log.costs - log.wages;
+  const chainRow = log.chain > 0 ? '<dt>Tus otros locales</dt><dd class="pos">+' + soles(log.chain) + '</dd>' : '';
+  const stars = Math.round(log.rating * 2) / 2, starHtml = [1, 2, 3, 4, 5].map(i => '<i class="st ' + (stars >= i ? 'full' : stars >= i - 0.5 ? 'half' : '') + '" style="--i:' + i + '">★</i>').join('');
+  el.innerHTML = '<div class="dcard dayend"><small>Fin del día ' + log.day + ' · ' + esc(save.name) + '</small>' +
+    '<div class="de-top"><div class="grade" style="--g:' + log.color + '">' + log.grade + '</div><div class="de-head"><h2>' + GRADE_TEXT[log.grade] + '</h2><p class="de-score">Puntaje <b id="de-score">0</b></p>' + (log.record ? '<span class="record">¡Nuevo récord!</span>' : '<span class="best">Récord: ' + (save.bestDay || 0).toLocaleString('es-PE') + '</span>') + '</div></div>' +
+    '<div class="de-stars" aria-label="' + log.rating.toFixed(1) + ' estrellas">' + starHtml + '<em>' + log.rating.toFixed(1) + '</em></div>' +
+    '<dl><dt>Ventas</dt><dd id="de-inc">' + soles(log.income) + '</dd><dt>Propinas incluidas</dt><dd>' + soles(log.tips) + '</dd><dt>Ingredientes</dt><dd>-' + soles(log.costs) + '</dd><dt>Sueldos del personal</dt><dd>-' + soles(log.wages) + '</dd><dt class="tot">Ganancia</dt><dd class="tot ' + (profit >= 0 ? 'pos' : 'neg') + '" id="de-prof">' + soles(profit) + '</dd>' +
+    chainRow + '<dt>Platos servidos</dt><dd>' + log.served + '</dd><dt>Clientes que se fueron</dt><dd>' + log.lost + '</dd></dl>' +
+    (log.xpGain ? '<div class="de-xp"><span>Fama +' + log.xpGain + '</span><div class="xpbar"><i style="width:' + (clamp(save.xp / xpNeed(save.level), 0, 1) * 100).toFixed(0) + '%"></i></div><small>Nivel ' + save.level + ' · ' + esc(famaTitle(save.level)) + '</small></div>' : '') +
+    (log.event ? '<div class="evres"><small>Resultado del evento</small><b>' + esc(log.event.name) + '</b><p>' + esc(log.event.text) + '</p></div>' : '') +
+    (log.lost > 3 ? '<p class="tip">Se fueron ' + log.lost + ' clientes por falta de mesas: compra más.</p>' : '') + '<button class="b g big" id="d-ok">Siguiente día</button></div>';
+  el.hidden = false; SFX.cash();
+  countUp($('#de-score'), log.score, 1100, v => Math.round(v).toLocaleString('es-PE'));
+  countUp($('#de-inc'), log.income, 900, soles); countUp($('#de-prof'), profit, 1100, soles);
+  setTimeout(() => { SFX.stamp(); const g = el.querySelector('.grade'); if (g) { const c = elCenter(g); sparkle(c.x, c.y, 18, log.color); if (log.grade === 'S' || log.grade === 'A' || log.record) confetti(c.x, c.y, 70, 1.2); } }, REDUCED ? 0 : 650);
+  el.querySelector('#d-ok').onclick = () => { el.hidden = true; SFX.click(); goalCheck(); showEventCard(); };
+};
+// Aviso grande al empezar un día con evento
+function showEventCard() {
+  const ev = save.event; if (!ev || ev.day !== save.day || ev.shown) return;
+  ev.shown = true; persist();
+  const E = EVENTS[ev.id], el = $('#dayend');
+  const gen = ev.id === 'apagon' && !save.generator;
+  el.innerHTML = '<div class="dcard evcard" style="--ev:' + E.color + '"><small>Evento de hoy · Día ' + save.day + '</small><h2>' + esc(E.name) + '</h2><p class="evdesc">' + esc(E.desc) + '</p>' +
+    (ev.id === 'partido' && !save.menu.includes('pollo') ? '<p class="tip">No tienes pollo a la brasa en la carta. Agrégalo en Carta.</p>' : '') +
+    (gen ? '<button class="b big" id="ev-gen"' + (save.money < GENERATOR_COST ? ' disabled' : '') + '>Comprar generador ' + soles(GENERATOR_COST) + '</button>' : '') +
+    '<button class="b g big" id="ev-ok">¡Vamos!</button></div>';
+  el.hidden = false; SFX.bell();
+  el.querySelector('#ev-ok').onclick = () => { el.hidden = true; SFX.click(); };
+  const bg = el.querySelector('#ev-gen'); if (bg) bg.onclick = () => { if (buyGenerator(true)) { el.hidden = true; } };
+}
+function offlineEarnings() {
+  if (!save.started) return;
+  const gap = (Date.now() - (save.lastT || Date.now())) / 1000;
+  const daily = Math.max(0, save.profitEma || 0) + chainBgDaily();
+  if (gap < 90 || daily <= 0) return;
+  const earn = Math.round(daily * Math.min(gap, 8 * 3600) / DAY_LEN * 0.22);
+  if (earn < 5) return;
+  save.money += earn; persist();
+  const hrs = Math.floor(gap / 3600), mins = Math.floor(gap % 3600 / 60);
+  $('#dayend').innerHTML = '<div class="dcard"><small>Mientras no estabas</small><h2>Tu restaurante siguió vendiendo</h2><p class="big-money">+' + soles(earn) + '</p><p class="tip">Estuviste fuera ' + (hrs ? hrs + ' h ' : '') + mins + ' min. ' + (save.chain.length > 1 ? 'Tus ' + save.chain.length + ' locales atendieron' : 'Tu personal atendió') + ' solo (hasta 8 horas).</p><button class="b g big" id="d-ok">¡Genial!</button></div>';
+  $('#dayend').hidden = false; $('#dayend').querySelector('#d-ok').onclick = () => { $('#dayend').hidden = true; SFX.cash(); };
+}
+
+/* ---------- fama, combo y celebraciones ---------- */
+onGame = (type, d) => {
+  if (type === 'levelUp') setTimeout(() => showLevelUp(d.level), 300);
+  else if (type === 'combo') { SFX.combo(d.n); comboPop = 1; const s = proj(d.x, d.y, d.z); if (s) { sparkle(s.x, s.y, 10 + d.n * 3, '#FF7A1A'); floatText(d.x, d.y, d.z, '¡Combo x' + d.n + '!', '#FF9A3C', 18); } }
+  else if (type === 'comboLost') { toast('<b>Se cortó tu combo x' + d.n + '</b><small>Atiende rápido para armarlo de nuevo.</small>', 'warn'); }
+  else if (type === 'fiveStar') { const s = proj(d.x, d.y, d.z); if (s) sparkle(s.x, s.y, 16, '#FFE14D'); }
+  else if (type === 'collect') { const s = proj(REG.x, 70, REG.z); if (s && viewFloor === 0) flyCoins(s.x, s.y, Math.min(14, 3 + Math.round(d.amt / 25)), () => SFX.coin()); else bumpMoney(); }
+};
+let comboPop = 0;
+function updateCombo() {
+  const el = $('#combo'), on = SIM.combo >= 2 && playing;
+  el.hidden = !on; if (!on) return;
+  $('#combo-n').textContent = 'x' + SIM.combo; $('#combo-t').style.transform = 'scaleX(' + clamp(SIM.comboT / COMBO_WINDOW, 0, 1).toFixed(3) + ')';
+  $('#combo-b').textContent = '+' + ((SIM.combo - 1) * 5) + ' % propina';
+  if (comboPop > 0) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); comboPop = 0; }
+}
+// Celebración al subir de nivel de fama
+function showLevelUp(lvl) {
+  const el = $('#lvlup'), newTitle = TITLES.find(x => x[0] === lvl);
+  el.innerHTML = '<div class="lu-rays"></div><div class="lu-card"><small>¡Subiste de nivel!</small><b class="lu-n">' + lvl + '</b><p class="lu-t">' + esc(famaTitle(lvl)) + '</p>' +
+    (newTitle ? '<p class="lu-new">Nuevo título para tu restaurante</p>' : '') + '<p class="lu-r">+' + soles(levelReward(lvl)) + ' · Propinas +' + Math.round(levelTipBonus() * 100) + ' %</p><span class="lu-tap">Toca para seguir</span></div>';
+  el.hidden = false; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); SFX.levelUp();
+  const c = elCenter(el.querySelector('.lu-card')); confetti(c.x, c.y, 90, 1.3); confettiRain(60);
+  clearTimeout(showLevelUp.t); showLevelUp.t = setTimeout(() => { el.hidden = true; }, 4200);
+}
+$('#lvlup').addEventListener('click', () => { $('#lvlup').hidden = true; });
+
+/* ---------- botones ---------- */
+document.querySelectorAll('[data-panel]').forEach(b => b.addEventListener('click', () => { audioInit(); openPanel(b.dataset.panel); }));
+document.querySelectorAll('[data-floor]').forEach(b => b.addEventListener('click', () => { viewFloor = +b.dataset.floor; SFX.click(); if (SIM.avatar && floorOfY(SIM.avatar.y) !== viewFloor) route(SIM.avatar, viewFloor === 0 ? 0 : 0, 100, viewFloor); }));
+$('#h-reg').addEventListener('click', () => { if (save.register > 0) { collectRegister(false); goalCheck(); } });
+$('#h-speed').addEventListener('click', () => { save.speed = save.speed >= 3 ? 1 : save.speed + 1; SFX.click(); });
+$('#h-menu').addEventListener('click', () => { persist(); showTitle(); });
+
+// Al cambiar de pestaña o cerrar (celular, itch.io): guarda y silencia; al volver, reanuda
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (save.started) persist(); if (AU.ctx && AU.ctx.state === 'running') AU.ctx.suspend(); }
+  else { if (AU.ctx && playing) AU.ctx.resume(); last = performance.now(); }
+});
+window.addEventListener('pagehide', () => { if (save.started) persist(); });
+
+/* ---------- bucle ---------- */
+let last = performance.now(), saveT = 0;
+function frame(t) {
+  let dt = Math.min(0.05, Math.max(0, (t - last) / 1000)); last = t;
+  if (playing && $('#dayend').hidden) {
+    readMove();
+    const sdt = dt * save.speed;
+    for (let k = 0; k < save.speed; k++) updateSim(dt);
+    updateAvatar(sdt / save.speed * save.speed, camYaw);
+    const af = SIM.avatar ? floorOfY(SIM.avatar.y) : 0; if (SIM.avatar && !SIM.avatar.path.length && af !== viewFloor && (MOVE.x || MOVE.z)) viewFloor = af;
+    if (SIM.avatar && SIM.avatar.path.length && SIM.avatar.path[SIM.avatar.path.length - 1].y !== floorY(viewFloor) && floorOfY(SIM.avatar.y) === floorOfY(SIM.avatar.path[SIM.avatar.path.length - 1].y)) viewFloor = floorOfY(SIM.avatar.y);
+    // pads pisados
+    const a = SIM.avatar;
+    if (a) for (const pd of WLD.pads) { if (pd.f === floorOfY(a.y) && Math.hypot(a.x - pd.x, a.z - pd.z) < 36) { pd.dwell += dt; if (pd.dwell > 0.45 && !pd.done) { pd.done = true; if (!buy(pd)) setTimeout(() => { pd.done = false; pd.dwell = 0; }, 1500); } } else pd.dwell = 0; }
+    refreshPads(false);
+    updateHUD(dt);
+    saveT += dt; if (saveT > 8) { saveT = 0; persist(); goalCheck(); }
+  } else if (!playing) { SIM.t += dt; CAM.yawT += dt * 0.06; CAM.distT = 1350; CAM.tiltT = -0.12; }
+  updateMoneyPile(save.register);
+  for (let f = 0; f < WLD.floors.length; f++) WLD.floors[f].visible = f <= viewFloor;
+  // vista en corte: al jugar con la cámara baja se esconde la fachada para ver las mesas de adelante
+  const cut = playing && camPitch < 1.0; for (const fr of WLD.front) fr.visible = !cut;
+  updateJuice(dt); tickMoney(dt); updateCombo();
+  updatePops(dt); updateLighting(); poseAll(SIM.t); updateCamera(dt);
+  renderer.render(scene, camera);
+  drawOverlay();
+  if (playing && !document.hidden) adaptResolution(dt);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- arranque ---------- */
+isTouch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window;
+stage.classList.toggle('touch', isTouch); stage.classList.add('q-' + QUALITY);
+loadSave(); resize();
+function boot() {
+  initTextures(); initMats(); initEnv();
+  rebuildWorld(); syncTables(); syncStaff(); makeAvatar();
+  marker = new THREE.Mesh(new THREE.RingGeometry(12, 18, 24), new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, opacity: 1, depthWrite: false })); marker.rotation.x = -Math.PI / 2; marker.visible = false; scene.add(marker);
+  refreshPads(true);
+  document.body.classList.add('ready');
+  showTitle(); offlineEarnings();
+  // tras cambiar la calidad se recarga la página: vuelve directo al juego
+  let auto = false; try { auto = sessionStorage.getItem('sazon_autostart') === '1'; sessionStorage.removeItem('sazon_autostart'); } catch (e) { }
+  if (auto && save.started) { $('#t-go').click(); toast('<b>Calidad ' + QCFG.name.toLowerCase() + ' activada</b>'); }
+  requestAnimationFrame(frame);
+}
+const fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 40px Fredoka'), document.fonts.load('800 16px Rubik')]) : Promise.resolve();
+Promise.race([fontsReady, new Promise(r => setTimeout(r, 1800))]).then(boot, boot);
+window.__rt = { get save() { return save; }, SIM, WLD, buy, padList, updateSim, updateAvatar, collectRegister, route, openPanel, frame: () => frame(performance.now()), start() { $('#t-go').click(); } };
