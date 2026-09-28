@@ -24,6 +24,8 @@ import {
 import { Disposer } from '../../core/utils/Disposer';
 import { clamp } from '../../core/utils/math';
 
+/** Intervalo mínimo entre redibujos de la pantalla del volante (ms). */
+const DISPLAY_INTERVAL = 100;
 const LED_COUNT = 15;
 const LED_COLORS = ['#19ff5a', '#ff1f33', '#3d7dff'] as const;
 const LED_OFF = new Color('#15171b');
@@ -47,6 +49,8 @@ export class SteeringWheel {
   private readonly canvas: HTMLCanvasElement;
   private readonly own = new Disposer();
   private lastDisplayKey = '';
+  private lastDisplayUrgent = '';
+  private lastDisplayTime = -Infinity;
   private readonly color = new Color();
 
   constructor() {
@@ -154,11 +158,20 @@ export class SteeringWheel {
     if (this.leds.instanceColor) this.leds.instanceColor.needsUpdate = true;
   }
 
-  /** Redibuja la pantalla sólo si cambió algo de lo que muestra. */
+  /**
+   * Redibuja la pantalla sólo si cambió algo de lo que muestra. La marcha y el
+   * DRS se ven al instante; velocidad y delta, como mucho a 10 Hz (como una
+   * pantalla real: y subir la textura a la GPU en cada cuadro cuesta).
+   */
   setDisplay(state: WheelDisplayState): void {
     const key = `${state.gear}|${state.speed}|${state.delta}|${String(state.deltaPositive)}|${String(state.drs)}`;
     if (key === this.lastDisplayKey) return;
+    const urgent = `${state.gear}|${String(state.drs)}`;
+    const now = performance.now();
+    if (urgent === this.lastDisplayUrgent && now - this.lastDisplayTime < DISPLAY_INTERVAL) return;
     this.lastDisplayKey = key;
+    this.lastDisplayUrgent = urgent;
+    this.lastDisplayTime = now;
     this.drawDisplay(state);
   }
 

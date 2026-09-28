@@ -70,6 +70,16 @@ function setText(element: HTMLElement, text: string): void {
   if (element.textContent !== text) element.textContent = text;
 }
 
+/** Última transformación escrita en cada elemento (el navegador normaliza la que devuelve). */
+const lastTransforms = new WeakMap<HTMLElement, string>();
+
+/** Cambia la transformación sólo si es distinta (evita invalidar el estilo en cada cuadro). */
+function setTransform(element: HTMLElement, transform: string): void {
+  if (lastTransforms.get(element) === transform) return;
+  lastTransforms.set(element, transform);
+  element.style.transform = transform;
+}
+
 function toggle(element: Element, className: string, on: boolean): void {
   if (element.classList.contains(className) !== on) element.classList.toggle(className, on);
 }
@@ -311,8 +321,8 @@ export class Hud {
     const lit = Math.round(Math.max(0, Math.min(1, state.shift)) * LED_COUNT);
     this.leds.forEach((led, i) => toggle(led, 'is-on', i < lit));
     toggle(this.ledBar, 'is-limiter', state.limiter);
-    this.throttleBar.style.transform = `scaleY(${state.throttle.toFixed(2)})`;
-    this.brakeBar.style.transform = `scaleY(${state.brake.toFixed(2)})`;
+    setTransform(this.throttleBar, `scaleY(${state.throttle.toFixed(2)})`);
+    setTransform(this.brakeBar, `scaleY(${state.brake.toFixed(2)})`);
     toggle(this.drs, 'is-available', state.drs === 'available');
     toggle(this.drs, 'is-open', state.drs === 'open');
     toggle(this.tc, 'is-active', state.tcActive);

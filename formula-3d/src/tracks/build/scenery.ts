@@ -34,7 +34,7 @@ import {
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addMesh, type BuildContext } from './context';
+import { addChunkedInstances, addMesh, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
 import { createDistanceBoards, createSpectator, createWaterNormals, createWindows } from './textures';
 
@@ -148,28 +148,33 @@ function colorize(geometry: BufferGeometry, color: Color, variation: number, see
   return flat;
 }
 
-/** Tres especies: eucalipto alto y ralo, árbol de copa redonda y ciprés. */
+/**
+ * Tres especies de estilo low-poly: eucalipto alto y ralo, árbol de copa
+ * redonda y ciprés. Pocas caras por árbol (50–70 triángulos): hay miles
+ * alrededor del circuito y son lo más pesado de dibujar.
+ */
 function treeSpecies(): BufferGeometry[] {
   const trunkColor = new Color('#8f8574');
   const darkTrunk = new Color('#5b4636');
+  const trunk = (radiusTop: number, radiusBottom: number, height: number): BufferGeometry =>
+    new CylinderGeometry(radiusTop, radiusBottom, height, 5, 1, true).translate(0, height / 2, 0);
 
-  const eucalyptus: BufferGeometry[] = [colorize(new CylinderGeometry(0.22, 0.4, 9, 6).translate(0, 4.5, 0), trunkColor, 0.2, 3)];
+  const eucalyptus: BufferGeometry[] = [colorize(trunk(0.22, 0.4, 9), trunkColor, 0.2, 3)];
   const blobs: Array<[number, number, number, number]> = [
-    [0, 10.5, 0, 3.4],
-    [2.2, 9, 0.8, 2.6],
-    [-1.8, 8.6, -1.2, 2.4],
-    [0.6, 12.4, -0.6, 2.2],
+    [0, 10.5, 0, 3.6],
+    [2.2, 9, 0.8, 2.8],
+    [-1.6, 12, -0.8, 2.6],
   ];
   blobs.forEach(([x, y, z, r], i) =>
-    eucalyptus.push(colorize(new IcosahedronGeometry(r, 1).translate(x, y, z), new Color('#5d7a3e'), 0.35, 11 + i)),
+    eucalyptus.push(colorize(new IcosahedronGeometry(r, 0).translate(x, y, z), new Color('#5d7a3e'), 0.35, 11 + i)),
   );
 
-  const round: BufferGeometry[] = [colorize(new CylinderGeometry(0.25, 0.35, 4, 6).translate(0, 2, 0), darkTrunk, 0.2, 5)];
-  round.push(colorize(new IcosahedronGeometry(3.6, 1).scale(1, 0.85, 1).translate(0, 6.2, 0), new Color('#3f6b2c'), 0.35, 21));
-  round.push(colorize(new IcosahedronGeometry(2.4, 1).translate(1.6, 7.4, 0.5), new Color('#4a7a33'), 0.3, 23));
+  const round: BufferGeometry[] = [colorize(trunk(0.25, 0.35, 4.5), darkTrunk, 0.2, 5)];
+  round.push(colorize(new IcosahedronGeometry(3.8, 0).scale(1, 0.85, 1).translate(0, 6.2, 0), new Color('#3f6b2c'), 0.35, 21));
+  round.push(colorize(new IcosahedronGeometry(2.6, 0).translate(1.6, 7.6, 0.5), new Color('#4a7a33'), 0.3, 23));
 
-  const cypress: BufferGeometry[] = [colorize(new CylinderGeometry(0.18, 0.25, 2, 5).translate(0, 1, 0), darkTrunk, 0.2, 7)];
-  cypress.push(colorize(new ConeGeometry(1.8, 11, 7, 2).translate(0, 7, 0), new Color('#2e5227'), 0.3, 31));
+  const cypress: BufferGeometry[] = [colorize(trunk(0.18, 0.25, 2), darkTrunk, 0.2, 7)];
+  cypress.push(colorize(new ConeGeometry(1.8, 11, 6, 1, true).translate(0, 7, 0), new Color('#2e5227'), 0.3, 31));
 
   return [eucalyptus, round, cypress].map((parts) => {
     const merged = mergeGeometries(parts);
@@ -179,6 +184,10 @@ function treeSpecies(): BufferGeometry[] {
     return merged;
   });
 }
+
+/** Tamaño de las celdas en que se agrupan árboles y público (m). */
+const TREE_CELL = 320;
+const CROWD_CELL = 120;
 
 export interface KeepOut {
   /** ¿Se puede poner algo en (x, z)? */
@@ -203,9 +212,10 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
     maxZ = Math.max(maxZ, g.z[i] ?? 0);
   }
 
-  const placements: Array<Array<{ x: number; z: number; scale: number; rot: number; tint: Color }>> = [[], [], []];
+  const placements: InstanceItem[][] = [[], [], []];
   const projection = { index: -1, s: 0, d: 0 };
   const rng = ctx.rng;
+  const white = new Color('#ffffff');
   for (let x = minX - reach; x < maxX + reach; x += cell) {
     for (let z = minZ - reach; z < maxZ + reach; z += cell) {
       const px = x + rng.range(0, cell);
@@ -217,30 +227,31 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
       if (!allowed(px, pz)) continue;
       const kind = rng.next() < 0.5 ? 0 : rng.next() < 0.7 ? 1 : 2;
       const tint = new Color().setHSL(rng.range(-0.02, 0.03), rng.range(-0.05, 0.1), 1).multiplyScalar(rng.range(0.85, 1.12));
-      placements[kind]?.push({ x: px, z: pz, scale: rng.range(0.75, 1.25), rot: rng.range(0, Math.PI * 2), tint });
+      const scale = rng.range(0.75, 1.25);
+      placements[kind]?.push({
+        x: px,
+        y: -0.05,
+        z: pz,
+        yaw: rng.range(0, Math.PI * 2),
+        sx: scale,
+        sy: scale * rng.range(0.9, 1.1),
+        sz: scale,
+        color: white.clone().lerp(tint, 0.9),
+      });
     }
   }
 
-  const material = ctx.own.own(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: false }));
-  const matrix = new Matrix4();
-  const q = new Quaternion();
-  const up = new Vector3(0, 1, 0);
+  const material = ctx.own.own(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true }));
   species.forEach((geometry, kind) => {
     ctx.own.own(geometry);
     const list = placements[kind] ?? [];
     if (list.length === 0) return;
-    const mesh = new InstancedMesh(geometry, material, list.length);
-    list.forEach((tree, i) => {
-      q.setFromAxisAngle(up, tree.rot);
-      matrix.compose(new Vector3(tree.x, -0.05, tree.z), q, new Vector3(tree.scale, tree.scale * (0.9 + (i % 5) * 0.05), tree.scale));
-      mesh.setMatrixAt(i, matrix);
-      mesh.setColorAt(i, new Color('#ffffff').lerp(tree.tint, 0.9));
+    addChunkedInstances(ctx, geometry, material, list, {
+      cell: TREE_CELL,
+      name: `arboles-${kind}`,
+      cast: ctx.detailShadows,
+      receive: false,
     });
-    mesh.castShadow = ctx.detailShadows;
-    mesh.receiveShadow = false;
-    mesh.name = `arboles-${kind}`;
-    mesh.computeBoundingSphere();
-    ctx.root.add(mesh);
   });
 }
 
@@ -348,22 +359,11 @@ export function buildGrandstands(ctx: BuildContext): StandZone[] {
     person.translate(0, 0.47, 0);
     const texture = ctx.own.own(createSpectator(ctx.anisotropy));
     const material = ctx.own.own(new MeshStandardMaterial({ map: texture, alphaTest: 0.5, roughness: 0.9, side: DoubleSide }));
-    const mesh = new InstancedMesh(person, material, crowd.length);
-    const matrix = new Matrix4();
-    const q = new Quaternion();
-    const up = new Vector3(0, 1, 0);
-    const color = new Color();
-    crowd.forEach((p, i) => {
-      q.setFromAxisAngle(up, p.yaw);
+    const items: InstanceItem[] = crowd.map((p) => {
       const scale = ctx.rng.range(0.9, 1.1);
-      matrix.compose(new Vector3(p.x, p.y, p.z), q, new Vector3(scale, scale, scale));
-      mesh.setMatrixAt(i, matrix);
-      mesh.setColorAt(i, color.set(ctx.rng.pick(SHIRTS)));
+      return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, sx: scale, sy: scale, sz: scale, color: new Color(ctx.rng.pick(SHIRTS)) };
     });
-    mesh.receiveShadow = true;
-    mesh.name = 'publico';
-    mesh.computeBoundingSphere();
-    ctx.root.add(mesh);
+    addChunkedInstances(ctx, person, material, items, { cell: CROWD_CELL, name: 'publico', cast: false, receive: true });
   }
   return zones;
 }

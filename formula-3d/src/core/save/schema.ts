@@ -28,6 +28,8 @@ export interface GraphicsSettings {
   /** Escala de resolución interna, de 0.5 a 1. */
   resolutionScale: number;
   showFps: boolean;
+  /** Ajuste automático: baja resolución y calidad en carrera si faltan FPS. */
+  autoPerformance: boolean;
 }
 
 /** Volúmenes de 0 a 1. */
@@ -144,6 +146,7 @@ export function createDefaultGraphics(quality: QualityLevel): GraphicsSettings {
     fpsTarget: 60,
     resolutionScale: 1,
     showFps: false,
+    autoPerformance: true,
   };
 }
 

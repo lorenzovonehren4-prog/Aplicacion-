@@ -233,8 +233,7 @@
   justify-content: center;
   width: min(900px, calc(100% - 2 * var(--gutter)));
   padding: 10px 18px;
-  background: rgba(8, 9, 12, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(8, 9, 12, 0.82);
   opacity: 0;
   translate: -50% 0;
   pointer-events: none;
@@ -266,6 +265,9 @@
 
 /* ─── HUD ──────────────────────────────────────────────────────────────── */
 
+/* Sin backdrop-filter en el HUD: desenfocar el 3D, que cambia en cada cuadro,
+   es carísimo en GPUs integradas. Fondos más opacos en su lugar. */
+
 .hud {
   position: absolute;
   inset: 0;
@@ -285,9 +287,8 @@
   left: var(--gutter);
   width: 270px;
   padding: 12px 16px 12px;
-  background: linear-gradient(180deg, rgba(10, 11, 15, 0.82), rgba(10, 11, 15, 0.68));
+  background: linear-gradient(180deg, rgba(10, 11, 15, 0.9), rgba(10, 11, 15, 0.8));
   border-left: 3px solid var(--c-accent);
-  backdrop-filter: blur(10px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
@@ -403,9 +404,8 @@
   width: clamp(140px, 16vw, 210px);
   aspect-ratio: 1;
   padding: 6px;
-  background: radial-gradient(circle, rgba(10, 11, 15, 0.7) 40%, rgba(10, 11, 15, 0.35));
+  background: radial-gradient(circle, rgba(10, 11, 15, 0.8) 40%, rgba(10, 11, 15, 0.5));
   border-radius: 50%;
-  backdrop-filter: blur(6px);
 }
 
 .minimap__svg {
@@ -455,9 +455,8 @@
   bottom: var(--gutter);
   width: 300px;
   padding: 12px 16px 12px;
-  background: linear-gradient(180deg, rgba(10, 11, 15, 0.78), rgba(10, 11, 15, 0.9));
+  background: linear-gradient(180deg, rgba(10, 11, 15, 0.86), rgba(10, 11, 15, 0.94));
   border-bottom: 3px solid var(--c-accent);
-  backdrop-filter: blur(10px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
@@ -650,9 +649,8 @@
   flex-direction: column;
   align-items: center;
   padding: 8px 26px;
-  background: rgba(10, 11, 15, 0.82);
+  background: rgba(10, 11, 15, 0.9);
   border-bottom: 3px solid var(--c-line-strong);
-  backdrop-filter: blur(8px);
   text-align: center;
 }
 
@@ -787,9 +785,8 @@
   left: var(--gutter);
   width: min(320px, 70vw);
   padding: 10px 14px 12px;
-  background: linear-gradient(90deg, rgba(10, 11, 15, 0.9), rgba(10, 11, 15, 0.72));
+  background: linear-gradient(90deg, rgba(10, 11, 15, 0.94), rgba(10, 11, 15, 0.82));
   border-left: 3px solid #3d7dff;
-  backdrop-filter: blur(8px);
   opacity: 0;
 }
 
@@ -838,8 +835,7 @@
 .finish__backdrop {
   position: absolute;
   inset: 0;
-  background: linear-gradient(270deg, rgba(5, 6, 8, 0.9) 0%, rgba(5, 6, 8, 0.6) 55%, rgba(5, 6, 8, 0.2) 100%);
-  backdrop-filter: blur(4px);
+  background: linear-gradient(270deg, rgba(5, 6, 8, 0.94) 0%, rgba(5, 6, 8, 0.7) 55%, rgba(5, 6, 8, 0.3) 100%);
 }
 
 .finish__panel {

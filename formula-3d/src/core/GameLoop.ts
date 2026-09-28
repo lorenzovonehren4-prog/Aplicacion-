@@ -28,7 +28,7 @@ const browserScheduler: LoopScheduler = {
 };
 
 export const FIXED_STEP = 1 / 120;
-const MAX_STEPS_PER_FRAME = 8;
+const MAX_STEPS_PER_FRAME = 12;
 /** dt máximo: al volver de otra pestaña no hay un salto enorme. */
 const MAX_DT = 0.1;
 /** Tolerancia al limitar FPS (los timestamps de rAF tienen algo de ruido). */

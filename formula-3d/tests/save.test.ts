@@ -80,6 +80,7 @@ describe('sanitizeSave', () => {
       fpsTarget: 60,
       resolutionScale: 1,
       showFps: true,
+      autoPerformance: true,
     });
     expect(data.settings.audio).toEqual({ master: 1, engine: 0.8, effects: 0.8, ui: 0.3 });
     expect(data.updatedAt).toBe(NOW + 10);

@@ -38,6 +38,7 @@ import {
   activeAssists,
   assistConfig,
 } from '../../assists/presets';
+import { RenderHost } from '../../core/render/RenderHost';
 import { BaseScreen } from './BaseScreen';
 
 const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
@@ -255,6 +256,12 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         set: (fps) => this.game.updateSettings((s) => (s.graphics.fpsTarget = fps)),
       }),
       toggleRow(ctx, {
+        label: 'Rendimiento automático',
+        help: 'En carrera, si tu equipo no llega a los FPS objetivo, el juego baja solo la resolución y, si hace falta, la calidad. Los cambios quedan guardados aquí.',
+        get: () => g().autoPerformance,
+        set: (on) => this.game.updateSettings((s) => (s.graphics.autoPerformance = on)),
+      }),
+      toggleRow(ctx, {
         label: 'Mostrar FPS',
         help: 'Muestra en una esquina los fotogramas por segundo, el tiempo por fotograma y las llamadas de dibujo.',
         get: () => g().showFps,
@@ -268,6 +275,7 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
           this.game.updateSettings((s) => {
             s.graphics = createDefaultGraphics(
               detectQuality({
+                gpu: RenderHost.probeGpu(),
                 hardwareConcurrency: navigator.hardwareConcurrency,
                 isMobile: matchMedia('(pointer: coarse)').matches,
               }),

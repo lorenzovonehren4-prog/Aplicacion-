@@ -105,6 +105,7 @@ export class Game {
     const save = await SaveManager.load({
       storage,
       initialQuality: detectQuality({
+        gpu: RenderHost.probeGpu(),
         hardwareConcurrency: navigator.hardwareConcurrency,
         isMobile: matchMedia('(pointer: coarse)').matches,
       }),

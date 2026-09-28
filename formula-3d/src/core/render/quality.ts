@@ -79,14 +79,36 @@ export function shadowMapSize(shadows: ShadowLevel, quality: QualityLevel): numb
 export interface DeviceHints {
   hardwareConcurrency?: number;
   isMobile?: boolean;
+  /** Nombre de la GPU que informa WebGL (puede faltar si el navegador lo oculta). */
+  gpu?: string;
+}
+
+/** Tipo de GPU según su nombre. */
+export type GpuClass = 'software' | 'integrated' | 'apple' | 'discrete' | 'unknown';
+
+export function classifyGpu(name: string | undefined): GpuClass {
+  if (!name) return 'unknown';
+  const gpu = name.toLowerCase();
+  if (/swiftshader|llvmpipe|softpipe|microsoft basic render|software/.test(gpu)) return 'software';
+  if (/apple m\d/.test(gpu)) return 'apple';
+  if (/geforce|nvidia|quadro|rtx|gtx|radeon rx|radeon pro|arc a\d/.test(gpu)) return 'discrete';
+  if (/intel|iris|uhd|hd graphics|mali|adreno|powervr|apple gpu|radeon\(tm\) graphics|radeon graphics|vega \d/.test(gpu)) {
+    return 'integrated';
+  }
+  return 'unknown';
 }
 
 /**
- * Calidad inicial según el equipo: móviles y equipos con pocos núcleos empiezan
- * en Media; el resto en Alta. Sólo se usa cuando todavía no hay guardado.
+ * Calidad inicial según el equipo. Sólo se usa cuando todavía no hay
+ * guardado; después el ajuste automático de rendimiento corrige en carrera.
+ * - GPU por software o móvil → Baja.
+ * - GPU integrada (la mayoría de las notebooks) o desconocida → Media.
+ * - GPU dedicada o Apple M, con 6 núcleos o más → Alta.
  */
 export function detectQuality(hints: DeviceHints): QualityLevel {
-  if (hints.isMobile) return 'medium';
-  if ((hints.hardwareConcurrency ?? 8) <= 4) return 'medium';
-  return 'high';
+  const gpu = classifyGpu(hints.gpu);
+  if (gpu === 'software' || hints.isMobile) return 'low';
+  const cores = hints.hardwareConcurrency ?? 4;
+  if ((gpu === 'discrete' || gpu === 'apple') && cores >= 6) return 'high';
+  return 'medium';
 }

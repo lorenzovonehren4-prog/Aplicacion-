@@ -70,6 +70,8 @@ async function main(): Promise<void> {
   await loadFonts();
   const game = await Game.boot(layers());
   registerScreens(game);
+  // Sólo en desarrollo: acceso al juego desde la consola para medir y depurar.
+  if (import.meta.env.DEV) (window as unknown as { __apice?: Game }).__apice = game;
   game.start();
   await game.screens.goTo('splash', undefined);
 

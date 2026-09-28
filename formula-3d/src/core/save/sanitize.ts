@@ -99,6 +99,7 @@ function sanitizeGraphics(raw: unknown, defaults: GraphicsSettings): GraphicsSet
     fpsTarget: oneOf(r.fpsTarget, FPS_TARGETS, defaults.fpsTarget),
     resolutionScale: num(r.resolutionScale, defaults.resolutionScale, 0.5, 1),
     showFps: bool(r.showFps, defaults.showFps),
+    autoPerformance: bool(r.autoPerformance, defaults.autoPerformance),
   };
 }
 

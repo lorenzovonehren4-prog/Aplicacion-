@@ -26,6 +26,8 @@ export class RaceWorld implements RenderView {
   readonly exposure = 1;
   /** A cielo abierto sólo brillan los reflejos intensos del sol. */
   readonly bloomThreshold = 1.2;
+  /** En pausa la imagen se congela (el renderer no vuelve a dibujar). */
+  frozen = false;
   readonly rig: CarRig;
   readonly raceCamera: RaceCamera;
   /** La ayuda de la línea de trazada. */

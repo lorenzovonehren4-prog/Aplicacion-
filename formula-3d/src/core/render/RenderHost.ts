@@ -36,6 +36,11 @@ export interface RenderView {
    * a cielo abierto lo sube para que sólo brillen los reflejos del sol.
    */
   readonly bloomThreshold?: number;
+  /**
+   * Imagen congelada (p. ej., en pausa): se dibuja un cuadro y después no se
+   * vuelve a dibujar hasta que cambie algo. Ahorra GPU y batería.
+   */
+  readonly frozen?: boolean;
   /** Ajustes gráficos nuevos (sombras, reflejos...). */
   onGraphicsChanged?(graphics: GraphicsSettings): void;
   /** Tamaño nuevo del lienzo en píxeles CSS y densidad de píxeles efectiva. */
@@ -62,6 +67,10 @@ export class RenderHost {
   private height = 1;
   private msaaSamples = -1;
   private lastStats: RenderStats = { drawCalls: 0, triangles: 0 };
+  /** Dibujo directo al lienzo, sin composer (calidad Baja). */
+  private directRender = false;
+  /** Ya se dibujó el cuadro congelado de la vista actual. */
+  private frozenFrameDrawn = false;
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -91,6 +100,21 @@ export class RenderHost {
     this.applyGraphics(graphics);
   }
 
+  /** Nombre de la GPU según WebGL (para elegir la calidad inicial), o undefined si se oculta. */
+  static probeGpu(): string | undefined {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2');
+      if (!gl) return undefined;
+      const info = gl.getExtension('WEBGL_debug_renderer_info');
+      const name: unknown = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      return typeof name === 'string' ? name : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   /** ¿El navegador soporta WebGL 2? (requisito del juego) */
   static isSupported(): boolean {
     try {
@@ -116,6 +140,7 @@ export class RenderHost {
   /** Vista a dibujar (null = pantalla negra). */
   setView(view: RenderView | null): void {
     this.view = view;
+    this.frozenFrameDrawn = false;
     if (view) {
       this.renderPass.scene = view.scene;
       this.renderPass.camera = view.camera;
@@ -148,6 +173,7 @@ export class RenderHost {
       this.composer = this.createComposer(preset.msaaSamples);
     }
     this.bloomPass.enabled = graphics.postprocessing;
+    this.directRender = !graphics.postprocessing && preset.msaaSamples === 0;
     this.resize(this.width, this.height);
     this.view?.onGraphicsChanged?.(graphics);
   }
@@ -163,6 +189,7 @@ export class RenderHost {
     this.renderer.setSize(this.width, this.height, false);
     this.composer.setPixelRatio(pixelRatio);
     this.composer.setSize(this.width, this.height);
+    this.frozenFrameDrawn = false;
     if (this.view) {
       this.view.camera.aspect = this.width / this.height;
       this.view.camera.updateProjectionMatrix();
@@ -177,7 +204,20 @@ export class RenderHost {
       this.renderer.clear();
       return;
     }
-    this.composer.render();
+    if (this.view.frozen) {
+      if (this.frozenFrameDrawn) return;
+      this.frozenFrameDrawn = true;
+    } else {
+      this.frozenFrameDrawn = false;
+    }
+    if (this.directRender) {
+      // Sin posprocesado ni MSAA: directo al lienzo (el tone mapping y el sRGB
+      // los aplica cada material). Ahorra un búfer de pantalla completa y una pasada.
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.view.scene, this.view.camera);
+    } else {
+      this.composer.render();
+    }
     this.lastStats = {
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,

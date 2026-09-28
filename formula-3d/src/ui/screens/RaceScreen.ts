@@ -11,6 +11,8 @@
 import gsap from 'gsap';
 import { activeAssists, type ActiveAssists } from '../../assists/presets';
 import type { Game } from '../../core/Game';
+import { PerformanceGovernor, type GovernorDecision } from '../../core/render/PerformanceGovernor';
+import { QUALITY_PRESETS } from '../../core/render/quality';
 import type { UiAction } from '../../core/input/actions';
 import type { RaceParams } from '../../core/screens/params';
 import { clamp } from '../../core/utils/math';
@@ -44,6 +46,8 @@ const FINISH_PANEL_DELAY = 2600;
 /** Choque (m/s) que merece un mensaje del ingeniero, y tiempo mínimo entre dos (ms). */
 const RADIO_IMPACT = 14;
 const RADIO_IMPACT_GAP = 20_000;
+
+const QUALITY_LABELS = { low: 'Baja', medium: 'Media', high: 'Alta', ultra: 'Ultra' } as const;
 
 /** Qué íconos de ayudas se muestran en el tablero. */
 function hudAssists(assists: ActiveAssists): HudAssists {
@@ -81,6 +85,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private pendingFinish: RaceResult | null = null;
   private readonly lastRadioLine = new Map<RadioMoment, string>();
   private covered = false;
+  private readonly governor = new PerformanceGovernor();
 
   constructor(game: Game) {
     super(game, 'screen--race');
@@ -160,6 +165,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     }
 
     this.updateHud();
+    if (this.phase === 'running') this.governPerformance(dt);
   }
 
   override onAction(action: UiAction): void {
@@ -241,12 +247,17 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.loading?.setProgress(0.95, 'Preparando sombreadores');
       world.startIntro();
       world.update(0, 1, session.vehicle.telemetry);
+      // La trazada se compila aunque esté apagada: activarla en la pausa no debe dar un tirón.
+      const lineMesh = world.racingLine.mesh;
+      const lineVisible = lineMesh.visible;
+      lineMesh.visible = true;
       const renderer = game.render.renderer;
       if (renderer.extensions.has('KHR_parallel_shader_compile')) {
         await renderer.compileAsync(world.scene, world.camera);
       } else {
         renderer.compile(world.scene, world.camera);
       }
+      lineMesh.visible = lineVisible;
       if (this.cancelled) return;
       this.loading?.setProgress(1, 'Listo');
       this.buildInterface(track, session);
@@ -371,6 +382,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private finishIntro(): void {
     if (this.phase !== 'intro' || !this.world || !this.hud) return;
     this.phase = 'running';
+    this.governor.reset();
     this.world.endIntro();
     this.driving?.release();
     // Si la entrada del cartel todavía corría, se corta para que no reaparezca.
@@ -568,12 +580,46 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     });
   }
 
+  // ─── Rendimiento ───────────────────────────────────────────────────────
+
+  /** Ajuste automático: si el equipo no llega a los FPS, baja resolución y luego calidad. */
+  private governPerformance(dt: number): void {
+    const graphics = this.game.settings.graphics;
+    if (!graphics.autoPerformance) return;
+    const decision = this.governor.sample(dt, graphics);
+    if (decision) this.applyPerformance(decision);
+  }
+
+  private applyPerformance(decision: GovernorDecision): void {
+    const lowered = decision.kind === 'quality' || decision.scale < this.game.settings.graphics.resolutionScale;
+    this.game.updateSettings((s) => {
+      s.graphics.resolutionScale = decision.scale;
+      if (decision.kind !== 'quality') return;
+      const preset = QUALITY_PRESETS[decision.quality];
+      s.graphics.quality = decision.quality;
+      // Sólo se apaga lo que el nivel nuevo no incluye: nunca se enciende nada.
+      if (preset.shadows === 'off' || (preset.shadows === 'low' && s.graphics.shadows === 'high')) {
+        s.graphics.shadows = preset.shadows;
+      }
+      if (!preset.postprocessing) s.graphics.postprocessing = false;
+    });
+    if (lowered) {
+      this.hud?.message(
+        'RENDIMIENTO',
+        decision.kind === 'quality' ? `Calidad ajustada a ${QUALITY_LABELS[decision.quality]}` : `Resolución al ${Math.round(decision.scale * 100)} %`,
+        'info',
+      );
+    }
+  }
+
   // ─── Pausa ─────────────────────────────────────────────────────────────
 
   private setPaused(paused: boolean): void {
     if (!this.pause || !this.session || !this.track) return;
     if (paused && this.phase === 'running') {
       this.phase = 'paused';
+      // La escena queda quieta: se deja de redibujar (la GPU descansa en la pausa).
+      if (this.world) this.world.frozen = true;
       this.driving?.release();
       this.audio.setMuted(true);
       this.stopRumble();
@@ -588,6 +634,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       });
     } else if (!paused && this.phase === 'paused') {
       this.phase = 'running';
+      this.governor.reset();
+      if (this.world) this.world.frozen = false;
       this.driving?.release();
       this.audio.setMuted(false);
       this.game.playUi('back');

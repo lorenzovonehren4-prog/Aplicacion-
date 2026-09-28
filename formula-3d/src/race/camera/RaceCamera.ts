@@ -26,6 +26,15 @@ export const CAMERA_LABELS: Readonly<Record<CameraMode, string>> = {
 
 const TRANSITION_TIME = 0.35;
 
+/**
+ * Plano cercano de cada cámara (m). Cuanto más lejos, más precisión le queda
+ * al búfer de profundidad para el fondo (sin parpadeo entre objetos lejanos):
+ * sólo el cockpit necesita ver el volante a centímetros.
+ */
+const NEAR: Readonly<Record<CameraMode, number>> = { cockpit: 0.08, tcam: 0.12, chase: 0.3 };
+/** Plano lejano (m): el circuito completo; el cielo se dibuja siempre al fondo. */
+const FAR = 6000;
+
 interface Pose {
   position: Vector3;
   quaternion: Quaternion;
@@ -39,7 +48,7 @@ function createPose(): Pose {
 const UP = new Vector3(0, 1, 0);
 
 export class RaceCamera {
-  readonly camera = new PerspectiveCamera(62, 16 / 9, 0.08, 12000);
+  readonly camera = new PerspectiveCamera(62, 16 / 9, NEAR.cockpit, FAR);
   private mode: CameraMode;
   private previousMode: CameraMode | null = null;
   private transition = 1;
@@ -161,8 +170,11 @@ export class RaceCamera {
       }
     }
 
-    if (Math.abs(this.camera.fov - this.current.fov) > 0.01) {
+    // En las transiciones manda el plano más cercano de las dos cámaras.
+    const near = this.transition < 1 && this.previousMode ? Math.min(NEAR[this.mode], NEAR[this.previousMode]) : NEAR[this.mode];
+    if (Math.abs(this.camera.fov - this.current.fov) > 0.01 || this.camera.near !== near) {
       this.camera.fov = this.current.fov;
+      this.camera.near = near;
       this.camera.updateProjectionMatrix();
     }
   }
