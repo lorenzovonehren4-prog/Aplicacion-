@@ -639,6 +639,14 @@ kbd{ font-family:'Bungee', Impact, sans-serif; font-size:calc(12*var(--u)); back
 #scr-ayuda > .panel, #scr-modos > .panel, #scr-records > .panel, #scr-resultados > .panel{ margin-top:auto; margin-bottom:auto; flex:none; }
 details.more{ border-top:calc(2*var(--u)) dashed rgba(27,21,35,.2); padding-top:calc(10*var(--u)); }
 details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; font-size:calc(14*var(--u)); margin-bottom:calc(8*var(--u)); }
+
+#codebox{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(14,11,20,.6); z-index:40; padding:calc(16*var(--u)); }
+#codebox[hidden]{ display:none; }
+#codebox textarea{ width:100%; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:calc(12*var(--u)); border:calc(2*var(--u)) solid var(--tinta); border-radius:calc(10*var(--u)); padding:calc(8*var(--u)); word-break:break-all; resize:none; }
+#code-msg{ font-weight:700; font-size:calc(13*var(--u)) !important; margin:calc(8*var(--u)) 0 0 !important; min-height:1.3em; }
+.storenote{ background:#FFF4CC; border:calc(2*var(--u)) solid var(--tinta); border-radius:calc(10*var(--u)); padding:calc(6*var(--u)) calc(10*var(--u)); font-size:calc(12*var(--u)) !important; font-weight:700; margin:calc(8*var(--u)) 0 0 !important; }
+.storenote[hidden]{ display:none; }
+.mnote{ color:var(--tinta) !important; text-shadow:none !important; text-decoration:none !important; background:#FFE14D !important; border:calc(2*var(--u)) solid var(--tinta) !important; border-radius:calc(10*var(--u)); margin:0 !important; font-size:calc(11*var(--u)) !important; }
 </style>
 </head>
 <body>
@@ -697,7 +705,7 @@ details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; 
         </div>
         <div class="links"><button class="linkbtn" data-go="opciones">Opciones</button><button class="linkbtn" data-go="ayuda">¿Cómo se juega?</button></div>
       </div>
-      <div class="menu-foot"><span class="wallet" id="wallet-menu">En la caja: S/ 0.00</span><span class="vehchip" id="veh-chip"></span></div>
+      <div class="menu-foot"><span class="wallet" id="wallet-menu">En la caja: S/ 0.00</span><span class="vehchip" id="veh-chip"></span><button class="storenote mnote linkbtn" id="menu-store" data-go="opciones" hidden></button></div>
       </div>
     </div>
     <div class="ticker" aria-hidden="true"><div class="tk-inner">
@@ -724,6 +732,7 @@ details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; 
       <p class="rnote">En cada viaje verás un fantasma azul con tu mejor vuelta. ¡Gánale!</p>
     </div>
   </section>
+  <div id="codebox" hidden><div class="panel narrow"><h2 id="code-title">Código de partida</h2><textarea rows="5" spellcheck="false" aria-label="Código de partida"></textarea><p id="code-msg" aria-live="polite"></p><div class="row"><button class="btn rosa" id="code-load">Cargar</button><button class="btn" id="code-close">Cerrar</button></div></div></div>
   <div id="sharebox" hidden><div class="panel narrow"><h2>Copia tu reto</h2><textarea readonly rows="4"></textarea><div class="row"><button class="btn" id="sharebox-close">Cerrar</button></div></div></div>
 
   <section class="screen" id="scr-sorteo" hidden>
@@ -814,6 +823,7 @@ details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; 
       <div class="opt"><span><b>Música</b><small>Cumbia de fondo</small></span><button class="mini" data-toggle="music">Música: sí</button></div>
       <div class="opt"><span><b>Sonidos</b><small>Bocina, motor y efectos</small></span><button class="mini" data-toggle="sfx">Sonidos: sí</button></div>
       <div class="opt col"><span><b>Calidad gráfica</b><small>Bájala si el juego va lento</small></span><div class="segs"><button data-q="baja">Baja</button><button data-q="media">Media</button><button data-q="alta">Alta</button></div></div>
+      <div class="opt col"><span><b>Código de partida</b><small>Llévate tu progreso a otro navegador o después del modo incógnito</small></span><div class="row" style="margin-top:0"><button class="btn small verde" id="btn-exp">Copiar mi código</button><button class="btn small" id="btn-imp">Cargar un código</button></div><p class="storenote" id="store-note" hidden></p></div>
       <div class="opt"><span><b>Borrar progreso</b><small>Empieza de cero</small></span><button class="btn small ghost" id="btn-reset">Borrar</button></div>
     </div>
   </section>

@@ -44,7 +44,7 @@ const VEHS = {
 };
 const RIVAL_NAMES = [['El Chato', 0.48, 60, '#C62E3A'], ['Doña Pili', 0.56, 40, '#6A2C91'], ['Kevin "Rayo"', 0.66, 25, '#2E6BFF'], ['Tío Lucho', 0.78, 15, '#19A35A']];
 function rivalsFor(ti) { const T0 = TRIPS[ti], tt = tripTime(Object.assign({}, T0)); return RIVAL_NAMES.map(([name, f, prize, col], i) => ({ name, time: Math.round(tt * (f + ti * 0.004) * 10) / 10, prize: Math.round(prize * (1 + ti * 0.15)), col })); }
-function loadGhost(ti) { try { const a = JSON.parse(localStorage.getItem('combirush_ghost_' + ti)); return Array.isArray(a) && a.length > 20 ? a : null; } catch (e) { return null; } }
+function loadGhost(ti) { try { const a = STORE_OK ? JSON.parse(localStorage.getItem('combirush_ghost_' + ti)) : memStore['g' + ti]; return Array.isArray(a) && a.length > 20 ? a : null; } catch (e) { return null; } }
 function ghostAt(gh, t) { const n = gh.length / 2, f = t / 0.1, i = Math.floor(f); if (i >= n - 1) return { wy: gh[(n - 1) * 2], x: gh[(n - 1) * 2 + 1], end: true }; const k = f - i; return { wy: gh[i * 2] + (gh[i * 2 + 2] - gh[i * 2]) * k, x: gh[i * 2 + 1] + (gh[i * 2 + 3] - gh[i * 2 + 1]) * k }; }
 function vehStats(upg, vk) {
   const U = upg || save.upg, V = VEHS[vk || save.veh] || VEHS.combi;
@@ -188,9 +188,16 @@ const SIGNS = ['POLLERÍA', 'CHIFA', 'BODEGA', 'FERRETERÍA', 'CEVICHERÍA', 'BO
 /* ================== GUARDADO ================== */
 const SAVE_KEY = 'combirush_v1';
 let save = { money: 0, veh: 'combi', owned: ['combi'], custom: { body: '#D9CBA3', roof: '#EFE7D2', s1: '#C0392B', s2: '#2B5DAA', s3: '#D9CBA3', name: 'LA CHATARRA', sticker: 'Dios es mi copiloto', rims: '#9AA0A6', horn: 'clasica' }, goals: [], album: [], daily2: null, tutDone: false, rec2: {}, beat: {}, stats: { trips: 0, maxOn: 0, maxMoney: 0, bestLvl: 0, painted: false }, upg: { motor: 0, frenos: 0, llantas: 0, susp: 0, carro: 0, asientos: 0, parlante: 0, cobrador: 0 }, stars: [0, 0, 0], best: [0, 0, 0], unlocked: 1, music: true, sfx: true, xp: 0, rec: {}, medals: {}, skin: 'veloz', skins: ['veloz'], daily: { date: 0, best: 0, played: 0 }, duelWins: 0, games: 0, tripUnlocked: 1, tripStars: [] };
-function loadSave() {
+/* Si el navegador no deja guardar (incógnito, modo privado, iframe sin permiso) el juego
+   sigue en memoria y lo avisa; el código de partida permite llevarse el progreso. */
+const STORE_OK = (() => { try { const k = '__combirush_probe__'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch (e) { return false; } })();
+let storeNote = STORE_OK ? '' : 'Este navegador no permite guardar datos: tu progreso se perderá al cerrar la pestaña. Guarda tu código de partida en Opciones.';
+// Chrome en incógnito sí deja guardar, pero lo borra al cerrar la ventana: se reconoce por su cuota chica.
+if (STORE_OK && navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(e => { if (e && e.quota && e.quota < 160 * 1024 * 1024) { storeNote = 'Parece que estás en modo incógnito: tu progreso se borra al cerrar la ventana. Guarda tu código de partida en Opciones.'; if (typeof refreshStoreNote === 'function') refreshStoreNote(); } }).catch(() => { });
+const memStore = {};
+function loadSave(src) {
   try {
-    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+    const s = src || JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && typeof s === 'object') {
       save = Object.assign(save, s);
       save.upg = Object.assign({ motor: 0, frenos: 0, llantas: 0, susp: 0, carro: 0, asientos: 0, parlante: 0, cobrador: 0 }, s.upg || {});
@@ -1274,7 +1281,7 @@ function endRun(reason) {
     g.timeTaken = tm; g.prevBest = old ? old.best : 0;
     g.newBest = !old || tm < old.best;
     save.rec2[ti] = { best: g.newBest ? tm : old.best, stars: Math.max(old ? old.stars : 0, medal), money: Math.max(old ? old.money : 0, g.money), runs: (old ? old.runs || 0 : 0) + 1 };
-    if (g.newBest && g.trace) { try { localStorage.setItem('combirush_ghost_' + ti, JSON.stringify(g.trace)); } catch (e) { } }
+    if (g.newBest && g.trace) { memStore['g' + ti] = g.trace; try { localStorage.setItem('combirush_ghost_' + ti, JSON.stringify(g.trace)); } catch (e) { } }
     const rv = rivalsFor(ti); g.beaten = [];
     save.beat = save.beat || {};
     for (const r of rv) { const key = ti + ':' + r.name; if (tm < r.time && !save.beat[key]) { save.beat[key] = 1; save.money += r.prize; g.beaten.push(r); } }
@@ -3697,6 +3704,7 @@ function show(name) {
     $('#taller-badge').hidden = !(cheapU && save.money >= cheapU);
     const vs = vehStats(); $('#veh-chip').innerHTML = '<b>' + esc(save.custom.name || 'MI COMBI') + '</b><span>' + Math.round(vs.maxV * 0.16) + ' km/h</span><span>' + vs.cap + ' asientos</span><span>Motor ' + save.upg.motor + '/5</span>';
   }
+  if (name === 'menu') refreshStoreNote();
   if (name === 'menu') { $('#wallet-menu').textContent = 'En la caja: ' + soles(save.money); buildMenuProfile(); renderMenuBox(); const ti = nextTrip(); $('#btn-play-sub').textContent = save.tutDone ? TRIPS[ti].name : 'Escuela de manejo'; }
   if (name === 'pausa' || name === 'menu' || name === 'opciones') syncToggles();
   if (name === 'pausa') drawPauseMap();
@@ -4214,7 +4222,43 @@ function updateHUD() {
 }
 
 /* ---------- opciones ---------- */
+// Código de partida: todo el progreso en un texto que se puede copiar y volver a cargar.
+function exportCode() { try { return 'COMBI1.' + btoa(unescape(encodeURIComponent(JSON.stringify(save)))); } catch (e) { return ''; } }
+function importCode(txt) {
+  const t = String(txt || '').trim().replace(/\s+/g, '');
+  if (!t.startsWith('COMBI1.')) return false;
+  try {
+    const obj = JSON.parse(decodeURIComponent(escape(atob(t.slice(7)))));
+    if (!obj || typeof obj !== 'object' || typeof obj.money !== 'number' || !obj.upg) return false;
+    loadSave(obj); persist(); return true;
+  } catch (e) { return false; }
+}
+function refreshStoreNote() {
+  const n1 = $('#store-note'), n2 = $('#menu-store');
+  if (n1) { n1.hidden = !storeNote; n1.textContent = storeNote; }
+  if (n2) { n2.hidden = !storeNote; n2.textContent = storeNote ? 'Modo incógnito: guarda tu código en Opciones' : ''; }
+}
+function openCodeBox(mode) {
+  const box = $('#codebox'), ta = box.querySelector('textarea'), msg = $('#code-msg');
+  box.hidden = false; msg.textContent = '';
+  if (mode === 'exp') {
+    $('#code-title').textContent = 'Tu código de partida'; $('#code-load').hidden = true; ta.readOnly = true; ta.value = exportCode(); ta.focus(); ta.select();
+    const ok = () => { msg.textContent = '¡Copiado! Pégalo en tus notas o en WhatsApp para no perderlo.'; };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok, () => { try { document.execCommand('copy'); ok(); } catch (e) { msg.textContent = 'Selecciona el texto y cópialo.'; } }); else { document.execCommand('copy'); ok(); } } catch (e) { msg.textContent = 'Selecciona el texto y cópialo.'; }
+  } else {
+    $('#code-title').textContent = 'Cargar código de partida'; $('#code-load').hidden = false; ta.readOnly = false; ta.value = ''; ta.focus();
+  }
+}
+$('#btn-exp').addEventListener('click', () => { SFX.click(); openCodeBox('exp'); });
+$('#btn-imp').addEventListener('click', () => { SFX.click(); openCodeBox('imp'); });
+$('#code-close').addEventListener('click', () => { $('#codebox').hidden = true; });
+$('#code-load').addEventListener('click', () => {
+  const ok = importCode($('#codebox textarea').value);
+  if (!ok) { $('#code-msg').textContent = 'Ese código no es válido. Revisa que esté completo (empieza con COMBI1.).'; return; }
+  $('#codebox').hidden = true; SFX.buy(); toast('<small>Listo</small><b>Progreso recuperado</b><em>En la caja: ' + soles(save.money) + '</em>'); applyQuality(); buildOpciones();
+});
 function buildOpciones() {
+  refreshStoreNote();
   const q = save.quality || (isTouch ? 'media' : 'alta');
   document.querySelectorAll('[data-q]').forEach(b => b.setAttribute('aria-pressed', b.dataset.q === q ? 'true' : 'false'));
   $('#opt-back').dataset.go = optFrom;

@@ -11,6 +11,7 @@ Juego 3D (Three.js) de manejar una combi por Lima. Todo el juego es un único ar
 - `tools/build.mjs`: une las tres partes en `combi-rush.html`.
 - `tools/smoke.mjs`: prueba de humo (12 viajes, 4 climas, todos los modos).
 - `tools/shots.mjs`: capturas de pantalla para revisar la parte visual.
+- `tools/incognito.mjs`: prueba con el guardado bloqueado (modo privado) y el código de partida.
 - `tools/mem.mjs`: mide geometrías en GPU durante un viaje largo (detecta fugas).
 
 ```bash
@@ -18,6 +19,14 @@ node combi-rush/tools/build.mjs
 node combi-rush/tools/smoke.mjs
 node combi-rush/tools/shots.mjs combi-rush/shots
 ```
+
+## Modo incógnito y código de partida
+
+Igual que en MIND ESCAPE: si el navegador no deja guardar (incógnito, modo privado o una
+página que lo bloquea), el juego sigue funcionando en memoria y lo avisa en el menú y en
+Opciones. En Chrome incógnito, que sí guarda pero borra todo al cerrar la ventana, también
+avisa. En **Opciones → Código de partida** puedes copiar un código con todo tu progreso
+(plata, mejoras, viajes, metas) y cargarlo después en cualquier navegador.
 
 ## Versión 3: jugabilidad más clara
 
