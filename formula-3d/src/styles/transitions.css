@@ -1,0 +1,50 @@
+/* ─── Barrido diagonal entre pantallas ─────────────────────────────────── */
+
+.wipe {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.wipe.is-active {
+  visibility: visible;
+  /* Bloquea clics mientras la pantalla cambia. */
+  pointer-events: auto;
+}
+
+.wipe__band {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: -60vw;
+  width: 220vw;
+  will-change: transform;
+}
+
+.wipe__band--accent {
+  background: linear-gradient(90deg, var(--c-accent-dark), var(--c-accent) 70%, #ff7582);
+  box-shadow: 10px 0 40px rgba(255, 42, 60, 0.6);
+}
+
+/* El panel oscuro lleva un filo de luz en el borde que avanza. */
+.wipe__band--dark {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 22px),
+    linear-gradient(90deg, #0a0b0f, #12141a 55%, #0a0b0f);
+  border-right: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 8px 0 30px rgba(255, 255, 255, 0.25);
+}
+
+.wipe__logo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+}
+
+.wipe__logo .logo {
+  --logo-size: clamp(28px, 3vw, 40px);
+}

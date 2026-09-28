@@ -1,0 +1,194 @@
+/**
+ * Renderer único del juego. Ver PLAN.md §4.4.
+ *
+ * Siempre dibuja a través de un `EffectComposer` (RenderPass con MSAA → bloom →
+ * OutputPass con tone mapping y sRGB): así el antialiasing y el color son iguales
+ * con y sin postprocesado, y la calidad cambia en caliente sin recrear el
+ * contexto WebGL.
+ */
+
+import {
+  ACESFilmicToneMapping,
+  HalfFloatType,
+  PCFShadowMap,
+  PerspectiveCamera,
+  Scene,
+  SRGBColorSpace,
+  Vector2,
+  WebGLRenderer,
+  WebGLRenderTarget,
+} from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import type { GraphicsSettings } from '../save/schema';
+import { QUALITY_PRESETS } from './quality';
+
+/** Lo que una pantalla 3D entrega para dibujar. */
+export interface RenderView {
+  readonly scene: Scene;
+  readonly camera: PerspectiveCamera;
+  /** Ajustes gráficos nuevos (sombras, reflejos...). */
+  onGraphicsChanged?(graphics: GraphicsSettings): void;
+  /** Tamaño nuevo del lienzo en píxeles CSS y densidad de píxeles efectiva. */
+  onResize?(width: number, height: number, pixelRatio: number): void;
+}
+
+export interface RenderStats {
+  drawCalls: number;
+  triangles: number;
+}
+
+/** Parámetros del bloom: sólo brillan emisivos y reflejos muy intensos. */
+const BLOOM = { strength: 0.55, radius: 0.55, threshold: 0.92 };
+
+export class RenderHost {
+  readonly renderer: WebGLRenderer;
+  private composer: EffectComposer;
+  private readonly renderPass: RenderPass;
+  private readonly bloomPass: UnrealBloomPass;
+  private readonly outputPass: OutputPass;
+  private view: RenderView | null = null;
+  private graphics: GraphicsSettings;
+  private width = 1;
+  private height = 1;
+  private msaaSamples = -1;
+  private lastStats: RenderStats = { drawCalls: 0, triangles: 0 };
+
+  constructor(
+    readonly canvas: HTMLCanvasElement,
+    graphics: GraphicsSettings,
+  ) {
+    this.graphics = graphics;
+    this.renderer = new WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: false,
+      stencil: false,
+      powerPreference: 'high-performance',
+    });
+    this.renderer.outputColorSpace = SRGBColorSpace;
+    this.renderer.toneMapping = ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1;
+    this.renderer.shadowMap.type = PCFShadowMap;
+    this.renderer.setClearColor(0x000000, 1);
+    // Las estadísticas se reinician a mano: el composer dibuja varias veces por fotograma.
+    this.renderer.info.autoReset = false;
+
+    // Escena vacía hasta que una pantalla entregue su vista.
+    this.renderPass = new RenderPass(new Scene(), new PerspectiveCamera());
+    this.bloomPass = new UnrealBloomPass(new Vector2(256, 256), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
+    this.outputPass = new OutputPass();
+    this.composer = this.createComposer(0);
+    this.applyGraphics(graphics);
+  }
+
+  /** ¿El navegador soporta WebGL 2? (requisito del juego) */
+  static isSupported(): boolean {
+    try {
+      const canvas = document.createElement('canvas');
+      return canvas.getContext('webgl2') !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  get maxAnisotropy(): number {
+    return this.renderer.capabilities.getMaxAnisotropy();
+  }
+
+  get stats(): RenderStats {
+    return this.lastStats;
+  }
+
+  get currentGraphics(): GraphicsSettings {
+    return this.graphics;
+  }
+
+  /** Vista a dibujar (null = pantalla negra). */
+  setView(view: RenderView | null): void {
+    this.view = view;
+    if (view) {
+      this.renderPass.scene = view.scene;
+      this.renderPass.camera = view.camera;
+      view.camera.aspect = this.width / this.height;
+      view.camera.updateProjectionMatrix();
+      view.onGraphicsChanged?.(this.graphics);
+      view.onResize?.(this.width, this.height, this.renderer.getPixelRatio());
+    }
+  }
+
+  applyGraphics(graphics: GraphicsSettings): void {
+    this.graphics = graphics;
+    const preset = QUALITY_PRESETS[graphics.quality];
+
+    const shadows = graphics.shadows !== 'off';
+    if (this.renderer.shadowMap.enabled !== shadows) {
+      this.renderer.shadowMap.enabled = shadows;
+      // Los materiales se recompilan para incluir (o quitar) las sombras.
+      this.view?.scene.traverse((object) => {
+        const material = (object as { material?: { needsUpdate: boolean } | Array<{ needsUpdate: boolean }> }).material;
+        if (Array.isArray(material)) for (const m of material) m.needsUpdate = true;
+        else if (material) material.needsUpdate = true;
+      });
+    }
+
+    if (preset.msaaSamples !== this.msaaSamples) {
+      this.composer.dispose();
+      this.composer = this.createComposer(preset.msaaSamples);
+    }
+    this.bloomPass.enabled = graphics.postprocessing;
+    this.resize(this.width, this.height);
+    this.view?.onGraphicsChanged?.(graphics);
+  }
+
+  /** Tamaño del lienzo en píxeles CSS. */
+  resize(width: number, height: number): void {
+    this.width = Math.max(1, Math.floor(width));
+    this.height = Math.max(1, Math.floor(height));
+    const preset = QUALITY_PRESETS[this.graphics.quality];
+    const deviceRatio = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
+    const pixelRatio = Math.max(0.5, Math.min(deviceRatio, preset.maxPixelRatio) * this.graphics.resolutionScale);
+    this.renderer.setPixelRatio(pixelRatio);
+    this.renderer.setSize(this.width, this.height, false);
+    this.composer.setPixelRatio(pixelRatio);
+    this.composer.setSize(this.width, this.height);
+    if (this.view) {
+      this.view.camera.aspect = this.width / this.height;
+      this.view.camera.updateProjectionMatrix();
+      this.view.onResize?.(this.width, this.height, pixelRatio);
+    }
+  }
+
+  render(): void {
+    this.renderer.info.reset();
+    if (!this.view) {
+      this.renderer.setRenderTarget(null);
+      this.renderer.clear();
+      return;
+    }
+    this.composer.render();
+    this.lastStats = {
+      drawCalls: this.renderer.info.render.calls,
+      triangles: this.renderer.info.render.triangles,
+    };
+  }
+
+  dispose(): void {
+    this.composer.dispose();
+    this.bloomPass.dispose();
+    this.outputPass.dispose();
+    this.renderer.dispose();
+  }
+
+  private createComposer(samples: number): EffectComposer {
+    this.msaaSamples = samples;
+    const target = new WebGLRenderTarget(this.width, this.height, { type: HalfFloatType, samples });
+    const composer = new EffectComposer(this.renderer, target);
+    composer.addPass(this.renderPass);
+    composer.addPass(this.bloomPass);
+    composer.addPass(this.outputPass);
+    return composer;
+  }
+}

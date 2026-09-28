@@ -1,0 +1,99 @@
+.screen--splash {
+  display: grid;
+  place-items: center;
+  background: #000;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.splash__glow {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse 40% 26% at 50% 50%, rgba(255, 42, 60, 0.28), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 55%, rgba(120, 10, 20, 0.35), transparent 75%);
+  pointer-events: none;
+}
+
+.splash__streak {
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  margin-top: -1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95) 45%, #fff 50%, rgba(255, 255, 255, 0.95) 55%, transparent);
+  box-shadow:
+    0 0 18px 2px rgba(255, 255, 255, 0.7),
+    0 0 60px 8px rgba(255, 42, 60, 0.55);
+  pointer-events: none;
+}
+
+.splash__center {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: clamp(14px, 2.4vh, 26px);
+}
+
+.splash__logo-wrap {
+  position: relative;
+  overflow: hidden;
+  padding: 0.2em 0.4em;
+}
+
+.splash__logo {
+  --logo-size: clamp(56px, 10.5vw, 150px);
+}
+
+/* Destello que cruza el logo. */
+.splash__sheen {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 26%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  mix-blend-mode: overlay;
+  transform: translateX(-120%) skewX(-18deg);
+  pointer-events: none;
+}
+
+.splash__tagline {
+  font-size: clamp(11px, 1.15vw, 16px);
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  padding-left: 0.5em;
+}
+
+.splash__prompt {
+  position: absolute;
+  bottom: clamp(70px, 14vh, 150px);
+  font-family: var(--font-num);
+  font-size: clamp(11px, 1vw, 14px);
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 16px rgba(255, 42, 60, 0.8);
+  padding-left: 0.42em;
+}
+
+.splash__legal {
+  position: absolute;
+  bottom: 22px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--c-text-3);
+  text-align: center;
+  padding: 0 var(--gutter);
+}
+
+.splash__flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, #fff 0%, rgba(255, 235, 238, 0.85) 35%, rgba(255, 42, 60, 0.25) 75%);
+  pointer-events: none;
+}

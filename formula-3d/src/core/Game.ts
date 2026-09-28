@@ -1,0 +1,179 @@
+/**
+ * Raíz de composición: crea los servicios del juego y los conecta. Ver PLAN.md §4.1.
+ * Ningún módulo usa variables globales: todo cuelga de la instancia de `Game`.
+ */
+
+import { AudioManager } from '../audio/AudioManager';
+import type { UiSound } from '../audio/UiSounds';
+import { StudioScene } from '../garage/StudioScene';
+import { PLAYER_DEFAULT_LIVERY } from '../garage/livery';
+import { DiagonalWipe } from '../ui/anim/DiagonalWipe';
+import { FpsMeter } from '../ui/components/FpsMeter';
+import { EventBus } from './EventBus';
+import type { GameEvents } from './events';
+import { GameLoop } from './GameLoop';
+import { InputManager } from './input/InputManager';
+import { detectQuality } from './render/quality';
+import { RenderHost } from './render/RenderHost';
+import { SaveManager } from './save/SaveManager';
+import type { Settings } from './save/schema';
+import { createBestStorage } from './save/storage';
+import type { ScreenParams } from './screens/params';
+import { ScreenManager } from './screens/ScreenManager';
+import { Disposer } from './utils/Disposer';
+import type { DeepReadonly } from './utils/types';
+
+export interface GameLayers {
+  /** Contenedor del canvas y de las pantallas (se desenfoca en las transiciones). */
+  stage: HTMLElement;
+  canvas: HTMLCanvasElement;
+  /** Donde se montan las pantallas. */
+  ui: HTMLElement;
+  /** Capa superior: transiciones y medidor de FPS. */
+  overlay: HTMLElement;
+}
+
+export class Game {
+  readonly events = new EventBus<GameEvents>();
+  readonly screens: ScreenManager<ScreenParams>;
+  readonly loop: GameLoop;
+  private readonly fpsMeter: FpsMeter;
+  private readonly own = new Disposer();
+  private studioPromise: Promise<StudioScene> | null = null;
+  private studio: StudioScene | null = null;
+  private appliedGraphics = '';
+
+  private constructor(
+    readonly layers: GameLayers,
+    readonly save: SaveManager,
+    readonly audio: AudioManager,
+    readonly input: InputManager,
+    readonly render: RenderHost,
+  ) {
+    this.screens = new ScreenManager<ScreenParams>({
+      host: layers.ui,
+      transition: new DiagonalWipe(layers.overlay, layers.stage, () => audio.ui),
+      fallback: 'menu',
+      onChange: (change) => this.events.emit('screen:changed', change),
+      onError: (error) => console.error('[Pantallas]', error),
+    });
+    this.fpsMeter = new FpsMeter(layers.overlay);
+
+    this.loop = new GameLoop({
+      update: (dt) => {
+        this.input.update();
+        this.screens.update(dt);
+        this.fpsMeter.update(dt, this.loop.fps, this.loop.frameMs, this.render.stats);
+      },
+      render: () => this.render.render(),
+    });
+
+    // Entrada → pantallas; el primer gesto habilita el audio.
+    this.own.add(input.onAnyInput(() => audio.unlock()));
+    this.own.add(input.onAction((action) => this.screens.dispatch(action)));
+    this.own.add(input.onDeviceChange((device) => this.events.emit('input:device', { device })));
+
+    // Cada cambio de ajustes se aplica al instante.
+    this.own.add(save.onChange((data) => this.applySettings(data.settings)));
+    this.applySettings(save.data.settings);
+
+    // Tamaño del lienzo.
+    const resize = (): void => this.render.resize(layers.stage.clientWidth, layers.stage.clientHeight);
+    const observer = new ResizeObserver(resize);
+    observer.observe(layers.stage);
+    this.own.add(() => observer.disconnect());
+    resize();
+
+    // Pestaña oculta: se guarda y se pausa el audio.
+    this.own.listen(document, 'visibilitychange', () => {
+      if (document.hidden) {
+        void this.save.flush();
+        this.audio.suspend();
+      } else {
+        this.audio.resume();
+      }
+    });
+    this.own.listen(window, 'pagehide', () => void this.save.flush());
+  }
+
+  /** Crea todos los servicios. Falla sólo si no hay WebGL 2. */
+  static async boot(layers: GameLayers): Promise<Game> {
+    const storage = await createBestStorage();
+    const save = await SaveManager.load({
+      storage,
+      initialQuality: detectQuality({
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        isMobile: matchMedia('(pointer: coarse)').matches,
+      }),
+    });
+    const audio = new AudioManager(save.data.settings.audio);
+    const input = new InputManager(window);
+    const render = new RenderHost(layers.canvas, save.data.settings.graphics);
+    return new Game(layers, save, audio, input, render);
+  }
+
+  get settings(): DeepReadonly<Settings> {
+    return this.save.data.settings;
+  }
+
+  /** Modifica los ajustes: se guardan y se aplican enseguida. */
+  updateSettings(mutator: (settings: Settings) => void): void {
+    this.save.update((data) => mutator(data.settings));
+  }
+
+  /** Reproduce un sonido de interfaz (no hace nada si el audio aún no está listo). */
+  playUi(sound: UiSound): void {
+    this.audio.ui?.play(sound);
+  }
+
+  /**
+   * Estudio 3D compartido por el menú y el garaje. Se crea una sola vez y se
+   * precompilan sus shaders para que el menú aparezca sin tirones.
+   */
+  getStudio(): Promise<StudioScene> {
+    this.studioPromise ??= (async () => {
+      const studio = new StudioScene(this.render.renderer, { livery: PLAYER_DEFAULT_LIVERY }, this.render.maxAnisotropy);
+      studio.onGraphicsChanged(this.render.currentGraphics);
+      // Con compilación paralela de shaders se espera sin trabar la animación;
+      // sin ella, se compila de una vez (evita el tirón del primer fotograma).
+      const renderer = this.render.renderer;
+      if (renderer.extensions.has('KHR_parallel_shader_compile')) {
+        await renderer.compileAsync(studio.scene, studio.camera);
+      } else {
+        renderer.compile(studio.scene, studio.camera);
+      }
+      this.studio = studio;
+      return studio;
+    })();
+    return this.studioPromise;
+  }
+
+  start(): void {
+    this.loop.start();
+  }
+
+  async dispose(): Promise<void> {
+    this.loop.stop();
+    await this.screens.destroy();
+    await this.save.flush();
+    this.save.dispose();
+    this.own.dispose();
+    this.studio?.dispose();
+    this.input.dispose();
+    this.audio.dispose();
+    this.render.dispose();
+    this.events.clear();
+  }
+
+  private applySettings(settings: DeepReadonly<Settings>): void {
+    const graphicsKey = JSON.stringify(settings.graphics);
+    if (graphicsKey !== this.appliedGraphics) {
+      this.appliedGraphics = graphicsKey;
+      this.render.applyGraphics({ ...settings.graphics });
+      this.loop.setFpsTarget(settings.graphics.fpsTarget);
+      this.fpsMeter.setVisible(settings.graphics.showFps);
+    }
+    this.audio.setVolumes({ ...settings.audio });
+    this.events.emit('settings:changed', { settings });
+  }
+}

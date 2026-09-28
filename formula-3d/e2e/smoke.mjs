@@ -1,0 +1,179 @@
+/**
+ * Prueba de humo en Chromium real sobre el build de producción.
+ *
+ *   npm run build && npm run smoke
+ *
+ * Recorre: splash → menú → Ajustes (cambia calidad y volumen) → vuelve →
+ * recarga → comprueba que lo guardado sigue ahí. Falla si aparece cualquier
+ * error o advertencia en la consola. Guarda capturas en e2e/capturas/.
+ *
+ * Chromium: usa el de Playwright (`npx playwright-core install chromium`) o el
+ * que indique la variable CHROMIUM_PATH. Sin GPU (servidores, CI) Chromium
+ * dibuja por software y va lento: por eso se emula `prefers-reduced-motion`,
+ * que el juego respeta acortando las animaciones.
+ */
+
+import { mkdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright-core';
+import { preview } from 'vite';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const shots = fileURLToPath(new URL('./capturas/', import.meta.url));
+const STEP_TIMEOUT = 120_000;
+
+const problems = [];
+let step = 'inicio';
+
+/**
+ * Avisos del driver gráfico por software que provoca la propia prueba al
+ * sacar capturas (lectura de píxeles); no vienen del juego.
+ */
+const HARNESS_NOISE = [/GPU stall due to ReadPixels/];
+
+function log(message) {
+  console.info(`  · ${message}`);
+}
+
+async function main() {
+  await mkdir(shots, { recursive: true });
+  const server = await preview({ root, preview: { port: 4179, strictPort: true, open: false }, logLevel: 'error' });
+  const url = server.resolvedUrls?.local[0] ?? 'http://localhost:4179/';
+  const browser = await chromium.launch({
+    ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
+    args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+  });
+
+  try {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    page.setDefaultTimeout(STEP_TIMEOUT);
+    page.on('console', (message) => {
+      if (HARNESS_NOISE.some((pattern) => pattern.test(message.text()))) return;
+      if (message.type() === 'error' || message.type() === 'warning') {
+        problems.push(`[${step}] consola ${message.type()}: ${message.text()}`);
+      }
+    });
+    page.on('pageerror', (error) => problems.push(`[${step}] excepción: ${error.message}`));
+
+    // ─── Primera visita ───
+    step = 'splash';
+    await page.goto(url);
+    await page.waitForSelector('.screen--splash .splash__prompt');
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: `${shots}01-splash.png` });
+    log('splash visible');
+
+    step = 'menú';
+    await page.keyboard.press('Enter');
+    await waitForScreen(page, 'menu');
+    await page.screenshot({ path: `${shots}02-menu.png` });
+    const locked = await page.locator('.mbtn.is-locked').count();
+    log(`menú visible (${locked} accesos bloqueados para fases futuras)`);
+
+    step = 'ajustes';
+    // Desde el primer acceso, ↑ da la vuelta hasta el último: Ajustes.
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await waitForScreen(page, 'settings');
+    // Calidad → Baja (más liviana para Chromium sin GPU). El selector da la vuelta.
+    for (let i = 0; i < 4; i++) {
+      const value = await page.locator('.srow.is-focused .selector__value').textContent();
+      if (value?.trim() === 'Baja') break;
+      await page.keyboard.press('ArrowLeft');
+    }
+    await expectText(page, '.srow.is-focused .selector__value', 'Baja');
+    await page.screenshot({ path: `${shots}03-ajustes-graficos.png` });
+    await page.keyboard.press('KeyE');
+    await page.waitForSelector('.tab.is-active >> text=Sonido');
+    await page.keyboard.press('ArrowLeft'); // 80 % → 75 %
+    await expectText(page, '.srow.is-focused .slider__value', '75 %');
+    await page.screenshot({ path: `${shots}04-ajustes-sonido.png` });
+    log('ajustes: calidad Baja y volumen general 75 %');
+
+    step = 'volver';
+    await page.keyboard.press('Escape');
+    await waitForScreen(page, 'menu');
+    log('Esc vuelve al menú');
+
+    // ─── Recarga: lo guardado debe seguir ───
+    step = 'recarga';
+    await page.waitForTimeout(700); // escritura agrupada del guardado (400 ms)
+    await page.reload();
+    await page.waitForSelector('.screen--splash .splash__prompt');
+    await page.keyboard.press('Enter');
+    await waitForScreen(page, 'menu');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await waitForScreen(page, 'settings');
+    await expectText(page, '.srow.is-focused .selector__value', 'Baja');
+    await page.keyboard.press('KeyE');
+    await expectText(page, '.srow.is-focused .slider__value', '75 %');
+    log('el guardado sobrevivió a la recarga (IndexedDB)');
+
+    // ─── Respaldo: sin IndexedDB, el guardado va a localStorage ───
+    step = 'respaldo localStorage';
+    const fallback = await browser.newContext({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' });
+    await fallback.addInitScript(() => {
+      Object.defineProperty(window, 'indexedDB', { get: () => undefined });
+    });
+    const page2 = await fallback.newPage();
+    page2.setDefaultTimeout(STEP_TIMEOUT);
+    page2.on('pageerror', (error) => problems.push(`[${step}] excepción: ${error.message}`));
+    page2.on('console', (message) => {
+      // El aviso de "IndexedDB no disponible" es justamente lo esperado aquí.
+      if (message.type() === 'error') problems.push(`[${step}] consola error: ${message.text()}`);
+    });
+    await page2.goto(url);
+    await page2.waitForSelector('.screen--splash .splash__prompt');
+    await page2.waitForTimeout(700);
+    const stored = await page2.evaluate(() => localStorage.getItem('apice-gp:save'));
+    if (!stored?.includes('"version":1')) throw new Error('No se escribió el guardado en localStorage.');
+    log('sin IndexedDB, el guardado se escribe en localStorage');
+    await fallback.close();
+  } finally {
+    await browser.close();
+    await server.close();
+  }
+}
+
+/** Espera a que `id` sea la pantalla de arriba y la transición haya terminado. */
+async function waitForScreen(page, id) {
+  await page.waitForFunction(
+    (screenId) => {
+      const top = [...document.querySelectorAll('#ui > .screen')].at(-1);
+      const wipeBusy = document.querySelector('.wipe')?.classList.contains('is-active');
+      return Boolean(top?.classList.contains(`screen--${screenId}`)) && !wipeBusy;
+    },
+    id,
+    { polling: 150, timeout: STEP_TIMEOUT },
+  );
+  await page.waitForTimeout(400);
+}
+
+async function expectText(page, selector, text) {
+  await page.waitForFunction(
+    ([sel, expected]) => document.querySelector(sel)?.textContent?.trim() === expected,
+    [selector, text],
+    { polling: 100, timeout: 20_000 },
+  ).catch(async () => {
+    const actual = await page.locator(selector).first().textContent().catch(() => null);
+    throw new Error(`Se esperaba "${text}" en ${selector} y hay "${actual}".`);
+  });
+}
+
+console.info('Prueba de humo en Chromium…');
+main()
+  .then(() => {
+    if (problems.length > 0) {
+      console.error(`\n✖ ${problems.length} problema(s) en la consola:`);
+      for (const problem of problems) console.error(`  ${problem}`);
+      process.exit(1);
+    }
+    console.info('\n✔ Prueba de humo superada sin errores ni advertencias en la consola.');
+  })
+  .catch((error) => {
+    console.error(`\n✖ Falló en el paso "${step}":`, error);
+    for (const problem of problems) console.error(`  ${problem}`);
+    process.exit(1);
+  });

@@ -1,0 +1,164 @@
+/* ─── Tokens de diseño ─────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: dark;
+
+  --c-bg: #050608;
+  --c-bg-2: #0c0e13;
+  --c-panel: rgba(13, 15, 20, 0.78);
+  --c-panel-strong: rgba(10, 11, 15, 0.92);
+  --c-line: rgba(255, 255, 255, 0.08);
+  --c-line-strong: rgba(255, 255, 255, 0.18);
+  --c-text: #f3f4f6;
+  --c-text-2: #b3b7c2;
+  --c-text-3: #6f7483;
+  --c-accent: #ff2a3c;
+  --c-accent-2: #ff5d6b;
+  --c-accent-dark: #a50f1c;
+  --c-accent-glow: rgba(255, 42, 60, 0.45);
+  --c-gold: #f5c542;
+
+  --font-text: 'Titillium Web', 'Segoe UI', system-ui, sans-serif;
+  --font-num: 'Orbitron', 'Titillium Web', system-ui, sans-serif;
+
+  --skew: -12deg;
+  --unskew: 12deg;
+  --gutter: clamp(16px, 3.2vw, 56px);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ─── Base ─────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-text);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+button:focus {
+  outline: none;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.icon {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ─── Capas ────────────────────────────────────────────────────────────── */
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+#stage {
+  position: absolute;
+  inset: 0;
+  will-change: filter;
+}
+
+#gl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#ui {
+  position: absolute;
+  inset: 0;
+}
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+}
+
+/* ─── Error fatal (sin WebGL 2, fallo al arrancar) ─────────────────────── */
+
+.fatal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: radial-gradient(circle at 50% 40%, #1a0c10, var(--c-bg) 70%);
+  text-align: center;
+}
+
+.fatal__box {
+  max-width: 560px;
+}
+
+.fatal h1 {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+}
+
+.fatal p {
+  color: var(--c-text-2);
+  line-height: 1.55;
+}
+
+.fatal code {
+  display: block;
+  margin-top: 16px;
+  color: var(--c-text-3);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
