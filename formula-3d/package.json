@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node e2e/smoke.mjs",
+    "build:artifact": "npm run build && node scripts/build-artifact.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && vite build"
   },
   "dependencies": {

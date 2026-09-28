@@ -78,7 +78,15 @@ export class InputManager {
   ) {
     this.getGamepads =
       options.getGamepads ??
-      (() => (typeof navigator !== 'undefined' && 'getGamepads' in navigator ? navigator.getGamepads() : []));
+      (() => {
+        if (typeof navigator === 'undefined' || !('getGamepads' in navigator)) return [];
+        // Dentro de un iframe sin permiso de gamepad, el navegador lanza SecurityError.
+        try {
+          return navigator.getGamepads();
+        } catch {
+          return [];
+        }
+      });
     target.addEventListener('keydown', this.onKeyDown);
     target.addEventListener('keyup', this.onKeyUp);
     target.addEventListener('pointerdown', this.onPointer);
