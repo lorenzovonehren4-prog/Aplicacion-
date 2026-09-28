@@ -71,6 +71,10 @@ function renderHub() {
   $('#p-attrs').innerHTML = ATTRS.map(([k, n]) => '<div class="at"><span>' + n + '</span>' + bar(C.attr[k], '#2E6BFF') + '<b>' + Math.round(C.attr[k]) + '</b></div>').join('');
   $('#p-money').innerHTML = '<div><small>Plata</small><b>' + money(C.money) + '</b></div><div><small>Sueldo</small><b>' + money(C.salary) + '/sem</b></div><div><small>Contrato</small><b>' + (C.contractEnd > 0 ? C.contractEnd + (C.contractEnd === 1 ? ' año' : ' años') : 'Termina') + '</b></div><div><small>Seguidores</small><b>' + fmtK(C.followers) + '</b></div>' + (C.bonus ? '<div><small>Bono por gol</small><b>' + money(C.bonus) + '</b></div>' : '') + (C.clause ? '<div><small>Cláusula</small><b>' + money(C.clause) + '</b></div>' : '');
   $('#p-state').innerHTML = [['Forma', C.form], ['Energía', 100 - C.fatigue], ['Felicidad', C.happy], ['Disciplina', C.disc], ['Confianza del DT', C.trust], ['Fama', C.fame]].map(([n, v]) => '<div class="st"><span>' + n + '</span>' + bar(v) + '</div>').join('') + (C.rel !== 'soltero' ? '<div class="st"><span>' + (C.rel === 'casado' ? 'Matrimonio con ' : 'Relación con ') + esc(C.partner) + '</span>' + bar(C.relLvl, '#FF2E88') + '</div>' : '') + (C.injured ? '<div class="inj">Lesionado: ' + C.injured + (C.injured === 1 ? ' semana' : ' semanas') + '</div>' : '') + (C.suspended ? '<div class="inj">Suspendido: ' + C.suspended + (C.suspended === 1 ? ' fecha' : ' fechas') + '</div>' : '');
+  if (C.goal) { const gi = goalInfo(C.goal); const pct = gi.id === 'nota' ? (gi.v / gi.n) * 100 : gi.v / gi.n * 100; $('#p-goal').innerHTML = '<div class="gl"><b>🎯 Reto: ' + esc(gi.name) + '</b>' + bar(Math.min(100, pct), '#FFE14D') + '<small>' + (gi.ok ? '¡Cumplido! Cóbralo al final de la temporada.' : 'Vas ' + (C.goal.id === 'nota' ? gi.v.toFixed(1) : gi.v) + ' de ' + (C.goal.id === 'nota' ? gi.n.toFixed(1) : gi.n)) + '</small></div>'; } else $('#p-goal').innerHTML = '';
+  $('#p-focus').innerHTML = [['', 'Equilibrado']].concat(TRAIN_FOCUS.map(f => [f[0], f[1]])).map(([k, n]) => '<button data-f="' + k + '" class="' + (C.focus === k ? 'on' : '') + '" title="' + (k ? TRAIN_FOCUS.find(f => f[0] === k)[2] : 'Todo por igual') + '">' + n + '</button>').join('');
+  $('#p-focus').querySelectorAll('button').forEach(b => b.onclick = () => { C.focus = b.dataset.f; sfxClick(); persist(); renderHub(); });
+  const pb = $('#h-perks'); pb.innerHTML = 'Habilidades' + (C.perkPts > 0 && C.perks.length < MAX_PERKS ? '<span class="badge">' + C.perkPts + '</span>' : '');
   $('#h-season').innerHTML = '<b>Temporada ' + yearNow() + '</b> · semana ' + (C.week + 1) + ' de ' + SEASON_WEEKS + '<span class="wk"><i style="width:' + (C.week / SEASON_WEEKS * 100) + '%"></i></span>';
   const next = (() => { const save = C.week; C.week++; const l = weekMatches(); C.week = save; return l; })();
   $('#h-next').innerHTML = next.length ? next.map(m => m.type === 'nation' ? '<div class="nx"><small>' + m.comp + '</small><b>' + '🇵🇪 Perú</b></div>' : '<div class="nx' + (m.derby ? ' derby' : '') + '"><small>' + esc(m.comp) + (m.derby ? ' · ¡CLÁSICO!' : '') + '</small><div class="vs">' + crest(club(m.home), 'sm') + '<b>' + esc(club(m.home).name) + '</b><i>vs</i><b>' + esc(club(m.away).name) + '</b>' + crest(club(m.away), 'sm') + '</div></div>').join('') : '<div class="nx"><small>Sin partido esta semana</small></div>';
@@ -85,10 +89,13 @@ function renderHub() {
 /* ---------- tutorial ---------- */
 const TUTORIAL = [
   { w: 0, t: '¡Bienvenido a tu carrera!', x: 'Cada semana eliges cómo vivirla en <b>"¿Cómo vives esta semana?"</b>. Después pasan cosas en tu vida y se juegan los partidos. Dale a <b>Jugar semana</b> cuando estés listo.' },
+  { w: 0, t: 'Tu reto de temporada', x: 'Antes de jugar vas a elegir un <b>reto personal</b> (goles, partidos, nota...). Si lo cumples ganas un <b>punto de habilidad</b>. Lo ves en tu panel de la izquierda.' },
+  { w: 1, t: 'Jugadas decisivas', x: 'En los partidos te tocarán <b>jugadas decisivas</b>: penales, mano a mano, tiros libres, contragolpes o cierres de último hombre. Tienes 12 segundos para elegir. Tus atributos deciden si sale bien, y los arqueros estudian dónde pateas los penales.' },
   { w: 1, t: 'La forma', x: 'La <b>forma</b> sube cuando juegas bien y baja cuando juegas mal. Con buena forma rindes más en la cancha.' },
   { w: 2, t: 'La energía', x: 'Entrenar fuerte y salir de fiesta te cansan. Con poca <b>energía</b> juegas peor y te puedes lesionar. Si estás en rojo, <b>descansa</b>.' },
   { w: 3, t: 'La confianza del DT', x: 'El DT decide si eres titular. Su <b>confianza</b> sube si entrenas y juegas bien, y baja con fiestas y escándalos. Revisa <b>Celular → Tu gente</b>.' },
   { w: 4, t: 'Tu casa', x: 'Haz clic en los objetos de tu casa: la <b>cama</b> para descansar, el <b>gimnasio</b> para entrenar extra, el <b>celular</b>, el <b>clóset</b> y la <b>tele</b>. Arrastra para girar la cámara.' },
+  { w: 4, t: 'Enfoque y habilidades', x: 'En <b>Enfoque del entrenamiento</b> eliges qué atributo mejorar más rápido. Con puntos de habilidad compras talentos en <b>Habilidades</b>: solo puedes tener 6, así que elige tu estilo.' },
   { w: 5, t: 'La plata', x: 'Con tu sueldo compras casas, carros y mascotas en la <b>Tienda</b>. Ojo: tu puntaje final depende de títulos, goles y nivel, no de la plata.' },
   { w: 6, t: 'El mercado', x: 'En la semana 7 llegan ofertas. Puedes <b>negociar</b> sueldo, años, prima, bono por gol y cláusula. Si pides demasiado, el club se levanta de la mesa.' },
 ];
@@ -109,6 +116,7 @@ async function playWeek() {
   try {
     if (C.tut < TUTORIAL.length && C.season === 1) C.tut = Math.max(C.tut, TUTORIAL.findIndex(t => t.w > C.week + 1) >= 0 ? TUTORIAL.findIndex(t => t.w > C.week + 1) : TUTORIAL.length);
     $('#tip').hidden = true;
+    if (!C.goal && C.goalOpts && C.goalOpts.length) await chooseGoal();
     C.week++;
     applyPlan(plan);
     if (plan === 'fiesta') await showDisco();
@@ -116,7 +124,10 @@ async function playWeek() {
     const ev = pickEvent(); if (ev) await showEvent(ev);
     const ms = weekMatches();
     let first = true;
-    for (const m of ms) { const r = simMatch(m); applyMatch(r); await showMatch(r, first); first = false; }
+    for (const m of ms) {
+      if ((m.derby || m.ko || m.type === 'nation') && !C.injured && !C.suspended) m.mind = await chooseMindset(m);
+      const r = simMatch(m); await showMatch(r, first); first = false;
+    }
     simOthers();
     const mw = weeklyMoney(); if (C.weekGoals && C.bonus) toast('💰 Bono por goles cobrado', 'good'); void mw;
     endWeekUpdate();
@@ -144,6 +155,20 @@ async function playWeek() {
 }
 function emergencyOffer() { const cands = C.clubs.filter(c => c.str <= C.ovr + 2).sort((a, b) => b.str - a.str); const c = cands[0] || C.clubs[0]; return { club: c.id, wage: wageFor(C.ovr, leagueOf(c)), years: 1, role: 'Suplente', fee: 0, signing: 0 }; }
 $('#btn-week').onclick = () => { sfxClick(); playWeek(); };
+
+/* ---------- reto de temporada y mentalidad ---------- */
+async function chooseGoal() {
+  const opts = C.goalOpts.map(g => ({ g, name: SEASON_GOALS.find(d => d.id === g.id).name(g.p) }));
+  modal('<small class="kick">Temporada ' + yearNow() + '</small><h2>Elige tu reto personal</h2><p>Si lo cumples al final de la temporada ganas <b>un punto de habilidad</b>, un bono de ' + money(C.salary * 4) + ' y la confianza del DT.</p><div class="opts">' + opts.map((o, i) => '<button class="b opt goal" data-i="' + i + '"><b>🎯 ' + esc(o.name) + '</b></button>').join('') + '</div>');
+  const b = await waitClick('#modal .opt'); C.goal = opts[+b.dataset.i].g; closeModal(); persist(); renderHub();
+  toast('🎯 Reto: ' + esc(opts[+b.dataset.i].name), 'big');
+}
+async function chooseMindset(m) {
+  const what = m.type === 'nation' ? 'Juegas con la selección' : m.derby ? '¡Se viene el clásico!' : 'Partido de eliminación directa';
+  modal('<small class="kick">' + esc(m.comp) + '</small><h2>' + what + '</h2><p>El vestuario está tenso. ¿Con qué cabeza sales a la cancha?</p><div class="opts">' + MINDSETS.map((x, i) => '<button class="b opt" data-i="' + i + '"><b>' + x.name + '</b><br><small>' + x.desc + '</small></button>').join('') + '</div>');
+  const b = await waitClick('#modal .opt'); closeModal();
+  return MINDSETS[+b.dataset.i].id;
+}
 
 /* ---------- eventos ---------- */
 async function showEvent(ev) {
@@ -221,6 +246,19 @@ async function showMatch(r, firstOfWeek) {
         else if (e.assist === 'you') { addLine(min, phrase('assist', team), 'goal you'); S3.hype = 0.9; await moment('assist'); if (skip) sfxGoal(); }
         else { addLine(min, 'Gol de ' + esc(team) + '.', 'goal ' + (ours ? 'ours' : 'theirs')); if (ours) { sfxCheer(); S3.hype = 0.8; } else { sfxBoo(); S3.hype = 0.1; } }
       } else if (e.type === 'chance') addLine(min, phrase('chance'), 'you');
+      else if (e.type === 'decision') {
+        const res = await decisionUI(r, e, () => skip);
+        const good = res.goal || res.assist;
+        addLine(min, res.text, good ? 'goal you' : res.conceded ? 'goal theirs' : 'you');
+        if (good) { if (r.mySide === 'A') a++; else b++; S3.hype = 1; }
+        if (res.conceded) { if (r.mySide === 'A') b++; else a++; S3.hype = 0.1; sfxBoo(); }
+        $('#sc').textContent = a + ' - ' + b; $('#sbs').textContent = a + '-' + b;
+        if (!skip && sp > 0) {
+          if (res.anim === 'penalty') { const d = playPenalty(res.opt, res.pen, res.gk, 1 / Math.max(0.6, sp)); await waitMoment(d, () => skip); }
+          else if (res.anim && (good || res.bonus > 0.2)) { const d = playMoment(res.anim, 1 / Math.max(0.6, sp)); await waitMoment(d, () => skip); }
+        } else if (good) sfxGoal();
+        if (res.goal && !skip) await celebrationUI();
+      }
       else if (e.type === 'defense') { addLine(min, phrase('defense'), 'you'); if (chance(0.5)) await moment('defense'); }
       else if (e.type === 'yellow') { addLine(min, phrase('yellow'), 'warn'); sfxWhistle(1); }
       else if (e.type === 'sub') addLine(min, phrase('sub'), 'you');
@@ -230,6 +268,8 @@ async function showMatch(r, firstOfWeek) {
     S3.hype = lerp(S3.hype || 0.2, 0.25, 0.08);
     if (!skip) await sleep((min % 15 === 0 ? 160 : 45) * sp);
   }
+  finalizeMatch(r); applyMatch(r);
+  $('#sc').textContent = r.hg + ' - ' + r.ag; $('#sbs').textContent = r.hg + '-' + r.ag;
   if (r.pens) addLine(90, 'Penales: ' + r.pens[0] + ' - ' + r.pens[1] + '.', 'goal');
   sfxWhistle(3);
   addLine(90, r.won ? pick(PHRASES.win) : r.drew ? pick(PHRASES.draw) : pick(PHRASES.loss), r.won ? 'goal ours' : '');
@@ -238,6 +278,36 @@ async function showMatch(r, firstOfWeek) {
   if (r.posts && r.posts.length) { const pe = $('#posts'); pe.hidden = false; pe.innerHTML = '<small>Lo que dicen en redes</small>' + r.posts.map(p => '<div class="post"><b>' + esc(p.u) + '</b> ' + esc(p.t) + ' <span>❤ ' + fmtK(p.likes) + '</span></div>').join(''); }
   el.querySelector('#skip').hidden = true; el.querySelector('#cont').hidden = false;
   await waitClick('#cont'); el.hidden = true; $('#sbug').hidden = true; $('#tvtag').hidden = true; MATCH = null;
+}
+/* ---------- jugadas decisivas y festejos ---------- */
+function decisionUI(r, e, isSkip) {
+  const D = DECISIONS[e.kind];
+  if (isSkip()) return Promise.resolve(autoDecide(r, e));
+  const box = document.createElement('div'); box.className = 'dec';
+  const extra = e.kind === 'penal' && C.penHist.length >= 3 ? '<small class="hint2">El arquero estudió tus penales: ' + penTrend() + '</small>' : '';
+  box.innerHTML = '<div class="dh"><b>⚡ ' + D.title + '</b><span class="dt"><i></i></span></div><p>' + D.text + '</p>' + extra + '<div class="dopts">' + D.opts.map(o => '<button class="b dopt' + (o.risky ? ' risky' : '') + '" data-id="' + o.id + '">' + o.t + '</button>').join('') + '</div>';
+  $('#match .mb').appendChild(box);
+  sfxWhistle(1); S3.hype = 0.7;
+  return new Promise(res => {
+    let done = false;
+    const finish = id => { if (done) return; done = true; clearTimeout(tm); box.remove(); res(id ? resolveDecision(r, e, id) : autoDecide(r, e)); };
+    box.querySelectorAll('.dopt').forEach(b => b.onclick = () => { sfxClick(); finish(b.dataset.id); });
+    const tm = setTimeout(() => finish(D.opts[0].id), 12000);
+    requestAnimationFrame(() => { const t = box.querySelector('.dt i'); if (t) t.style.transform = 'scaleX(0)'; });
+  });
+}
+function penTrend() { const c = { izq: 0, centro: 0, der: 0 }; for (const h of C.penHist.slice(-6)) if (c[h] !== undefined) c[h]++; const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0]; return 'sueles patear ' + ({ izq: 'a la izquierda', centro: 'al centro', der: 'a la derecha' }[top[0]]) + '.'; }
+function celebrationUI() {
+  const box = document.createElement('div'); box.className = 'dec cel';
+  box.innerHTML = '<div class="dh"><b>🎉 ¿Cómo lo festejas?</b><span class="dt"><i></i></span></div><div class="dopts">' + CELEBRATIONS.map(c => '<button class="b dopt" data-id="' + c.id + '">' + c.t + '</button>').join('') + '</div>';
+  $('#match .mb').appendChild(box);
+  return new Promise(res => {
+    let done = false;
+    const finish = id => { if (done) return; done = true; clearTimeout(tm); box.remove(); if (id) { const c = CELEBRATIONS.find(x => x.id === id); applyFx(c.fx); toast('🎉 ' + c.t, 'good'); } res(); };
+    box.querySelectorAll('.dopt').forEach(b => b.onclick = () => { sfxClick(); finish(b.dataset.id); });
+    const tm = setTimeout(() => finish(null), 6000);
+    requestAnimationFrame(() => { const t = box.querySelector('.dt i'); if (t) { t.style.transitionDuration = '6s'; t.style.transform = 'scaleX(0)'; } });
+  });
 }
 async function waitMoment(dur, cancel) { const t0 = performance.now(); while (S3.anim && performance.now() - t0 < dur * 1000 + 500) { if (cancel()) { if (S3.anim) S3.anim.t = 999; break; } await sleep(60); } }
 function abbr(n) { const w = n.split(/\s+/).filter(p => !/^(de|del|la|el|los|las)$/i.test(p)); return (w.length > 1 ? w[0].slice(0, 2) + w[1][0] : n.slice(0, 3)).toUpperCase(); }
@@ -318,6 +388,8 @@ async function showSeasonEnd(r) {
     '<div class="sgrid"><div><small>Posición</small><b>' + s.pos + '°</b></div><div><small>Partidos</small><b>' + s.apps + '</b></div><div><small>Goles</small><b>' + s.goals + '</b></div><div><small>Asistencias</small><b>' + s.assists + '</b></div><div><small>Nota media</small><b>' + (s.avg || '-') + '</b></div><div><small>Nivel</small><b>' + C.ovr + '</b></div></div>' +
     (r.titles.length || r.awards.length ? '<div class="troph">' + r.titles.map(t => '<span class="tc">🏆 ' + esc(t) + '</span>').join('') + r.awards.map(t => '<span class="ti">⭐ ' + esc(t) + '</span>').join('') + '</div>' : '<p class="res">Sin títulos esta temporada.</p>') +
     '<div class="hl">' + (r.best ? '<div><small>Tu mejor partido</small><b>' + r.best.text + '</b><span>Nota ' + r.best.rating.toFixed(1) + ' · ' + esc(r.best.comp) + '</span></div>' : '') + (r.bestGoal ? '<div><small>Tu mejor gol</small><b>' + r.bestGoal.text + '</b><span>' + esc(r.bestGoal.comp) + '</span><button class="b s sm" id="rep">▶ Ver repetición</button></div>' : '') + (ts && !ts.me ? '<div><small>Goleador de la liga</small><b>' + esc(ts.name) + '</b><span>' + ts.goals + ' goles</span></div>' : '') + '</div>' +
+    (r.goal ? '<div class="goalres ' + (r.goal.ok ? 'ok' : 'no') + '">🎯 Reto «' + esc(r.goal.name) + '»: ' + (r.goal.ok ? '¡cumplido! +1 punto de habilidad y bono.' : 'no cumplido.') + '</div>' : '') +
+    (r.perkSeason || (r.milestones && r.milestones.length) ? '<p class="nick">⭐ Ganaste puntos de habilidad' + (r.milestones && r.milestones.length ? ' (' + r.milestones.join(', ') + ')' : '') + (r.perkSeason ? ' (temporada de figura)' : '') + '. Úsalos en <b>Habilidades</b>.</p>' : '') +
     (r.nick ? '<p class="nick">📰 La prensa te bautizó: <b>"' + esc(r.nick) + '"</b></p>' : '') + nat +
     '<p>Ahora tienes ' + C.age + ' años.</p><button class="b g" id="ok">Siguiente ▶</button>', true);
   const rep = m.querySelector('#rep');
@@ -385,6 +457,13 @@ $('#h-scorers').onclick = () => { sfxClick(); showScorers(); };
 $('#h-career').onclick = () => { sfxClick(); showCareer(); };
 $('#h-phone').onclick = () => { sfxClick(); showPhone(); };
 $('#h-opts').onclick = () => { sfxClick(); showOptions(); };
+$('#h-perks').onclick = () => { sfxClick(); showPerks(); };
+function showPerks() {
+  const can = C.perkPts > 0 && C.perks.length < MAX_PERKS;
+  const m = modal('<small class="kick">Tu estilo de juego</small><h2>Habilidades</h2><p>Tienes <span class="pts">' + C.perkPts + (C.perkPts === 1 ? ' punto' : ' puntos') + '</span>. Puedes tener hasta ' + MAX_PERKS + ' habilidades en tu carrera (llevas ' + C.perks.length + '). Ganas puntos al cumplir tu reto de temporada, con temporadas de nota 7.3 o más y al llegar a nivel 60, 67, 74, 81 y 88.</p><div class="perks">' + PERKS.map(p => { const own = C.perks.includes(p.id); return '<button class="perk' + (own ? ' own' : '') + '" data-p="' + p.id + '"' + (own || !can ? ' disabled' : '') + '><b>' + p.icon + ' ' + p.name + '</b><small>' + p.desc + '</small>' + (own ? '<small><b>✓ La tienes</b></small>' : '') + '</button>'; }).join('') + '</div><button class="b s" id="close">Cerrar</button>', true);
+  m.querySelectorAll('.perk:not(:disabled)').forEach(b => b.onclick = () => { const p = PERKS.find(x => x.id === b.dataset.p); C.perks.push(p.id); C.perkPts--; sfxCash(); toast(p.icon + ' Nueva habilidad: ' + p.name, 'big'); log('Aprendiste una habilidad: ' + p.name + '.', 'big'); persist(); renderHub(); showPerks(); });
+  closeBtn(m);
+}
 $('#btn-retire').onclick = async () => { sfxClick(); modal('<h2>¿Retirarte?</h2><p>Tienes ' + C.age + ' años. Tu carrera terminará y verás tu puntaje final.</p><div class="opts"><button class="b g" id="yes">Sí, colgar los chimpunes</button><button class="b s" id="no">Todavía no</button></div>'); const b = await waitClick('#modal #yes, #modal #no'); closeModal(); if (b.id === 'yes') showRetire(false); };
 $('#h-menu').onclick = () => { sfxClick(); persist(); showTitle(); };
 
@@ -445,7 +524,8 @@ function renderSummary(s, animate) {
   $('#summary').innerHTML = '<div class="scard"><div class="stop"><div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="rg" x1="0" x2="1"><stop offset="0" stop-color="#19D46E"/><stop offset="1" stop-color="#FFE14D"/></linearGradient></defs><circle cx="60" cy="60" r="52" class="rbg"/><circle cx="60" cy="60" r="52" class="rfg" id="rfg"/></svg><b id="snum">0</b><small>de 100</small></div><div class="sti"><small>Fin de la carrera</small><h2>' + esc(s.name) + '</h2>' + (s.nick ? '<p class="snick">"' + esc(s.nick) + '"</p>' : '') + '<p class="grade" id="sgrade">' + esc(s.grade) + '</p><p>' + POSITIONS[s.pos].name + ' de ' + esc(s.origin) + '. Se retiró a los ' + s.retireAge + ' años.</p></div></div>' +
     '<div class="paper" id="paper"><div class="ph"><span>EL CHIMPUNAZO</span><small>' + esc(s.date) + ' · Edición especial</small></div><h1>' + esc(hl) + '</h1><div class="pb">' + (s.bestClub ? '<img alt="" src="' + crestURL({ id: s.bestClub.id, name: s.bestClub.name, c1: s.bestClub.c1, c2: s.bestClub.c2 }) + '">' : '') + '<p><b>' + esc(sub) + '</b> ' + esc(s.name) + ' jugó ' + s.apps + ' partidos, marcó ' + s.goals + ' goles y dio ' + s.assists + ' asistencias en ' + s.seasons + ' temporadas. Ganó ' + col.length + (col.length === 1 ? ' título' : ' títulos') + ' y ' + ind.length + (ind.length === 1 ? ' premio individual' : ' premios individuales') + '. Su club del alma: ' + esc(s.bestClub ? s.bestClub.name : '') + '.</p></div></div>' +
     (newAch.length ? '<h3>¡Logros desbloqueados!</h3><div class="troph">' + newAch.map(a => '<span class="ach">🏅 ' + esc(a.name) + '</span>').join('') + '</div>' : '') +
-    '<div class="sgrid"><div><small>Partidos</small><b data-n="' + s.apps + '">0</b></div><div><small>Goles</small><b data-n="' + s.goals + '">0</b></div><div><small>Asistencias</small><b data-n="' + s.assists + '">0</b></div><div><small>Nivel máximo</small><b data-n="' + s.peakOvr + '">0</b></div><div><small>Fichajes</small><b data-n="' + s.transfers + '">0</b></div><div><small>Con Perú</small><b>' + s.caps + ' PJ, ' + s.natGoals + ' g</b></div></div>' +
+    '<div class="sgrid"><div><small>Partidos</small><b data-n="' + s.apps + '">0</b></div><div><small>Goles</small><b data-n="' + s.goals + '">0</b></div><div><small>Asistencias</small><b data-n="' + s.assists + '">0</b></div><div><small>Nivel máximo</small><b data-n="' + s.peakOvr + '">0</b></div><div><small>Fichajes</small><b data-n="' + s.transfers + '">0</b></div><div><small>Con Perú</small><b>' + s.caps + ' PJ, ' + s.natGoals + ' g</b></div>' + (s.pens ? '<div><small>Penales</small><b>' + s.pens.g + ' de ' + s.pens.t + '</b></div>' : '') + (s.decisions ? '<div><small>Jugadas decisivas bien resueltas</small><b>' + s.decisions.ok + ' de ' + s.decisions.t + '</b></div>' : '') + '</div>' +
+    (s.perks && s.perks.length ? '<h3>Tus habilidades</h3><div class="troph">' + s.perks.map(id => { const p = PERKS.find(x => x.id === id); return p ? '<span class="ti">' + p.icon + ' ' + esc(p.name) + '</span>' : ''; }).join('') + '</div>' : '') +
     '<h3>Títulos colectivos (' + col.length + ')</h3><div class="troph">' + (col.length ? group(col).map(([n, c]) => '<span class="tc">🏆 ' + esc(n) + (c > 1 ? ' x' + c : '') + '</span>').join('') : '<span class="none">Ninguno</span>') + '</div>' +
     '<h3>Premios individuales (' + ind.length + ')</h3><div class="troph">' + (ind.length ? group(ind).map(([n, c]) => '<span class="ti">⭐ ' + esc(n) + (c > 1 ? ' x' + c : '') + '</span>').join('') : '<span class="none">Ninguno</span>') + '</div>' +
     '<h3>Tu camino</h3><div class="path">' + s.clubs.map(c => '<div><b>' + esc(c.name) + '</b><small>' + c.from + (c.to && c.to !== c.from ? '-' + c.to : '') + ', ' + c.apps + ' PJ, ' + c.goals + ' goles</small></div>').join('') + '</div>' +
@@ -547,6 +627,7 @@ function updateOverlays() {
     const W = window.innerWidth, H = window.innerHeight;
     box.querySelectorAll('.lbl').forEach(b => { const l = S3.labels.find(x => x.id === b.dataset.id); if (!l) return; _pp.copy(l.pos).project(camera); const vis = _pp.z < 1 && _pp.x > -1.1 && _pp.x < 1.1 && _pp.y > -1.1 && _pp.y < 1.1; b.style.display = vis ? '' : 'none'; if (vis) b.style.transform = 'translate(' + ((_pp.x + 1) / 2 * W) + 'px,' + ((1 - _pp.y) / 2 * H) + 'px) translate(-50%,-100%)'; });
   }
+  const mt = $('#match'); mt.classList.toggle('cine', !!(S3.anim && !mt.hidden && !mt.querySelector('.dec')));
   const tg = $('#tvtag');
   if (!$('#summary').hidden || !$('#title').hidden || !$('#cere').hidden) tg.hidden = true;
   else if (S3.mode === 'stadium' && S3.tv) { tg.hidden = false; tg.textContent = S3.tv; tg.className = S3.tv === 'REPETICIÓN' ? 'rep' : S3.tv === 'EN VIVO' ? 'live' : 'big'; }

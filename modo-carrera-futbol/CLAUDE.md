@@ -41,6 +41,17 @@ Sistemas nuevos del motor (`engine.js`):
 - Logros permanentes (`ACHIEVEMENTS`, `localStorage['mcf_ach_v1']`) y récords del salón (`RECORDS`).
 - `autoWeek(plan)` juega una semana sin interfaz para simular carreras de prueba.
 
+Versión 2 (más decisiones de carrera):
+- Jugadas decisivas en los partidos: `simMatch` agrega eventos `type: 'decision'` (`pickDecision` según la posición). La interfaz pregunta (`decisionUI`, 12 segundos) y `resolveDecision(r, e, opción)` decide con los atributos, la forma y las habilidades. Los goles de estas jugadas van a `r.extra` y `finalizeMatch(r)` recalcula el marcador, los penales de definición y la nota. Por eso `applyMatch` se llama **después** de mostrar el partido (dentro de `showMatch`). Tipos en `DECISIONS`: penal, mano, libre, contra, ultimo.
+- Penales: el arquero estudia tus últimos remates (`C.penHist`, `keeperGuess`). Animación propia: `playPenalty`.
+- Festejos (`CELEBRATIONS`) después de tus goles de jugada decisiva.
+- Mentalidad antes de clásicos, eliminaciones y selección (`MINDSETS`, `m.mind`).
+- Enfoque del entrenamiento (`C.focus`, `TRAIN_FOCUS`).
+- Habilidades (`PERKS`, `C.perks`, `C.perkPts`, `hasPerk`), máximo `MAX_PERKS = 6`. Se ganan con retos cumplidos, temporadas de nota 7.3 o más y niveles 60/67/74/81/88 (`perkCheck`).
+- Retos de temporada (`SEASON_GOALS`, `C.goalOpts`, `C.goal`, `goalInfo`), se eligen al empezar la temporada.
+- Eventos con efectos nuevos: `forceOffers`, `forceLeague`, `salaryMul`, `contractAdd`.
+- Constantes de balance arriba de `engine.js`: `TITLE_K`, `SCORE_DIV`, `DEC_SOLO`, `MAX_PERKS`.
+
 - `src/data.js`: utilidades, las 10 ligas con 8 clubes cada una (`LEAGUES`), posiciones y pesos de atributos (`POSITIONS`), nombres, casas (`HOUSES`), carros (`CARS`), planes semanales (`WEEK_PLANS`) y eventos de vida con decisiones (`EVENTS`).
 - `src/engine.js`: el motor. Objeto global `C` con toda la carrera.
   - Crear carrera: `newCareer`.
@@ -64,9 +75,9 @@ Sistemas nuevos del motor (`engine.js`):
 
 ## Puntaje de carrera (1 a 100)
 
-`careerScore()` suma puntos por: títulos colectivos (cada uno con un peso según su importancia y según cuánto jugaste esa temporada: `peso × min(1, partidos/12) × TITLE_K`, y hacen falta al menos 4 partidos), premios individuales, goles y asistencias (ajustados por posición), nivel máximo alcanzado, partidos con la selección, temporadas jugadas en ligas top y fama. Los que dependen de jugar se multiplican por la participación real, para que una carrera en la banca no sume. Luego `puntaje = 100 × (1 − e^(−puntos/SCORE_DIV))` con `SCORE_DIV = 110`.
+`careerScore()` suma puntos por: títulos colectivos (cada uno con un peso según su importancia y según cuánto jugaste esa temporada: `peso × min(1, partidos/12) × TITLE_K`, y hacen falta al menos 4 partidos), premios individuales, goles y asistencias (ajustados por posición), nivel máximo alcanzado, partidos con la selección, temporadas jugadas en ligas top y fama. Los que dependen de jugar se multiplican por la participación real, para que una carrera en la banca no sume. Luego `puntaje = 100 × (1 − e^(−puntos/SCORE_DIV))` con `SCORE_DIV = 155`.
 
-Balance medido con 50 carreras simuladas por tanda (etapa 6): un jugador disciplinado promedia 66 (casi siempre entre 45 y 85) y llega a 90 en 1 o 2 de cada 50 carreras; uno fiestero promedia 35 (entre 20 y 55). Mantener esos rangos al cambiar el balance.
+Balance medido con 50 a 80 carreras simuladas por tanda (versión 2, con jugadas decisivas, habilidades y retos): un jugador disciplinado promedia entre 66 y 70 (casi siempre entre 40 y 90) y llega a 90 en un 3 a 10 % de las carreras; uno fiestero promedia entre 33 y 37. Mantener esos rangos al cambiar el balance.
 
 ## Reglas de trabajo
 

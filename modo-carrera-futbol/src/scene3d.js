@@ -406,18 +406,20 @@ function updateMoment(dt, t) {
     a.act(tt, true);
     S3.tv = 'EN VIVO';
     // cámara de transmisión: alta, en la tribuna, sigue la pelota
-    if (tt < a.LIVE * 0.62) { _cp.set(B.x + 60, 330, 900); _cl.set(B.x - 40, 0, B.z * 0.6); }
+    if (a.kind === 'penalty') { _cp.set(-400, 55, 0); _cl.set(-640, 24, 0); }
+    else if (tt < a.LIVE * 0.62) { _cp.set(B.x + 60, 330, 900); _cl.set(B.x - 40, 0, B.z * 0.6); }
     else { const side = a.kind === 'defense' ? 1 : -1; _cp.set(B.x + side * -180, 70, B.z + (a.zs * 160)); _cl.copy(B); }
+    if (!a.fired && a.kind === 'penalty' && tt > 1.6) { a.fired = true; if (a.out === 'gol') { confetti(new THREE.Vector3(-500, 250, 0), [S3.kits.mine.c1, S3.kits.mine.c2, '#FFE14D', '#FFFFFF'], QUAL.level === 'baja' ? 40 : 120); if (typeof sfxGoal === 'function') sfxGoal(); } else if (typeof sfxBoo === 'function') sfxBoo(); }
     if (!a.fired && ((a.kind === 'goal' && tt > 2.3) || (a.kind === 'assist' && tt > 2.6) || (a.kind === 'defense' && tt > 1.75))) {
       a.fired = true;
       if (a.kind !== 'defense') { S3.net.scale.x = 1; confetti(new THREE.Vector3(-500, 250, 0), [S3.kits.mine.c1, S3.kits.mine.c2, '#FFE14D', '#FFFFFF'], QUAL.level === 'baja' ? 40 : 120); burst(new THREE.Vector3(-660, 30, -a.zs * 40), ['#FFFFFF', '#FFE14D'], 30, 90, 0.8, 10, 40); if (typeof sfxGoal === 'function') sfxGoal(); }
       else { burst(B.clone(), ['#FFFFFF', '#9FD3F2'], 18, 60, 0.6, 8, 30); if (typeof sfxKick === 'function') sfxKick(); }
     }
-    if (a.fired && a.kind !== 'defense') S3.net.position.x = -36 - Math.max(0, Math.sin((tt - 2.3) * 18)) * 6 * Math.max(0, 1 - (tt - 2.3));
+    if (a.fired && a.kind !== 'defense' && (a.kind !== 'penalty' || a.out === 'gol')) S3.net.position.x = -36 - Math.max(0, Math.sin((tt - 2.3) * 18)) * 6 * Math.max(0, 1 - (tt - 2.3));
   } else if (tt < a.LIVE + a.CELE) {
     const ct = tt - a.LIVE;
     a.celebrate(ct, t);
-    S3.tv = a.kind === 'defense' ? '¡QUÉ CIERRE!' : '¡GOOOL!';
+    S3.tv = a.kind === 'defense' ? '¡QUÉ CIERRE!' : a.kind === 'penalty' && a.out !== 'gol' ? (a.out === 'atajado' ? '¡ATAJÓ!' : '¡AFUERA!') : '¡GOOOL!';
     const hero = a.kind === 'assist' && S3.mate ? S3.mate.p : S3.avatar;
     _cl.copy(hero.position); _cl.y = 26;
     _cp.set(hero.position.x + Math.sin(ct * 0.6 + 1) * 110, 48, hero.position.z + Math.cos(ct * 0.6 + 1) * 110 * -a.zs);
@@ -427,7 +429,8 @@ function updateMoment(dt, t) {
     a.act(rt, false);
     S3.tv = 'REPETICIÓN';
     // cámara detrás del arco / a ras del piso
-    if (a.kind === 'defense') { _cp.set(760, 40, B.z * 0.4); _cl.copy(B); }
+    if (a.kind === 'penalty') { _cp.set(-735, 36, -60); _cl.set(-560, 18, 0); }
+    else if (a.kind === 'defense') { _cp.set(760, 40, B.z * 0.4); _cl.copy(B); }
     else { _cp.set(-770, 42, -a.zs * 30); _cl.set(B.x, 20, B.z); }
   } else {
     S3.anim = null; S3.tv = ''; S3.net.position.x = -36;
@@ -439,6 +442,38 @@ function updateMoment(dt, t) {
   return true;
 }
 function playGoalAnim() { return playMoment('goal', 1); }
+// Penal: side = izq | centro | der | panenka; out = gol | atajado | afuera; gk = hacia dónde se tira el arquero.
+function playPenalty(side, out, gk, speed) {
+  if (S3.mode !== 'stadium' || !S3.avatar) return 0;
+  const pl = S3.avatar, keeper = S3.gk ? S3.gk.p : null;
+  const tz = { izq: 40, centro: 0, der: -40, panenka: 0 }[side], ty = { izq: 8, centro: 22, der: 40, panenka: 30 }[side];
+  const gz = { izq: 34, centro: 0, der: -34 }[gk] || 0;
+  const endZ = out === 'afuera' ? tz * 1.9 + (tz === 0 ? 70 : 0) : out === 'atajado' ? gz : tz, endY = out === 'afuera' ? ty + 30 : ty;
+  for (const m of S3.team) if (!m.you && m !== S3.gk) { m.p.position.set(lerp(-400, -320, Math.random()), 0, rand(-200, 200)); }
+  const LIVE = 2.1, CELE = out === 'gol' ? 2.4 : 1.4, REP = 3.2;
+  function act(tt) {
+    S3.ball.position.set(-540, 4.2, 0);
+    if (tt < 1.25) { const u = tt / 1.25; pl.position.set(lerp(-468, -530, u), 0, lerp(26, 5, u)); faceDir(pl, -1, -0.25); posePerson(pl, tt * (u < 0.4 ? 5 : 12), u > 0.25, false, tt, false, { run: u > 0.6 }); }
+    else { pl.position.set(-530, 0, 5); posePerson(pl, 0, false, false, tt, false, {}); pl.userData.legs[1].rotation.x = -1.2 * Math.max(0, 1 - (tt - 1.25) * 3); }
+    const k = clamp((tt - 1.25) / (side === 'panenka' ? 0.75 : 0.35), 0, 1);
+    if (tt >= 1.25) {
+      if (out === 'atajado' && k >= 1) { const b = clamp((tt - 1.6 - (side === 'panenka' ? 0.4 : 0)) / 0.5, 0, 1); S3.ball.position.set(lerp(-660, -600, b), 4.2 + Math.sin(b * Math.PI) * 20, endZ + b * (endZ >= 0 ? 30 : -30)); }
+      else S3.ball.position.set(lerp(-540, out === 'afuera' ? -690 : -672, k), 4.2 + (endY - 4.2) * k + Math.sin(k * Math.PI) * (side === 'panenka' ? 26 : 6), lerp(0, endZ, k));
+    }
+    if (keeper) {
+      const d = clamp((tt - 1.2) / 0.4, 0, 1), guessZ = side === 'panenka' && gk !== 'centro' ? (gk === 'izq' ? 34 : -34) : gz;
+      keeper.position.set(-640, gk === 'centro' ? 0 : Math.sin(d * Math.PI) * 12, lerp(0, guessZ, d)); keeper.rotation.set(0, -Math.PI / 2, gk === 'centro' ? 0 : (guessZ > 0 ? -1 : 1) * d * 1.3);
+      posePerson(keeper, 0, false, false, tt, false, d > 0 && gk !== 'centro' ? { panic: true } : { hail: tt < 1.2 });
+    }
+  }
+  function celebrate(ct, t) {
+    if (out === 'gol') { _v.set(-560 - pl.position.x, 0, 380 - pl.position.z); const d = _v.length(); if (d > 10) { _v.normalize(); pl.position.addScaledVector(_v, Math.min(d, 3.6)); faceDir(pl, _v.x, _v.z); posePerson(pl, t * 16, true, false, t, false, { run: true }); } else posePerson(pl, 0, false, false, t, false, { cheer: true }); }
+    else { posePerson(pl, 0, false, false, t, false, {}); pl.userData.body.rotation.x = 0.4; pl.userData.head.rotation.x = 0.5; if (keeper && out === 'atajado') posePerson(keeper, 0, false, false, t, false, { cheer: true }); }
+  }
+  S3.anim = { t: 0, kind: 'penalty', out, LIVE, CELE, REP, act, celebrate, zs: 1, sp: speed || 1, fired: false, dur: (LIVE + CELE + REP) / (speed || 1) };
+  for (const m of S3.team) m.frozen = true;
+  return S3.anim.dur;
+}
 
 /* ================== BUCLE 3D ================== */
 const _cam = new THREE.Vector3(), _look = new THREE.Vector3();

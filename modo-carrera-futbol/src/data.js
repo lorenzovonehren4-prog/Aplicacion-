@@ -186,6 +186,10 @@ const ACHIEVEMENTS = [
   { id: 'leyenda', name: 'Leyenda', desc: 'Saca 90 puntos o más en una carrera.', test: s => s.score >= 90 },
   { id: 'clasico', name: 'Rey de clásicos', desc: 'Gana 10 clásicos.', test: (s, c) => (c.derbyWins || 0) >= 10 },
   { id: 'goleador', name: 'Pichichi', desc: 'Sé goleador de una liga.', test: (s, c) => c.trophies.some(t => t.name.startsWith('Goleador')) },
+  { id: 'hielo', name: 'Sangre fría', desc: 'Convierte 10 penales en una carrera.', test: (s, c) => (c.pens || {}).g >= 10 },
+  { id: 'completo', name: 'Jugador completo', desc: 'Llega a 6 habilidades.', test: (s, c) => (c.perks || []).length >= 6 },
+  { id: 'retos', name: 'Hombre de palabra', desc: 'Cumple 8 retos de temporada.', test: (s, c) => (c.goalsDone || 0) >= 8 },
+  { id: 'decisivo', name: 'Señor decisivo', desc: 'Resuelve bien 60 jugadas decisivas.', test: (s, c) => (c.decisions || {}).ok >= 60 },
 ];
 
 /* ================== EVENTOS NUEVOS (etapa 3) ==================
@@ -256,3 +260,70 @@ const INT_NAMES = {
   ita: [['Federico', 'Lorenzo', 'Nicolò', 'Gianluca', 'Ciro', 'Sandro', 'Mateo', 'Moise'], ['Chiesa', 'Insigne', 'Barella', 'Scamacca', 'Immobile', 'Tonali', 'Retegui', 'Kean']],
   ara: [['Salem', 'Firas', 'Saleh', 'Abdullah', 'Yasser', 'Fahad', 'Mohamed', 'Nasser'], ['Al-Dawsari', 'Al-Buraikan', 'Al-Shehri', 'Kanno', 'Al-Faraj', 'Al-Muwallad', 'Al-Hamdan', 'Otayf']],
 };
+
+/* ================== DECISIONES DE CARRERA (versión 2) ================== */
+// Enfoque del entrenamiento: el atributo elegido sube más rápido.
+const TRAIN_FOCUS = [['pac', 'Velocidad', 'Sprints en la pista'], ['sho', 'Tiro', 'Remates al arco'], ['pas', 'Pase', 'Rondos y pases largos'], ['dri', 'Regate', 'Conos y uno contra uno'], ['def', 'Defensa', 'Marca y anticipo'], ['phy', 'Físico', 'Gimnasio y resistencia']];
+
+// Habilidades: se ganan puntos con buenas temporadas, retos cumplidos y al subir de nivel.
+const PERKS = [
+  { id: 'penales', name: 'Especialista en penales', desc: '+15 % de acierto en penales y te toca patearlos más seguido.', icon: '🎯' },
+  { id: 'larga', name: 'Pegada de media distancia', desc: '+15 % en tiros libres directos y remates de lejos.', icon: '🚀' },
+  { id: 'velocidad', name: 'Diablo en el mano a mano', desc: '+12 % al definir solo frente al arquero y en contragolpes.', icon: '⚡' },
+  { id: 'vision', name: 'Visión de juego', desc: '+15 % en pases filtrados y centros. Más asistencias.', icon: '👁' },
+  { id: 'muro', name: 'Muro', desc: '+15 % en cierres y barridas de último hombre.', icon: '🧱' },
+  { id: 'cabeza', name: 'Cabezazo letal', desc: 'Los centros y tiros de esquina terminan más veces en gol.', icon: '🗣' },
+  { id: 'pulmon', name: 'Pulmón de acero', desc: 'Te cansas 25 % menos en partidos y entrenamientos.', icon: '🫁' },
+  { id: 'lider', name: 'Líder del camarín', desc: 'La confianza del DT sube 30 % más rápido.', icon: '©' },
+  { id: 'clasico', name: 'Hombre de clásicos', desc: 'Juegas mejor los clásicos, las finales y las eliminatorias.', icon: '🔥' },
+  { id: 'profesional', name: 'Profesional ejemplar', desc: '40 % menos lesiones y envejeces más lento.', icon: '🧘' },
+  { id: 'figura', name: 'Figura mediática', desc: 'Ganas 30 % más fama y seguidores. Mejores auspicios.', icon: '📸' },
+];
+
+// Retos de temporada: eliges uno al empezar cada temporada.
+const SEASON_GOALS = [
+  { id: 'goles', name: p => 'Marcar ' + p.n + ' goles', gen: C => ({ n: Math.max(3, Math.round((C.pos === 'DEL' ? 10 : C.pos === 'EXT' ? 7 : C.pos === 'MED' ? 4 : 2) * clamp((C.ovr - club().str + 8) / 10, 0.5, 1.5))) }), val: C => C.ss.goals },
+  { id: 'asist', name: p => 'Dar ' + p.n + ' asistencias', gen: C => ({ n: Math.max(2, Math.round((C.pos === 'MED' ? 7 : C.pos === 'EXT' ? 6 : C.pos === 'DEL' ? 4 : 2) * clamp((C.ovr - club().str + 8) / 10, 0.5, 1.5))) }), val: C => C.ss.assists },
+  { id: 'pj', name: p => 'Jugar ' + p.n + ' partidos', gen: C => ({ n: clamp(Math.round(8 + (C.ovr - club().str) / 2), 5, 16) }), val: C => C.ss.apps },
+  { id: 'nota', name: p => 'Nota media de ' + p.n.toFixed(1) + ' o más', gen: C => ({ n: C.ovr >= club().str ? 7 : 6.6 }), val: C => (C.ss.apps >= 5 ? C.ss.ratingSum / C.ss.apps : 0) },
+  { id: 'titulo', name: () => 'Salir campeón de algo', gen: () => ({ n: 1 }), val: C => C.ss.titles || 0 },
+  { id: 'clasicos', name: p => 'Ganar ' + p.n + ' clásico' + (p.n > 1 ? 's' : ''), gen: () => ({ n: 1 }), val: C => C.ss.derbyW || 0, when: C => !!rivalOf(C.clubId) },
+];
+
+// Mentalidad antes de un partido grande (clásicos, finales, eliminatorias).
+const MINDSETS = [
+  { id: 'ataque', name: 'A matar o morir', desc: 'Buscas el gol a toda costa. Más jugadas decisivas para ti, pero el equipo se descuida atrás.' },
+  { id: 'equipo', name: 'Jugar para el equipo', desc: 'Orden y sacrificio. El equipo rinde más y el DT lo valora.' },
+  { id: 'calma', name: 'Tranquilo, como siempre', desc: 'Sin cambiar nada. Menos presión.' },
+];
+
+// Jugadas decisivas dentro del partido: tú eliges cómo resolverlas.
+const DECISIONS = {
+  penal: { title: '¡Penal para tu equipo!', text: 'El capitán te da la pelota. El arquero se mueve en la línea. ¿Dónde la pones?', opts: [{ id: 'izq', t: 'Abajo a la izquierda' }, { id: 'centro', t: 'Fuerte al centro' }, { id: 'der', t: 'Arriba a la derecha' }, { id: 'panenka', t: 'Picarla (a lo Panenka)', risky: true }] },
+  mano: { title: 'Te quedas solo frente al arquero', text: 'Pase largo, le ganas la espalda al central. El arquero sale a achicar.', opts: [{ id: 'fuerte', t: 'Definir fuerte y cruzado' }, { id: 'vaselina', t: 'Picarla por encima' }, { id: 'regate', t: 'Gambetear al arquero' }, { id: 'pase', t: 'Darle el gol al compañero' }] },
+  libre: { title: 'Tiro libre en la puerta del área', text: 'Barrera de cinco. El estadio en silencio. Tú te paras frente a la pelota.', opts: [{ id: 'directo', t: 'Directo al ángulo' }, { id: 'centro', t: 'Centro al segundo palo' }, { id: 'corto', t: 'Toque corto y seguro' }] },
+  contra: { title: '¡Contragolpe!', text: 'Recuperan la pelota y sales disparado. Tres contra dos.', opts: [{ id: 'solo', t: 'Encarar y rematar' }, { id: 'filtrar', t: 'Filtrar el pase' }, { id: 'pausa', t: 'Frenar y ordenar al equipo' }] },
+  ultimo: { title: 'Eres el último hombre', text: 'El delantero rival se escapa hacia tu arco. Solo quedas tú.', opts: [{ id: 'barrer', t: 'Barrerse a la pelota' }, { id: 'aguantar', t: 'Aguantar y cerrar el ángulo' }, { id: 'falta', t: 'Falta táctica (te llevas la amarilla)' }] },
+};
+const CELEBRATIONS = [
+  { id: 'baile', t: 'Bailar con tus compañeros', fx: { followers: 6000, fame: 1 } },
+  { id: 'escudo', t: 'Besar el escudo', fx: { trust: 2, fame: 1 } },
+  { id: 'mama', t: 'Dedicárselo a tu mamá', fx: { mom: 4, happy: 2 } },
+  { id: 'callar', t: 'Callar a la tribuna rival', fx: { fame: 3, followers: 12000, trust: -2 } },
+];
+
+/* ================== MÁS EVENTOS DE CARRERA (versión 2) ================== */
+EVENTS.push(
+  { id: 'infiltrado', when: p => p.week >= 10 && p.age >= 19 && p.fatigue > 45, title: 'Molestia antes del partido clave', text: 'El médico dice que podrías jugar infiltrado. Si se complica, podrías perderte meses.', opts: [{ t: 'Jugar infiltrado', fx: { trust: 8, fame: 2, injury: 0.3 }, res: 'Te pusieron la inyección. A rezar.' }, { t: 'Cuidarte', fx: { fatigue: -25, trust: -4 }, res: 'El DT no dijo nada, pero lo sentiste frío.' }] },
+  { id: 'amistoso', when: p => p.nation.caps > 0 && p.week > 2 && p.week < 12, title: 'Selección o club', text: 'La selección te llama para un amistoso en Asia. Tu club te necesita el fin de semana.', opts: [{ t: 'Ir con la selección', fx: { fame: 4, fatigue: 18, rels: { dt: -6 } }, res: 'Viajaste 30 horas para jugar 45 minutos. Pero con la blanquirroja.' }, { t: 'Pedir quedarte', fx: { rels: { dt: 6 }, fame: -1 }, res: 'El técnico de la selección tomó nota.' }] },
+  { id: 'salir', when: p => p.age >= 19 && p.trust < 35 && p.happy < 50, title: '¿Pedir tu salida?', text: 'No juegas y no eres feliz. Tu representante dice que es momento de pedir que te vendan.', opts: [{ t: 'Pedir la transferencia', fx: { rels: { dt: -12 }, forceOffers: 2, happy: 4 }, res: 'El club aceptó escuchar ofertas. Vienen clubes en el próximo mercado.' }, { t: 'Pelear el puesto', fx: { ovr: 0.5, disc: 4, trust: 4 }, res: 'Nadie te va a regalar nada. Al gimnasio.' }] },
+  { id: 'renovacion', when: p => p.contractEnd >= 2 && p.ss.apps >= 5 && p.ss.apps && p.ss.ratingSum / p.ss.apps >= 7, title: 'El club quiere renovarte ya', text: 'Estás rindiendo tanto que el presidente te ofrece renovar con aumento antes de que vengan otros clubes.', opts: [{ t: 'Firmar la renovación', fx: p => ({ salaryMul: 1.25, contractAdd: 2, trust: 6, rels: { dt: 5 } }), res: 'Renovaste con aumento del 25 %. El club te ve como pilar.' }, { t: 'Esperar al mercado', fx: { forceOffers: 1, rels: { dt: -3 } }, res: 'Arriesgado, pero quizás llega algo grande.' }] },
+  { id: 'arabia', when: p => p.age >= 29 && p.ovr >= 70 && leagueOf(club()).id !== 'ara', title: 'Llamada desde Arabia', text: 'Un club árabe te ofrece un sueldo de locura. Pero la liga es menos competitiva y te alejas de la selección.', opts: [{ t: 'Escuchar la oferta', fx: { forceLeague: 'ara', happy: 3 }, res: 'La oferta estará sobre la mesa en el próximo mercado.' }, { t: 'Quiero seguir compitiendo', fx: { fame: 2, disc: 3, trust: 4 }, res: 'La gloria no se compra.' }] },
+  { id: 'canterano', when: p => p.age >= 27, title: 'Un canterano pide pista', text: 'Un chico de 18 años juega en tu posición y la prensa pide que le den minutos.', opts: [{ t: 'Apadrinarlo', fx: { rels: { dt: 6 }, trust: 3, fame: 2, happy: 3 }, res: 'Le enseñas todo. Él te dice "profe" en broma.' }, { t: 'Marcarle territorio en los entrenamientos', fx: { ovr: 0.4, fatigue: 10, rels: { rival: -10 } }, res: 'Le recordaste quién manda. El vestuario lo notó.' }] },
+  { id: 'sistema', when: p => p.age >= 20 && p.week <= 6, title: 'El DT cambia el sistema', text: 'El DT prueba un 3-5-2 y te quiere en un rol distinto, con más sacrificio defensivo.', opts: [{ t: 'Adaptarte', fx: { trust: 8, rels: { dt: 6 }, form: -3 }, res: 'Corres el doble, pero el DT te pone siempre.' }, { t: 'Pedir jugar en tu rol', fx: () => (chance(0.5) ? { trust: 2, form: 3 } : { trust: -8, rels: { dt: -6 } }), res: 'El DT lo pensó.' }] },
+  { id: 'trolls', when: p => p.followers > 20000 && p.form < 45, title: 'Te destrozan en redes', text: 'Después de varios malos partidos, miles de comentarios te insultan.', opts: [{ t: 'Cerrar redes un mes', fx: { happy: 6, form: 4, followers: -4000 }, res: 'Paz mental. Te enfocas en jugar.' }, { t: 'Responderles', fx: { happy: -4, fame: 2, followers: 8000, rels: { dt: -3 } }, res: 'Se armó un escándalo más grande.' }, { t: 'Ignorar y trabajar', fx: { disc: 4, ovr: 0.3 }, res: 'La respuesta la darás en la cancha.' }] },
+  { id: 'capitanlio', when: p => p.captain, title: 'Problema en el vestuario', text: 'Como capitán, te enteras de que dos compañeros llegan tarde y de fiesta. El DT no sabe.', opts: [{ t: 'Hablar con ellos en privado', fx: { rels: { amigo: 6, dt: 3 }, trust: 3 }, res: 'Se ordenaron. Liderazgo del bueno.' }, { t: 'Contarle al DT', fx: { rels: { dt: 8, amigo: -10 } }, res: 'El DT los multó. Algunos te miran feo.' }, { t: 'No meterte', fx: { rels: { dt: -4 } }, res: 'El equipo sigue perdiendo puntos tontos.' }] },
+  { id: 'penalfallado', chainOnly: true, title: 'La prensa y tu penal', text: 'Todos los programas hablan del penal que fallaste. Te preguntan en la conferencia.', opts: [{ t: '"La próxima la meto"', fx: { disc: 3, form: 2 }, res: 'Frase de campeón. La hinchada te bancó.' }, { t: 'Echarle la culpa al césped', fx: { fame: 2, trust: -4, followers: 5000 }, res: 'Los memes duraron una semana.' }] },
+  { id: 'golazo', chainOnly: true, title: 'Tu golazo da la vuelta al mundo', text: 'Tu gol decisivo tiene millones de vistas. Te llaman de un programa internacional.', opts: [{ t: 'Ir a la entrevista', fx: { fame: 5, followers: 50000, fatigue: 6 }, res: 'Hablaste en tres idiomas (dos mal). Te aman.' }, { t: 'Seguir humilde', fx: { disc: 3, trust: 3 }, res: 'Dejas que hablen los goles.' }] },
+  { id: 'visoria', when: p => p.age >= 20 && p.age <= 26 && p.ovr >= 66 && p.fame > 20, title: 'Te vienen a ver de Europa', text: 'Un ojeador de un club grande estará en la tribuna el domingo.', opts: [{ t: 'Presión al máximo: a lucirte', fx: { form: 6, fatigue: 8, forceOffers: 1 }, res: 'Diste todo. El ojeador anotó tu nombre.' }, { t: 'Jugar como siempre', fx: { disc: 2 }, res: 'Si te quieren, que te quieran así.' }] },
+);
