@@ -170,7 +170,12 @@ function buildHome() {
   interact('vitrina', 'Vitrina: ' + C.trophies.length + (C.trophies.length === 1 ? ' trofeo' : ' trofeos'), cab, new THREE.Vector3(W / 2 - 70, 90, -D / 2 + 30), new THREE.Vector3(W / 2 - 70, 8, -D / 2 + 90));
   // exterior según nivel
   const ext = new THREE.Group(); R.add(ext);
-  if (tier === 0) { for (let i = 0; i < 5; i++) { const hx = -W / 2 - 300 + i * 260, hh = 120 + (i * 37) % 80; const f = box(ext, M('#FFFFFF', { map: facadeTex(pick(['#D98C5F', '#C9B28E', '#A8C6D9', '#E2D3A8']), 2, i % 2, i) }), 200, hh, 150, hx, hh / 2, -D / 2 - 220, true); void f; } box(ext, M('#FFFFFF', { map: T.asphalt }), 3000, 1, 160, 0, 0.6, D / 2 + 140, false); }
+  if (tier === 0) { for (let i = 0; i < 5; i++) { const hx = -W / 2 - 300 + i * 260, hh = 120 + (i * 37) % 80; const f = box(ext, M('#FFFFFF', { map: facadeTex(pick(['#D98C5F', '#C9B28E', '#A8C6D9', '#E2D3A8']), 2, i % 2, i) }), 200, hh, 150, hx, hh / 2, -D / 2 - 220, true); void f; } const street = canvasTex('street', 512, 128, (x, w, h) => { x.fillStyle = '#5A5B61'; x.fillRect(0, 0, w, h); noise(x, w, h, 2500, 0.06, 0.12); x.fillStyle = '#EDE6C8'; for (let i = 0; i < 8; i++) x.fillRect(i * 64 + 10, h / 2 - 3, 36, 6); }, true); street.repeat.set(6, 1);
+    box(ext, M('#FFFFFF', { map: street }), 3000, 1, 150, 0, 0.6, D / 2 + 150, false);
+    box(ext, M('#B8B1A5'), 3000, 6, 50, 0, 3, D / 2 + 50, false); box(ext, M('#8E877B'), 3000, 7, 4, 0, 3.5, D / 2 + 75, false);
+    const mt = new THREE.Group(); mt.position.set(-W / 2 - 60, 0, D / 2 + 120); ext.add(mt);
+    box(mt, M('#E23B3B'), 40, 34, 60, 0, 24, 0, true); box(mt, M('#1B1523'), 42, 4, 64, 0, 44, 0, true); box(mt, MAT.glass, 36, 14, 2, 0, 34, -30, false);
+    for (const [wx, wz] of [[-18, 20], [18, 20], [0, -26]]) { const w = mesh(mt, GC, MAT.tire, 8, 5, 8, wx, 8, wz, true); w.rotation.z = Math.PI / 2; } }
   if (tier === 1) { for (let i = 0; i < 7; i++) { const hh = 300 + (i * 131) % 400; box(ext, M('#FFFFFF', { map: facadeTex(pick(['#9AA3AE', '#B8BEC6', '#7E8792', '#CFD6DE']), 8, 0, i) }), 150, hh, 150, -1100 + i * 330, hh / 2, -D / 2 - 500, false); } const bal = M('#BFE3F2', { op: 0.35, phong: true }); box(ext, bal, W, 30, 3, 0, 23, D / 2 + 30, false); box(ext, M('#E9E3D6'), W, 6, 60, 0, 5, D / 2 + 30, false); }
   if (tier === 2) { for (let i = 0; i < 7; i++) makeTree(ext, -W / 2 - 220 + i * 190, D / 2 + 240 + (i % 2) * 60, i * 77 + 5, 1.5); for (let i = -6; i <= 6; i++) box(ext, M('#F4F4F2'), 6, 30, 6, i * 110, 15, D / 2 + 330, false); box(ext, M('#F4F4F2'), 1320, 4, 3, 0, 26, D / 2 + 330, false); }
   if (tier === 3) {
@@ -190,7 +195,9 @@ function buildHome() {
     const gw = Math.min(3, cars.length) * 90 + 40, gd = Math.ceil(cars.length / 3) * 140 + 40;
     const pad = new THREE.Mesh(new THREE.BoxGeometry(gw, 3, gd), M('#FFFFFF', { map: T.concrete })); pad.position.set(gx0 + gw / 2, 1.5, D / 2 - gd / 2); pad.receiveShadow = true; gar.add(pad);
     for (const [x, z] of [[gx0 + 6, D / 2 - 6], [gx0 + gw - 6, D / 2 - 6], [gx0 + 6, D / 2 - gd + 6], [gx0 + gw - 6, D / 2 - gd + 6]]) box(gar, M('#E4E0D8'), 8, 100, 8, x, 50, z, true);
-    box(gar, M(tier >= 2 ? '#2A2A30' : '#B7B2A8'), gw + 10, 6, gd + 10, gx0 + gw / 2, 103, D / 2 - gd / 2, true);
+    const beam = M(tier >= 2 ? '#6B4428' : '#B7B2A8');
+    for (const z of [D / 2 - 4, D / 2 - gd + 4]) box(gar, beam, gw + 14, 8, 8, gx0 + gw / 2, 104, z, true);
+    for (let i = 0; i <= Math.floor(gw / 26); i++) box(gar, beam, 5, 5, gd + 10, gx0 + 6 + i * 26, 110, D / 2 - gd / 2, true);
     const gl = new THREE.PointLight(0xffffff, 0.5, 400); gl.position.set(gx0 + gw / 2, 90, D / 2 - gd / 2); gar.add(gl);
     cars.forEach((car, i) => { const m = makeCarModel(car); m.position.set(gx0 + 65 + (i % 3) * 90, 3, D / 2 - 80 - Math.floor(i / 3) * 140); gar.add(m); });
     interact('cochera', 'Cochera: ' + cars.length + (cars.length === 1 ? ' carro' : ' carros'), gar, new THREE.Vector3(gx0 + gw / 2, 60, D / 2 - gd / 2), new THREE.Vector3(gx0 - 20, 8, D / 2 - 40));

@@ -21,7 +21,25 @@ Todo el texto está en español de Perú. Los clubes son **inventados pero recon
 
 ## Estructura
 
-El orden de carga en `index.html` importa: `data.js` → `scene3d.js` → `helpers.js` → `engine.js` → `ui.js`.
+El orden de carga en `index.html` importa: `data.js` → `audio.js` → `scene3d.js` → `helpers.js` → `scene-life.js` → `engine.js` → `ui.js`.
+
+Resumen de lo agregado en las etapas 1 a 6 (el detalle de cada archivo está más abajo):
+
+- `src/audio.js`: opciones del jugador (`OPTS`, en `localStorage['mcf_opts_v1']`) y todo el sonido sintetizado con Web Audio: silbato, gol, hinchada (`crowdOn/crowdOff`), fuegos artificiales y música (`setMusic('menu'|'disco'|'none')`). No hay archivos de audio.
+- `src/scene3d.js`: motor 3D, calidad (`setQuality`), escudos y uniformes generados (`kitOf`, `drawKit`, `kitMat`, `drawCrest`, `crestURL`, `crestTex`), partículas (`burst`, `confetti`, `fireworks`), estadio completo (`buildStadium(kitLocal, kitRival, hinchada)`, tribunas con `InstancedMesh`, carteles LED, torres de luz, 16 jugadores y árbitro) y jugadas con cámaras de TV (`playMoment('goal'|'assist'|'defense')`: en vivo, celebración y repetición en cámara lenta; `S3.tv` dice qué etiqueta mostrar).
+- `src/scene-life.js`: casa recorrible por clic (`buildHome`, objetos en `S3.inter`, etiquetas en `S3.labels`, `homeGo`), carros detallados (`makeCarModel`), trofeos (`makeTrophy`), mascotas (`makePet`), oficina de negociación (`buildOffice`, `officeReact`), discoteca (`buildDisco`), llegada al estadio (`buildArrival`) y ceremonia de retiro (`buildCeremony`). `updateLife` anima todas estas escenas.
+- `tools/empaquetar.mjs`: arma `dist/modo-carrera-futbol.html` (un solo archivo) y `dist/modo-carrera-futbol-itch.zip`. Pasos de publicación en `PUBLICAR_ITCH.md`.
+
+Sistemas nuevos del motor (`engine.js`):
+- Negociación: `prepOffer`, `negotiate(oferta, pedido)` → `accept` / `counter` / `walk`, `greed`, `tolerance`, `agentTalk`. Contratos con bono por gol (`C.bonus`) y cláusula (`C.clause`).
+- Préstamos: `makeLoanOffer`, `C.onLoan`, `endLoan` al terminar la temporada. Cambiar de liga a mitad de temporada rehace la tabla con `switchClubMidSeason`.
+- Historial de fichajes en `C.moves`.
+- Relaciones: `C.people` (dt, amigo, rival, agente) con `relAdd`. Eventos en cadena: `fx.chain = { id, in }` guarda en `C.chains` y `pickEvent` los dispara primero. Los eventos con `chainOnly` solo salen así.
+- Clásicos: `DERBIES` en data, `isDerby`, `rivalOf`, `C.derbyWins`.
+- Goleadores: `buildScorers`, `scorerTable`. El premio de goleador se gana siendo primero de la tabla.
+- Redes (`fanPosts`, `C.social`), apodos de la prensa (`pressNick`, `C.nick`), relato (`phrase`).
+- Logros permanentes (`ACHIEVEMENTS`, `localStorage['mcf_ach_v1']`) y récords del salón (`RECORDS`).
+- `autoWeek(plan)` juega una semana sin interfaz para simular carreras de prueba.
 
 - `src/data.js`: utilidades, las 10 ligas con 8 clubes cada una (`LEAGUES`), posiciones y pesos de atributos (`POSITIONS`), nombres, casas (`HOUSES`), carros (`CARS`), planes semanales (`WEEK_PLANS`) y eventos de vida con decisiones (`EVENTS`).
 - `src/engine.js`: el motor. Objeto global `C` con toda la carrera.
@@ -46,9 +64,9 @@ El orden de carga en `index.html` importa: `data.js` → `scene3d.js` → `helpe
 
 ## Puntaje de carrera (1 a 100)
 
-`careerScore()` suma puntos por: títulos colectivos (cada uno con un peso según su importancia), premios individuales, goles y asistencias (ajustados por posición), nivel máximo alcanzado, partidos con la selección, temporadas jugadas en ligas top y fama. Los tres últimos se multiplican por la participación real (partidos jugados), para que una carrera en la banca no sume. Luego `puntaje = 100 × (1 − e^(−puntos/95))`.
+`careerScore()` suma puntos por: títulos colectivos (cada uno con un peso según su importancia y según cuánto jugaste esa temporada: `peso × min(1, partidos/12) × TITLE_K`, y hacen falta al menos 4 partidos), premios individuales, goles y asistencias (ajustados por posición), nivel máximo alcanzado, partidos con la selección, temporadas jugadas en ligas top y fama. Los que dependen de jugar se multiplican por la participación real, para que una carrera en la banca no sume. Luego `puntaje = 100 × (1 − e^(−puntos/SCORE_DIV))` con `SCORE_DIV = 110`.
 
-Balance medido con 10 carreras simuladas: un jugador disciplinado saca entre 58 y 99; uno fiestero, entre 20 y 40. Mantener ese rango al cambiar el balance.
+Balance medido con 50 carreras simuladas por tanda (etapa 6): un jugador disciplinado promedia 66 (casi siempre entre 45 y 85) y llega a 90 en 1 o 2 de cada 50 carreras; uno fiestero promedia 35 (entre 20 y 55). Mantener esos rangos al cambiar el balance.
 
 ## Reglas de trabajo
 

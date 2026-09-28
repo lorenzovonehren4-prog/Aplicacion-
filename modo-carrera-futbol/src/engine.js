@@ -1,6 +1,7 @@
 /* ================== MOTOR DE LA CARRERA ================== */
 const SAVE_KEY = 'mcf_save_v1', HALL_KEY = 'mcf_hall_v1';
 const SEASON_WEEKS = 14;
+const TITLE_K = 0.6, SCORE_DIV = 110;
 const CUP_WEEKS = { 4: 'Cuartos de final', 8: 'Semifinal', 12: 'Final' };
 const CONT_WEEKS = { 3: 'Cuartos de final', 7: 'Semifinal', 11: 'Final' };
 const NATION_WEEK = 7;
@@ -449,9 +450,11 @@ function endSeason() {
   const my = club(), L = leagueOf(my), res = { titles: [], awards: [], nation: null };
   const tbl = standings(), pos1 = tbl.findIndex(t => t.id === my.id) + 1;
   const lw = { per: 3, usa: 4, ara: 3, arg: 5, bra: 5, mex: 5, por: 6, esp: 10, ing: 10, ita: 9 }[L.id];
-  if (pos1 === 1 && C.ss.apps >= 3) { trophy('Campeón de la ' + L.name, 'col', lw); res.titles.push('Campeón de la ' + L.name); }
-  if (C.cup.winner === my.id && C.ss.apps >= 3) { trophy(C.cup.name, 'col', Math.max(2, lw / 2)); res.titles.push(C.cup.name); }
-  if (C.cont && C.cont.winner === my.id && C.ss.apps >= 3) { const w = L.cont === 'euro' ? 16 : 9; trophy(C.cont.name, 'col', w); res.titles.push(C.cont.name); }
+  // el peso de un título depende de cuánto jugaste esa temporada
+  const part = clamp(C.ss.apps / 12, 0, 1) * TITLE_K;
+  if (pos1 === 1 && C.ss.apps >= 4) { trophy('Campeón de la ' + L.name, 'col', lw * part); res.titles.push('Campeón de la ' + L.name); }
+  if (C.cup.winner === my.id && C.ss.apps >= 4) { trophy(C.cup.name, 'col', Math.max(2, lw / 2) * part); res.titles.push(C.cup.name); }
+  if (C.cont && C.cont.winner === my.id && C.ss.apps >= 4) { const w = L.cont === 'euro' ? 16 : 9; trophy(C.cont.name, 'col', w * part); res.titles.push(C.cont.name); }
   const avg = C.ss.apps ? C.ss.ratingSum / C.ss.apps : 0;
   const st = scorerTable();
   if (st[0].me && C.ss.lgoals >= 5 && C.ss.apps >= 8) { trophy('Goleador de la ' + L.name, 'ind', lw * 0.5); res.awards.push('Goleador de la liga (' + C.ss.lgoals + ' goles)'); }
@@ -515,7 +518,7 @@ function careerScore() {
   const topSeasons = (C.seasonLog || []).filter(s => ['Liga Española', 'Liga Inglesa', 'Liga Italiana'].includes(s.league) && s.apps >= 7).length;
   add('Temporadas en ligas top', topSeasons * 1.2);
   add('Fama', C.fame * 0.08 * part);
-  const score = clamp(Math.round(100 * (1 - Math.exp(-raw / 95))), 1, 100);
+  const score = clamp(Math.round(100 * (1 - Math.exp(-raw / SCORE_DIV))), 1, 100);
   return { score, raw, parts };
 }
 function gradeFor(s) { return s >= 90 ? 'Leyenda del fútbol mundial' : s >= 75 ? 'Crack internacional' : s >= 60 ? 'Gran carrera' : s >= 45 ? 'Profesional respetado' : s >= 30 ? 'Carrera modesta' : s >= 15 ? 'Jugador de barrio' : 'Lo que pudo ser'; }
