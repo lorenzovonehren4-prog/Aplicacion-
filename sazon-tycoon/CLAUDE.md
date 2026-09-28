@@ -14,13 +14,14 @@ Todo el texto del juego está en español de Perú, con humor local. Evitar marc
 
 ## Estructura
 
-El orden de carga en `index.html` importa: `core.js` → `world.js` → `helpers.js` → `sim.js` → `ui.js`.
+El orden de carga en `index.html` importa: `core.js` → `world.js` → `helpers.js` → `sim.js` → `juice.js` → `ui.js`.
 
 - `src/core.js`: utilidades, datos del juego (platos `DISHES`, roles de personal `ROLES`, decoración `DECOR`, metas `GOALS`, precios), guardado en `localStorage` (`save`, `loadSave`, `persist`) y audio sintetizado con Web Audio (`SFX`, música de fondo).
 - `src/world.js`: escena de three.js, luces, texturas generadas con canvas, distribución del local (`SLOTS` de mesas por piso, `STATION_X`, caja `REG`, puerta `DOOR`, escaleras `STAIR` y `stairX(f)`), y todos los modelos 3D: pisos, cocina, mesas, caja, escaleras, drive-thru, motos, autos, decoración, calle y edificios vecinos. `rebuildWorld()` reconstruye todo desde `save`.
 - `src/helpers.js`: funciones compartidas: `M()` (caché de materiales), `canvasTex()`, `box/cyl/sph/plane`, `makePerson()` y `posePerson()` (personas con rodillas, codos y cabeza animadas), `bake()` (fusiona mallas para rendimiento), `facadeTex()`.
 - `src/sim.js`: simulación: clientes (caminan por la vereda, entran, hacen cola, se sientan, piden, esperan, comen, pagan, califican), cocina y pedidos (`SIM.orders`), personal (cocinero, mozo, limpiador, cajero, ventanilla, motorizado), drive-thru (`updateCars`), delivery (`updateDelivery`), reseñas y calificación (`makeReview`), ciclo del día (`updateSim`, `DAY_LEN` = 180 s) y el personaje del jugador (`updateAvatar`).
 - `src/ui.js`: cámara (orbitar arrastrando, zoom con rueda o pellizco), controles (WASD, tocar para caminar, joystick táctil), pads de compra (`padList`, `buy`), paneles (Personal, Carta, Decoración, Reseñas, Metas, Opciones), HUD, textos flotantes en un canvas 2D encima del 3D (`drawOverlay`), resumen del día, ganancias fuera de línea y el bucle principal (`frame`).
+- `src/juice.js`: efectos de interfaz en el canvas 2D: confeti, destellos, monedas que vuelan al contador (`flyCoins`), el contador de plata animado (`tickMoney`) y números que suben (`countUp`).
 - `index.html`: HTML y CSS de toda la interfaz.
 
 ## Flujo de un cliente
@@ -54,6 +55,13 @@ Vereda (`walker`) → entra si quiere y hay mesa con sillas suficientes (`freeTa
 - `bake()` fusiona mallas estáticas por material (incluye cajas con varios materiales). `rebuildWorld` fusiona la calle y cada piso; lo que se mueve o cambia de visibilidad debe ir en su propio grupo o marcado con `userData.keep`.
 - Las sombras de contacto de las personas son una sola `InstancedMesh` (`PEOPLE_BLOBS`, en `poseAll`).
 - `adaptResolution()` baja la resolución interna si el juego va a menos de ~45 FPS.
+
+## Fama, combo y nota del día
+
+- Fama (de toda la cadena): `save.level` y `save.xp`, con `xpNeed()`, títulos en `TITLES` y premio `levelReward()`. Cada nivel suma 1 % de propina. Se gana con `gainXP()` (platos, mesas rápidas, reseñas de 5 estrellas, metas, compras y la nota del día; montos en `XP`).
+- Combo: `SIM.combo` sube cuando una mesa se atiende en menos de `COMBO_FAST` segundos y se corta si pasan `COMBO_WINDOW` sin otra o si alguien se va enojado. Cada nivel da 5 % más de propina.
+- Nota del día: `gradeDay()` en `sim.js` da S, A, B, C o D y un puntaje; `save.bestDay` guarda el récord.
+- La simulación avisa a la interfaz con `onGame(tipo, datos)` ('levelUp', 'combo', 'comboLost', 'fiveStar', 'collect'); `ui.js` decide los efectos.
 
 ## Tutorial
 

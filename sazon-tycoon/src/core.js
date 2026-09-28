@@ -107,6 +107,18 @@ const EVENTS = {
   feriado: { name: 'Feriado largo', short: 'Feriado', desc: 'Todo Lima salió a comer: hoy llega el doble de clientes. Prepara mesas y personal.', color: '#19A35A' },
 };
 const EVENT_FIRST_DAY = 4, GENERATOR_COST = 800;
+/* ---------- fama: niveles, títulos y combo (de toda la cadena) ---------- */
+const TITLES = [[1, 'Huarique de barrio'], [3, 'Picantería'], [5, 'Restaurante del distrito'], [8, 'Cevichería famosa'], [12, 'Joya de Lima'], [16, 'Leyenda criolla'], [20, 'Patrimonio culinario']];
+const xpNeed = lvl => Math.round(80 * Math.pow(1.3, lvl - 1) / 10) * 10;
+function famaTitle(l) { let t = TITLES[0][1]; for (const [n, s] of TITLES) if (l >= n) t = s; return t; }
+const levelReward = lvl => 60 * lvl;
+const levelTipBonus = () => Math.min(0.2, (save.level - 1) * 0.01); // +1 % de propina por nivel (máx. 20 %)
+const XP = { plate: 4, party: 6, fiveStar: 10, goal: 40, buy: 12 };
+// combo: mesas atendidas rápido una tras otra; cada nivel suma 5 % de propina y más XP
+const COMBO_WINDOW = 28, COMBO_MAX = 8, COMBO_FAST = 22;
+// nota del día: S, A, B, C o D
+const GRADES = [['S', 88, '#FFB800'], ['A', 75, '#19D46E'], ['B', 60, '#2E6BFF'], ['C', 45, '#FF7A1A'], ['D', 0, '#C0392B']];
+const GRADE_XP = { S: 60, A: 40, B: 25, C: 10, D: 0 };
 const GOALS = [
   { id: 'g0', t: 'Toma el pedido de una mesa', r: 10, ok: () => save.stats.ordersTaken >= 1 },
   { id: 'g1', t: 'Lleva tu primer plato a una mesa', r: 20, ok: () => save.stats.served >= 1 },
@@ -140,7 +152,7 @@ function freshSave() {
     decor: [{}, {}, {}], wall: ['#EDE6D6', '#EDE6D6', '#EDE6D6'],
     goals: [], stats: { served: 0, cleaned: 0, collected: 0, customers: 0, lost: 0, ordersTaken: 0 },
     dayLog: { income: 0, costs: 0, served: 0, lost: 0, tips: 0 }, profitEma: 0,
-    district: 'centro', generator: false, chain: [], active: 0, chainDay: 0, chainTold: false, event: null, nextEvent: EVENT_FIRST_DAY, quality: QUALITY, tutorial: 0, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
+    district: 'centro', generator: false, chain: [], active: 0, chainDay: 0, chainTold: false, event: null, nextEvent: EVENT_FIRST_DAY, quality: QUALITY, tutorial: 0, xp: 0, level: 1, bestDay: 0, lastT: Date.now(), music: true, sfx: true, started: false, speed: 1,
   };
 }
 let save = freshSave();
@@ -218,6 +230,10 @@ const SFX = {
   no() { if (!AU.ctx) return; const t = now(); tone(t, 300, 0.12, 'square', 0.06, AU.sfx); tone(t + 0.12, 220, 0.18, 'square', 0.06, AU.sfx); },
   click() { if (!AU.ctx) return; tone(now(), 520, 0.04, 'square', 0.04, AU.sfx); },
   angry() { if (!AU.ctx) return; tone(now(), 220, 0.3, 'sawtooth', 0.05, AU.sfx, 140); },
+  levelUp() { if (!AU.ctx) return; const t = now(); [523, 659, 784, 1047, 1319].forEach((f, i) => { tone(t + i * 0.09, f, 0.22, 'square', 0.05, AU.sfx); tone(t + i * 0.09, f / 2, 0.22, 'triangle', 0.05, AU.sfx); }); noiseHit(t + 0.45, 0.4, 0.12, 6000, AU.sfx); },
+  combo(n) { if (!AU.ctx) return; const t = now(), f = 660 * Math.pow(2, Math.min(n, 8) / 12); tone(t, f, 0.08, 'square', 0.05, AU.sfx); tone(t + 0.07, f * 1.5, 0.14, 'square', 0.05, AU.sfx); },
+  stamp() { if (!AU.ctx) return; const t = now(); noiseHit(t, 0.18, 0.4, 900, AU.sfx); tone(t, 140, 0.2, 'triangle', 0.2, AU.sfx, 70); },
+  tick() { if (!AU.ctx) return; tone(now(), 1400, 0.025, 'square', 0.025, AU.sfx); },
   horn() { if (!AU.ctx) return; const t = now(); tone(t, 392, 0.2, 'square', 0.05, AU.sfx); tone(t, 494, 0.2, 'square', 0.04, AU.sfx); },
 };
 // vals criollo suave de fondo

@@ -60,7 +60,8 @@ function buy(pd) {
   else if (pd.kind === 'floor') { save.floors++; save.tables[save.floors - 1] = 2; rebuildAll(); syncTables(); viewFloor = save.floors - 1; WLD.tables[save.floors - 1].forEach((t, k) => popIn(t, 0.2 + k * 0.15)); dust(0, floorY(save.floors - 1), 0); dust(-300, floorY(save.floors - 1), 200); dust(300, floorY(save.floors - 1), -100); banner(save.floors === 2 ? '¡Segundo piso construido!' : '¡Terraza construida!', 'Tus mozos suben por la escalera. Contrata más.'); }
   else if (pd.kind === 'drive') { save.drive = true; const d = makeDriveThru(); WLD.root.add(d); popIn(d); banner('¡Drive-thru abierto!', 'Contrata a alguien para la ventanilla, o atiende tú.'); }
   else if (pd.kind === 'moto') { save.motos++; addMotoModel(save.motos - 1, true); banner(save.motos === 1 ? '¡Delivery abierto!' : '¡Nueva moto!', 'Contrata un motorizado en Personal.'); }
-  SFX.build(); shake = 8; persist(); refreshPads(true); goalCheck(); return true;
+  SFX.build(); shake = 8; gainXP(XP.buy); const sp = proj(pd.x, floorY(pd.f) + 30, pd.z); if (sp) { sparkle(sp.x, sp.y, 26, '#19D46E'); confetti(sp.x, sp.y, 24, 0.8); }
+  persist(); refreshPads(true); goalCheck(); return true;
 }
 // Cambia el modelo de una mesa por el de su nuevo tamaño sin perder lo que pasa encima
 function upgradeTableModel(f, i) {
@@ -90,19 +91,26 @@ function buyGenerator(pay) {
 
 /* ---------- avisos ---------- */
 let toastT = 0, shake = 0;
-function toast(html) { const el = $('#toast'); el.innerHTML = html; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2600); }
+function toast(html, kind) { const el = $('#toast'); el.dataset.kind = kind || ''; el.innerHTML = '<i class="tico"></i><div>' + html + '</div>'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2600); }
 function banner(t, sub) { const el = $('#banner'); el.innerHTML = '<b>' + esc(t) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : ''); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
-function goalCheck() { const d = checkGoals(); if (d.length) { setTimeout(() => { toast('<small>¡Meta cumplida!</small><b>' + esc(d[0].t) + '</b><em>+' + soles(d[0].r) + '</em>'); SFX.cash(); }, 400); persist(); } }
+function goalCheck() { const d = checkGoals(); if (d.length) { gainXP(XP.goal * d.length); setTimeout(() => { toast('<small>¡Meta cumplida!</small><b>' + esc(d[0].t) + '</b><em>+' + soles(d[0].r) + ' · +' + XP.goal + ' fama</em>', 'goal'); SFX.cash(); const tt = elCenter($('#toast')); confetti(tt.x, tt.y, 40); }, 400); persist(); } }
 
 /* ---------- paneles ---------- */
 const PANELS = { chain: 'Mi cadena', staff: 'Personal', carta: 'Carta', decor: 'Decoración', reviews: 'Reseñas', goals: 'Metas', options: 'Opciones' };
-function openPanel(k) { panel = panel === k ? null : k; SFX.click(); renderPanel(); }
+const PANEL_SUB = { chain: 'Tus locales en Lima', staff: 'Tu equipo y sus sueldos', carta: 'Platos, recetas y precios', decor: 'El ambiente suma estrellas', reviews: 'Lo que dicen tus clientes', goals: 'Cumple metas y gana fama', options: 'Ajustes del juego' };
+const PANEL_COLOR = { chain: '#7B3FF2', staff: '#2E6BFF', carta: '#FF7A1A', decor: '#FF2E88', reviews: '#E0A800', goals: '#19A35A', options: '#6A6474' };
+function openPanel(k) {
+  panel = panel === k ? null : k; SFX.click(); renderPanel();
+  const el = $('#panel'); el.classList.remove('enter'); if (panel) { void el.offsetWidth; el.classList.add('enter'); clearTimeout(openPanel.t); openPanel.t = setTimeout(() => el.classList.remove('enter'), 900); }
+}
 function renderPanel() {
   const el = $('#panel');
   document.querySelectorAll('[data-panel]').forEach(b => b.classList.toggle('on', b.dataset.panel === panel));
   if (!panel) { el.hidden = true; return; }
   el.hidden = false;
-  let h = '<div class="ph"><h2>' + PANELS[panel] + '</h2><button class="x" id="pclose" aria-label="Cerrar">✕</button></div><div class="pb">';
+  el.style.setProperty('--pc', PANEL_COLOR[panel]);
+  const ico = document.querySelector('[data-panel="' + panel + '"] svg');
+  let h = '<div class="ph"><span class="pico">' + (ico ? ico.outerHTML : '') + '</span><div class="pt"><h2>' + PANELS[panel] + '</h2><small>' + PANEL_SUB[panel] + '</small></div><button class="x" id="pclose" aria-label="Cerrar">✕</button></div><div class="pb">';
   if (panel === 'chain') {
     const L = chainList(), best = Math.max(...L.map(c => c.rating)), unlocked = best >= CHAIN_RATING;
     h += '<p class="note">Tu plata es una sola para todos los locales. Los que no estás mirando siguen vendiendo con su personal (rinden un ' + Math.round(BG_SHARE * 100) + ' %).</p>';
@@ -153,6 +161,9 @@ function renderPanel() {
     for (const [k, n] of [['food', 'Comida'], ['carta', 'Carta'], ['deco', 'Decoración'], ['clean', 'Limpieza']]) { const v = avg(k); h += '<div class="rbar"><span>' + n + '</span><div><i style="width:' + (v / 5 * 100).toFixed(0) + '%;background:' + (v >= 4 ? '#19D46E' : v >= 3 ? '#FFE14D' : '#FF6B6B') + '"></i></div><em>' + v.toFixed(1) + '</em></div>'; }
     h += '<div class="rlist">' + (R.length ? R.map(r => '<div class="rv' + (r.critic ? ' critic' : '') + '"><b>' + esc(r.name) + '</b><span>' + starStr(r.stars) + '</span><p>“' + esc(r.text) + '”</p></div>').join('') : '<p class="note">Todavía no hay reseñas.</p>') + '</div>';
   } else if (panel === 'goals') {
+    const nd = GOALS.filter(g => save.goals.includes(g.id)).length;
+    h += '<div class="gprog"><div><b>' + nd + ' de ' + GOALS.length + '</b> metas cumplidas</div><div class="xpbar"><i style="width:' + (nd / GOALS.length * 100).toFixed(0) + '%"></i></div></div>';
+    h += '<div class="fama"><span class="fl">' + save.level + '</span><div><b>' + esc(famaTitle(save.level)) + '</b><small>Fama ' + save.xp + ' / ' + xpNeed(save.level) + ' · próximo nivel +' + soles(levelReward(save.level + 1)) + '</small><div class="xpbar"><i style="width:' + (clamp(save.xp / xpNeed(save.level), 0, 1) * 100).toFixed(0) + '%"></i></div></div></div>';
     h += GOALS.map(g => '<div class="goal' + (save.goals.includes(g.id) ? ' done' : '') + '"><span>' + esc(g.t) + '</span><em>' + (save.goals.includes(g.id) ? 'Listo' : '+' + soles(g.r)) + '</em></div>').join('');
   } else if (panel === 'options') {
     h += '<div class="card"><div class="ci"><b>Nombre del restaurante</b></div></div><div class="nrow"><input id="rname" maxlength="26" value="' + esc(save.name) + '"><button class="b g" id="rname-ok">Cambiar</button></div>';
@@ -162,6 +173,7 @@ function renderPanel() {
     h += '<div class="card"><div class="ci"><b>Empezar de cero</b><span>Borra todo tu progreso.</span></div><div class="ca"><button class="b s" id="reset">Borrar</button></div></div>';
   }
   el.innerHTML = h + '</div>';
+  el.querySelectorAll('.pb > *').forEach((c, i) => c.style.setProperty('--i', Math.min(i, 14)));
   el.querySelector('#pclose').onclick = () => openPanel(panel);
   el.querySelectorAll('[data-hire]').forEach(b => b.onclick = () => { const k = b.dataset.hire; if (save.money < ROLES[k].hire) return; save.money -= ROLES[k].hire; save.staff[k] = (save.staff[k] || 0) + 1; syncStaff(); SFX.build(); toast('<b>¡Contrataste un ' + ROLES[k].name.toLowerCase() + '!</b>'); goalCheck(); renderPanel(); persist(); });
   el.querySelectorAll('[data-fire]').forEach(b => b.onclick = () => { const k = b.dataset.fire; save.staff[k]--; const p = SIM.people.filter(q => q.role === k).pop(); if (p) { if (p.job && p.job.claimed === p) p.job.claimed = null; if (p.job && p.job.waiter === p) p.job.waiter = null; if (p.job && p.job.t) p.job.t.cleaner = null; if (p.job && p.job.s) p.job.s.cleaner = null; if (p.carry) { p.carry.claimed = null; p.carry.status = 'ready'; } removePerson(p); } SFX.click(); renderPanel(); persist(); });
@@ -246,7 +258,9 @@ function drawTutArrow() {
 let hudT = 0;
 function updateHUD(dt) {
   hudT -= dt; if (hudT > 0) return; hudT = 0.15;
-  $('#h-money').textContent = soles(save.money);
+  const need = xpNeed(save.level), pr = clamp(save.xp / need, 0, 1);
+  $('#h-lvl').textContent = save.level; $('#h-title').textContent = famaTitle(save.level); $('#h-xp').style.strokeDashoffset = (113.1 * (1 - pr)).toFixed(1);
+  $('#c-lvl').title = 'Fama: ' + save.xp + ' / ' + need + ' para el nivel ' + (save.level + 1);
   const reg = $('#h-reg'); reg.textContent = save.register > 0 ? 'Caja: ' + soles(save.register) : 'Caja vacía'; reg.classList.toggle('hot', save.register >= 40 && !(save.staff.cajero > 0));
   const h = hourNow(), hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15;
   $('#h-clock').textContent = hh + ':' + String(mm).padStart(2, '0');
@@ -365,10 +379,14 @@ function drawOverlay() {
     const s = proj(t.x, t.y, t.z); if (!s) continue;
     const k = t.t / t.life; ctx.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
     ctx.font = (t.size > 16 ? '700 ' + t.size + 'px ' + FONT_D : '800 ' + t.size + 'px Rubik, sans-serif');
-    ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.strokeText(t.text, s.x, s.y); ctx.fillStyle = t.color; ctx.fillText(t.text, s.x, s.y);
+    // aparece con un pequeño rebote (escala 0 → 1.25 → 1)
+    const pk = REDUCED ? 1 : t.t < 0.12 ? t.t / 0.12 * 1.25 : t.t < 0.24 ? 1.25 - (t.t - 0.12) / 0.12 * 0.25 : 1;
+    ctx.save(); ctx.translate(s.x, s.y); ctx.scale(pk, pk);
+    ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.strokeText(t.text, 0, 0); ctx.fillStyle = t.color; ctx.fillText(t.text, 0, 0); ctx.restore();
   }
   ctx.globalAlpha = 1;
   drawTutArrow();
+  drawJuice();
   if (SIM.avatar && SIM.avatar.carry) { const a = SIM.avatar, s = proj(a.x, a.y + 65, a.z); if (s) { ctx.font = '800 12px Rubik, sans-serif'; ctx.fillStyle = '#FF2E88'; const txt = DISH[a.carry.dish].name; const w = ctx.measureText(txt).width + 18; rr(s.x - w / 2, s.y - 11, w, 22, 11); ctx.fill(); ctx.fillStyle = '#FFF'; ctx.fillText(txt, s.x, s.y + 1); } }
 }
 // Qué está haciendo cada empleado, según su estado ('cook', 'plate', 'order', 'clean'); los que van en camino se ven más suaves
@@ -490,8 +508,13 @@ function showTitle() {
   $('#title').hidden = false; playing = false; stage.classList.add('intitle'); if (panel) { panel = null; renderPanel(); }
   $('#t-name').value = save.name;
   $('#t-go').textContent = save.started ? 'Continuar' : 'Abrir mi restaurante';
-  $('#t-sub').textContent = save.started ? 'Día ' + save.day + ', ' + totalTables() + ' mesas, ' + save.rating.toFixed(1) + ' estrellas.' : 'Empieza con un local chico y conviértelo en el restaurante más famoso de Lima.';
+  $('#t-sub').textContent = save.started ? 'Tu restaurante te espera.' : 'Empieza con un local chico y conviértelo en el restaurante más famoso de Lima.';
+  const st = $('#t-stats'); st.hidden = !save.started;
+  if (save.started) st.innerHTML = '<div class="ts-lvl"><b>' + save.level + '</b><span><small>Nivel de fama</small>' + esc(famaTitle(save.level)) + '</span></div>' +
+    '<div class="ts-row"><span><b>Día ' + save.day + '</b>jugando</span><span><b>' + save.rating.toFixed(1) + ' ★</b>calificación</span><span><b>' + save.chain.length + '</b>' + (save.chain.length === 1 ? 'local' : 'locales') + '</span><span><b>' + (save.bestDay || 0).toLocaleString('es-PE') + '</b>récord</span></div>';
 }
+// Letras del logo en spans para animarlas una por una
+document.querySelectorAll('.logo .ln').forEach((ln, j) => { ln.innerHTML = [...ln.textContent].map((c, i) => '<span style="--i:' + (i + j * 5) + '">' + c + '</span>').join(''); });
 $('#t-go').addEventListener('click', () => {
   audioInit(); SFX.click();
   const nm = $('#t-name').value.trim(); if (nm && nm !== save.name) { save.name = nm.slice(0, 26); rebuildAll(); }
@@ -501,16 +524,24 @@ $('#t-go').addEventListener('click', () => {
   if (!first && $('#dayend').hidden) showEventCard();
   if (first) setTimeout(() => banner('¡Bienvenido a ' + save.name + '!', 'Sigue los pasos de arriba para aprender a atender.'), 400);
 });
+const GRADE_TEXT = { S: '¡Día perfecto!', A: '¡Gran día!', B: 'Buen día', C: 'Día regular', D: 'Día difícil' };
 onDayEnd = log => {
   const el = $('#dayend');
   const profit = log.income - log.costs - log.wages;
   const chainRow = log.chain > 0 ? '<dt>Tus otros locales</dt><dd class="pos">+' + soles(log.chain) + '</dd>' : '';
-  el.innerHTML = '<div class="dcard"><small>Fin del día ' + log.day + '</small><h2>' + (profit > 0 ? '¡Buen día!' : 'Día difícil') + '</h2>' +
-    '<dl><dt>Ventas</dt><dd>' + soles(log.income) + '</dd><dt>Propinas incluidas</dt><dd>' + soles(log.tips) + '</dd><dt>Ingredientes</dt><dd>-' + soles(log.costs) + '</dd><dt>Sueldos del personal</dt><dd>-' + soles(log.wages) + '</dd><dt class="tot">Ganancia</dt><dd class="tot ' + (profit >= 0 ? 'pos' : 'neg') + '">' + soles(profit) + '</dd>' +
-    chainRow + '<dt>Platos servidos</dt><dd>' + log.served + '</dd><dt>Clientes que se fueron</dt><dd>' + log.lost + '</dd><dt>Calificación</dt><dd>' + log.rating.toFixed(1) + ' ★</dd></dl>' +
+  const stars = Math.round(log.rating * 2) / 2, starHtml = [1, 2, 3, 4, 5].map(i => '<i class="st ' + (stars >= i ? 'full' : stars >= i - 0.5 ? 'half' : '') + '" style="--i:' + i + '">★</i>').join('');
+  el.innerHTML = '<div class="dcard dayend"><small>Fin del día ' + log.day + ' · ' + esc(save.name) + '</small>' +
+    '<div class="de-top"><div class="grade" style="--g:' + log.color + '">' + log.grade + '</div><div class="de-head"><h2>' + GRADE_TEXT[log.grade] + '</h2><p class="de-score">Puntaje <b id="de-score">0</b></p>' + (log.record ? '<span class="record">¡Nuevo récord!</span>' : '<span class="best">Récord: ' + (save.bestDay || 0).toLocaleString('es-PE') + '</span>') + '</div></div>' +
+    '<div class="de-stars" aria-label="' + log.rating.toFixed(1) + ' estrellas">' + starHtml + '<em>' + log.rating.toFixed(1) + '</em></div>' +
+    '<dl><dt>Ventas</dt><dd id="de-inc">' + soles(log.income) + '</dd><dt>Propinas incluidas</dt><dd>' + soles(log.tips) + '</dd><dt>Ingredientes</dt><dd>-' + soles(log.costs) + '</dd><dt>Sueldos del personal</dt><dd>-' + soles(log.wages) + '</dd><dt class="tot">Ganancia</dt><dd class="tot ' + (profit >= 0 ? 'pos' : 'neg') + '" id="de-prof">' + soles(profit) + '</dd>' +
+    chainRow + '<dt>Platos servidos</dt><dd>' + log.served + '</dd><dt>Clientes que se fueron</dt><dd>' + log.lost + '</dd></dl>' +
+    (log.xpGain ? '<div class="de-xp"><span>Fama +' + log.xpGain + '</span><div class="xpbar"><i style="width:' + (clamp(save.xp / xpNeed(save.level), 0, 1) * 100).toFixed(0) + '%"></i></div><small>Nivel ' + save.level + ' · ' + esc(famaTitle(save.level)) + '</small></div>' : '') +
     (log.event ? '<div class="evres"><small>Resultado del evento</small><b>' + esc(log.event.name) + '</b><p>' + esc(log.event.text) + '</p></div>' : '') +
     (log.lost > 3 ? '<p class="tip">Se fueron ' + log.lost + ' clientes por falta de mesas: compra más.</p>' : '') + '<button class="b g big" id="d-ok">Siguiente día</button></div>';
   el.hidden = false; SFX.cash();
+  countUp($('#de-score'), log.score, 1100, v => Math.round(v).toLocaleString('es-PE'));
+  countUp($('#de-inc'), log.income, 900, soles); countUp($('#de-prof'), profit, 1100, soles);
+  setTimeout(() => { SFX.stamp(); const g = el.querySelector('.grade'); if (g) { const c = elCenter(g); sparkle(c.x, c.y, 18, log.color); if (log.grade === 'S' || log.grade === 'A' || log.record) confetti(c.x, c.y, 70, 1.2); } }, REDUCED ? 0 : 650);
   el.querySelector('#d-ok').onclick = () => { el.hidden = true; SFX.click(); goalCheck(); showEventCard(); };
 };
 // Aviso grande al empezar un día con evento
@@ -539,6 +570,33 @@ function offlineEarnings() {
   $('#dayend').innerHTML = '<div class="dcard"><small>Mientras no estabas</small><h2>Tu restaurante siguió vendiendo</h2><p class="big-money">+' + soles(earn) + '</p><p class="tip">Estuviste fuera ' + (hrs ? hrs + ' h ' : '') + mins + ' min. ' + (save.chain.length > 1 ? 'Tus ' + save.chain.length + ' locales atendieron' : 'Tu personal atendió') + ' solo (hasta 8 horas).</p><button class="b g big" id="d-ok">¡Genial!</button></div>';
   $('#dayend').hidden = false; $('#dayend').querySelector('#d-ok').onclick = () => { $('#dayend').hidden = true; SFX.cash(); };
 }
+
+/* ---------- fama, combo y celebraciones ---------- */
+onGame = (type, d) => {
+  if (type === 'levelUp') setTimeout(() => showLevelUp(d.level), 300);
+  else if (type === 'combo') { SFX.combo(d.n); comboPop = 1; const s = proj(d.x, d.y, d.z); if (s) { sparkle(s.x, s.y, 10 + d.n * 3, '#FF7A1A'); floatText(d.x, d.y, d.z, '¡Combo x' + d.n + '!', '#FF9A3C', 18); } }
+  else if (type === 'comboLost') { toast('<b>Se cortó tu combo x' + d.n + '</b><small>Atiende rápido para armarlo de nuevo.</small>', 'warn'); }
+  else if (type === 'fiveStar') { const s = proj(d.x, d.y, d.z); if (s) sparkle(s.x, s.y, 16, '#FFE14D'); }
+  else if (type === 'collect') { const s = proj(REG.x, 70, REG.z); if (s && viewFloor === 0) flyCoins(s.x, s.y, Math.min(14, 3 + Math.round(d.amt / 25)), () => SFX.coin()); else bumpMoney(); }
+};
+let comboPop = 0;
+function updateCombo() {
+  const el = $('#combo'), on = SIM.combo >= 2 && playing;
+  el.hidden = !on; if (!on) return;
+  $('#combo-n').textContent = 'x' + SIM.combo; $('#combo-t').style.transform = 'scaleX(' + clamp(SIM.comboT / COMBO_WINDOW, 0, 1).toFixed(3) + ')';
+  $('#combo-b').textContent = '+' + ((SIM.combo - 1) * 5) + ' % propina';
+  if (comboPop > 0) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); comboPop = 0; }
+}
+// Celebración al subir de nivel de fama
+function showLevelUp(lvl) {
+  const el = $('#lvlup'), newTitle = TITLES.find(x => x[0] === lvl);
+  el.innerHTML = '<div class="lu-rays"></div><div class="lu-card"><small>¡Subiste de nivel!</small><b class="lu-n">' + lvl + '</b><p class="lu-t">' + esc(famaTitle(lvl)) + '</p>' +
+    (newTitle ? '<p class="lu-new">Nuevo título para tu restaurante</p>' : '') + '<p class="lu-r">+' + soles(levelReward(lvl)) + ' · Propinas +' + Math.round(levelTipBonus() * 100) + ' %</p><span class="lu-tap">Toca para seguir</span></div>';
+  el.hidden = false; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); SFX.levelUp();
+  const c = elCenter(el.querySelector('.lu-card')); confetti(c.x, c.y, 90, 1.3); confettiRain(60);
+  clearTimeout(showLevelUp.t); showLevelUp.t = setTimeout(() => { el.hidden = true; }, 4200);
+}
+$('#lvlup').addEventListener('click', () => { $('#lvlup').hidden = true; });
 
 /* ---------- botones ---------- */
 document.querySelectorAll('[data-panel]').forEach(b => b.addEventListener('click', () => { audioInit(); openPanel(b.dataset.panel); }));
@@ -576,6 +634,7 @@ function frame(t) {
   for (let f = 0; f < WLD.floors.length; f++) WLD.floors[f].visible = f <= viewFloor;
   // vista en corte: al jugar con la cámara baja se esconde la fachada para ver las mesas de adelante
   const cut = playing && camPitch < 1.0; for (const fr of WLD.front) fr.visible = !cut;
+  updateJuice(dt); tickMoney(dt); updateCombo();
   updatePops(dt); updateLighting(); poseAll(SIM.t); updateCamera(dt);
   renderer.render(scene, camera);
   drawOverlay();

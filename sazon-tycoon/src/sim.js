@@ -1,5 +1,5 @@
 /* ================== SIMULACIÓN ================== */
-const SIM = { t: 0, people: [], orders: [], fx: [], texts: [], tables: [], queue: [], cars: [], dirt: [[], [], []], plates: [], spawnT: 1, carT: 8, delT: 10, wallT: 0, avatar: null, nextId: 1, rides: [], ended: false };
+const SIM = { combo: 0, comboT: 0, t: 0, people: [], orders: [], fx: [], texts: [], tables: [], queue: [], cars: [], dirt: [[], [], []], plates: [], spawnT: 1, carT: 8, delT: 10, wallT: 0, avatar: null, nextId: 1, rides: [], ended: false };
 const SKIN = ['#8D5A3B', '#A56B45', '#C68A5E', '#7A4B2E', '#B97A56', '#D9A37A'], HAIR = ['#1A1110', '#2B1B14', '#3A2A20', '#140E0C', '#5A3A26', '#8A7A6A'], SHIRT = ['#E23B3B', '#2E6BFF', '#19A35A', '#F2C230', '#FFFFFF', '#7B3FF2', '#FF7A1A', '#23324A', '#C9C3B6', '#FF2E88', '#3C8D93', '#8B5E3C'], PANT = ['#2A3550', '#23324A', '#3B3B3B', '#5A4632', '#1E2A3A'];
 const NAMES = ['Doña Rosa', 'Don Julio', 'Kevin', 'Milagros', 'Jorge', 'Señora Carmen', 'Lucía', 'El contador', 'Valeria', 'Renzo', 'Pedro', 'Ana', 'Brayan', 'Sofía', 'Martín', 'Kiara', 'Don Aurelio'];
 function randLook() { const l = { kind: 'normal', skin: pick(SKIN), hair: pick(HAIR), shirt: pick(SHIRT), pants: pick(PANT), hat: null, scale: 1 }; if (chance(0.2)) { l.hat = 'gorra'; l.hatColor = pick(SHIRT); } if (chance(0.15)) l.bag = pick(['#3B2A20', '#1E2A3A', '#6B2E2E']); return l; }
@@ -197,7 +197,13 @@ function updateParty(party, dt) {
     if (party.t <= 0) {
       let total = 0; for (const o of party.orders) total += dishPrice(o.dish);
       const rv = makeReview(party, party.waited || 20, false);
-      const tip = rv.stars >= 4.5 ? Math.round(total * 0.15) : rv.stars >= 4 ? Math.round(total * 0.08) : 0;
+      // combo: si se atendió rápido suma, si tardó mucho se corta
+      if ((party.waited || 99) < COMBO_FAST) { SIM.combo = Math.min(COMBO_MAX, SIM.combo + 1); SIM.comboT = COMBO_WINDOW; if (SIM.combo >= 2) onGame('combo', { n: SIM.combo, x: t.x, y: floorY(t.f) + 110, z: t.z }); }
+      else if (party.waited > 36) breakCombo();
+      const tipRate = (rv.stars >= 4.5 ? 0.15 : rv.stars >= 4 ? 0.08 : 0) + levelTipBonus() + Math.max(0, SIM.combo - 1) * 0.05;
+      const tip = Math.round(total * tipRate);
+      gainXP(XP.party + XP.plate * party.orders.length + (SIM.combo > 1 ? SIM.combo * 2 : 0) + (rv.stars >= 4.5 ? XP.fiveStar : 0));
+      if (rv.stars >= 4.5) onGame('fiveStar', { x: t.x, y: floorY(t.f) + 95, z: t.z });
       save.register += total + tip; save.dayLog.income += total + tip; save.dayLog.tips += tip;
       coinsTo(t.x, floorY(t.f) + 40, t.z);
       floatText(t.x, floorY(t.f) + 70, t.z, '+' + soles(total + tip), '#FFE14D', 17);
@@ -224,6 +230,7 @@ const tutSlow = () => save.tutorial >= 0 ? 0.5 : 1;
 function pickDish() { if (eventOn('partido') && save.menu.includes('pollo') && chance(0.8)) return 'pollo'; const foods = save.menu.filter(id => !DISH[id].drink); const pool = foods.length ? foods : save.menu; let tot = 0; for (const id of pool) tot += DISH[id].pop; let r = Math.random() * tot; for (const id of pool) { r -= DISH[id].pop; if (r <= 0) return id; } return pool[0]; }
 function leaveParty(party, angry) {
   const t = party.table;
+  if (angry) breakCombo();
   if (angry) { if (SIM.blackout && save.event) save.event.lostOrders = (save.event.lostOrders || 0) + 1; makeReview(party, 60, true); SFX.angry(); floatText(t.x, floorY(t.f) + 80, t.z, '¡Qué lento! ★☆☆☆☆', '#FF6B6B', 15); for (const o of party.orders) if (o.status !== 'done') { o.status = 'cancel'; if (o.plateM && o.plateM.parent) o.plateM.parent.remove(o.plateM); if (o.claimed) dropPlate(o.claimed); } }
   else { t.dirty = true; const tm = WLD.tables[t.f][t.i]; if (tm) { tm.userData.dirty.visible = true; tm.userData.food.forEach(fg => { fg.visible = false; }); } if (chance(0.3)) addDirt(t.f, t.x + rand(-60, 60), t.z + rand(-60, 60)); }
   const tm = WLD.tables[t.f][t.i]; if (tm && angry) tm.userData.food.forEach(fg => { fg.visible = false; });
@@ -332,6 +339,7 @@ function cleanSpot(f, s) { if (s.m.parent) s.m.parent.remove(s.m); SIM.dirt[f] =
 function collectRegister(auto) {
   if (save.register <= 0) return;
   const amt = save.register; save.money += amt; save.register = 0; save.stats.collected++;
+  onGame('collect', { amt, auto });
   floatText(REG.x, 90, REG.z, '+' + soles(amt), '#19D46E', auto ? 15 : 22);
   SFX.cash(); if (!auto) for (let i = 0; i < 12; i++) SIM.fx.push({ type: 'coin', x: REG.x, y: 60, z: REG.z, vx: rand(-80, 80), vy: rand(120, 220), vz: rand(-80, 80), t: 0, life: 0.9 });
 }
@@ -453,7 +461,26 @@ function updateFx(dt) {
 function resetSim() {
   for (const p of SIM.people.slice()) removePerson(p);
   for (const c of SIM.cars) if (c.m.parent) c.m.parent.remove(c.m);
-  Object.assign(SIM, { people: [], orders: [], fx: [], texts: [], tables: [], queue: [], cars: [], dirt: [[], [], []], rides: [], deliveries: [], avatar: null, spawnT: 1, carT: 8, delT: 10 });
+  Object.assign(SIM, { combo: 0, comboT: 0, people: [], orders: [], fx: [], texts: [], tables: [], queue: [], cars: [], dirt: [[], [], []], rides: [], deliveries: [], avatar: null, spawnT: 1, carT: 8, delT: 10 });
+}
+
+/* ---------- fama y combo ---------- */
+// Avisos a la interfaz (efectos, sonidos); ui.js/juice.js reemplaza esta función
+let onGame = () => {};
+function gainXP(n) {
+  if (n <= 0) return;
+  save.xp += Math.round(n);
+  while (save.xp >= xpNeed(save.level)) { save.xp -= xpNeed(save.level); save.level++; save.money += levelReward(save.level); onGame('levelUp', { level: save.level }); }
+}
+function breakCombo() { if (SIM.combo >= 3) onGame('comboLost', { n: SIM.combo }); SIM.combo = 0; SIM.comboT = 0; }
+// Nota y puntaje del día a partir del resumen
+function gradeDay(log) {
+  const profit = log.income - log.costs - log.wages;
+  const ratio = log.served / Math.max(1, log.served + log.lost * 1.5);
+  const pts = ratio * 50 + (log.rating / 5) * 30 + (profit > 0 ? 20 : Math.max(0, 20 + profit / 20));
+  const g = GRADES.find(x => pts >= x[1]);
+  const score = Math.max(0, Math.round(log.served * 12 + log.tips + Math.max(0, profit) * 0.5 + log.rating * 50 - log.lost * 15));
+  return { grade: g[0], color: g[2], score, pts: Math.round(pts) };
 }
 
 /* ---------- eventos ---------- */
@@ -500,6 +527,8 @@ function updateSim(dt) {
     let wages = 0; for (const k of ROLE_KEYS) wages += (save.staff[k] || 0) * ROLES[k].wage;
     save.money -= wages;
     const log = Object.assign({}, save.dayLog, { wages, day: save.day, rating: save.rating, chain: Math.round(save.chainDay) }); save.chainDay = 0;
+    Object.assign(log, gradeDay(log)); log.record = log.score > (save.bestDay || 0) && save.day > 1; if (log.score > (save.bestDay || 0)) save.bestDay = log.score;
+    log.levelBefore = save.level; gainXP(GRADE_XP[log.grade]); log.xpGain = GRADE_XP[log.grade];
     if (save.event && save.event.day === save.day) log.event = { name: EVENTS[save.event.id].name, text: eventResult(save.event) };
     save.profitEma = lerp(save.profitEma || 0, log.income - log.costs - wages, save.day === 1 ? 1 : 0.4);
     save.day++; save.dayLog = { income: 0, costs: 0, served: 0, lost: 0, tips: 0 };
@@ -509,6 +538,7 @@ function updateSim(dt) {
   // los otros locales de la cadena siguen vendiendo solos
   if (save.chain.length > 1) { const bg = chainBgDaily() / DAY_LEN * dt; save.money += bg; save.chainDay += bg; }
   updateEvents();
+  if (SIM.comboT > 0) { SIM.comboT -= dt; if (SIM.comboT <= 0) SIM.combo = 0; }
   const fer = eventOn('feriado');
   SIM.spawnT -= dt;
   if (SIM.spawnT <= 0) { SIM.spawnT = rand(0.9, 1.9) / DIST().flow / (fer ? 2 : 1); if (SIM.people.filter(p => p.role === 'walker').length < QCFG.walkers * (DIST().busy ? 1.3 : 1) * (fer ? 1.5 : 1)) spawnWalker(); }
