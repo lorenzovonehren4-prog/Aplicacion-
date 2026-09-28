@@ -480,7 +480,7 @@ function exportImage(s) {
   if (y <= 1220) x.fillText(line.replace(/ → $/, ''), 70, y);
   x.fillStyle = 'rgba(255,255,255,.5)'; x.font = '24px Rubik, sans-serif'; x.textAlign = 'center'; x.fillText('¿Puedes superarlo? Juega Modo Carrera Fútbol', W / 2, 1300);
   let url = ''; try { url = cv.toDataURL('image/png'); } catch (e) { }
-  const m = modal('<small class="kick">Compartir</small><h2>Tu carrera en una imagen</h2><img class="share" alt="Resumen de tu carrera" src="' + url + '"><p class="hint">Si el botón no descarga, mantén presionada la imagen (o clic derecho) y elige "Guardar imagen".</p><div class="opts row"><a class="b g" id="dl" download="mi-carrera-' + s.score + '.png" href="' + url + '">Descargar imagen</a><button class="b s" id="close">Cerrar</button></div>');
+  const m = modal('<small class="kick">Compartir</small><h2>Tu carrera en una imagen</h2><img class="share" alt="Resumen de tu carrera" src="' + url + '"><p class="hint">Para guardarla, haz clic derecho sobre la imagen y elige "Guardar imagen como". En el celular, mantenla presionada.</p><button class="b g" id="close">Listo</button>');
   closeBtn(m);
 }
 function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
