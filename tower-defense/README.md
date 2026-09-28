@@ -12,6 +12,8 @@ Tower defense 2D hecho con **HTML5 Canvas y JavaScript puro**, sin frameworks, l
   # abre http://localhost:8080
   ```
 
+- **Todo en un archivo** (para repartirlo): `node tower-defense/tools/build-single-file.mjs` genera `tower-defense/dist/reino-en-guardia.html`, que se abre con doble clic sin servidor ni red.
+
 El progreso (nivel, rango, medallas, estrellas y logros) se guarda en el navegador (`localStorage`).
 
 ## 🎮 Contenido

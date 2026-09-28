@@ -1,6 +1,7 @@
 /* Prueba de humo: recorre intro → menú → selección → partida → resultados
  * y todas las pantallas, falla si hay errores en consola.
- * Uso: node tower-defense/tests/humo.mjs  (capturas en tower-defense/tests/capturas/) */
+ * Uso: node tower-defense/tests/humo.mjs  (capturas en tower-defense/tests/capturas/)
+ *      TD_URL=file:///.../dist/reino-en-guardia.html node tower-defense/tests/humo.mjs */
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -12,7 +13,8 @@ catch { ({ chromium } = await import('/opt/node22/lib/node_modules/playwright/in
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const shots = path.join(dir, 'capturas');
 fs.mkdirSync(shots, { recursive: true });
-const url = pathToFileURL(path.join(dir, '..', 'index.html')).href;
+// TD_URL permite probar otra versión, p. ej. el archivo único de dist/
+const url = process.env.TD_URL || pathToFileURL(path.join(dir, '..', 'index.html')).href;
 
 const browser = await chromium.launch();
 const errors = [];
