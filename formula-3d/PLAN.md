@@ -417,8 +417,8 @@ Nada más cambia.
 
 | Nivel | Frenado | Tracción | ABS | Línea | Tipo | XP |
 |---|---|---|---|---|---|---|
-| Principiante | Completa | Completo | Sí | Completa | Fija | ×1.0 |
-| Intermedio | Media | No | Sí | Completa | Fija | ×1.25 |
+| Principiante | Completa | Completo | Sí | Completa | Dinámica | ×1.0 |
+| Intermedio | Media | No | Sí | Completa | Dinámica | ×1.25 |
 | Avanzado | Baja | No | Sí | Sólo curvas | Dinámica | ×1.5 |
 | Personalizado | Off/Baja/Media/Completa | Off/Medio/Completo | On/Off | Off/Curvas/Completa | Fija/Dinámica | calculado |
 
@@ -451,10 +451,11 @@ Nada más cambia.
   (`BufferGeometry` con color por vértice + shader propio: brillo suave,
   transparencia, bordes difuminados y chevrones animados). Fija = color por
   tramo desde el perfil (verde acelerar / amarillo levantar / rojo frenar).
-  Dinámica = cada fotograma, para los 260 m de adelante, qué fracción de la
-  frenada disponible haría falta para llegar a la velocidad de cada punto;
-  cada punto muestra lo peor que tiene adelante (verde < 33 %, amarillo hasta
-  72 %, rojo "frena ya" más allá), con transición suave de colores.
+  Dinámica = cada fotograma, para los 260 m de adelante, la velocidad máxima
+  permitida ahora para llegar a cada punto (√(v_curva² + 2·a·d)) contra la
+  tuya: el porcentaje de exceso da el color (verde 0 %, amarillo 6 %, rojo
+  15 % o más) y cada punto muestra lo peor que tiene adelante, con
+  transición suave de colores (v1.4; antes, fracción de la frenada).
 - **Trazada ideal** (`tracks/RacingLine.ts`): desplazamiento lateral d(s) que
   minimiza la suma de segundas diferencias al cuadrado (≈ curvatura²) con
   descenso por coordenadas, de grueso a fino (puntos cada 32 → 16 → 8 → 4 m),
@@ -961,6 +962,37 @@ revisión propia del código + resumen y espera de confirmación.
 - [x] El cursor quieto ya no le roba el foco a la pantalla que se abre: el
       foco sigue al ratón sólo cuando se mueve de verdad (`pointermove`).
 
+### Versión 1.4 — Texturas, ayudas de manejo y línea dinámica ✅
+
+- [x] Texturas del circuito: filtrado anisotrópico según la calidad (8× en
+      Baja, 16× en el resto, sin pasar el de la GPU; `RenderHost.textureAnisotropy`),
+      mipmaps con filtrado trilineal explícitos en todas, y asfalto, pasto,
+      grava, pianos y muros generados a 1024 px por repetición desde Media
+      (antes 512). Son procedurales: no hay archivos ni compresión con pérdida.
+      El asfalto se genera una sola vez por circuito (antes, tres).
+- [x] Capa de detalle cercana (`tracks/build/detail.ts`): el asfalto, el pasto
+      y la grava vuelven a leer su textura 3–5 veces más fina cerca de la
+      cámara (se apaga a ~40 m): el grano sigue nítido junto al auto.
+- [x] Nivel de detalle de los rivales según la calidad: distancia del modelo
+      cercano 60/90/130/170 m, hasta 5/8/10/12 autos, con más detalle en Alta
+      y Ultra (antes fijo: 75 m, 8 autos).
+- [x] Ayuda de dirección (Principiante, `assists/SteeringAssist.ts`): en las
+      curvas, si giras hacia el mismo lado, el volante se acerca al ángulo que
+      lleva por la trazada hacia el ápice (persecución pura, apuntando 1,6 m
+      adentro del borde). En las rectas no actúa; nunca maneja sola.
+- [x] Anti-derrape "sobre rieles" (`Electronics.antiSlide`): deja al
+      neumático trasero hasta el 60 % de la deriva de su pico de agarre y
+      quita el resto de la velocidad lateral. Más agarre en Principiante
+      (`gripBoost` ×1,08, como más carga aerodinámica). Pruebas: con volante
+      todo o nada y a fondo, la vuelta completa sin choques, menos de 1 s con
+      ruedas afuera y deriva máxima < 6°.
+- [x] Línea dinámica por exceso de velocidad: para cada punto de adelante,
+      v_permitida = √(v_curva² + 2·a·d); exceso = v/v_permitida − 1; color
+      interpolado verde (0 %) → amarillo (6 %) → rojo (15 %), recalculado en
+      cada cuadro y suavizado en el tiempo. Ahora es la línea de todos los
+      niveles predefinidos (la fija queda en Personalizado); en la XP, fija y
+      dinámica valen lo mismo y "sólo curvas" suma 0,15.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1041,3 +1073,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.1**: tracción, fluidez, pistas y gráficos (pedido del usuario).
 - **Versión 1.2**: gráficos y calidad de las pistas (pedido del usuario).
 - **Versión 1.3**: menús y su calidad (pedido del usuario).
+- **Versión 1.4**: texturas, ayudas de frenado/dirección y línea dinámica (pedido del usuario).

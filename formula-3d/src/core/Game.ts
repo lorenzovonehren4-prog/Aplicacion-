@@ -191,7 +191,7 @@ export class Game {
     if (this.studioPromise) return this.studioPromise;
     const generation = ++this.studioGeneration;
     const promise = (async () => {
-      const studio = new StudioScene(this.render.renderer, { livery: liveryFromSetup(this.save.data.garage) }, this.render.maxAnisotropy);
+      const studio = new StudioScene(this.render.renderer, { livery: liveryFromSetup(this.save.data.garage) }, this.render.textureAnisotropy);
       studio.onGraphicsChanged(this.render.currentGraphics);
       // Con compilación paralela de shaders se espera sin trabar la animación;
       // sin ella, se compila de una vez (evita el tirón del primer fotograma).

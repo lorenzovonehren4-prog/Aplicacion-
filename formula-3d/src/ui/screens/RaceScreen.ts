@@ -348,7 +348,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       const world = await RaceWorld.create(session.vehicle, { rivals: rivalCars(session), ghost: session.isTimeTrial, livery }, settings.game.defaultCamera, {
         renderer: game.render.renderer,
         quality: settings.graphics.quality,
-        anisotropy: game.render.maxAnisotropy,
+        anisotropy: game.render.textureAnisotropy,
         weather: this.params.weather ?? 'sunny',
         onProgress: (progress, stage) => this.loading?.setProgress(progress * 0.9, stage),
         cancelled: () => this.cancelled,

@@ -69,7 +69,7 @@ const TOPICS: readonly Topic[] = [
     id: 'line',
     label: 'Línea de trazada',
     title: 'Línea de trazada',
-    text: 'La trazada ideal pintada en el asfalto. Verde: acelera. Amarillo: levanta. Rojo: frena. La fija pinta cada punto según la curva; la dinámica cambia de color según tu velocidad: si vas pasado se pone roja aunque estés en una recta.',
+    text: 'La trazada ideal pintada en el asfalto. Verde: acelera. Amarillo: levanta. Rojo: frena. La fija pinta cada punto según la curva; la dinámica compara en cada instante tu velocidad con la máxima con la que todavía llegas a la próxima curva: verde vas bien, amarilla te pasas un poco (hasta ~6 %), roja te pasas 15 % o más y si no frenas ya no llegas.',
     tips: ['"Sólo curvas" la esconde en las rectas.', 'Con la dinámica, apunta a que delante tuyo siempre esté verde o amarilla.'],
     demos: [
       { scene: 'lineFixed', assisted: true, caption: 'Fija: colores según la curva', good: true },

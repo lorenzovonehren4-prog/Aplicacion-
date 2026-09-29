@@ -10,10 +10,12 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
   type BufferGeometry,
+  type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ASPHALT_TILE, createRacedAsphaltMaterial, createTrackDataTexture } from './asphalt';
 import { addMesh, type BuildContext } from './context';
+import { DETAIL_PARS, detailLayer } from './detail';
 import { buildRibbon, fullLap, spansWhere, type ProfilePoint } from './ribbon';
 import { createAsphalt, createChecker, createGravel, createGrass, createKerb } from './textures';
 
@@ -54,7 +56,7 @@ export function buildGround(ctx: BuildContext): void {
   }
   plane.setAttribute('color', new Float32BufferAttribute(colors, 3));
 
-  const grass = ctx.own.own(createGrass(ctx.anisotropy));
+  const grass = ctx.own.own(createGrass(ctx.anisotropy, ctx.textureSize));
   grass.repeat.set(size / 5, size / 5);
   const material = new MeshStandardMaterial({ map: grass, vertexColors: true, roughness: 0.95 });
   // Franjas de césped cortado (claras y oscuras, de 9 m), como se ven en la TV,
@@ -64,10 +66,11 @@ export function buildGround(ctx: BuildContext): void {
       .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGroundXZ = (modelMatrix * vec4(position, 1.0)).xz;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
+      .replace('#include <common>', `#include <common>\nvarying vec2 vGroundXZ;\n${DETAIL_PARS}`)
       .replace(
         '#include <map_fragment>',
         `#include <map_fragment>
+        ${detailLayer(4.3, 0.45)}
         float mow = step(0.5, fract(dot(vGroundXZ, vec2(0.0786, 0.0786)) ));
         float checker = step(0.5, fract(dot(vGroundXZ, vec2(-0.0262, 0.0262))));
         diffuseColor.rgb *= 0.86 + 0.2 * mow + 0.04 * checker;`,
@@ -77,12 +80,21 @@ export function buildGround(ctx: BuildContext): void {
   addMesh(ctx, plane, material, { name: 'suelo' });
 }
 
+/** Texturas del asfalto: se generan una vez por circuito (pista, escapatorias y boxes las comparten). */
+function asphaltTextures(ctx: BuildContext): { map: Texture; bump: Texture } {
+  if (!ctx.asphalt) {
+    const textures = createAsphalt(ctx.anisotropy, ctx.textureSize);
+    ctx.own.own(textures.map);
+    ctx.own.own(textures.bump);
+    ctx.asphalt = textures;
+  }
+  return ctx.asphalt;
+}
+
 export function buildAsphalt(ctx: BuildContext): void {
   const g = ctx.track.geometry;
   const hw = g.halfWidth;
-  const { map, bump } = createAsphalt(ctx.anisotropy);
-  ctx.own.own(map);
-  ctx.own.own(bump);
+  const { map, bump } = asphaltTextures(ctx);
   const ribbon = buildRibbon(g, {
     ...fullLap(g),
     step: 2,
@@ -203,7 +215,7 @@ export function buildKerbs(ctx: BuildContext): void {
   const merged = mergeGeometries(pieces);
   for (const piece of pieces) piece.dispose();
   if (!merged) return;
-  const texture = ctx.own.own(createKerb(ctx.anisotropy));
+  const texture = ctx.own.own(createKerb(ctx.anisotropy, ctx.textureSize));
   addMesh(
     ctx,
     merged,
@@ -257,7 +269,7 @@ export function buildRunoff(ctx: BuildContext): void {
     for (const piece of pieces) piece.dispose();
     if (!merged) continue;
     if (kind === 1) {
-      const gravel = ctx.own.own(createGravel(ctx.anisotropy));
+      const gravel = ctx.own.own(createGravel(ctx.anisotropy, ctx.textureSize));
       const material = new MeshStandardMaterial({ map: gravel, roughness: 1 });
       // Manchas de tono grandes (piedras más claras o más húmedas): de lejos no se ve una lámina lisa.
       material.onBeforeCompile = (shader) => {
@@ -265,10 +277,11 @@ export function buildRunoff(ctx: BuildContext): void {
           .replace('#include <common>', '#include <common>\nvarying vec2 vGravelXZ;')
           .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGravelXZ = (modelMatrix * vec4(position, 1.0)).xz;');
         shader.fragmentShader = shader.fragmentShader
-          .replace('#include <common>', '#include <common>\nvarying vec2 vGravelXZ;')
+          .replace('#include <common>', `#include <common>\nvarying vec2 vGravelXZ;\n${DETAIL_PARS}`)
           .replace(
             '#include <map_fragment>',
             `#include <map_fragment>
+            ${detailLayer(3.1, 0.5)}
             float gravelTone = sin(vGravelXZ.x * 0.21 + sin(vGravelXZ.y * 0.13) * 2.0) * sin(vGravelXZ.y * 0.17 + sin(vGravelXZ.x * 0.09) * 1.7);
             float gravelFine = sin(vGravelXZ.x * 1.3 + vGravelXZ.y * 0.7) * sin(vGravelXZ.y * 1.1 - vGravelXZ.x * 0.4);
             diffuseColor.rgb *= 0.9 + 0.12 * gravelTone + 0.05 * gravelFine;`,
@@ -277,8 +290,7 @@ export function buildRunoff(ctx: BuildContext): void {
       material.customProgramCacheKey = () => 'grava-manchas';
       addMesh(ctx, merged, material, { name: 'grava' });
     } else {
-      const { map } = createAsphalt(ctx.anisotropy);
-      ctx.own.own(map);
+      const { map } = asphaltTextures(ctx);
       addMesh(ctx, merged, new MeshStandardMaterial({ map, color: '#9aa0a8', roughness: 0.9 }), { name: 'escapatoria' });
     }
   }
@@ -293,8 +305,7 @@ export function buildPitLane(ctx: BuildContext): { inner: number; outer: number 
   const sign = pits.side === 'left' ? -1 : 1;
   const inner = (walls[g.indexAt((pits.from + pits.to) / 2)] ?? 11) + 0.6;
   const outer = inner + 13;
-  const { map } = createAsphalt(ctx.anisotropy);
-  ctx.own.own(map);
+  const { map } = asphaltTextures(ctx);
   const lane = buildRibbon(g, {
     from: pits.from,
     to: pits.to,

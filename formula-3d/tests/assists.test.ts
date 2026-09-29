@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { BrakingAssist } from '../src/assists/BrakingAssist';
+import { RacingLineMesh, excessToState } from '../src/assists/RacingLineMesh';
+import { SteeringAssist } from '../src/assists/SteeringAssist';
 import { ASSIST_PRESETS, activeAssists, customXpMultiplier, xpMultiplier } from '../src/assists/presets';
 import { createDefaultAssists } from '../src/core/save/schema';
 import { LineFollower } from '../src/race/ai/LineFollower';
-import { F1_SPEC } from '../src/race/physics/CarSpec';
+import { F1_SPEC, performanceModel } from '../src/race/physics/CarSpec';
 import { Vehicle, type DriverInput } from '../src/race/physics/Vehicle';
 import { AUSTRALIA } from '../src/tracks/data/australia';
-import { LINE_GREEN, LINE_RED } from '../src/tracks/RacingLine';
+import { LINE_GREEN, LINE_RED, LINE_YELLOW } from '../src/tracks/RacingLine';
 import { Track } from '../src/tracks/Track';
 
 const STEP = 1 / 120;
@@ -169,5 +171,116 @@ describe('parrilla y estabilidad', () => {
     };
     expect(maxDrift(0)).toBeGreaterThan(0.8);
     expect(maxDrift(1)).toBeLessThan(0.35);
+  });
+
+  it('anti-derrape (Principiante): la misma cola cruzada se endereza casi sin deriva', () => {
+    const car = new Vehicle(F1_SPEC, track);
+    car.placeAt(track.startS - 300, 0);
+    car.electronics = { tractionControl: 0, abs: true, stability: 1, antiSlide: 1, gripBoost: 1.08 };
+    car.gearbox.reset(3);
+    car.vx = 30;
+    car.vy = -5;
+    car.yawRate = 1;
+    const input: DriverInput = { throttle: 1, brake: 0, steer: 0, drs: false };
+    let late = 0;
+    for (let t = 0; t < 1.5; t += STEP) {
+      car.step(STEP, input);
+      // Después de un cuarto de segundo ya no queda deslizamiento.
+      if (t > 0.25) late = Math.max(late, Math.abs(Math.atan2(car.vy, car.vx)));
+    }
+    expect(late).toBeLessThan(0.08);
+  });
+});
+
+/**
+ * Un piloto "de teclado" en Principiante: acelerador a fondo siempre y el
+ * volante todo o nada hacia donde va la curva. Las ayudas (frenado completo,
+ * dirección hacia el ápice, anti-derrape) tienen que llevarlo por la pista.
+ */
+function keyboardBeginnerLap(): { impacts: number; offTrack: number; completed: boolean; maxSlip: number } {
+  const car = new Vehicle(F1_SPEC, track);
+  car.placeAt(track.gridSlot(0).s, 0);
+  car.electronics = { tractionControl: 1, abs: true, stability: 1, antiSlide: 1, gripBoost: 1.08 };
+  const braking = new BrakingAssist(centerline, line, 'full');
+  const steering = new SteeringAssist(track.geometry, line);
+  steering.enabled = true;
+  const raw: DriverInput = { throttle: 1, brake: 0, steer: 0, drs: false };
+  const out: DriverInput = { ...raw };
+  let travelled = 0;
+  let last = car.projection.s;
+  let impacts = 0;
+  let offTrack = 0;
+  let maxSlip = 0;
+  for (let t = 0; t < 150 && travelled < track.length; t += STEP) {
+    const ideal = steering.idealSteer(car);
+    raw.steer = Math.abs(ideal) > 0.03 ? Math.sign(ideal) : 0;
+    steering.apply(braking.apply(raw, car.projection.s, car.vx, out), car, out);
+    car.step(STEP, out);
+    travelled += track.geometry.deltaS(last, car.projection.s);
+    last = car.projection.s;
+    if (car.telemetry.impact > 1) impacts++;
+    if (car.telemetry.wheelsOff >= 2) offTrack += STEP;
+    if (car.vx > 15) maxSlip = Math.max(maxSlip, Math.abs(Math.atan2(car.vy, car.vx)));
+  }
+  return { impacts, offTrack, completed: travelled >= track.length, maxSlip };
+}
+
+describe('ayuda de dirección y anti-derrape', () => {
+  it('con volante todo o nada y a fondo, las ayudas lo llevan por la pista sin derrapar', () => {
+    const result = keyboardBeginnerLap();
+    expect(result.completed).toBe(true);
+    expect(result.impacts).toBe(0);
+    expect(result.offTrack).toBeLessThan(1);
+    // Deriva máxima del auto: nada de cola cruzada (menos de ~6°).
+    expect(result.maxSlip).toBeLessThan(0.1);
+  });
+
+  it('en las rectas no toca el volante (se puede cambiar de carril)', () => {
+    const car = new Vehicle(F1_SPEC, track);
+    car.placeAt(track.startS - 250, 0);
+    car.vx = 60;
+    const steering = new SteeringAssist(track.geometry, line);
+    steering.enabled = true;
+    const input: DriverInput = { throttle: 1, brake: 0, steer: 1, drs: false };
+    const out: DriverInput = { ...input };
+    expect(steering.apply(input, car, out).steer).toBe(1);
+  });
+});
+
+describe('línea dinámica', () => {
+  it('interpola verde → amarillo → rojo según el porcentaje de exceso de velocidad', () => {
+    expect(excessToState(-0.2)).toBe(LINE_GREEN);
+    expect(excessToState(0)).toBe(LINE_GREEN);
+    expect(excessToState(0.03)).toBeCloseTo((LINE_GREEN + LINE_YELLOW) / 2, 5);
+    expect(excessToState(0.06)).toBeCloseTo(LINE_YELLOW, 5);
+    expect(excessToState(0.105)).toBeCloseTo((LINE_YELLOW + LINE_RED) / 2, 5);
+    expect(excessToState(0.15)).toBeCloseTo(LINE_RED, 5);
+    expect(excessToState(0.5)).toBe(LINE_RED);
+  });
+
+  it('el color depende de TU velocidad, no del tramo: lento, verde; pasado, rojo antes de la curva', () => {
+    const mesh = new RacingLineMesh(line, performanceModel(F1_SPEC));
+    const c1 = track.analysis.corners[0];
+    if (!c1) throw new Error('Falta la curva 1.');
+    const s = c1.apex - 80;
+    const apex = line.indexAt(c1.apex);
+    // A la velocidad de la curva: todo verde, también el ápice.
+    const slow = mesh.computeTargets(s, line.speedAt(c1.apex));
+    expect(slow[apex]).toBe(LINE_GREEN);
+    expect(slow[line.indexAt(s)]).toBe(LINE_GREEN);
+    // A fondo (85 m/s) a 80 m del ápice ya no se llega: rojo desde donde estás.
+    const fast = mesh.computeTargets(s, 85);
+    expect(fast[line.indexAt(s)]).toBe(LINE_RED);
+    // Subiendo la velocidad de a poco el color nunca retrocede y pasa por el amarillo.
+    let previous = LINE_GREEN;
+    let sawYellow = false;
+    for (let speed = line.speedAt(c1.apex); speed <= 85; speed += 0.5) {
+      const state = mesh.computeTargets(s, speed)[line.indexAt(s)] ?? 0;
+      expect(state).toBeGreaterThanOrEqual(previous - 1e-6);
+      if (state > 0.6 && state < 1.4) sawYellow = true;
+      previous = state;
+    }
+    expect(sawYellow).toBe(true);
+    mesh.dispose();
   });
 });

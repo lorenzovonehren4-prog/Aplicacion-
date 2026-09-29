@@ -44,6 +44,17 @@ export interface Electronics {
    * la endereza. Es la "dirección asistida más estable" del nivel Principiante.
    */
   stability: number;
+  /**
+   * Anti-derrape (0–1): quita la velocidad lateral que no acompaña al giro
+   * (la que hace deslizar la cola), como si el auto fuera sobre rieles. 0 =
+   * física normal. Lo usa el nivel Principiante.
+   */
+  antiSlide?: number;
+  /**
+   * Agarre extra (multiplicador ≥ 1): simula más carga aerodinámica para que
+   * el auto se "pegue" al piso en las curvas. 1 = auto normal.
+   */
+  gripBoost?: number;
 }
 
 /** Agarre relativo, arrastre y vibración de cada superficie. */
@@ -107,6 +118,10 @@ const STEER_GUARD_RAMP = 14;
 const STEER_GUARD_REACH = 1;
 /** Rapidez (1/s) con la que el control de estabilidad corrige la guiñada. */
 const STABILITY_GAIN = 7;
+/** Rapidez (1/s) con la que el anti-derrape quita el deslizamiento lateral. */
+const ANTI_SLIDE_RATE = 12;
+/** Fracción de la deriva del pico de agarre trasero que el anti-derrape deja usar. */
+const ANTI_SLIDE_KEEP = 0.6;
 /** Puntos del contorno del auto relativos al CG, en pares (x adelante, y izquierda). */
 const HULL: readonly number[] = [
   3.1, 0.95,
@@ -347,8 +362,9 @@ export class Vehicle {
       rumble = Math.max(rumble, SURFACES[wheel.surface].rumble);
       if (wheel.surface !== 'asphalt' && wheel.surface !== 'kerb') wheelsOff++;
     }
-    const muFront = spec.grip * spec.frontGripBias * (this.gripAt(0) + this.gripAt(1)) * 0.5;
-    const muRear = spec.grip * (this.gripAt(2) + this.gripAt(3)) * 0.5;
+    const boost = this.electronics.gripBoost ?? 1;
+    const muFront = boost * spec.grip * spec.frontGripBias * (this.gripAt(0) + this.gripAt(1)) * 0.5;
+    const muRear = boost * spec.grip * (this.gripAt(2) + this.gripAt(3)) * 0.5;
     const capFront = muFront * loadFront;
     const capRear = muRear * loadRear;
     // Capacidad longitudinal (tracción y frenada): algo mayor que la lateral.
@@ -458,6 +474,7 @@ export class Vehicle {
     this.vx += ax * dt;
     this.vy += ay * dt;
     this.yawRate += ((mz + this.stabilityMoment(slipRear, capFront + capRear)) / spec.yawInertia) * dt;
+    this.applyAntiSlide(dt);
 
     // Detenido: sin deslizamiento residual.
     if (stopped && Math.abs(this.vx) < 0.3) {
@@ -528,6 +545,27 @@ export class Vehicle {
     // Más corrección cuanto más se cruza la cola (proporcional al exceso de deriva).
     const strength = Math.min(1, oversteer / (peak * 0.5));
     return -gain * strength * STABILITY_GAIN * error * this.spec.yawInertia;
+  }
+
+  /**
+   * Anti-derrape ("sobre rieles"): el neumático trasero necesita algo de
+   * deriva para doblar, así que se deja hasta el 60 % de la del pico de
+   * agarre; todo lo que pase de eso (la cola que se va) se quita de la
+   * velocidad lateral. Girando el volante el auto rota y sigue su trayectoria
+   * en vez de cruzar la cola. Sólo en movimiento: a baja velocidad el giro ya
+   * es cinemático.
+   */
+  private applyAntiSlide(dt: number): void {
+    const amount = this.electronics.antiSlide ?? 0;
+    const speed = this.vx;
+    if (amount <= 0 || speed < 8) return;
+    const slip = (this.vy - this.spec.cgToRear * this.yawRate) / speed;
+    const allowed = Math.tan(this.spec.peakSlipAngle * ANTI_SLIDE_KEEP);
+    const excess = Math.abs(slip) - allowed;
+    if (excess <= 0) return;
+    const blend = Math.min(1, amount * ANTI_SLIDE_RATE * dt);
+    this.vy -= Math.sign(slip) * excess * speed * blend;
+    this.telemetry.stabilityActive = true;
   }
 
   /** En la parrilla: quieto, con el motor subiendo de vueltas según el acelerador. */

@@ -55,7 +55,7 @@ export class PodiumScreen extends BaseScreen<ResultsParams> {
           quality: game.settings.graphics.quality,
           onFirework: () => game.playUi('firework'),
         },
-        game.render.maxAnisotropy,
+        game.render.textureAnisotropy,
       );
       const renderer = game.render.renderer;
       if (renderer.extensions.has('KHR_parallel_shader_compile')) await renderer.compileAsync(scene.scene, scene.camera);

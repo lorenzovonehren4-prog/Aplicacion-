@@ -147,7 +147,7 @@ export function buildWalls(ctx: BuildContext): void {
   const top = mergeGeometries(caps);
   for (const piece of [...faces.concrete, ...caps]) piece.dispose();
   if (concrete) {
-    const texture = ctx.own.own(createWall(ctx.anisotropy));
+    const texture = ctx.own.own(createWall(ctx.anisotropy, ctx.textureSize));
     addMesh(ctx, concrete, new MeshStandardMaterial({ map: texture, roughness: 0.8 }), { cast: true, name: 'muros' });
   }
   if (stacks.length > 0) {

@@ -8,6 +8,7 @@
  */
 
 import { BrakingAssist } from '../assists/BrakingAssist';
+import { SteeringAssist } from '../assists/SteeringAssist';
 import { TRACTION_LEVELS, type ActiveAssists } from '../assists/presets';
 import type { SessionMode } from '../core/screens/params';
 import { PLAYER_TEAM_ID, teamOf, type DriverDef, type TeamDef } from '../data/teams';
@@ -21,6 +22,9 @@ import { Vehicle, type DriverInput } from './physics/Vehicle';
 import { LapTimer, type LapEvent, type LapRecord } from './session/LapTimer';
 import { GhostRecorder, type GhostLap } from './session/Ghost';
 import { RaceOrder, type OrderEvent } from './session/RaceOrder';
+
+/** Agarre extra del nivel Principiante (×1,08: como más carga aerodinámica). */
+const BEGINNER_GRIP = 1.08;
 import { StartLights } from './session/StartLights';
 
 /** off = sin DRS · armed = habilitado para la próxima zona · available = en la zona · open = abierto. */
@@ -157,6 +161,7 @@ export class Session {
   ghost: GhostLap | null;
   /** Ayuda de frenado (su `active` ilumina el ícono del HUD). */
   readonly brakingAssist: BrakingAssist;
+  readonly steeringAssist: SteeringAssist;
   private assists: ActiveAssists;
   /** Choque más fuerte desde la última lectura (m/s). */
   private impactPeak = 0;
@@ -253,6 +258,7 @@ export class Session {
       track.racingLine,
       assists.braking,
     );
+    this.steeringAssist = new SteeringAssist(track.geometry, track.racingLine);
     this.assists = assists;
     this.setAssists(assists);
     this.cooldown = new BotDriver(track, model, botParams(40, { skill: 0.84, aggression: 0 }, 0), random);
@@ -310,8 +316,12 @@ export class Session {
       tractionControl: TRACTION_LEVELS[assists.traction],
       abs: assists.abs,
       stability: assists.steering ? 1 : 0,
+      // Principiante: "sobre rieles" (sin derrapes) y algo más de agarre, como con más carga aerodinámica.
+      antiSlide: assists.steering ? 1 : 0,
+      gripBoost: assists.steering ? BEGINNER_GRIP : 1,
     };
     this.brakingAssist.level = assists.braking;
+    this.steeringAssist.enabled = assists.steering;
   }
 
   /** Devuelve y reinicia el pico de impacto acumulado. */
@@ -395,7 +405,10 @@ export class Session {
       const vehicle = car.vehicle;
       let input: DriverInput;
       if (car.isPlayer) {
-        input = this.phase === 'finished' ? this.cooldownInput(dt) : this.brakingAssist.apply(raw, v.projection.s, v.vx, this.assisted);
+        input =
+          this.phase === 'finished'
+            ? this.cooldownInput(dt)
+            : this.steeringAssist.apply(this.brakingAssist.apply(raw, v.projection.s, v.vx, this.assisted), v, this.assisted);
       } else if (car.bot) {
         const done = this.order?.runners[car.index]?.finished ?? false;
         input = car.bot.drive(vehicle, dt, this.visible, this.botInput, done ? COOLDOWN_SPEED : Infinity);

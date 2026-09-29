@@ -7,7 +7,7 @@
 import { MathUtils, PerspectiveCamera, Scene, Vector3, type WebGLRenderer } from 'three';
 import { prewarm } from '../core/render/prewarm';
 import type { RenderView } from '../core/render/RenderHost';
-import { QUALITY_PRESETS, shadowMapSize } from '../core/render/quality';
+import { QUALITY_PRESETS, shadowMapSize, type QualityPreset } from '../core/render/quality';
 import { createSpeedFx, HAZE_POINTS } from '../core/render/SpeedPass';
 import { RacingLineMesh } from '../assists/RacingLineMesh';
 import type { CameraMode, GraphicsSettings, LineMode, LineType } from '../core/save/schema';
@@ -74,7 +74,7 @@ export class RaceWorld implements RenderView {
     rivals: readonly RivalCar[],
     ghost: boolean,
     livery: LiveryConfig,
-    particles: number,
+    preset: QualityPreset,
   ) {
     this.exposure = trackScene.look.exposure;
     this.scene.add(trackScene.root);
@@ -86,11 +86,11 @@ export class RaceWorld implements RenderView {
     this.raceCamera = new RaceCamera(this.rig, cameraMode);
     this.racingLine = new RacingLineMesh(vehicle.track.racingLine, performanceModel(vehicle.spec));
     this.scene.add(this.racingLine.mesh);
-    this.rivals = rivals.length > 0 ? new RivalFleet(rivals, anisotropy) : null;
+    this.rivals = rivals.length > 0 ? new RivalFleet(rivals, anisotropy, preset.rivalLod) : null;
     if (this.rivals) this.scene.add(this.rivals.root);
     this.ghost = ghost ? new GhostCar(anisotropy) : null;
     if (this.ghost) this.scene.add(this.ghost.root);
-    this.effects = new TrackEffects(this.scene, particles);
+    this.effects = new TrackEffects(this.scene, preset.particles);
 
     // Bandera a cuadros del lado de los boxes, sobre la línea de meta, con la tela sobre la pista.
     const track = vehicle.track;
@@ -138,7 +138,7 @@ export class RaceWorld implements RenderView {
     options: BuildOptions,
   ): Promise<RaceWorld> {
     const trackScene = await buildTrackScene(vehicle.track, options);
-    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, extras.rivals, extras.ghost, extras.livery, QUALITY_PRESETS[options.quality].particles);
+    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, extras.rivals, extras.ghost, extras.livery, QUALITY_PRESETS[options.quality]);
   }
 
   get camera(): RaceCamera['camera'] {

@@ -28,6 +28,17 @@ export interface QualityPreset {
   particles: number;
   /** Densidad de árboles y público (Fase 2). */
   sceneryDensity: number;
+  /**
+   * Filtrado anisotrópico de las texturas (se limita a lo que soporte la GPU).
+   * Mantiene nítido el asfalto visto en ángulo rasante, a lo lejos.
+   */
+  anisotropy: number;
+  /**
+   * Nivel de detalle de los rivales: hasta qué distancia (m) y cuántos se
+   * dibujan con el modelo cercano, y cuánto detalle tiene ese modelo (1 = el
+   * del jugador). Así los autos que están al lado nunca se ven "de lejos".
+   */
+  rivalLod: { nearDistance: number; maxNear: number; nearDetail: number };
 }
 
 export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
@@ -39,6 +50,8 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     reflectionScale: 0,
     particles: 0.3,
     sceneryDensity: 0.35,
+    anisotropy: 8,
+    rivalLod: { nearDistance: 60, maxNear: 5, nearDetail: 0.3 },
   },
   medium: {
     maxPixelRatio: 1.25,
@@ -48,6 +61,8 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     reflectionScale: 0.5,
     particles: 0.6,
     sceneryDensity: 0.6,
+    anisotropy: 16,
+    rivalLod: { nearDistance: 90, maxNear: 8, nearDetail: 0.36 },
   },
   high: {
     maxPixelRatio: 1.5,
@@ -57,6 +72,8 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     reflectionScale: 0.5,
     particles: 1,
     sceneryDensity: 1,
+    anisotropy: 16,
+    rivalLod: { nearDistance: 130, maxNear: 10, nearDetail: 0.46 },
   },
   ultra: {
     maxPixelRatio: 2,
@@ -66,6 +83,8 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     reflectionScale: 1,
     particles: 1.3,
     sceneryDensity: 1.2,
+    anisotropy: 16,
+    rivalLod: { nearDistance: 170, maxNear: 12, nearDetail: 0.56 },
   },
 };
 

@@ -29,6 +29,7 @@ import { createSky, type SkyEnvironment } from './build/sky';
 import { weatherLook, type WeatherLook } from './weather';
 import type { Weather } from '../core/save/schema';
 import { buildAsphalt, buildGround, buildKerbs, buildPaint, buildPitLane, buildRunoff } from './build/surfaces';
+import { surfaceTextureSize } from './build/textures';
 import type { Track } from './Track';
 
 export interface TrackScene {
@@ -82,6 +83,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     own,
     rng: new Random(seedFrom(track.def.id)),
     anisotropy: options.anisotropy,
+    textureSize: surfaceTextureSize(options.quality),
     density: preset.sceneryDensity,
     detailShadows: options.quality === 'high' || options.quality === 'ultra',
     tickers: [],

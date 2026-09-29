@@ -5,7 +5,7 @@
  * con materiales físicos) sería inviable. Los rivales usan el MISMO modelo
  * procedural, generado con menos detalle y convertido en mallas instanciadas:
  *
- * - Cerca (hasta `NEAR_DISTANCE` y los `MAX_NEAR` más próximos): carrocería,
+ * - Cerca (hasta `lod.nearDistance` y los `lod.maxNear` más próximos): carrocería,
  *   flap del DRS, números, neumáticos y tapas de llanta — 5 llamadas de
  *   dibujo para todos juntos, con ruedas que giran y doblan.
  * - Lejos: una versión muy liviana con todo fusionado — 1 llamada de dibujo.
@@ -45,12 +45,17 @@ import { createLiveryTexture, createTireTexture, createWheelCoverTexture, TIRE_P
 import type { LiveryConfig } from '../../garage/livery';
 import type { Vehicle } from '../physics/Vehicle';
 
-/** Distancia (m) hasta la que un rival se dibuja con el modelo cercano. */
-const NEAR_DISTANCE = 75;
-/** Máximo de rivales con el modelo cercano a la vez. */
-const MAX_NEAR = 8;
-/** Detalle de la geometría de cada nivel (1 = auto del jugador). */
-const NEAR_DETAIL = 0.34;
+/**
+ * Nivel de detalle (según la calidad gráfica): distancia (m) hasta la que un
+ * rival se dibuja con el modelo cercano, cuántos a la vez y su detalle.
+ */
+export interface RivalLod {
+  nearDistance: number;
+  maxNear: number;
+  nearDetail: number;
+}
+const DEFAULT_LOD: RivalLod = { nearDistance: 90, maxNear: 8, nearDetail: 0.36 };
+/** Detalle de la geometría lejana (1 = auto del jugador). */
 const FAR_DETAIL = 0.1;
 /** Como en `CarRig`: el origen del modelo está 0,2 m delante del CG. */
 const MODEL_OFFSET = 0.2;
@@ -473,7 +478,11 @@ export class RivalFleet {
   private readonly scale = new Vector3(1, 1, 1);
   private readonly rotation = new Euler();
 
-  constructor(cars: readonly RivalCar[], anisotropy: number) {
+  constructor(
+    cars: readonly RivalCar[],
+    anisotropy: number,
+    private readonly lod: RivalLod = DEFAULT_LOD,
+  ) {
     this.root.name = 'rivales';
     const count = Math.max(1, cars.length);
     this.states = cars.map((car, i) => ({
@@ -495,7 +504,7 @@ export class RivalFleet {
     const bodyMaterial = this.own.own(teamMaterial(mask));
 
     // ─── Nivel cercano ───
-    const near = buildTemplate(NEAR_DETAIL, true);
+    const near = buildTemplate(lod.nearDetail, true);
     this.flapPivot = near.flap ? near.flapPivot : new Vector3();
     this.nearBody = this.instanced(near.body, bodyMaterial, count, true, 'rivales-cerca');
     this.nearFlap = near.flap ? this.instanced(near.flap, bodyMaterial, count, true, 'rivales-flap') : null;
@@ -584,7 +593,7 @@ export class RivalFleet {
       }
       this.composeCar(x - Math.sin(heading) * MODEL_OFFSET, z - Math.cos(heading) * MODEL_OFFSET, state.pitch, heading, state.roll);
 
-      const near = nearCount < MAX_NEAR && (this.distances[index] ?? Infinity) < NEAR_DISTANCE;
+      const near = nearCount < this.lod.maxNear && (this.distances[index] ?? Infinity) < this.lod.nearDistance;
       if (near) {
         const slot = nearCount++;
         this.nearBody.setMatrixAt(slot, this.carMatrix);

@@ -17,6 +17,7 @@
 import { DataTexture, LinearFilter, MeshStandardMaterial, RepeatWrapping, RGBAFormat, UnsignedByteType, type Texture } from 'three';
 import { LINE_YELLOW } from '../RacingLine';
 import type { Track } from '../Track';
+import { DETAIL_PARS, detailLayer } from './detail';
 
 /** Metros de pista por repetición de la textura del asfalto (U y V). */
 export const ASPHALT_TILE = 7;
@@ -67,6 +68,8 @@ const FRAGMENT_PARS = /* glsl */ `
 
 const FRAGMENT_MAP = /* glsl */ `
   #include <map_fragment>
+  // Grano nítido de cerca (el mapa repite cada 7 m; el detalle cada 1,4 m).
+  ${detailLayer(5, 0.55)}
   // Posición en la pista: s a lo largo, d desde el centro (+ derecha).
   float trackS = vMapUv.y * ${ASPHALT_TILE.toFixed(1)};
   float trackD = vMapUv.x * ${ASPHALT_TILE.toFixed(1)} - halfWidth - 0.3;
@@ -111,7 +114,7 @@ export function createRacedAsphaltMaterial(track: Track, map: Texture, bump: Tex
     shader.uniforms.trackLength = { value: track.geometry.length };
     shader.uniforms.halfWidth = { value: track.geometry.halfWidth };
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\n${FRAGMENT_PARS}`)
+      .replace('#include <common>', `#include <common>\n${FRAGMENT_PARS}\n${DETAIL_PARS}`)
       .replace('#include <map_fragment>', FRAGMENT_MAP)
       .replace('#include <roughnessmap_fragment>', FRAGMENT_ROUGHNESS);
   };

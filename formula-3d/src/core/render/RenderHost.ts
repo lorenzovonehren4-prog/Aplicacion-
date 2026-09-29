@@ -129,8 +129,10 @@ export class RenderHost {
     }
   }
 
-  get maxAnisotropy(): number {
-    return this.renderer.capabilities.getMaxAnisotropy();
+  /** Filtrado anisotrópico para las texturas: el de la calidad actual (8× o 16×), sin pasar el de la GPU. */
+  get textureAnisotropy(): number {
+    const wanted = QUALITY_PRESETS[this.currentGraphics.quality].anisotropy;
+    return Math.max(1, Math.min(wanted, this.renderer.capabilities.getMaxAnisotropy()));
   }
 
   get stats(): RenderStats {

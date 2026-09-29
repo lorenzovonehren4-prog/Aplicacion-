@@ -3,10 +3,22 @@
  * asfalto, pasto, grava, pianos, muros con publicidad ficticia, barreras de
  * neumáticos, alambrado, público, ventanas de edificios, agua y tablero de
  * cuadros de la línea de meta.
+ *
+ * Calidad de muestreo (que no se vean pixeladas ni borrosas):
+ * - Todas llevan mipmaps y filtrado trilineal (`LinearMipmapLinearFilter`):
+ *   de lejos se usa una versión reducida y promediada, sin parpadeo ni moiré.
+ * - Filtrado anisotrópico (8× o 16× según la calidad, ver
+ *   `core/render/quality.ts`): el asfalto visto en ángulo rasante sigue nítido.
+ * - Las superficies grandes (asfalto, pasto, grava, pianos, muros) se generan
+ *   al doble de resolución en calidad Media o más (`size`: 512 o 1024 px por
+ *   repetición). Son procedurales (canvas), así que no hay archivos ni
+ *   compresión con pérdida: se suben a la GPU tal cual (RGBA de 8 bits).
  */
 
 import {
   CanvasTexture,
+  LinearFilter,
+  LinearMipmapLinearFilter,
   LinearSRGBColorSpace,
   NoColorSpace,
   NearestFilter,
@@ -31,6 +43,9 @@ function finish(element: HTMLCanvasElement, anisotropy: number, color = true, re
   const texture = new CanvasTexture(element);
   texture.colorSpace = color ? SRGBColorSpace : NoColorSpace;
   texture.anisotropy = anisotropy;
+  texture.generateMipmaps = true;
+  texture.minFilter = LinearMipmapLinearFilter;
+  texture.magFilter = LinearFilter;
   if (repeat) {
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
@@ -78,9 +93,18 @@ export interface AsphaltTextures {
   bump: Texture;
 }
 
-/** Asfalto: grano fino, áridos claros y oscuros, manchas; con mapa de relieve. */
-export function createAsphalt(anisotropy: number): AsphaltTextures {
-  const S = 512;
+/** Tamaño de la textura de las superficies grandes según la calidad (px por repetición). */
+export function surfaceTextureSize(quality: 'low' | 'medium' | 'high' | 'ultra'): number {
+  return quality === 'low' ? 512 : 1024;
+}
+
+/**
+ * Asfalto: grano fino, áridos claros y oscuros, manchas; con mapa de relieve.
+ * @param size px por repetición (512 o 1024): los áridos mantienen su tamaño real
+ */
+export function createAsphalt(anisotropy: number, size = 512): AsphaltTextures {
+  const S = size;
+  const k = S / 512;
   const rng = new Random(11);
   const [color, ctx] = canvas(S, S);
   ctx.fillStyle = '#3b3c3f';
@@ -88,10 +112,10 @@ export function createAsphalt(anisotropy: number): AsphaltTextures {
   blotches(ctx, S, 26, '#2c2d30', 0.35, rng);
   blotches(ctx, S, 18, '#4a4b4e', 0.25, rng);
   // Áridos: puntitos claros y oscuros.
-  for (let i = 0; i < 9000; i++) {
+  for (let i = 0; i < 9000 * k * k; i++) {
     const light = rng.next() < 0.45;
     ctx.fillStyle = light ? `rgba(160,160,165,${rng.range(0.15, 0.45)})` : `rgba(10,10,12,${rng.range(0.2, 0.5)})`;
-    const r = rng.range(0.4, 1.4);
+    const r = rng.range(0.4, 1.4) * k;
     ctx.fillRect(rng.range(0, S), rng.range(0, S), r, r);
   }
   speckle(ctx, S, S, 22, rng);
@@ -104,23 +128,24 @@ export function createAsphalt(anisotropy: number): AsphaltTextures {
 }
 
 /** Pasto: hojas finas y variación de verde. */
-export function createGrass(anisotropy: number): Texture {
-  const S = 512;
+export function createGrass(anisotropy: number, size = 512): Texture {
+  const S = size;
+  const k = S / 512;
   const rng = new Random(23);
   const [element, ctx] = canvas(S, S);
   ctx.fillStyle = '#4b7a31';
   ctx.fillRect(0, 0, S, S);
   blotches(ctx, S, 30, '#3a6526', 0.45, rng);
   blotches(ctx, S, 20, '#5f8c3a', 0.35, rng);
-  for (let i = 0; i < 14000; i++) {
+  for (let i = 0; i < 14000 * k * k; i++) {
     const shade = rng.range(0, 1);
     ctx.strokeStyle = shade < 0.5 ? `rgba(40,80,25,${rng.range(0.2, 0.6)})` : `rgba(120,160,70,${rng.range(0.15, 0.45)})`;
-    ctx.lineWidth = rng.range(0.6, 1.2);
+    ctx.lineWidth = rng.range(0.6, 1.2) * k;
     const x = rng.range(0, S);
     const y = rng.range(0, S);
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + rng.range(-1.5, 1.5), y - rng.range(2, 5));
+    ctx.lineTo(x + rng.range(-1.5, 1.5) * k, y - rng.range(2, 5) * k);
     ctx.stroke();
   }
   speckle(ctx, S, S, 14, rng);
@@ -128,16 +153,17 @@ export function createGrass(anisotropy: number): Texture {
 }
 
 /** Grava: piedritas beige de varios tonos. */
-export function createGravel(anisotropy: number): Texture {
-  const S = 512;
+export function createGravel(anisotropy: number, size = 512): Texture {
+  const S = size;
+  const k = S / 512;
   const rng = new Random(37);
   const [element, ctx] = canvas(S, S);
   ctx.fillStyle = '#b8a07a';
   ctx.fillRect(0, 0, S, S);
-  for (let i = 0; i < 16000; i++) {
+  for (let i = 0; i < 16000 * k * k; i++) {
     const tone = rng.range(120, 225);
     ctx.fillStyle = `rgb(${tone},${tone * 0.9},${tone * 0.72})`;
-    const r = rng.range(0.8, 2.6);
+    const r = rng.range(0.8, 2.6) * k;
     ctx.beginPath();
     ctx.ellipse(rng.range(0, S), rng.range(0, S), r, r * rng.range(0.6, 1), rng.range(0, Math.PI), 0, Math.PI * 2);
     ctx.fill();
@@ -147,21 +173,23 @@ export function createGravel(anisotropy: number): Texture {
 }
 
 /** Piano: franjas rojas y blancas (una repetición = un rojo + un blanco). */
-export function createKerb(anisotropy: number): Texture {
-  const [element, ctx] = canvas(64, 256);
+export function createKerb(anisotropy: number, size = 512): Texture {
+  const W = 64 * (size / 512) * 2;
+  const H = W * 4;
+  const [element, ctx] = canvas(W, H);
   ctx.fillStyle = '#d6202a';
-  ctx.fillRect(0, 0, 64, 128);
+  ctx.fillRect(0, 0, W, H / 2);
   ctx.fillStyle = '#f2f2ee';
-  ctx.fillRect(0, 128, 64, 128);
+  ctx.fillRect(0, H / 2, W, H / 2);
   // Sombra del borde elevado.
-  const edge = ctx.createLinearGradient(0, 0, 64, 0);
+  const edge = ctx.createLinearGradient(0, 0, W, 0);
   edge.addColorStop(0, 'rgba(0,0,0,0.18)');
   edge.addColorStop(0.2, 'rgba(0,0,0,0)');
   edge.addColorStop(0.8, 'rgba(0,0,0,0)');
   edge.addColorStop(1, 'rgba(0,0,0,0.25)');
   ctx.fillStyle = edge;
-  ctx.fillRect(0, 0, 64, 256);
-  speckle(ctx, 64, 256, 16, new Random(5));
+  ctx.fillRect(0, 0, W, H);
+  speckle(ctx, W, H, 16, new Random(5));
   return finish(element, anisotropy);
 }
 
@@ -178,9 +206,9 @@ const SPONSORS: ReadonlyArray<{ text: string; bg: string; fg: string }> = [
 ];
 
 /** Muro de hormigón con carteles de patrocinadores (U = alto, V = a lo largo). */
-export function createWall(anisotropy: number): Texture {
-  const W = 128;
-  const H = 2048;
+export function createWall(anisotropy: number, size = 512): Texture {
+  const W = 128 * (size / 512);
+  const H = 2048 * (size / 512);
   const rng = new Random(41);
   const [element, ctx] = canvas(W, H);
   // Hormigón.
@@ -192,7 +220,7 @@ export function createWall(anisotropy: number): Texture {
   SPONSORS.forEach((sponsor, i) => {
     const y = i * panel;
     ctx.fillStyle = sponsor.bg;
-    ctx.fillRect(W * 0.18, y + 6, W * 0.8, panel - 12);
+    ctx.fillRect(W * 0.18, y + 6 * (W / 128), W * 0.8, panel - 12 * (W / 128));
     ctx.save();
     ctx.translate(W * 0.58, y + panel / 2);
     ctx.rotate(Math.PI / 2);
@@ -200,7 +228,7 @@ export function createWall(anisotropy: number): Texture {
     ctx.font = `italic 900 ${Math.round(W * 0.42)}px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(sponsor.text, 0, 0, panel - 30);
+    ctx.fillText(sponsor.text, 0, 0, panel - 30 * (W / 128));
     ctx.restore();
   });
   // Suciedad en la base.

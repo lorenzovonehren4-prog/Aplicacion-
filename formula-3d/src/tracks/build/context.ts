@@ -1,6 +1,6 @@
 /** Contexto compartido por las etapas de construcción del escenario del circuito. */
 
-import { InstancedMesh, Matrix4, Mesh, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material, type Object3D } from 'three';
+import { InstancedMesh, Matrix4, Mesh, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material, type Object3D, type Texture } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Disposer } from '../../core/utils/Disposer';
 import type { Random } from '../../core/utils/random';
@@ -12,6 +12,10 @@ export interface BuildContext {
   own: Disposer;
   rng: Random;
   anisotropy: number;
+  /** px por repetición de las texturas de superficie (512 o 1024 según la calidad). */
+  textureSize: number;
+  /** Texturas del asfalto (se generan una sola vez y se comparten). */
+  asphalt?: { map: Texture; bump: Texture };
   /** Densidad de árboles y público (según la calidad gráfica). */
   density: number;
   /** ¿Los árboles y tribunas proyectan sombra? (calidades altas) */

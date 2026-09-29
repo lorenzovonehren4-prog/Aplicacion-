@@ -4,10 +4,15 @@
  *
  * | Nivel         | Frenado | Tracción | ABS | Línea        | Tipo     | XP    |
  * |---------------|---------|----------|-----|--------------|----------|-------|
- * | Principiante  | Completa| Completo | Sí  | Completa     | Fija     | ×1.0  |
- * | Intermedio    | Media   | No       | Sí  | Completa     | Fija     | ×1.25 |
+ * | Principiante  | Completa| Completo | Sí  | Completa     | Dinámica | ×1.0  |
+ * | Intermedio    | Media   | No       | Sí  | Completa     | Dinámica | ×1.25 |
  * | Avanzado      | Baja    | No       | Sí  | Sólo curvas  | Dinámica | ×1.5  |
  * | Personalizado | a elección                                  | calculado |
+ *
+ * Principiante suma además la dirección asistida hacia el ápice, el
+ * anti-derrape y algo más de agarre (ver `SteeringAssist` y `Session`).
+ * La línea dinámica (color según tu velocidad) es la de todos los niveles
+ * predefinidos; la fija queda como opción en Personalizado.
  */
 
 import type {
@@ -30,8 +35,8 @@ export interface ActiveAssists extends AssistConfig {
 export type PresetLevel = Exclude<AssistLevel, 'custom'>;
 
 export const ASSIST_PRESETS: Readonly<Record<PresetLevel, Readonly<ActiveAssists>>> = {
-  beginner: { braking: 'full', traction: 'full', abs: true, line: 'full', lineType: 'fixed', steering: true },
-  intermediate: { braking: 'medium', traction: 'off', abs: true, line: 'full', lineType: 'fixed', steering: false },
+  beginner: { braking: 'full', traction: 'full', abs: true, line: 'full', lineType: 'dynamic', steering: true },
+  intermediate: { braking: 'medium', traction: 'off', abs: true, line: 'full', lineType: 'dynamic', steering: false },
   advanced: { braking: 'low', traction: 'off', abs: true, line: 'corners', lineType: 'dynamic', steering: false },
 };
 
@@ -47,8 +52,7 @@ const XP_BONUS = {
   braking: { full: 0, medium: 0.1, low: 0.2, off: 0.3 } satisfies Record<BrakingAssist, number>,
   traction: { full: 0, medium: 0.07, off: 0.15 } satisfies Record<TractionAssist, number>,
   noAbs: 0.05,
-  line: { full: 0, corners: 0.1, off: 0.2 } satisfies Record<LineMode, number>,
-  lineType: { fixed: 0, dynamic: 0.05 } satisfies Record<LineType, number>,
+  line: { full: 0, corners: 0.15, off: 0.2 } satisfies Record<LineMode, number>,
 };
 const MAX_XP_MULTIPLIER = 1.6;
 
@@ -75,9 +79,8 @@ export function customXpMultiplier(config: DeepReadonly<AssistConfig>): number {
     XP_BONUS.braking[config.braking] +
     XP_BONUS.traction[config.traction] +
     (config.abs ? 0 : XP_BONUS.noAbs) +
-    // La línea dinámica sólo cuenta si hay línea.
-    XP_BONUS.line[config.line] +
-    (config.line === 'off' ? 0 : XP_BONUS.lineType[config.lineType]);
+    // Fija o dinámica da igual: las dos son ayudas (la dinámica es la de los niveles).
+    XP_BONUS.line[config.line];
   return Math.min(MAX_XP_MULTIPLIER, Math.round((1 + bonus) * 100) / 100);
 }
 
@@ -94,7 +97,8 @@ export const TRACTION_LEVELS: Readonly<Record<TractionAssist, number>> = { off: 
 export const LEVEL_INFO: Readonly<Record<AssistLevel, { name: string; description: string }>> = {
   beginner: {
     name: 'Principiante',
-    description: 'El auto frena solo antes de las curvas, no patina y la dirección es más estable. Ideal para empezar.',
+    description:
+      'El auto frena solo antes de las curvas, te ayuda a girar hacia el ápice, no derrapa y se pega más al piso. Ideal para empezar.',
   },
   intermediate: {
     name: 'Intermedio',

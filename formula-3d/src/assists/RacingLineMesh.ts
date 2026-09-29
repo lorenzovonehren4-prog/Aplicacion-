@@ -5,9 +5,13 @@
  *
  * - Fija: cada tramo tiene su color según el perfil de la trazada (verde
  *   acelerar, amarillo levantar, rojo frenar).
- * - Dinámica: el color se recalcula cada fotograma comparando TU velocidad
- *   con la que pide cada punto de adelante (¿alcanzas a frenar?), con una
- *   transición suave entre colores.
+ * - Dinámica: el color se recalcula cada fotograma. Para cada punto de
+ *   adelante se calcula la velocidad máxima permitida AHORA para llegar a él
+ *   a su velocidad de curva frenando fuerte (v² = v_curva² + 2·a·d), y se
+ *   compara con tu velocidad actual: el porcentaje de exceso da el color,
+ *   interpolado verde → amarillo → rojo (0 % verde, 6 % amarillo, 15 % o
+ *   más rojo: "si no frenas ya, no llegas"). Cada punto muestra lo peor que
+ *   tiene por delante, y el cambio de color se suaviza en el tiempo.
  * - Sólo curvas: se ve en frenadas y curvas y se desvanece en las rectas.
  */
 
@@ -31,9 +35,22 @@ const HEIGHT = 0.02;
 const DYNAMIC_RANGE = 260;
 /** Rapidez de la transición de colores (1/s). */
 const COLOR_RATE = 5;
-/** Línea dinámica: fracción de la frenada disponible desde la que pasa a amarillo y a rojo. */
-const DYNAMIC_YELLOW_FROM = 0.33;
-const DYNAMIC_RED_FROM = 0.72;
+/** Línea dinámica: exceso de velocidad (fracción) que es amarillo pleno y rojo pleno. */
+const EXCESS_YELLOW = 0.06;
+const EXCESS_RED = 0.15;
+/** Fracción de la frenada máxima que se toma como "frenada de piloto" para calcular el límite. */
+const BRAKING_USE = 0.8;
+
+/**
+ * Color (0 = verde, 1 = amarillo, 2 = rojo) según el exceso de velocidad:
+ * interpolación lineal verde → amarillo hasta `EXCESS_YELLOW` y amarillo →
+ * rojo hasta `EXCESS_RED`.
+ */
+export function excessToState(excess: number): number {
+  if (excess <= 0) return LINE_GREEN;
+  if (excess <= EXCESS_YELLOW) return LINE_GREEN + (excess / EXCESS_YELLOW) * (LINE_YELLOW - LINE_GREEN);
+  return Math.min(LINE_RED, LINE_YELLOW + ((excess - EXCESS_YELLOW) / (EXCESS_RED - EXCESS_YELLOW)) * (LINE_RED - LINE_YELLOW));
+}
 
 const vertexShader = /* glsl */ `
   attribute float aState;
@@ -191,11 +208,26 @@ export class RacingLineMesh {
     this.mesh.material.uniforms.uTime!.value = time;
     if (this.type !== 'dynamic') return;
 
+    this.computeTargets(s, speed);
+    // Transición suave (lerp exponencial) del color que se ve hacia el objetivo.
+    const blend = 1 - Math.exp(-COLOR_RATE * dt);
+    for (let k = 0; k < this.line.count; k++) {
+      const shown = this.shown[k] ?? 0;
+      this.shown[k] = shown + ((this.target[k] ?? 0) - shown) * blend;
+    }
+    this.writeStates();
+  }
+
+  /**
+   * Color objetivo de cada punto de la ventana de adelante según tu velocidad
+   * actual (público para las pruebas: lo que se ve es `shown`, suavizado).
+   */
+  computeTargets(s: number, speed: number): Float32Array {
     const line = this.line;
     const n = line.count;
     const model = this.model;
-    // Frenada disponible a esta velocidad (con un margen: la de un piloto, no la máxima).
-    const brake = 0.85 * model.longitudinalGrip * (model.gravity + model.downforcePerMass * speed * speed);
+    // Desaceleración de frenada a esta velocidad (con la carga aerodinámica), con margen de piloto.
+    const brake = BRAKING_USE * model.longitudinalGrip * (model.gravity + model.downforcePerMass * speed * speed);
     const first = line.indexAt(s);
     const window = Math.ceil(DYNAMIC_RANGE / line.step);
     this.target.fill(LINE_GREEN);
@@ -203,28 +235,15 @@ export class RacingLineMesh {
     let worst: number = LINE_GREEN;
     for (let w = window; w >= 0; w--) {
       const k = (first + w) % n;
-      const distance = Math.max(1, w * line.step);
-      const reference = line.speed[k] ?? 0;
-      const needed = (speed * speed - reference * reference) / (2 * distance);
-      // Fracción de la frenada disponible que haría falta. Con la carga aerodinámica
-      // se frena a ~5 g, así que el amarillo avisa desde ~3 veces la distancia de
-      // frenada (da tiempo a reaccionar) y el rojo es "frena ya".
-      const ratio = needed / brake;
-      const state =
-        ratio <= DYNAMIC_YELLOW_FROM
-          ? LINE_GREEN
-          : ratio <= DYNAMIC_RED_FROM
-            ? LINE_GREEN + ((ratio - DYNAMIC_YELLOW_FROM) / (DYNAMIC_RED_FROM - DYNAMIC_YELLOW_FROM)) * (LINE_YELLOW - LINE_GREEN)
-            : Math.min(LINE_RED, LINE_YELLOW + ((ratio - DYNAMIC_RED_FROM) / 0.25) * (LINE_RED - LINE_YELLOW));
-      worst = Math.max(worst, state);
+      const distance = w * line.step;
+      const corner = line.speed[k] ?? 0;
+      // Velocidad máxima permitida ahora para llegar a este punto a su velocidad de curva.
+      const allowed = Math.sqrt(corner * corner + 2 * brake * distance);
+      const excess = speed / Math.max(1, allowed) - 1;
+      worst = Math.max(worst, excessToState(excess));
       this.target[k] = worst;
     }
-    const blend = 1 - Math.exp(-COLOR_RATE * dt);
-    for (let k = 0; k < n; k++) {
-      const shown = this.shown[k] ?? 0;
-      this.shown[k] = shown + ((this.target[k] ?? 0) - shown) * blend;
-    }
-    this.writeStates();
+    return this.target;
   }
 
   dispose(): void {
