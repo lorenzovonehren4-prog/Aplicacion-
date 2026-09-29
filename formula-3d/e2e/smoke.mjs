@@ -100,6 +100,22 @@ async function main() {
     await waitForScreen(page, 'menu');
     log('Esc vuelve al menú');
 
+    // ─── Pase de temporada ───
+    step = 'pase de temporada';
+    await page.locator('.mbtn', { hasText: 'Pase de temporada' }).click();
+    await waitForScreen(page, 'pass');
+    const tiers = await page.locator('.ptier').count();
+    if (tiers !== 50) throw new Error(`El pase muestra ${tiers} niveles (se esperaban 50).`);
+    await expectText(page, '.pass__info-tier', 'NIVEL 1');
+    await page.keyboard.press('ArrowRight');
+    await expectText(page, '.pass__info-tier', 'NIVEL 2');
+    await page.screenshot({ path: `${shots}04b-pase.png` });
+    await page.keyboard.press('Escape');
+    await waitForScreen(page, 'menu');
+    // El ratón queda fuera del menú: pasar por encima de un acceso lo enfoca.
+    await page.mouse.move(2, 2);
+    log('pase de temporada: 50 niveles, recorrido con las flechas y vuelta al menú');
+
     // ─── Recarga: lo guardado debe seguir ───
     step = 'recarga';
     await page.waitForTimeout(700); // escritura agrupada del guardado (400 ms)

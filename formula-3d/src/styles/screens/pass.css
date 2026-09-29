@@ -1,0 +1,384 @@
+/* ─── Pase de temporada ──────────────────────────────────────────────────
+   Arriba: nombre de la temporada, avance y tarjeta del piloto. En el medio,
+   la tira de 50 niveles que se desplaza sola hacia el elegido, con un riel
+   dorado que se llena. Abajo, el detalle del nivel elegido. */
+
+.screen--pass {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vh, 20px);
+  padding: var(--gutter);
+  background: var(--c-bg);
+}
+
+.pass__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(245, 197, 66, 0.08), transparent 70%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 22px),
+    linear-gradient(180deg, #0b0d12 0%, #050608 100%);
+}
+
+.screen--pass > * {
+  position: relative;
+}
+
+.pass__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: center;
+}
+
+.pass__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pass__lead {
+  max-width: 52ch;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--c-text-2);
+}
+
+.pass__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pass__progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pass__progress-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+.pass__progress-tier {
+  font-family: var(--font-num);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--c-gold);
+}
+
+.pass__player .pcard {
+  min-width: 300px;
+}
+
+/* Tira de niveles */
+
+.pass__track {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  margin: 0 calc(var(--gutter) * -1);
+  padding: 0 var(--gutter);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.pass__track::-webkit-scrollbar {
+  display: none;
+}
+
+.pass__strip {
+  display: flex;
+  align-items: flex-end;
+  padding: 14px 40vw 6px;
+}
+
+.ptier {
+  --rarity: #a3acb8;
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: clamp(92px, 8.4vw, 124px);
+  padding: 0 7px;
+  transition: transform 0.3s var(--ease-out);
+}
+
+.ptier__num {
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text-3);
+}
+
+.ptier.is-milestone .ptier__num {
+  color: var(--c-gold);
+}
+
+.ptier__card {
+  position: relative;
+  width: 100%;
+}
+
+.ptier .rcard {
+  width: 100%;
+  transition:
+    transform 0.3s var(--ease-out),
+    filter 0.3s;
+}
+
+.ptier .rcard__kind {
+  display: none;
+}
+
+.ptier .rcard__name {
+  font-size: 11px;
+}
+
+.ptier .rcard__rarity {
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.ptier .ipreview__title-text {
+  font-size: 11px;
+}
+
+.ptier .rcard__front {
+  padding: 8px 6px 10px;
+}
+
+.ptier.is-locked .rcard {
+  filter: grayscale(0.85) brightness(0.55);
+}
+
+.ptier__lock {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  background: rgba(5, 6, 8, 0.8);
+  box-shadow: inset 0 0 0 1px var(--c-line-strong);
+  font-size: 16px;
+  color: var(--c-text-2);
+}
+
+.ptier.is-locked .ptier__lock {
+  display: grid;
+}
+
+.ptier__rail {
+  position: relative;
+  width: calc(100% + 14px);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ptier__rail > i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(var(--p, 0));
+  background: linear-gradient(90deg, #a07a1c, var(--c-gold));
+  box-shadow: 0 0 10px rgba(245, 197, 66, 0.4);
+}
+
+.ptier__rail::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  transform: rotate(45deg);
+  background: #2a2d35;
+  box-shadow: 0 0 0 2px var(--c-bg);
+}
+
+.ptier.is-unlocked .ptier__rail::after {
+  background: var(--c-gold);
+}
+
+.ptier.is-current .ptier__rail::after {
+  background: var(--c-accent);
+  box-shadow:
+    0 0 0 2px var(--c-bg),
+    0 0 12px var(--c-accent);
+}
+
+.ptier.is-focused {
+  transform: translateY(-8px);
+}
+
+.ptier.is-focused .rcard {
+  transform: scale(1.06);
+  filter: none;
+}
+
+.ptier.is-focused .ptier__num {
+  color: var(--c-text);
+}
+
+.ptier.is-focused.is-locked .rcard {
+  filter: grayscale(0.4) brightness(0.8);
+}
+
+/* Detalle */
+
+.pass__detail {
+  display: flex;
+  gap: 26px;
+  align-items: stretch;
+  min-height: 0;
+  height: clamp(150px, 25vh, 210px);
+  padding: 14px 20px;
+  background: linear-gradient(135deg, rgba(20, 22, 29, 0.85), rgba(10, 11, 15, 0.6));
+  box-shadow: inset 0 0 0 1px var(--c-line);
+}
+
+.pass__card-slot {
+  height: 100%;
+  aspect-ratio: 3 / 4.3;
+  flex: none;
+}
+
+.pass__card-slot .rcard {
+  height: 100%;
+  width: auto;
+}
+
+.pass__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pass__info-tier {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-gold);
+}
+
+.pass__info-name {
+  font-size: clamp(22px, 2.4vw, 32px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.pass__info-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.pass__tag {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  border: 1px solid var(--c-line-strong);
+}
+
+.pass__info-text {
+  max-width: 60ch;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.pass__info-use {
+  font-size: 13px;
+  color: var(--c-text-3);
+}
+
+.pass__status {
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transform: skewX(var(--skew));
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pass__status.is-locked {
+  color: var(--c-text-2);
+}
+
+.pass__status.is-ready {
+  color: #062b16;
+  background: #39ff88;
+}
+
+.pass__status.is-used {
+  color: #1c1406;
+  background: var(--c-gold);
+}
+
+.pass__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  border-top: 1px solid var(--c-line);
+}
+
+/* ─── Pantallas angostas ──────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .screen--pass {
+    overflow-y: auto;
+  }
+
+  .screen--pass > * {
+    flex: none;
+  }
+
+  .pass__header {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .pass__player .pcard {
+    min-width: 0;
+  }
+
+  .pass__track {
+    flex: none;
+    height: 260px;
+  }
+
+  .pass__detail {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .pass__card-slot {
+    height: 200px;
+  }
+}

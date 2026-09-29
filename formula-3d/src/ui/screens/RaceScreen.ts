@@ -3,7 +3,9 @@
  *
  * Estados: carga → presentación (vuelta de cámara, se salta con ENTER/A) →
  * en pista (en carrera: parrilla con semáforo) ⇄ pausa → (en carrera)
- * bandera a cuadros y panel de fin de carrera. La carga no bloquea la
+ * bandera a cuadros y panel de fin de carrera → resultados. Al terminar (o,
+ * sin rivales, al salir con vueltas válidas) se suma la XP de la sesión y se
+ * pasa a la pantalla de resultados. La carga no bloquea la
  * transición: la pantalla aparece enseguida con la barra de progreso real y
  * el circuito se arma por etapas.
  */
@@ -11,19 +13,20 @@
 import gsap from 'gsap';
 import { Vector3 } from 'three';
 import type { Object3D } from 'three';
-import { activeAssists, type ActiveAssists } from '../../assists/presets';
+import { activeAssists, LEVEL_INFO, xpMultiplier, type ActiveAssists } from '../../assists/presets';
 import type { Game } from '../../core/Game';
 import { PerformanceGovernor, type GovernorDecision } from '../../core/render/PerformanceGovernor';
 import { QUALITY_PRESETS } from '../../core/render/quality';
 import type { UiAction } from '../../core/input/actions';
-import type { RaceParams } from '../../core/screens/params';
+import type { RaceParams, ResultsParams } from '../../core/screens/params';
 import { clamp } from '../../core/utils/math';
 import { formatLapTime } from '../../core/utils/format';
 import { ENGINEER_NAME, RADIO_LINES, type RadioMoment } from '../../data/radio';
 import { DRIVERS, liveryOf, pickRivals, playerCode, type DriverDef } from '../../data/teams';
-import { PLAYER_ID, recordRound } from '../../race/championship';
+import { isFinished, PLAYER_ID, pointsFor, recordRound, standings as championshipStandings } from '../../race/championship';
 import { PLAYER_DEFAULT_LIVERY } from '../../garage/livery';
-import { difficultyValue } from '../../race/ai/difficulty';
+import { difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
+import { applyXp, computeXp, snapshotOf } from '../../progression/xp';
 import type { RivalCar } from '../../race/render/RivalFleet';
 import { DrivingInput, type DrivingEvent } from '../../race/input/DrivingInput';
 import { F1_SPEC } from '../../race/physics/CarSpec';
@@ -39,7 +42,7 @@ import { getTrack } from '../../tracks/registry';
 import { Track } from '../../tracks/Track';
 import { h, prefersReducedMotion } from '../dom';
 import { ControlHints } from '../components/ControlHints';
-import { FinishPanel, type FinishChoice } from '../race/FinishPanel';
+import { FinishPanel } from '../race/FinishPanel';
 import { Hud, type HudAssists } from '../race/Hud';
 import { LoadingOverlay } from '../race/LoadingOverlay';
 import { PauseMenu, type PauseChoice } from '../race/PauseMenu';
@@ -128,6 +131,12 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private readonly listenerUp = new Vector3();
   private readonly listenerVelocity = { x: 0, z: 0 };
   private ghostPlayer: GhostPlayer | null = null;
+  /** Puestos ganados en pista (carrera) y vueltas válidas / récord sin rivales, para la XP. */
+  private overtakes = 0;
+  private soloLaps = 0;
+  private soloPersonalBest = false;
+  /** Resultados listos (XP ya sumada) para la pantalla siguiente. */
+  private results: ResultsParams | null = null;
   private readonly ghostPose: GhostPose = { x: 0, z: 0, heading: 0 };
 
   constructor(game: Game) {
@@ -382,9 +391,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       onMove: () => this.game.playUi('move'),
     });
     this.finish = new FinishPanel({
-      onChoice: (choice) => this.onFinishChoice(choice),
+      onContinue: () => this.openResults(),
       onMove: () => this.game.playUi('move'),
-      championship: this.params.championshipRound !== undefined,
     });
     this.driving = new DrivingInput(
       this.game.input,
@@ -582,6 +590,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         case 'lapCompleted':
           hud.setSector(2, event.sector3);
           if (event.personalBest) this.saveRecord(event.lap.time);
+          if (!session.isRace) {
+            if (event.lap.valid) this.soloLaps++;
+            if (event.personalBest) this.soloPersonalBest = true;
+          }
           if (!finishing) this.announceLap(event.lap.number, event.lap.time, event.lap.valid, event.personalBest, event.bestOfSession);
           break;
         case 'invalidated':
@@ -602,6 +614,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           hud.message('DRS DISPONIBLE', 'A menos de 1 s: ábrelo en la próxima zona', 'good');
           break;
         case 'position':
+          if (event.to < event.from) this.overtakes += event.from - event.to;
           this.onPositionChange(event.from, event.to);
           break;
         case 'fastestLap': {
@@ -709,19 +722,85 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.driving?.release();
     this.hud?.setVisible(false);
     const personalBest = result.laps.some((lap) => lap.valid && lap.time === this.session?.timer.personalBest);
-    this.finish.show(result, personalBest, this.session.standings());
+    // La carrera cuenta en cuanto el jugador recibe la bandera: campeonato y XP se guardan ya.
+    this.recordChampionshipRound();
+    this.results = this.awardSession(result, personalBest);
+    this.finish.show(result, personalBest, this.session.standings(), this.results.award.total);
   }
 
-  private onFinishChoice(choice: FinishChoice): void {
+  /** "Continuar" en el panel final: a los resultados. */
+  private openResults(): void {
+    if (!this.results) return;
     this.game.playUi('confirm');
-    if (choice === 'again') {
-      this.restartSession();
-    } else if (choice === 'continue') {
-      this.recordChampionshipRound();
-      void this.game.screens.goTo('championship', undefined);
-    } else {
-      void this.game.screens.goTo('menu', undefined);
+    this.phase = 'leaving';
+    void this.game.screens.goTo('results', this.results);
+  }
+
+  /**
+   * Calcula la XP de la sesión, la suma al guardado (nivel, pase y
+   * recompensas) y arma los parámetros de la pantalla de resultados.
+   * @param result null en práctica y contrarreloj (se cuentan las vueltas válidas)
+   */
+  private awardSession(result: RaceResult | null, personalBest: boolean): ResultsParams {
+    const session = this.session;
+    const settings = this.game.settings;
+    const round = this.params.championshipRound;
+    const season = this.game.save.data.championship;
+    const difficulty = this.params.difficulty ?? difficultyValue(settings.race);
+    const playerRow = session?.standings().find((row) => row.isPlayer);
+    const withRivals = result !== null && result.starters > 1;
+    let championshipPoints: number | null = null;
+    let seasonPosition: number | null = null;
+    if (result && round !== undefined && season) {
+      championshipPoints = season.rounds[round]?.results?.find((entry) => entry.id === PLAYER_ID)?.points ?? pointsFor(result.position);
+      // Última carrera: premio según la tabla final.
+      if (isFinished(season)) seasonPosition = championshipStandings(season).find((row) => row.id === PLAYER_ID)?.position ?? null;
     }
+    const award = computeXp(
+      {
+        mode: this.params.mode,
+        position: result?.position ?? 1,
+        starters: result?.starters ?? 1,
+        laps: result ? (this.params.laps ?? DEFAULT_RACE_LAPS) : this.soloLaps,
+        overtakes: this.overtakes,
+        fastestLap: withRivals && playerRow?.fastestLap === true,
+        clean: result !== null && result.contacts === 0 && result.laps.every((lap) => lap.valid),
+        personalBest: result ? personalBest : this.soloPersonalBest,
+        difficulty,
+        assistMultiplier: xpMultiplier(settings.assists),
+        championshipPoints,
+        seasonPosition,
+      },
+      { difficulty: difficultyLabel(difficulty), assists: LEVEL_INFO[settings.assists.level].name },
+    );
+    const before = snapshotOf(this.game.save.data.progression);
+    const gain = applyXp(this.game.save.data.progression, award.total);
+    this.game.save.update((data) => {
+      data.progression = gain.progression;
+    });
+    const track = this.track?.def;
+    const modeLabel =
+      round !== undefined
+        ? `Campeonato · Ronda ${round + 1}`
+        : this.params.mode === 'race'
+          ? 'Carrera rápida'
+          : this.params.mode === 'timeTrial'
+            ? 'Contrarreloj'
+            : 'Práctica libre';
+    return {
+      race: this.params,
+      trackName: track?.grandPrix ?? '',
+      modeLabel,
+      position: withRivals ? result.position : null,
+      starters: result?.starters ?? 1,
+      totalTime: result?.totalTime ?? null,
+      bestLap: result ? (result.bestLap?.time ?? null) : (session?.timer.bestLap?.time ?? null),
+      personalBest: result ? personalBest : this.soloPersonalBest,
+      award,
+      before,
+      after: snapshotOf(gain.progression),
+      rewards: gain.rewards,
+    };
   }
 
   /**
@@ -848,6 +927,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         laps: this.session.timer.laps.length,
         totalLaps: total,
         bestLap: this.session.timer.bestLap?.time ?? null,
+        ...(this.soloLaps > 0 ? { exitLabel: 'Terminar y ver XP' } : {}),
       });
     } else if (!paused && this.phase === 'paused') {
       this.phase = 'running';
@@ -877,7 +957,13 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         break;
       case 'exit':
         this.game.playUi('confirm');
-        void this.game.screens.goTo('menu', undefined);
+        // Sin rivales, las vueltas válidas dan XP al terminar la sesión; una carrera a medias no.
+        if (this.session && !this.session.isRace && this.soloLaps > 0) {
+          this.phase = 'leaving';
+          void this.game.screens.goTo('results', this.awardSession(null, false));
+        } else {
+          void this.game.screens.goTo('menu', undefined);
+        }
         break;
     }
   }
@@ -888,6 +974,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (!session || !world) return;
     session.restart();
     this.pendingFinish = null;
+    this.overtakes = 0;
     this.hud?.configureRace(
       session.order ? { count: session.cars.length, rivalColors: session.cars.filter((car) => !car.isPlayer).map((car) => car.team.primary) } : null,
     );

@@ -62,12 +62,13 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Fase 5 de 9: Albert Park y Monza, con pantalla de selección de carrera.
+Fase 6 de 9: Albert Park y Monza, con pantalla de selección de carrera.
 Modos: práctica libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales
 con IA de 5 dificultades), contrarreloj con fantasma de tu mejor vuelta y
-campeonato con puntos y tabla que se guarda entre sesiones. Clima soleado,
-nublado o atardecer. Choques entre autos, rebufo, DRS con detección,
-posiciones e intervalos en vivo, física de monoplaza, tres cámaras, sonido
-(motores rivales en 3D), HUD completo con radio del equipo, sistema de ayudas
-por niveles, línea de trazada y rendimiento automático. Ver la sección
-**Fases** de `PLAN.md`.
+campeonato con puntos y tabla que se guarda entre sesiones. Cada sesión suma
+XP (niveles 1–100) y avanza el pase de temporada de 50 niveles con
+recompensas ficticias; la pantalla de resultados lo cuenta con barras,
+chispas y cartas que se dan vuelta. Clima soleado, nublado o atardecer,
+choques entre autos, rebufo, DRS con detección, posiciones en vivo, física de
+monoplaza, tres cámaras, sonido 3D, HUD con radio, ayudas por niveles, línea
+de trazada y rendimiento automático. Ver la sección **Fases** de `PLAN.md`.

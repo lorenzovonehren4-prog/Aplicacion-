@@ -3,14 +3,9 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '0.5.0';
+export const GAME_VERSION = '0.6.0';
 /** Fase de desarrollo actual (se muestra junto a la versión). */
-export const DEV_PHASE = 5;
-
-/** Títulos del piloto (el pase de temporada agrega más en la Fase 6). */
-export const PLAYER_TITLES: Readonly<Record<string, string>> = {
-  rookie: 'Novato del paddock',
-};
+export const DEV_PHASE = 6;
 
 export type MenuItemId =
   | 'practice'
@@ -45,14 +40,14 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'practice',
         label: 'Práctica libre',
         icon: 'helmet',
-        description: 'Sal solo a Albert Park, aprende el circuito y marca tu mejor vuelta.',
+        description: 'Sal solo a la pista que elijas, aprende el circuito y marca tu mejor vuelta.',
         phase: 2,
       },
       {
         id: 'quickRace',
         label: 'Carrera rápida',
         icon: 'flag',
-        description: 'Largada con semáforo y 3 vueltas en Albert Park contra rivales. Dificultad y cantidad de autos en Ajustes → Juego.',
+        description: 'Elige circuito, vueltas, rivales y clima, y larga con semáforo contra hasta 19 autos.',
         phase: 3,
       },
       {

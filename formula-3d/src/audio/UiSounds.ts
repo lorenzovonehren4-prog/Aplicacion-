@@ -4,7 +4,19 @@
  * desconectan solos al terminar.
  */
 
-export type UiSound = 'move' | 'confirm' | 'back' | 'locked' | 'tab' | 'tick' | 'whooshIn' | 'whooshOut';
+export type UiSound =
+  | 'move'
+  | 'confirm'
+  | 'back'
+  | 'locked'
+  | 'tab'
+  | 'tick'
+  | 'whooshIn'
+  | 'whooshOut'
+  | 'levelUp'
+  | 'flip'
+  | 'reward'
+  | 'rewardBig';
 
 /** Separación mínima entre dos sonidos iguales (evita metralla al mantener una tecla). */
 const MIN_GAP: Partial<Record<UiSound, number>> = { move: 0.035, tick: 0.03 };
@@ -57,6 +69,26 @@ export class UiSounds {
         break;
       case 'whooshOut':
         this.whoosh(now, 0.4, 3000, 500, 0.24);
+        break;
+      case 'levelUp':
+        // Arpegio mayor que sube, con un brillo de ruido al final.
+        [523.25, 659.25, 783.99, 1046.5].forEach((hz, i) => this.blip(now + i * 0.075, hz, hz * 1.01, 0.22, 0.17, 'triangle'));
+        this.blip(now + 0.3, 1568, 1568, 0.5, 0.09, 'sine');
+        this.whoosh(now + 0.22, 0.45, 2500, 9000, 0.1);
+        break;
+      case 'flip':
+        this.whoosh(now, 0.16, 900, 3800, 0.16);
+        this.click(now + 0.12, 2600, 0.02, 0.1);
+        break;
+      case 'reward':
+        this.blip(now, 987.77, 987.77, 0.12, 0.14, 'triangle');
+        this.blip(now + 0.08, 1318.5, 1318.5, 0.22, 0.14, 'triangle');
+        break;
+      case 'rewardBig':
+        // Épico o legendario: acorde más largo y brillante.
+        [659.25, 830.61, 987.77, 1318.5].forEach((hz, i) => this.blip(now + i * 0.05, hz, hz, 0.6, 0.12, 'triangle'));
+        this.blip(now + 0.2, 2637, 2637, 0.7, 0.05, 'sine');
+        this.whoosh(now, 0.6, 1200, 8000, 0.12);
         break;
     }
   }

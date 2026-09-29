@@ -23,6 +23,8 @@ export interface PauseSummary {
   /** Vueltas de la carrera (null en práctica). */
   totalLaps: number | null;
   bestLap: number | null;
+  /** Texto del botón de salida (por defecto "Salir al menú"). */
+  exitLabel?: string;
 }
 
 export interface PauseMenuOptions {
@@ -45,6 +47,7 @@ export class PauseMenu {
   private readonly summary = h('div', { class: 'pause__summary' });
   private readonly buttons = new Map<PauseChoice, HTMLButtonElement>();
   private confirmingExit = false;
+  private exitLabel = 'Salir al menú';
   private visible = false;
 
   constructor(private readonly options: PauseMenuOptions) {
@@ -74,7 +77,8 @@ export class PauseMenu {
   show(summary: PauseSummary): void {
     this.visible = true;
     this.confirmingExit = false;
-    this.setExitLabel('Salir al menú');
+    this.exitLabel = summary.exitLabel ?? 'Salir al menú';
+    this.setExitLabel(this.exitLabel);
     this.summary.replaceChildren(
       h('span', { class: 'pause__track', text: summary.trackName }),
       h('span', {
@@ -121,7 +125,7 @@ export class PauseMenu {
     if (action === 'back') {
       if (this.confirmingExit) {
         this.confirmingExit = false;
-        this.setExitLabel('Salir al menú');
+        this.setExitLabel(this.exitLabel);
         return;
       }
       this.options.onChoice('resume');

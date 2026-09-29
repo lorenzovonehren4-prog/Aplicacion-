@@ -766,14 +766,30 @@ revisión propia del código + resumen y espera de confirmación.
       sombreadores precompilados también de lo que arranca oculto, volante
       sólo en la cámara cockpit, puente fusionado por material (§5.10).
 
-### Fase 6 — Progresión
+### Fase 6 — Progresión ✅
 
-- [ ] XP por carrera (`progression/xp.ts`) y suma de XP con subidas de nivel
-      (la curva de niveles ya existe en `progression/levels.ts`).
-- [ ] Pase de temporada de 50 niveles.
-- [ ] Pantalla de resultados (filas animadas, barra de XP con partículas, subida
-      de nivel, cartas de recompensa que giran según rareza).
-- [ ] Pantalla del pase de temporada.
+- [x] XP por sesión (`progression/xp.ts`): en carrera, base por posición
+      (escalada por las vueltas) + 50 por adelantamiento (tope 12) + 150 por
+      vuelta rápida + 200 por carrera limpia + 150 por récord; en el
+      campeonato, 20 por punto y un premio al cerrar la temporada
+      (2 000 / 1 200 / 800 / 400). Todo × dificultad (×0,8 … ×1,5, continuo) ×
+      ayudas. Práctica y contrarreloj: 60 / 80 por vuelta válida + récord, ×
+      ayudas; se cobran al salir desde la pausa ("Terminar y ver XP").
+- [x] Suma con subidas de nivel (1–100), XP total, pase y recompensas
+      (`applyXp`); se guarda en cuanto cae la bandera.
+- [x] Pase de temporada "Temporada 1 · Ignición" (`progression/seasonPass.ts`):
+      50 niveles de 1 000 XP y un ítem ficticio por nivel
+      (`progression/items.ts`: pinturas, materiales, llantas, alerones, cascos,
+      avatares, títulos y celebraciones; legendarios en los niveles 10, 20… 50).
+      Vistas previas dibujadas en SVG (`ui/components/ItemPreview.ts`).
+- [x] Pantalla de resultados (`ResultsScreen.ts`): líneas de XP que cuentan,
+      multiplicadores, total, barra de nivel con chispas en la punta
+      (`ui/anim/SparkField.ts`, canvas 2D sin asignaciones), "¡NIVEL N!" con
+      sonido y ráfaga, barra del pase y cartas que se dan vuelta al completar
+      cada nivel (brillo y sonido según rareza). ENTER la adelanta.
+- [x] Pantalla del pase (`SeasonPassScreen.ts`): tira de 50 niveles con riel,
+      detalle del elegido y títulos / avatares que se equipan con ENTER (se
+      ven en la tarjeta del piloto del menú).
 
 ### Fase 7 — Garaje
 
@@ -803,16 +819,16 @@ revisión propia del código + resumen y espera de confirmación.
 
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
-| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 6, 7, 8 |
-| Puntos del campeonato como XP y recompensas de fin de temporada | La temporada guarda posiciones y puntos de cada ronda (`SaveData.championship`) | 6 |
-| Pantalla de resultados con XP y recompensas | Por ahora el panel de fin de carrera (`FinishPanel`) | 6 |
+| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 7, 8 |
+| Usar pinturas, materiales, llantas, alerones y cascos ganados | Ya están en `progression.unlocked` con sus datos de dibujo (`progression/items.ts`); el garaje los aplica | 7 |
+| Celebraciones de podio ganadas | En el catálogo (confeti, champán, fuegos artificiales); se ven en el podio 3D | 9 |
+| Nivel del piloto como requisito de ítems del garaje | La curva 1–100 ya funciona; los ítems del garaje con nivel mínimo llegan con el garaje | 7 |
 | Volumen de Música | No se muestra hasta que haya música | 8 |
 | Manual de ayudas | Los textos de cada ayuda ya están en `assists/presets.ts` | 8 |
 | Tutorial inicial | El splash va siempre al menú; las ayudas arrancan en Principiante | 8 |
 | Nombre del piloto editable | Por ahora "PILOTO" | 8 (tutorial y perfil) |
 | Música de menú | — | 8 |
 | Patrones de livery y materiales | El auto usa la livery base del jugador | 7 |
-| XP por adelantamientos y carrera limpia | `RaceResult` ya trae posición, autos y choques del jugador (`contacts`) | 6 |
 | Logos del equipo en los pontones de los rivales | Los rivales llevan colores y número; el logo (decal) sólo el auto del jugador | 7 |
 | Humo y chispas en los choques entre autos | Suenan y sacuden la cámara; las partículas llegan con el resto de efectos | 9 |
 
@@ -833,6 +849,11 @@ revisión propia del código + resumen y espera de confirmación.
   2 vueltas con 11 bots y el jugador manejado por un `BotDriver`, comprobando
   que todos reciben la bandera, la tabla y los intervalos, y que casi no hay
   choques fuertes. La prueba de humo verifica la torre y el minimapa.
+- La progresión se prueba sin navegador (`tests/progression.test.ts`):
+  catálogo, XP de cada modo, subidas de nivel, pase y saneo de lo equipado.
+  La prueba de humo abre el pase de temporada desde el menú.
+- Para publicar como página se usa `dist-artifact/web/` (página chica + JS y
+  CSS aparte): el HTML único de 1,4 MB lo rechaza el validador de páginas.
 - Los modos se prueban sin navegador (`tests/modes.test.ts`): fantasma
   (grabar, codificar y reproducir), contrarreloj, campeonato (puntos, tabla y
   desempates), clima y saneo de los ajustes de carrera guardados.
@@ -860,4 +881,5 @@ revisión propia del código + resumen y espera de confirmación.
 - **Fase 3**: completa.
 - **Fase 4**: completa (incluye la ronda de rendimiento).
 - **Fase 5**: completa (el usuario pidió seguir sin esperar confirmación entre
-  la 4 y la 5; ahora se espera su confirmación para la Fase 6).
+  la 4 y la 5).
+- **Fase 6**: completa; se espera la confirmación del usuario para la Fase 7.

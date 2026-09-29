@@ -1,10 +1,11 @@
 import type { Profile, Progression } from '../../core/save/schema';
 import { formatInteger } from '../../core/utils/format';
 import type { DeepReadonly } from '../../core/utils/types';
-import { PLAYER_TITLES } from '../../data/game';
+import { getItem } from '../../progression/items';
 import { levelProgress } from '../../progression/levels';
 import { countUp } from '../anim/countUp';
 import { h } from '../dom';
+import { avatarPreview } from './ItemPreview';
 import gsap from 'gsap';
 
 /** Tarjeta del piloto: avatar, nombre, título, nivel y barra de XP. */
@@ -18,18 +19,25 @@ export class PlayerCard {
   constructor(profile: DeepReadonly<Profile>, progression: DeepReadonly<Progression>) {
     this.progress = levelProgress(progression.level, progression.xp);
     const initial = profile.name.trim().charAt(0).toUpperCase() || 'P';
+    const avatar = getItem(profile.avatarId);
+    const title = getItem(profile.titleId);
     this.bar = h('i');
     this.xpText = h('span', { text: this.formatXp(0) });
     this.levelText = h('b', { text: '0' });
     this.element = h(
       'div',
       { class: 'pcard' },
-      h('div', { class: 'pcard__avatar', attrs: { 'aria-hidden': 'true' } }, h('span', { text: initial })),
+      h(
+        'div',
+        { class: 'pcard__avatar', attrs: { 'aria-hidden': 'true' } },
+        // Las iniciales van en texto sobre el fondo de la tarjeta; los demás avatares, dibujados.
+        avatar?.kind === 'avatar' && avatar.glyph !== 'initials' ? avatarPreview(avatar, profile.name) : h('span', { text: initial }),
+      ),
       h(
         'div',
         { class: 'pcard__info' },
         h('div', { class: 'pcard__name', text: profile.name }),
-        h('div', { class: 'pcard__title', text: PLAYER_TITLES[profile.titleId] ?? PLAYER_TITLES.rookie ?? '' }),
+        h('div', { class: 'pcard__title', text: title?.kind === 'title' ? title.text : '' }),
         h('div', { class: 'pcard__bar' }, this.bar),
         h('div', { class: 'pcard__xp' }, this.xpText),
       ),

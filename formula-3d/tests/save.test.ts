@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { migrateSave } from '../src/core/save/migrations';
 import { sanitizeSave } from '../src/core/save/sanitize';
 import { SaveManager } from '../src/core/save/SaveManager';
-import { createDefaultSave, SAVE_KEY, SAVE_VERSION, type SaveData } from '../src/core/save/schema';
+import { createDefaultProgression, createDefaultSave, SAVE_KEY, SAVE_VERSION, type SaveData } from '../src/core/save/schema';
 import {
   createBestStorage,
   IndexedDbStorage,
@@ -50,7 +50,7 @@ describe('sanitizeSave', () => {
       const data = sanitizeSave(garbage, defaults());
       expect(data.version).toBe(SAVE_VERSION);
       expect(data.profile.name).toBe('PILOTO');
-      expect(data.progression).toEqual({ level: 1, xp: 0 });
+      expect(data.progression).toEqual(createDefaultProgression());
       expect(data.settings.graphics.quality).toBe('high');
     }
   });
@@ -69,10 +69,12 @@ describe('sanitizeSave', () => {
     };
     const data = sanitizeSave(raw, defaults());
     expect(data.profile.name).toBe('Ana María');
-    expect(data.profile.avatarId).toBe('initials');
+    expect(data.profile.avatarId).toBe('avatar-initials');
+    // El título de la Fase 1 ("rookie") pasa a su id del catálogo.
+    expect(data.profile.titleId).toBe('title-rookie');
     expect(data.profile.tutorialDone).toBe(false);
     expect(data.profile.experience).toBe('lots');
-    expect(data.progression).toEqual({ level: 100, xp: 0 });
+    expect(data.progression).toMatchObject({ level: 100, xp: 0 });
     expect(data.settings.graphics).toEqual({
       quality: 'high',
       shadows: 'low',

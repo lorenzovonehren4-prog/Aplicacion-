@@ -4,6 +4,7 @@
  * fase agrega las suyas.
  */
 
+import type { ProgressSnapshot, XpAward } from '../../progression/xp';
 import type { Weather } from '../save/schema';
 
 export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'assists' | 'game';
@@ -32,6 +33,26 @@ export interface RaceParams {
   championshipRound?: number;
 }
 
+/** Resultados de una sesión, con la XP ya sumada al guardado. */
+export interface ResultsParams {
+  /** La sesión que terminó (para repetirla o seguir con la siguiente). */
+  race: RaceParams;
+  trackName: string;
+  /** "Carrera rápida", "Campeonato · Ronda 2"… */
+  modeLabel: string;
+  /** Posición final y autos (null sin rivales). */
+  position: number | null;
+  starters: number;
+  totalTime: number | null;
+  bestLap: number | null;
+  personalBest: boolean;
+  award: XpAward;
+  before: ProgressSnapshot;
+  after: ProgressSnapshot;
+  /** Ítems nuevos del pase. */
+  rewards: string[];
+}
+
 export interface ScreenParams {
   splash: undefined;
   menu: undefined;
@@ -39,4 +60,6 @@ export interface ScreenParams {
   raceSelect: { mode: RaceSelectMode };
   championship: undefined;
   race: RaceParams;
+  results: ResultsParams;
+  pass: undefined;
 }

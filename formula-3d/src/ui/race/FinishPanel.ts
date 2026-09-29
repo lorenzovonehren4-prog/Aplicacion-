@@ -2,28 +2,24 @@
  * Fin de carrera: franja a cuadros, posición final, tiempo total que cuenta
  * hacia arriba, mejor vuelta y la tabla de vueltas con sus sectores (fila por
  * fila). Con rivales, a la izquierda la clasificación completa, que se va
- * completando a medida que los demás reciben la bandera. Opciones: repetir la
- * carrera o salir al menú. La pantalla de resultados completa con XP y
- * recompensas llega en la Fase 6.
+ * completando a medida que los demás reciben la bandera. Muestra la XP ganada
+ * y "Continuar" lleva a la pantalla de resultados (XP, niveles y recompensas).
  */
 
 import gsap from 'gsap';
 import type { UiAction } from '../../core/input/actions';
 import { Disposer } from '../../core/utils/Disposer';
-import { formatGap, formatLapTime } from '../../core/utils/format';
+import { formatGap, formatInteger, formatLapTime } from '../../core/utils/format';
 import type { RaceResult, StandingRow } from '../../race/Session';
 import { h, prefersReducedMotion } from '../dom';
 import { finished } from '../anim/finished';
 import { createMenuButton } from '../components/MenuButton';
 import { FocusNavigator } from '../nav/FocusNavigator';
 
-export type FinishChoice = 'again' | 'continue' | 'exit';
-
 export interface FinishPanelOptions {
-  onChoice(choice: FinishChoice): void;
+  /** "Continuar": a la pantalla de resultados. */
+  onContinue(): void;
   onMove(): void;
-  /** Carrera de campeonato: en lugar de repetir, se sigue con la temporada. */
-  championship?: boolean;
 }
 
 export class FinishPanel {
@@ -34,6 +30,7 @@ export class FinishPanel {
   private readonly best = h('span', { class: 'finish__best-value' });
   private readonly table = h('div', { class: 'finish__table', attrs: { role: 'table', 'aria-label': 'Vueltas' } });
   private readonly note = h('p', { class: 'finish__note' });
+  private readonly xp = h('span', { class: 'finish__xp-value' });
   private readonly place = h('span', { class: 'finish__place-value' });
   private readonly placeBox = h('div', { class: 'finish__place' }, h('span', { class: 'finish__label', text: 'POSICIÓN' }), this.place);
   private readonly classification = h('div', { class: 'finish__classification', attrs: { role: 'table', 'aria-label': 'Clasificación' } });
@@ -51,14 +48,9 @@ export class FinishPanel {
   constructor(options: FinishPanelOptions) {
     this.nav = new FocusNavigator({ onMove: () => options.onMove() });
     this.own.add(() => this.nav.dispose());
-    const championship = options.championship === true;
-    const again = championship
-      ? createMenuButton({ label: 'Continuar campeonato', icon: 'trophy' })
-      : createMenuButton({ label: 'Repetir carrera', icon: 'reset' });
-    const exit = createMenuButton({ label: 'Salir al menú', icon: 'exit' });
-    this.buttons.push(again, exit);
-    this.nav.add(again, { onConfirm: () => options.onChoice(championship ? 'continue' : 'again') });
-    this.nav.add(exit, { onConfirm: () => options.onChoice('exit') });
+    const next = createMenuButton({ label: 'Continuar', icon: 'play' });
+    this.buttons.push(next);
+    this.nav.add(next, { onConfirm: () => options.onContinue() });
 
     this.panel = h(
       'div',
@@ -74,7 +66,7 @@ export class FinishPanel {
       ),
       this.table,
       this.note,
-      h('div', { class: 'finish__actions' }, again, exit),
+      h('div', { class: 'finish__actions' }, h('div', { class: 'finish__xp' }, h('span', { class: 'finish__label', text: 'XP GANADA' }), this.xp), next),
     );
     this.root = h('div', { class: 'finish' }, h('div', { class: 'finish__backdrop' }), this.standingsPanel, this.panel);
   }
@@ -86,8 +78,9 @@ export class FinishPanel {
   /**
    * @param standings clasificación (vacía si corrió solo)
    */
-  show(result: RaceResult, personalBest: boolean, standings: readonly StandingRow[]): void {
+  show(result: RaceResult, personalBest: boolean, standings: readonly StandingRow[], xp: number): void {
     this.visible = true;
+    this.xp.textContent = `+${formatInteger(xp)}`;
     const withRivals = standings.length > 1;
     this.root.classList.toggle('has-standings', withRivals);
     this.placeBox.hidden = !withRivals;

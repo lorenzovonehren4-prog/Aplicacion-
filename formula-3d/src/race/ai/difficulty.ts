@@ -6,7 +6,7 @@
  * de cada piloto mueven esos valores un poco hacia arriba o hacia abajo.
  */
 
-import type { DifficultyLevel, RaceSettings } from '../../core/save/schema';
+import { DIFFICULTY_LEVELS, type DifficultyLevel, type RaceSettings } from '../../core/save/schema';
 import type { DriverDef } from '../../data/teams';
 
 export const DIFFICULTY_INFO: Readonly<Record<DifficultyLevel, { label: string; value: number; description: string }>> = {
@@ -58,4 +58,14 @@ export function botParams(value: number, driver: Pick<DriverDef, 'skill' | 'aggr
     mistakesPerLap: lerp(0.45, 0.03, t),
     reaction: lerp(0.45, 0.2, t) + (random - 0.5) * 0.16,
   };
+}
+
+/** Nombre de una dificultad 0–100: el nivel más cercano, o el número si no coincide con ninguno. */
+export function difficultyLabel(value: number): string {
+  let best: DifficultyLevel = 'amateur';
+  for (const level of DIFFICULTY_LEVELS) {
+    if (level === 'custom') continue;
+    if (Math.abs(DIFFICULTY_INFO[level].value - value) < Math.abs(DIFFICULTY_INFO[best].value - value)) best = level;
+  }
+  return Math.abs(DIFFICULTY_INFO[best].value - value) < 3 ? DIFFICULTY_INFO[best].label : `Personalizada (${Math.round(value)})`;
 }

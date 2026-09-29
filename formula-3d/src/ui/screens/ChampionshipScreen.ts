@@ -24,7 +24,7 @@ import {
   type Weather,
 } from '../../core/save/schema';
 import { DRIVERS, PLAYER_TEAM_ID, TEAMS, pickRivals, teamOf } from '../../data/teams';
-import { DIFFICULTY_INFO, difficultyValue } from '../../race/ai/difficulty';
+import { DIFFICULTY_INFO, difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
 import { createChampionship, isFinished, nextRound, PLAYER_ID, POINTS, standings } from '../../race/championship';
 import { getTrack, TRACKS } from '../../tracks/registry';
 import { WEATHER_INFO } from '../../tracks/weather';
@@ -384,11 +384,3 @@ export class ChampionshipScreen extends BaseScreen {
 }
 
 /** Nombre del nivel de dificultad más cercano a un valor 0–100. */
-function difficultyLabel(value: number): string {
-  let best: DifficultyLevel = 'amateur';
-  for (const level of DIFFICULTY_LEVELS) {
-    if (level === 'custom') continue;
-    if (Math.abs(DIFFICULTY_INFO[level].value - value) < Math.abs(DIFFICULTY_INFO[best].value - value)) best = level;
-  }
-  return Math.abs(DIFFICULTY_INFO[best].value - value) < 3 ? DIFFICULTY_INFO[best].label : `Dificultad ${Math.round(value)}`;
-}

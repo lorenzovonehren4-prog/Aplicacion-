@@ -5,7 +5,9 @@
  * a su valor por defecto sin afectar a los demás.
  */
 
+import { getItem, isItemId, STARTER_ITEM_IDS, type ItemKind } from '../../progression/items';
 import { MAX_LEVEL, xpToNextLevel } from '../../progression/levels';
+import { PASS_MAX_XP, passRewardsBetween, SEASON } from '../../progression/seasonPass';
 import { FPS_TARGETS, QUALITY_LEVELS, SHADOW_LEVELS } from '../render/quality';
 import {
   ASSIST_LEVELS,
@@ -94,7 +96,33 @@ function sanitizeProgression(raw: unknown, defaults: Progression): Progression {
   const needed = xpToNextLevel(level);
   // La XP dentro del nivel nunca alcanza lo que pide el nivel (y es 0 en el máximo).
   const xp = needed === 0 ? 0 : num(r.xp, 0, 0, needed - 1, true);
-  return { level, xp };
+  const pass = record(r.pass);
+  const season = num(pass.season, SEASON.id, 1, 999, true);
+  // Pase de otra temporada: empieza de cero (los ítems ganados se conservan).
+  const passXp = season === SEASON.id ? num(pass.xp, 0, 0, PASS_MAX_XP, true) : 0;
+  // Ítems conocidos, sin repetir; los iniciales siempre están.
+  const unlocked = new Set(STARTER_ITEM_IDS);
+  if (Array.isArray(r.unlocked)) {
+    for (const item of r.unlocked) if (typeof item === 'string' && isItemId(item)) unlocked.add(item);
+  }
+  // Las recompensas de los niveles del pase ya completados siempre están.
+  for (const item of passRewardsBetween(0, passXp)) unlocked.add(item);
+  return {
+    level,
+    xp,
+    totalXp: num(r.totalXp, defaults.totalXp, 0, Number.MAX_SAFE_INTEGER, true),
+    pass: { season: SEASON.id, xp: passXp },
+    unlocked: [...unlocked],
+  };
+}
+
+/** Nombres de la Fase 1 (antes de que existiera el catálogo de ítems). */
+const LEGACY_ITEM_IDS: Readonly<Record<string, string>> = { rookie: 'title-rookie', initials: 'avatar-initials' };
+
+/** El avatar y el título equipados tienen que ser del tipo correcto y estar desbloqueados. */
+function equipped(value: string, kind: ItemKind, unlocked: readonly string[], fallback: string): string {
+  const itemId = LEGACY_ITEM_IDS[value] ?? value;
+  return getItem(itemId)?.kind === kind && unlocked.includes(itemId) ? itemId : fallback;
 }
 
 function sanitizeGraphics(raw: unknown, defaults: GraphicsSettings): GraphicsSettings {
@@ -245,12 +273,19 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
   const r = record(raw);
   const createdAt = num(r.createdAt, defaults.createdAt, 0, Number.MAX_SAFE_INTEGER, true);
   const settings = record(r.settings);
+  const progression = sanitizeProgression(r.progression, defaults.progression);
+  const rawProfile = sanitizeProfile(r.profile, defaults.profile);
+  const profile: Profile = {
+    ...rawProfile,
+    avatarId: equipped(rawProfile.avatarId, 'avatar', progression.unlocked, defaults.profile.avatarId),
+    titleId: equipped(rawProfile.titleId, 'title', progression.unlocked, defaults.profile.titleId),
+  };
   return {
     version: SAVE_VERSION,
     createdAt,
     updatedAt: num(r.updatedAt, createdAt, createdAt, Number.MAX_SAFE_INTEGER, true),
-    profile: sanitizeProfile(r.profile, defaults.profile),
-    progression: sanitizeProgression(r.progression, defaults.progression),
+    profile,
+    progression,
     settings: {
       graphics: sanitizeGraphics(settings.graphics, defaults.settings.graphics),
       audio: sanitizeAudio(settings.audio, defaults.settings.audio),

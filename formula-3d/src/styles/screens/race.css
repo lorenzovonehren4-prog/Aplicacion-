@@ -1246,8 +1246,28 @@
 
 .finish__actions {
   display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.finish__actions .mbtn {
+  flex: 1;
+}
+
+.finish__xp {
+  display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
+  padding-left: 14px;
+  box-shadow: inset 3px 0 0 var(--c-gold);
+}
+
+.finish__xp-value {
+  font-family: var(--font-num);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--c-gold);
+  text-shadow: 0 0 18px rgba(245, 197, 66, 0.45);
 }
 
 /* ─── Pausa ────────────────────────────────────────────────────────────── */

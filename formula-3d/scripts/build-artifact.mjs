@@ -3,10 +3,13 @@
  * publicarlo como página de claude.ai (Artifact): JS, CSS y fuentes quedan
  * dentro del archivo, porque esa página no carga recursos de otros orígenes.
  *
- *   npm run build:artifact   →   dist-artifact/apice-gp.html
+ *   npm run build:artifact   →   dist-artifact/apice-gp.html  (todo en un archivo)
+ *                             →   dist-artifact/web/           (página + JS + CSS)
  *
  * La plataforma envuelve la página en su propio <html>/<head>/<body>, así que
  * el archivo lleva sólo el título, los estilos, el marcado del juego y el script.
+ * La versión `web/` es la misma, pero con el JS y el CSS como archivos aparte
+ * publicados junto a la página: la página queda chica.
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -52,6 +55,20 @@ async function main() {
   await mkdir(out, { recursive: true });
   await writeFile(`${out}apice-gp.html`, page);
   console.info(`dist-artifact/apice-gp.html · ${(page.length / 1024 / 1024).toFixed(2)} MB`);
+
+  const shell = [
+    `<title>${title}</title>`,
+    `<meta name="description" content="Carreras de monoplazas en 3D para navegador.">`,
+    `<link rel="stylesheet" href="apice-gp.css">`,
+    body.trim(),
+    `<script type="module" src="apice-gp.js"></script>`,
+    '',
+  ].join('\n');
+  await mkdir(`${out}web/`, { recursive: true });
+  await writeFile(`${out}web/index.html`, shell);
+  await writeFile(`${out}web/apice-gp.css`, css);
+  await writeFile(`${out}web/apice-gp.js`, await readFile(`${dist}${scriptPath}`, 'utf8'));
+  console.info('dist-artifact/web/ · index.html + apice-gp.js + apice-gp.css');
 }
 
 main().catch((error) => {

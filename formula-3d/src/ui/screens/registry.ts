@@ -3,6 +3,8 @@ import { ChampionshipScreen } from './ChampionshipScreen';
 import { MainMenuScreen } from './MainMenuScreen';
 import { RaceScreen } from './RaceScreen';
 import { RaceSelectScreen } from './RaceSelectScreen';
+import { ResultsScreen } from './ResultsScreen';
+import { SeasonPassScreen } from './SeasonPassScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { SplashScreen } from './SplashScreen';
 
@@ -14,4 +16,6 @@ export function registerScreens(game: Game): void {
   game.screens.register('race', () => new RaceScreen(game));
   game.screens.register('raceSelect', () => new RaceSelectScreen(game));
   game.screens.register('championship', () => new ChampionshipScreen(game));
+  game.screens.register('results', () => new ResultsScreen(game));
+  game.screens.register('pass', () => new SeasonPassScreen(game));
 }

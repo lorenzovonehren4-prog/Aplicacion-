@@ -11,6 +11,7 @@ import {
   type QualityLevel,
   type ShadowLevel,
 } from '../render/quality';
+import { STARTER_ITEM_IDS } from '../../progression/items';
 
 export const SAVE_VERSION = 1;
 
@@ -157,6 +158,12 @@ export interface Progression {
   level: number;
   /** XP acumulada dentro del nivel actual. */
   xp: number;
+  /** XP ganada en total (todas las sesiones). */
+  totalXp: number;
+  /** Pase de temporada: temporada y XP acumulada en ella (1 000 por nivel). */
+  pass: { season: number; xp: number };
+  /** Ítems desbloqueados (ids de `progression/items.ts`). */
+  unlocked: string[];
 }
 
 export interface SaveData {
@@ -228,6 +235,10 @@ export function createDefaultGame(): GameSettings {
   return { defaultCamera: 'cockpit', units: 'kmh' };
 }
 
+export function createDefaultProgression(): Progression {
+  return { level: 1, xp: 0, totalXp: 0, pass: { season: 1, xp: 0 }, unlocked: [...STARTER_ITEM_IDS] };
+}
+
 export function createDefaultRace(): RaceSettings {
   return { difficulty: 'amateur', customDifficulty: 50, rivals: 11, trackId: 'australia', laps: 3, weather: 'sunny' };
 }
@@ -239,12 +250,12 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
     updatedAt: now,
     profile: {
       name: DEFAULT_PILOT_NAME,
-      avatarId: 'initials',
-      titleId: 'rookie',
+      avatarId: 'avatar-initials',
+      titleId: 'title-rookie',
       tutorialDone: false,
       experience: null,
     },
-    progression: { level: 1, xp: 0 },
+    progression: createDefaultProgression(),
     settings: {
       graphics: createDefaultGraphics(quality),
       audio: createDefaultAudio(),
