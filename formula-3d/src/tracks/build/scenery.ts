@@ -1,6 +1,6 @@
 /**
  * Escenario alrededor del circuito: lago con ondas, árboles instanciados
- * (tres especies), tribunas con público, pórtico de largada con semáforo,
+ * (tres especies, en `trees.ts`), tribunas con público, pórtico de largada con semáforo,
  * edificio de boxes, carteles de distancia de frenada y la silueta de la
  * ciudad a lo lejos.
  */
@@ -10,11 +10,8 @@ import {
   CanvasTexture,
   CatmullRomCurve3,
   Color,
-  ConeGeometry,
-  CylinderGeometry,
   DoubleSide,
   Float32BufferAttribute,
-  IcosahedronGeometry,
   InstancedMesh,
   Matrix4,
   Mesh,
@@ -37,6 +34,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { addChunkedInstances, addMerged, addMesh, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
 import { createDistanceBoards, createSpectator, createWaterNormals, createWindows } from './textures';
+import { createTreeMaterial, treeSpecies } from './trees';
 
 // ─── Lago ────────────────────────────────────────────────────────────────
 
@@ -131,60 +129,6 @@ export function insidePolygon(x: number, z: number, polygon: ReadonlyArray<reado
 
 // ─── Árboles ─────────────────────────────────────────────────────────────
 
-function colorize(geometry: BufferGeometry, color: Color, variation: number, seed: number): BufferGeometry {
-  const flat = geometry.index ? geometry.toNonIndexed() : geometry;
-  const colors: number[] = [];
-  const count = flat.getAttribute('position').count;
-  let s = seed;
-  for (let i = 0; i < count; i++) {
-    // Variación por triángulo (facetado natural).
-    if (i % 3 === 0) s = (s * 16807) % 2147483647;
-    const k = 1 + ((s / 2147483647) - 0.5) * variation;
-    colors.push(color.r * k, color.g * k, color.b * k);
-  }
-  flat.setAttribute('color', new Float32BufferAttribute(colors, 3));
-  flat.deleteAttribute('uv');
-  if (flat !== geometry) geometry.dispose();
-  return flat;
-}
-
-/**
- * Tres especies de estilo low-poly: eucalipto alto y ralo, árbol de copa
- * redonda y ciprés. Pocas caras por árbol (50–70 triángulos): hay miles
- * alrededor del circuito y son lo más pesado de dibujar.
- */
-function treeSpecies(): BufferGeometry[] {
-  const trunkColor = new Color('#8f8574');
-  const darkTrunk = new Color('#5b4636');
-  const trunk = (radiusTop: number, radiusBottom: number, height: number): BufferGeometry =>
-    new CylinderGeometry(radiusTop, radiusBottom, height, 5, 1, true).translate(0, height / 2, 0);
-
-  const eucalyptus: BufferGeometry[] = [colorize(trunk(0.22, 0.4, 9), trunkColor, 0.2, 3)];
-  const blobs: Array<[number, number, number, number]> = [
-    [0, 10.5, 0, 3.6],
-    [2.2, 9, 0.8, 2.8],
-    [-1.6, 12, -0.8, 2.6],
-  ];
-  blobs.forEach(([x, y, z, r], i) =>
-    eucalyptus.push(colorize(new IcosahedronGeometry(r, 0).translate(x, y, z), new Color('#5d7a3e'), 0.35, 11 + i)),
-  );
-
-  const round: BufferGeometry[] = [colorize(trunk(0.25, 0.35, 4.5), darkTrunk, 0.2, 5)];
-  round.push(colorize(new IcosahedronGeometry(3.8, 0).scale(1, 0.85, 1).translate(0, 6.2, 0), new Color('#3f6b2c'), 0.35, 21));
-  round.push(colorize(new IcosahedronGeometry(2.6, 0).translate(1.6, 7.6, 0.5), new Color('#4a7a33'), 0.3, 23));
-
-  const cypress: BufferGeometry[] = [colorize(trunk(0.18, 0.25, 2), darkTrunk, 0.2, 7)];
-  cypress.push(colorize(new ConeGeometry(1.8, 11, 6, 1, true).translate(0, 7, 0), new Color('#2e5227'), 0.3, 31));
-
-  return [eucalyptus, round, cypress].map((parts) => {
-    const merged = mergeGeometries(parts);
-    for (const part of parts) part.dispose();
-    if (!merged) throw new Error('No se pudo armar la geometría de un árbol.');
-    merged.computeVertexNormals();
-    return merged;
-  });
-}
-
 /** Tamaño de las celdas en que se agrupan árboles y público (m). */
 const TREE_CELL = 320;
 const CROWD_CELL = 120;
@@ -241,7 +185,10 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
     }
   }
 
-  const material = ctx.own.own(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true }));
+  // El viento avanza con el reloj del circuito.
+  const time = { value: 0 };
+  ctx.tickers.push((seconds) => (time.value = seconds));
+  const material = ctx.own.own(createTreeMaterial(time));
   species.forEach((geometry, kind) => {
     ctx.own.own(geometry);
     const list = placements[kind] ?? [];
@@ -257,12 +204,13 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
 
 // ─── Tribunas ────────────────────────────────────────────────────────────
 
+// Asientos de colores oscuros y saturados: el público resalta encima.
 const SEAT_COLORS: ReadonlyArray<readonly [number, number, number]> = [
-  [0.12, 0.26, 0.55],
-  [0.55, 0.08, 0.12],
-  [0.85, 0.85, 0.82],
+  [0.1, 0.2, 0.45],
+  [0.45, 0.07, 0.1],
+  [0.2, 0.21, 0.24],
 ];
-const CONCRETE: readonly [number, number, number] = [0.62, 0.62, 0.6];
+const CONCRETE: readonly [number, number, number] = [0.36, 0.37, 0.38];
 const SHIRTS = ['#d6202a', '#f2f2ee', '#1f4e9c', '#ffd21f', '#1b7f4b', '#111317', '#ff7a1a', '#7fc2ff', '#e86fb0', '#6d6f75'];
 
 export interface StandZone {
@@ -359,6 +307,28 @@ export function buildGrandstands(ctx: BuildContext): StandZone[] {
     person.translate(0, 0.47, 0);
     const texture = ctx.own.own(createSpectator(ctx.anisotropy));
     const material = ctx.own.own(new MeshStandardMaterial({ map: texture, alphaTest: 0.5, roughness: 0.9, side: DoubleSide }));
+    // El público se mueve: cada uno salta y se balancea con su propio ritmo (según dónde está).
+    const time = { value: 0 };
+    ctx.tickers.push((seconds) => (time.value = seconds));
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.crowdTime = time;
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nuniform float crowdTime;')
+        .replace(
+          '#include <begin_vertex>',
+          `#include <begin_vertex>
+          #ifdef USE_INSTANCING
+            vec3 seat = instanceMatrix[3].xyz;
+            float phase = fract(sin(dot(seat.xz, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831;
+            float rate = 2.2 + fract(phase * 3.7) * 2.5;
+            // Algunos saltan, otros sólo se balancean.
+            float jump = max(0.0, sin(crowdTime * rate + phase)) * step(0.55, fract(phase * 1.9));
+            transformed.y += jump * 0.14;
+            transformed.x += sin(crowdTime * 1.3 + phase) * 0.04 * position.y;
+          #endif`,
+        );
+    };
+    material.customProgramCacheKey = () => 'publico-animado';
     const items: InstanceItem[] = crowd.map((p) => {
       const scale = ctx.rng.range(0.9, 1.1);
       return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, sx: scale, sy: scale, sz: scale, color: new Color(ctx.rng.pick(SHIRTS)) };

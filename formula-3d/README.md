@@ -64,9 +64,10 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 1.1.0: las 9 fases del documento de diseño están completas, con
-más tracción en curvas, carga y carrera más fluidas, pistas más anchas y
-gráficos mejorados.
+Versión 1.2.0: las 9 fases del documento de diseño están completas, con
+más tracción en curvas, carga y carrera más fluidas, pistas más anchas,
+gráficos mejorados y circuitos con más detalle (asfalto con goma y marcas,
+árboles con viento, barreras de neumáticos, horizonte y público animado).
 Albert Park y Monza, con pantalla de selección de carrera. Modos: práctica
 libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales con IA de 5
 dificultades), contrarreloj con fantasma y campeonato con puntos. XP y

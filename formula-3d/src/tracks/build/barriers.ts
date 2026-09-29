@@ -1,23 +1,28 @@
 /**
- * Muros de contención: hormigón con publicidad ficticia (barreras de
- * neumáticos frente a las camas de grava), alambrado sobre los muros y postes.
- * Siguen exactamente la distancia de muro que usa la física (`Trackside`).
+ * Muros de contención: hormigón con publicidad ficticia, barreras de
+ * neumáticos de verdad (pilas instanciadas) frente a las camas de grava,
+ * alambrado sobre los muros y postes. Siguen exactamente la distancia de muro
+ * que usa la física (`Trackside`).
  */
 
 import {
   BoxGeometry,
+  Color,
   DoubleSide,
+  Float32BufferAttribute,
+  LatheGeometry,
   InstancedMesh,
   Matrix4,
   MeshStandardMaterial,
   Quaternion,
+  Vector2,
   Vector3,
   type BufferGeometry,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addMesh, type BuildContext } from './context';
+import { addChunkedInstances, addMesh, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, fullLap, spansWhere, type ProfilePoint } from './ribbon';
-import { createFence, createTyreWall, createWall } from './textures';
+import { createFence, createWall } from './textures';
 
 const WALL_HEIGHT = 1.05;
 const WALL_THICKNESS = 0.4;
@@ -25,19 +30,71 @@ const FENCE_HEIGHT = 3.2;
 const POST_SPACING = 4;
 /** Cuánto se inclina el alambrado hacia la pista en toda su altura (m). */
 const FENCE_LEAN = 0.6;
+/** Neumáticos de las barreras: radio, alto de cada uno y cuántos por pila. */
+const TYRE_RADIUS = 0.31;
+const TYRE_HEIGHT = 0.3;
+const TYRES_PER_STACK = 3;
+
+/**
+ * Pila de neumáticos (instanciada): una sola pieza torneada con las cinturas
+ * entre goma y goma, y sólo la mitad que mira a la pista (la de atrás no se
+ * ve): ~90 triángulos. Negra, con la goma de arriba blanca para que el color
+ * de cada pila (rojo o blanco) pinte la cinta.
+ */
+function tyreStack(): BufferGeometry {
+  const profile: Vector2[] = [new Vector2(0.001, 0)];
+  for (let k = 0; k < TYRES_PER_STACK; k++) {
+    const y = k * TYRE_HEIGHT;
+    profile.push(new Vector2(TYRE_RADIUS * 0.9, y + 0.005), new Vector2(TYRE_RADIUS, y + TYRE_HEIGHT * 0.5));
+  }
+  const top = TYRES_PER_STACK * TYRE_HEIGHT;
+  profile.push(new Vector2(TYRE_RADIUS * 0.9, top), new Vector2(TYRE_RADIUS * 0.45, top), new Vector2(0.001, top - 0.06));
+  // Media vuelta: la cara +X mira a la pista (se orienta con el giro de cada pila).
+  const lathe = new LatheGeometry(profile, 5, 0, Math.PI).toNonIndexed();
+  const position = lathe.getAttribute('position');
+  const colors: number[] = [];
+  for (let i = 0; i < position.count; i++) {
+    const y = position.getY(i);
+    const r = Math.hypot(position.getX(i), position.getZ(i));
+    const band = y > top - TYRE_HEIGHT - 0.01 && r > TYRE_RADIUS * 0.6 ? 0.95 : 0.075;
+    const hole = y > top - 0.07 && r < TYRE_RADIUS * 0.5 ? 0.4 : 1;
+    colors.push(band * hole, band * hole, band * hole);
+  }
+  lathe.setAttribute('color', new Float32BufferAttribute(colors, 3));
+  lathe.deleteAttribute('uv');
+  lathe.computeVertexNormals();
+  return lathe;
+}
 
 export function buildWalls(ctx: BuildContext): void {
   const g = ctx.track.geometry;
   const t = ctx.track.trackside;
-  const faces = { concrete: [] as BufferGeometry[], tyres: [] as BufferGeometry[] };
+  const faces = { concrete: [] as BufferGeometry[] };
   const caps: BufferGeometry[] = [];
+  // Pilas de neumáticos frente a la grava: posición y lado de cada una.
+  const stacks: Array<{ x: number; z: number; yaw: number; red: boolean }> = [];
+  const point = { x: 0, z: 0 };
+  const tangent = { x: 0, z: 0 };
 
   for (const side of ['left', 'right'] as const) {
     const walls = side === 'left' ? t.wallLeft : t.wallRight;
     const runoff = side === 'left' ? t.runoffLeft : t.runoffRight;
     const sign = side === 'left' ? -1 : 1;
-    // Cara interior (mira a la pista): se divide según haya grava (neumáticos) o no.
-    for (const tyres of [false, true]) {
+    // Cara interior (mira a la pista): hormigón donde no hay grava; frente a la grava, neumáticos.
+    for (const [from, to] of spansWhere(g, (i) => runoff[i] === 1, 1)) {
+      const length = g.wrapS(to - from);
+      const spacing = TYRE_RADIUS * 2.02;
+      for (let along = spacing / 2, k = 0; along < length; along += spacing, k++) {
+        const s = from + along;
+        // Centrada sobre la línea del muro (la cara de adelante queda donde choca la física).
+        g.pointAt(s, ((walls[g.indexAt(s)] ?? 10) + TYRE_RADIUS * 0.95) * sign, point, tangent);
+        // Hacia la pista = −(derecha) · lado; derecha = (−tz, tx). El +X local apunta ahí.
+        const toTrackX = tangent.z * sign;
+        const toTrackZ = -tangent.x * sign;
+        stacks.push({ x: point.x, z: point.z, yaw: Math.atan2(-toTrackZ, toTrackX), red: Math.floor(k / 3) % 2 === 0 });
+      }
+    }
+    for (const tyres of [false]) {
       for (const [from, to] of spansWhere(g, (i) => (runoff[i] === 1) === tyres, 1)) {
         const face = buildRibbon(g, {
           from,
@@ -60,7 +117,7 @@ export function buildWalls(ctx: BuildContext): void {
         });
         // Del lado izquierdo, sin esto los carteles quedarían espejados.
         if (side === 'left') mirrorLeftSideUV(face);
-        (tyres ? faces.tyres : faces.concrete).push(face);
+        faces.concrete.push(face);
       }
     }
     // Tapa superior.
@@ -87,16 +144,20 @@ export function buildWalls(ctx: BuildContext): void {
   }
 
   const concrete = mergeGeometries(faces.concrete);
-  const tyres = mergeGeometries(faces.tyres);
   const top = mergeGeometries(caps);
-  for (const piece of [...faces.concrete, ...faces.tyres, ...caps]) piece.dispose();
+  for (const piece of [...faces.concrete, ...caps]) piece.dispose();
   if (concrete) {
     const texture = ctx.own.own(createWall(ctx.anisotropy));
     addMesh(ctx, concrete, new MeshStandardMaterial({ map: texture, roughness: 0.8 }), { cast: true, name: 'muros' });
   }
-  if (tyres) {
-    const texture = ctx.own.own(createTyreWall(ctx.anisotropy));
-    addMesh(ctx, tyres, new MeshStandardMaterial({ map: texture, roughness: 0.9 }), { cast: true, name: 'neumáticos' });
+  if (stacks.length > 0) {
+    // Por celdas (como los árboles): sólo se dibujan las barreras a la vista.
+    const geometry = ctx.own.own(tyreStack());
+    const material = ctx.own.own(new MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0 }));
+    const red = new Color('#d6202a');
+    const white = new Color('#f2f2ee');
+    const items: InstanceItem[] = stacks.map((stack) => ({ x: stack.x, y: -0.02, z: stack.z, yaw: stack.yaw, sx: 1, sy: 1, sz: 1, color: stack.red ? red : white }));
+    addChunkedInstances(ctx, geometry, material, items, { cell: 160, name: 'neumáticos', cast: true, receive: true });
   }
   if (top) addMesh(ctx, top, new MeshStandardMaterial({ color: '#8d8e8b', roughness: 0.85 }), { name: 'muros-tapa' });
 }

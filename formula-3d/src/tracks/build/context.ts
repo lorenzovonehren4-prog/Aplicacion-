@@ -16,6 +16,8 @@ export interface BuildContext {
   density: number;
   /** ¿Los árboles y tribunas proyectan sombra? (calidades altas) */
   detailShadows: boolean;
+  /** Lo que se anima con el tiempo (viento en los árboles, público…). */
+  tickers: Array<(time: number) => void>;
 }
 
 /** Crea una malla, la agrega a la escena y registra geometría y material para liberarlos. */

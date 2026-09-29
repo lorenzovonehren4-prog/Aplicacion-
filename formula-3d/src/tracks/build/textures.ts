@@ -212,36 +212,6 @@ export function createWall(anisotropy: number): Texture {
   return finish(element, anisotropy);
 }
 
-/** Barrera de neumáticos con cinta roja y blanca (U = alto, V = a lo largo). */
-export function createTyreWall(anisotropy: number): Texture {
-  const W = 128;
-  const H = 256;
-  const [element, ctx] = canvas(W, H);
-  ctx.fillStyle = '#141416';
-  ctx.fillRect(0, 0, W, H);
-  // Filas de neumáticos vistos de frente.
-  for (let row = 0; row < 4; row++) {
-    for (let k = 0; k < 8; k++) {
-      const cx = row * 32 + 16;
-      const cy = k * 32 + 16 + (row % 2) * 16;
-      ctx.fillStyle = '#26272b';
-      ctx.beginPath();
-      ctx.arc(cx, cy % H, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0b0b0c';
-      ctx.beginPath();
-      ctx.arc(cx, cy % H, 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  // Cinta de protección.
-  for (let k = 0; k < 8; k++) {
-    ctx.fillStyle = k % 2 === 0 ? '#d6202a' : '#f2f2ee';
-    ctx.fillRect(W * 0.62, k * 32, W * 0.22, 32);
-  }
-  return finish(element, anisotropy);
-}
-
 /** Alambrado (malla romboidal) con transparencia. */
 export function createFence(anisotropy: number): Texture {
   const S = 64;

@@ -24,6 +24,7 @@ import {
   type StandZone,
   type StartGantry,
 } from './build/scenery';
+import { buildHorizon } from './build/horizon';
 import { createSky, type SkyEnvironment } from './build/sky';
 import { weatherLook, type WeatherLook } from './weather';
 import type { Weather } from '../core/save/schema';
@@ -83,6 +84,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     anisotropy: options.anisotropy,
     density: preset.sceneryDensity,
     detailShadows: options.quality === 'high' || options.quality === 'ultra',
+    tickers: [],
   };
 
   let lakeNormals: Texture | null = null;
@@ -117,6 +119,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     ['Carteles de frenada', () => buildDistanceBoards(ctx)],
     ['Puentes', () => (bridges = buildBridges(ctx))],
     ['Ciudad', () => buildSkyline(ctx)],
+    ['Horizonte', () => buildHorizon(ctx, look.fogColor)],
     [
       'Arboledas',
       () => {
@@ -175,6 +178,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     update(time: number) {
       if (normals) normals.offset.set(time * 0.011, time * 0.007);
       finalSky.update(time);
+      for (const tick of ctx.tickers) tick(time);
     },
     dispose() {
       root.removeFromParent();

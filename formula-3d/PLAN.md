@@ -917,6 +917,28 @@ revisión propia del código + resumen y espera de confirmación.
       franjas de corte; gradación de color y viñeta en carrera; menos bruma
       (el resplandor del cielo cerca del sol ya no lava la imagen).
 
+### Versión 1.2 — Gráficos de las pistas ✅
+
+- [x] Asfalto "usado" (`tracks/build/asphalt.ts`): una textura de datos de
+      1 × 2048 lleva la trazada a lo largo de la vuelta (desplazamiento,
+      frenada fuerte y fuerza lateral) y el sombreador pinta la goma sobre la
+      trazada con las dos huellas de las ruedas, rayas de frenada, bolitas de
+      goma en los bordes de las curvas y parches de reparación. Donde hay goma
+      el asfalto brilla un poco más.
+- [x] Árboles nuevos (`tracks/build/trees.ts`): eucalipto, copa redonda y
+      ciprés hechos con bultos deformados, normales de copa (luz suave, sin
+      facetas), oclusión horneada y viento en el sombreador con fase por árbol.
+- [x] Horizonte (`tracks/build/horizon.ts`): arboleda lejana y lomas
+      azuladas que siguen el contorno del circuito; el piso ya no corta contra
+      el cielo.
+- [x] Barreras de neumáticos de verdad (pilas de 3 con banda blanca, en
+      rojo y blanco) detrás de la grava, en lugar de una cara plana.
+- [x] Grava con manchas de tono a gran escala, gradas más oscuras y público
+      que salta y se balancea.
+- [x] Costo medido en Calidad Media (conteo de toda la escena, antes del
+      recorte por cámara): ~0,78 M triángulos en Albert Park; el peor cuadro
+      visto fue ~0,95 M en la recta de Monza (tope: 1,5 M).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -995,3 +1017,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Fase 8**: completa.
 - **Fase 9**: completa. Versión 1.0.0: las 9 fases del documento están hechas.
 - **Versión 1.1**: tracción, fluidez, pistas y gráficos (pedido del usuario).
+- **Versión 1.2**: gráficos y calidad de las pistas (pedido del usuario).

@@ -12,6 +12,7 @@ import {
   type BufferGeometry,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { ASPHALT_TILE, createRacedAsphaltMaterial, createTrackDataTexture } from './asphalt';
 import { addMesh, type BuildContext } from './context';
 import { buildRibbon, fullLap, spansWhere, type ProfilePoint } from './ribbon';
 import { createAsphalt, createChecker, createGravel, createGrass, createKerb } from './textures';
@@ -89,16 +90,13 @@ export function buildAsphalt(ctx: BuildContext): void {
       [-hw - 0.3, Y.asphalt],
       [hw + 0.3, Y.asphalt],
     ],
-    vLength: 7,
+    vLength: ASPHALT_TILE,
     u: 'meters',
-    uLength: 7,
+    uLength: ASPHALT_TILE,
   });
-  addMesh(
-    ctx,
-    ribbon,
-    new MeshStandardMaterial({ map, bumpMap: bump, bumpScale: 0.6, roughness: 0.88, metalness: 0 }),
-    { name: 'asfalto' },
-  );
+  // La trazada engomada, las frenadas y los parches salen de una textura de datos de la vuelta.
+  const data = ctx.own.own(createTrackDataTexture(ctx.track));
+  addMesh(ctx, ribbon, createRacedAsphaltMaterial(ctx.track, map, bump, data), { name: 'asfalto' });
 }
 
 /** Pintura blanca: bordes de pista, línea de meta y casilleros de la parrilla. */
@@ -260,7 +258,24 @@ export function buildRunoff(ctx: BuildContext): void {
     if (!merged) continue;
     if (kind === 1) {
       const gravel = ctx.own.own(createGravel(ctx.anisotropy));
-      addMesh(ctx, merged, new MeshStandardMaterial({ map: gravel, roughness: 1 }), { name: 'grava' });
+      const material = new MeshStandardMaterial({ map: gravel, roughness: 1 });
+      // Manchas de tono grandes (piedras más claras o más húmedas): de lejos no se ve una lámina lisa.
+      material.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec2 vGravelXZ;')
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGravelXZ = (modelMatrix * vec4(position, 1.0)).xz;');
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nvarying vec2 vGravelXZ;')
+          .replace(
+            '#include <map_fragment>',
+            `#include <map_fragment>
+            float gravelTone = sin(vGravelXZ.x * 0.21 + sin(vGravelXZ.y * 0.13) * 2.0) * sin(vGravelXZ.y * 0.17 + sin(vGravelXZ.x * 0.09) * 1.7);
+            float gravelFine = sin(vGravelXZ.x * 1.3 + vGravelXZ.y * 0.7) * sin(vGravelXZ.y * 1.1 - vGravelXZ.x * 0.4);
+            diffuseColor.rgb *= 0.9 + 0.12 * gravelTone + 0.05 * gravelFine;`,
+          );
+      };
+      material.customProgramCacheKey = () => 'grava-manchas';
+      addMesh(ctx, merged, material, { name: 'grava' });
     } else {
       const { map } = createAsphalt(ctx.anisotropy);
       ctx.own.own(map);
