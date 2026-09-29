@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { F1_SPEC, performanceModel } from '../src/race/physics/CarSpec';
 import { AUSTRALIA } from '../src/tracks/data/australia';
+import { MONZA } from '../src/tracks/data/monza';
 import { traceLayout } from '../src/tracks/layout';
 import { getTrack, TRACKS } from '../src/tracks/registry';
 import { cornerSpeed } from '../src/tracks/TrackAnalysis';
@@ -20,6 +21,7 @@ describe('trazado por tramos', () => {
 
   it('el registro encuentra los circuitos', () => {
     expect(getTrack('australia').name).toBe('Albert Park');
+    expect(getTrack('monza').name).toBe('Monza');
     expect(() => getTrack('nada')).toThrow();
   });
 });
@@ -135,6 +137,47 @@ describe('entorno de pista', () => {
       expect(behind).toBeGreaterThan(0);
       expect(Math.abs(g.curvatureAt(slot.s))).toBeLessThan(1e-3);
       expect(Math.abs(slot.d)).toBeLessThan(g.halfWidth - 1);
+    }
+  });
+});
+
+describe('Monza', () => {
+  const monza = Track.load(MONZA);
+  const mg = monza.geometry;
+
+  it('mide la longitud oficial y tiene sus 11 curvas', () => {
+    expect(mg.length).toBeGreaterThan(5785);
+    expect(mg.length).toBeLessThan(5800);
+    expect(monza.analysis.corners).toHaveLength(11);
+  });
+
+  it('templo de la velocidad: chicanas lentas, Curva Grande a fondo y más de 320 km/h', () => {
+    const corners = monza.analysis.corners;
+    // La chicana del Rettifilo es la curva más lenta.
+    const slowest = corners.reduce((a, b) => (b.safeSpeed < a.safeSpeed ? b : a));
+    expect(slowest.number).toBe(1);
+    expect(slowest.safeSpeed * 3.6).toBeLessThan(80);
+    // La Curva Grande (la 3) se hace sin frenar.
+    expect(corners[2]?.brakingPoint).toBeNull();
+    let top = 0;
+    for (let k = 0; k < monza.racingLine.count; k++) top = Math.max(top, monza.racingLine.speed[k] ?? 0);
+    expect(top * 3.6).toBeGreaterThan(320);
+    // Más rápida que Albert Park por vuelta media, aunque más larga.
+    expect(mg.length / monza.racingLine.lapTime).toBeGreaterThan(track.geometry.length / track.racingLine.lapTime);
+  });
+
+  it('dos zonas de DRS, sectores en orden y parrilla en la recta', () => {
+    expect(monza.drsZones).toHaveLength(2);
+    const [s1, s2] = monza.sectorEnds;
+    expect(mg.wrapS(s1 - monza.startS)).toBeLessThan(mg.wrapS(s2 - monza.startS));
+    for (let p = 0; p < 20; p++) {
+      const slot = monza.gridSlot(p);
+      expect(mg.deltaS(slot.s, monza.startS)).toBeGreaterThan(0);
+      expect(Math.abs(mg.curvatureAt(slot.s))).toBeLessThan(1e-3);
+    }
+    for (let i = 0; i < mg.count; i++) {
+      expect(monza.trackside.wallLeft[i]).toBeGreaterThan(mg.halfWidth + 2);
+      expect(monza.trackside.wallRight[i]).toBeGreaterThan(mg.halfWidth + 2);
     }
   });
 });

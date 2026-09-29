@@ -102,6 +102,11 @@ export interface TrackDefinition {
     treeDensity: number;
     /** Silueta de ciudad a lo lejos: rumbo (grados) y distancia (m). */
     skyline?: { bearing: number; distance: number; buildings: number };
+    /**
+     * Puentes que cruzan sobre la pista (m de diseño). `banking` = tramo del
+     * viejo óvalo peraltado de hormigón (Monza), cruzando en diagonal.
+     */
+    bridges?: ReadonlyArray<{ at: number; kind: 'banking'; name: string }>;
   };
   environment: TrackEnvironment;
 }

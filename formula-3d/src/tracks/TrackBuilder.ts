@@ -12,6 +12,7 @@ import { QUALITY_PRESETS } from '../core/render/quality';
 import { buildFences, buildWalls } from './build/barriers';
 import type { BuildContext } from './build/context';
 import {
+  buildBridges,
   buildDistanceBoards,
   buildGantry,
   buildGrandstands,
@@ -82,6 +83,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
   let lakeNormals: Texture | null = null;
   let lakePolygon: Array<[number, number]> | null = null;
   let stands: StandZone[] = [];
+  let bridges: StandZone[] = [];
   let pitZone: StandZone | null = null;
   let gantry: StartGantry | null = null;
   let sky: SkyEnvironment | null = null;
@@ -107,6 +109,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     ['Tribunas y público', () => (stands = buildGrandstands(ctx))],
     ['Pórtico de largada', () => (gantry = buildGantry(ctx))],
     ['Carteles de frenada', () => buildDistanceBoards(ctx)],
+    ['Puentes', () => (bridges = buildBridges(ctx))],
     ['Ciudad', () => buildSkyline(ctx)],
     [
       'Arboledas',
@@ -114,7 +117,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
         const g = track.geometry;
         const t = track.trackside;
         const projection = { index: -1, s: 0, d: 0 };
-        const zones = pitZone ? [...stands, pitZone] : stands;
+        const zones = pitZone ? [...stands, ...bridges, pitZone] : [...stands, ...bridges];
         buildTrees(ctx, (x, z) => {
           if (lakePolygon && insidePolygon(x, z, lakePolygon)) return false;
           g.project(x, z, projection, projection.index);

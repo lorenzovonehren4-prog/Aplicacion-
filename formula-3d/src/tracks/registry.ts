@@ -4,9 +4,10 @@
  */
 
 import { AUSTRALIA } from './data/australia';
+import { MONZA } from './data/monza';
 import type { TrackDefinition } from './TrackDefinition';
 
-export const TRACKS: readonly TrackDefinition[] = [AUSTRALIA];
+export const TRACKS: readonly TrackDefinition[] = [AUSTRALIA, MONZA];
 
 export function getTrack(id: string): TrackDefinition {
   const track = TRACKS.find((t) => t.id === id);

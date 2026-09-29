@@ -639,3 +639,88 @@ export function buildSkyline(ctx: BuildContext): void {
   mesh.computeBoundingSphere();
   ctx.root.add(mesh);
 }
+
+// ─── Puentes sobre la pista ─────────────────────────────────────────────
+
+/** Altura libre bajo el puente del peraltado (m). */
+const BANKING_CLEARANCE = 7.2;
+/** Ancho de la calzada del óvalo, peralte (rad) y ángulo con la pista (rad). */
+const BANKING_WIDTH = 16;
+const BANKING_TILT = 0.2;
+const BANKING_SKEW = 0.35;
+
+/**
+ * Tramo del viejo óvalo peraltado cruzando por encima de la pista: calzada de
+ * hormigón inclinada, borde con baranda, pilares fuera de los muros y el
+ * nombre pintado en el costado. Devuelve las zonas ocupadas (para los árboles).
+ */
+export function buildBridges(ctx: BuildContext): StandZone[] {
+  const bridges = ctx.track.def.scenery.bridges ?? [];
+  if (bridges.length === 0) return [];
+  const track = ctx.track;
+  const g = track.geometry;
+  const zones: StandZone[] = [];
+  const concrete = ctx.own.own(new MeshStandardMaterial({ color: '#b9b4aa', roughness: 0.92, metalness: 0 }));
+  const deckDark = ctx.own.own(new MeshStandardMaterial({ color: '#6f6b64', roughness: 0.95, metalness: 0 }));
+  const rail = ctx.own.own(new MeshStandardMaterial({ color: '#dfe2e6', roughness: 0.5, metalness: 0.6 }));
+  const point = { x: 0, z: 0 };
+  const tangent = { x: 0, z: 0 };
+  for (const bridge of bridges) {
+    const s = g.designToS(bridge.at);
+    g.pointAt(s, 0, point, tangent);
+    const index = g.indexAt(s);
+    const wall = Math.max(track.trackside.wallLeft[index] ?? 12, track.trackside.wallRight[index] ?? 12);
+    const span = (wall + 14) * 2;
+    const group = new Object3D();
+    group.position.set(point.x, 0, point.z);
+    group.rotation.y = Math.atan2(-tangent.x, -tangent.z) + BANKING_SKEW;
+
+    // Calzada: losa peraltada (sube hacia afuera del óvalo) sobre una viga.
+    const deck = new Object3D();
+    deck.position.y = BANKING_CLEARANCE;
+    deck.rotation.x = BANKING_TILT;
+    const slab = new Mesh(ctx.own.own(new BoxGeometry(span, 0.5, BANKING_WIDTH)), concrete);
+    slab.position.y = 0.9;
+    const beam = new Mesh(ctx.own.own(new BoxGeometry(span, 1.2, BANKING_WIDTH * 0.8)), deckDark);
+    for (const mesh of [slab, beam]) {
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      deck.add(mesh);
+    }
+    // Barandas en los dos bordes de la calzada.
+    const railGeometry = ctx.own.own(new BoxGeometry(span, 0.12, 0.12));
+    for (const z of [-BANKING_WIDTH / 2 + 0.2, BANKING_WIDTH / 2 - 0.2]) {
+      for (const y of [1.6, 2.1]) {
+        const bar = new Mesh(railGeometry, rail);
+        bar.position.set(0, y, z);
+        deck.add(bar);
+      }
+    }
+    // Nombre pintado en el frente que ven los autos que llegan.
+    const label = ctx.own.own(bannerTexture(bridge.name.toUpperCase(), track.def.name, ctx.anisotropy));
+    const sign = new Mesh(ctx.own.own(new PlaneGeometry(26, 26 / 8)), ctx.own.own(new MeshStandardMaterial({ map: label, roughness: 0.8 })));
+    sign.position.set(0, 0.2, BANKING_WIDTH * 0.4 + 0.02);
+    deck.add(sign);
+    group.add(deck);
+
+    // Pilares: dos filas a cada lado, fuera de los muros.
+    const pillarGeometry = ctx.own.own(new BoxGeometry(1.6, BANKING_CLEARANCE + 1, 1.6));
+    pillarGeometry.translate(0, (BANKING_CLEARANCE + 1) / 2, 0);
+    for (const x of [-(wall + 4), wall + 4, -(wall + 12), wall + 12]) {
+      for (const z of [-BANKING_WIDTH * 0.3, BANKING_WIDTH * 0.3]) {
+        const pillar = new Mesh(pillarGeometry, concrete);
+        pillar.position.set(x, 0, z);
+        pillar.castShadow = true;
+        group.add(pillar);
+      }
+    }
+    group.updateMatrixWorld(true);
+    ctx.root.add(group);
+    // Sin árboles bajo el puente ni junto a los pilares.
+    const reach = BANKING_WIDTH / 2 + span * Math.sin(BANKING_SKEW) * 0.5 + 6;
+    for (const side of ['left', 'right'] as const) {
+      zones.push({ side, from: g.wrapS(s - reach), to: g.wrapS(s + reach), outer: span / 2 + 4 });
+    }
+  }
+  return zones;
+}
