@@ -61,6 +61,26 @@ export interface GameSettings {
   units: SpeedUnit;
 }
 
+// ─── Rivales (ver PLAN.md §5.5) ───────────────────────────────────────────
+
+export const DIFFICULTY_LEVELS = ['novice', 'amateur', 'pro', 'legend', 'custom'] as const;
+export type DifficultyLevel = (typeof DIFFICULTY_LEVELS)[number];
+
+/** Cantidad de rivales (bots) en carrera: 10 a 20 autos en pista con el jugador. */
+export const RIVALS_MIN = 9;
+export const RIVALS_MAX = 19;
+
+/**
+ * Carrera rápida: dificultad y cantidad de rivales. La pantalla de selección
+ * de carrera de la Fase 5 los usa como valores iniciales.
+ */
+export interface RaceSettings {
+  difficulty: DifficultyLevel;
+  /** Dificultad Personalizada (0–100). */
+  customDifficulty: number;
+  rivals: number;
+}
+
 // ─── Ayudas (ver PLAN.md §5.4) ────────────────────────────────────────────
 
 export const ASSIST_LEVELS = ['beginner', 'intermediate', 'advanced', 'custom'] as const;
@@ -99,6 +119,7 @@ export interface Settings {
   controls: ControlSettings;
   assists: AssistSettings;
   game: GameSettings;
+  race: RaceSettings;
 }
 
 /** Récords del jugador en un circuito. */
@@ -170,6 +191,10 @@ export function createDefaultGame(): GameSettings {
   return { defaultCamera: 'cockpit', units: 'kmh' };
 }
 
+export function createDefaultRace(): RaceSettings {
+  return { difficulty: 'amateur', customDifficulty: 50, rivals: 11 };
+}
+
 export function createDefaultSave(now: number, quality: QualityLevel): SaveData {
   return {
     version: SAVE_VERSION,
@@ -189,6 +214,7 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
       controls: createDefaultControls(),
       assists: createDefaultAssists(),
       game: createDefaultGame(),
+      race: createDefaultRace(),
     },
     records: {},
   };

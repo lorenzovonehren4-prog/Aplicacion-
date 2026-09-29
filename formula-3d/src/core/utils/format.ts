@@ -32,3 +32,8 @@ export function formatDelta(seconds: number, decimals = 3): string {
   const sign = seconds < 0 ? '−' : '+';
   return `${sign}${Math.abs(seconds).toFixed(decimals)}`;
 }
+
+/** Intervalo entre autos: 1.2345 → "+1.235"; desde un minuto → "+1:02.300". */
+export function formatGap(seconds: number): string {
+  return seconds >= 60 ? `+${formatLapTime(seconds)}` : `+${Math.max(0, seconds).toFixed(3)}`;
+}

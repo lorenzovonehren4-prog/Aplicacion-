@@ -215,6 +215,49 @@ export class Vehicle {
     this.updateProjections();
   }
 
+  /** Velocidad en el mundo (m/s) en `out`. */
+  worldVelocity(out: { x: number; z: number }): { x: number; z: number } {
+    const sinH = Math.sin(this.heading);
+    const cosH = Math.cos(this.heading);
+    // adelante = (−sin, −cos), izquierda = (−cos, sin)
+    out.x = -sinH * this.vx - cosH * this.vy;
+    out.z = -cosH * this.vx + sinH * this.vy;
+    return out;
+  }
+
+  /**
+   * Aplica un impulso (N·s, ejes del mundo) en un punto (relativo al CG, ejes
+   * del mundo): cambia la velocidad y el giro. Lo usan los choques entre autos.
+   * @returns giro que provocó (rad/s)
+   */
+  applyImpulse(jx: number, jz: number, rx: number, rz: number): number {
+    const sinH = Math.sin(this.heading);
+    const cosH = Math.cos(this.heading);
+    // Mundo → ejes del auto (x adelante, y izquierda).
+    const ix = -sinH * jx - cosH * jz;
+    const iy = -cosH * jx + sinH * jz;
+    const px = -sinH * rx - cosH * rz;
+    const py = -cosH * rx + sinH * rz;
+    this.vx += ix / this.spec.mass;
+    this.vy += iy / this.spec.mass;
+    const spin = Math.max(-MAX_IMPACT_SPIN, Math.min(MAX_IMPACT_SPIN, (px * iy - py * ix) / this.spec.yawInertia));
+    this.yawRate += spin;
+    return spin;
+  }
+
+  /** Desplaza el auto (separación tras un choque) y actualiza su posición en la pista. */
+  translate(dx: number, dz: number): void {
+    this.x += dx;
+    this.z += dz;
+    this.updateWheelPositions();
+    this.updateProjections();
+  }
+
+  /** Registra un golpe (m/s) en la telemetría de este paso (sonido, cámara, vibración). */
+  reportImpact(speed: number): void {
+    this.telemetry.impact = Math.max(this.telemetry.impact, speed);
+  }
+
   /** Avanza la simulación `dt` segundos con los mandos del piloto. */
   step(dt: number, input: DriverInput): void {
     this.telemetry.impact = 0;

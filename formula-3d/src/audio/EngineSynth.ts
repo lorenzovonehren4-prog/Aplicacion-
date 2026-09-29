@@ -26,7 +26,7 @@ export interface RevKeyframe {
   curve?: 'ramp' | 'drop';
 }
 
-function firingHz(rpm: number): number {
+export function firingHz(rpm: number): number {
   return (Math.max(600, rpm) / 60) * CYLINDERS_PER_REV;
 }
 

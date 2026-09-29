@@ -18,12 +18,16 @@ import {
   PROFILE_NAME_MAX_LENGTH,
   SAVE_VERSION,
   CAMERA_MODES,
+  DIFFICULTY_LEVELS,
+  RIVALS_MAX,
+  RIVALS_MIN,
   SPEED_UNITS,
   type AssistSettings,
   type AudioSettings,
   type ControlSettings,
   type ExperienceLevel,
   type GameSettings,
+  type RaceSettings,
   type TrackRecord,
   type GraphicsSettings,
   type Profile,
@@ -145,6 +149,15 @@ function sanitizeGame(raw: unknown, defaults: GameSettings): GameSettings {
   };
 }
 
+function sanitizeRace(raw: unknown, defaults: RaceSettings): RaceSettings {
+  const r = record(raw);
+  return {
+    difficulty: oneOf(r.difficulty, DIFFICULTY_LEVELS, defaults.difficulty),
+    customDifficulty: num(r.customDifficulty, defaults.customDifficulty, 0, 100, true),
+    rivals: num(r.rivals, defaults.rivals, RIVALS_MIN, RIVALS_MAX, true),
+  };
+}
+
 /** Récords por circuito: claves con forma de id y tiempos plausibles (10 s – 10 min). */
 function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): Record<string, TrackRecord> {
   const source = isRecord(raw) ? raw : defaults;
@@ -180,6 +193,7 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
       controls: sanitizeControls(settings.controls, defaults.settings.controls),
       assists: sanitizeAssists(settings.assists, defaults.settings.assists),
       game: sanitizeGame(settings.game, defaults.settings.game),
+      race: sanitizeRace(settings.race, defaults.settings.race),
     },
     records: sanitizeRecords(r.records, defaults.records),
   };

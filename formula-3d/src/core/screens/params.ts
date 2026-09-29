@@ -17,6 +17,9 @@ export interface RaceParams {
   mode: SessionMode;
   /** Vueltas de la carrera (sólo en modo carrera). */
   laps?: number;
+  /** Rivales y dificultad (0–100); si faltan, los de Ajustes → Juego. */
+  rivals?: number;
+  difficulty?: number;
 }
 
 export interface ScreenParams {

@@ -238,8 +238,8 @@ function airfoilShape(chord: number, thickness = 0.12, camber = -0.06, camberPos
  * Extruye un perfil dibujado en el plano (Z del auto, Y) a lo largo del eje X.
  * La pieza ocupa x ∈ [xFrom, xTo].
  */
-function extrudeAcrossX(shape: Shape, xFrom: number, xTo: number): BufferGeometry {
-  const geometry = new ExtrudeGeometry(shape, { depth: xTo - xFrom, bevelEnabled: false, curveSegments: 6 });
+function extrudeAcrossX(shape: Shape, xFrom: number, xTo: number, curveSegments = 6): BufferGeometry {
+  const geometry = new ExtrudeGeometry(shape, { depth: xTo - xFrom, bevelEnabled: false, curveSegments });
   // Local X → Z del auto, local Z (extrusión) → −X del auto.
   geometry.rotateY(-Math.PI / 2);
   geometry.translate(xTo, 0, 0);
@@ -247,8 +247,16 @@ function extrudeAcrossX(shape: Shape, xFrom: number, xTo: number): BufferGeometr
 }
 
 /** Elemento de alerón: perfil de `chord` con borde de ataque en (zLE, yLE) y ángulo `angle` (cola arriba). */
-function wingElement(chord: number, zLE: number, yLE: number, angleDeg: number, xFrom: number, xTo: number): BufferGeometry {
-  const geometry = extrudeAcrossX(airfoilShape(chord), xFrom, xTo);
+function wingElement(
+  chord: number,
+  zLE: number,
+  yLE: number,
+  angleDeg: number,
+  xFrom: number,
+  xTo: number,
+  points = 14,
+): BufferGeometry {
+  const geometry = extrudeAcrossX(airfoilShape(chord, 0.12, -0.06, 0.4, points), xFrom, xTo);
   // Rotación alrededor de X: positivo baja la cola, así que se invierte el signo.
   geometry.rotateX(-(angleDeg * Math.PI) / 180);
   geometry.translate(0, yLE, zLE);
@@ -412,7 +420,13 @@ function tireProfile(width: number): Vector2[] {
   return points;
 }
 
-function buildWheel(width: number, side: 1 | -1, materials: Record<MaterialKey, Material>, own: Disposer): WheelRig {
+function buildWheel(
+  width: number,
+  side: 1 | -1,
+  materials: Record<MaterialKey, Material>,
+  own: Disposer,
+  seg: (full: number, min: number) => number,
+): WheelRig {
   const steer = new Group();
   const mount = new Group();
   // Las ruedas se modelan con el lado exterior hacia +X; las izquierdas se giran 180°.
@@ -422,14 +436,14 @@ function buildWheel(width: number, side: 1 | -1, materials: Record<MaterialKey, 
   mount.add(spin);
 
   const { rimRadius: rim } = CAR_DIMENSIONS;
-  const tire = own.own(new LatheGeometry(tireProfile(width), 72));
+  const tire = own.own(new LatheGeometry(tireProfile(width), seg(72, 16)));
   tire.rotateZ(-Math.PI / 2);
-  const cover = own.own(new CircleGeometry(rim - 0.004, 48));
+  const cover = own.own(new CircleGeometry(rim - 0.004, seg(48, 12)));
   cover.rotateY(Math.PI / 2);
   cover.translate(width / 2 - 0.02, 0, 0);
-  const barrel = own.own(new CylinderGeometry(rim - 0.002, rim - 0.002, width - 0.03, 40, 1, true));
+  const barrel = own.own(new CylinderGeometry(rim - 0.002, rim - 0.002, width - 0.03, seg(40, 10), 1, true));
   barrel.rotateZ(Math.PI / 2);
-  const inner = own.own(new CircleGeometry(rim, 32));
+  const inner = own.own(new CircleGeometry(rim, seg(32, 10)));
   inner.rotateY(-Math.PI / 2);
   inner.translate(-width / 2 + 0.03, 0, 0);
 
@@ -438,7 +452,7 @@ function buildWheel(width: number, side: 1 | -1, materials: Record<MaterialKey, 
   spin.add(barrelMesh);
 
   // Toma de freno: no gira con la rueda.
-  const duct = own.own(new CylinderGeometry(0.15, 0.17, width * 0.45, 24));
+  const duct = own.own(new CylinderGeometry(0.15, 0.17, width * 0.45, seg(24, 8)));
   duct.rotateZ(Math.PI / 2);
   duct.translate(-width * 0.2, 0, 0);
   mount.add(new Mesh(duct, materials.carbon));
@@ -452,6 +466,11 @@ export interface CarModelOptions {
   livery: LiveryConfig;
   /** Filtrado anisotrópico de las texturas (según la GPU). */
   anisotropy?: number;
+  /**
+   * Nivel de detalle de la geometría (0–1): 1 = el auto del jugador y del
+   * garaje; los rivales usan versiones más livianas (ver `RivalFleet`).
+   */
+  detail?: number;
 }
 
 export class CarModel {
@@ -459,12 +478,15 @@ export class CarModel {
   readonly wheels: Readonly<Record<'fl' | 'fr' | 'rl' | 'rr', WheelRig>>;
   /** Piloto (casco): se oculta en la cámara cockpit. */
   readonly driver = new Group();
-  private readonly drsPivot = new Group();
+  /** Pivote del flap del DRS (lo copian los rivales instanciados). */
+  readonly drsPivot = new Group();
   private readonly lightMaterial: MeshStandardMaterial;
   private readonly own = new Disposer();
+  private readonly detail: number;
 
   constructor(options: CarModelOptions) {
     const anisotropy = options.anisotropy ?? 4;
+    this.detail = clamp(options.detail ?? 1, 0.05, 1);
     const materials = createMaterials(options.livery, anisotropy, this.own);
     this.lightMaterial = materials.light as MeshStandardMaterial;
     this.root.name = 'monoplaza';
@@ -515,18 +537,26 @@ export class CarModel {
 
   // ─── Construcción ──────────────────────────────────────────────────────
 
+  /** Segmentos de una pieza curva según el nivel de detalle (nunca menos de `min`). */
+  private readonly seg = (full: number, min: number): number => Math.max(min, Math.round(full * this.detail));
+
+  /** Puntos del perfil de los alerones según el detalle. */
+  private get foil(): number {
+    return this.seg(14, 5);
+  }
+
   private buildBody(batch: PartBatch): void {
     const body = new LoftSurface(BODY_SECTIONS);
-    batch.add('livery', body.build({ segmentsAlong: 90, segmentsAround: 48 }));
+    batch.add('livery', body.build({ segmentsAlong: this.seg(90, 14), segmentsAround: this.seg(48, 10) }));
 
     const spine = new LoftSurface(SPINE_SECTIONS);
-    batch.add('livery', spine.build({ segmentsAlong: 40, segmentsAround: 36 }));
+    batch.add('livery', spine.build({ segmentsAlong: this.seg(40, 8), segmentsAround: this.seg(36, 8) }));
     // Boca de la toma de aire.
     batch.add('dark', spine.buildCap(SPINE_SECTIONS[0]?.z ?? 0, -1, 0.62).translate(0, 0.02, -0.002));
 
     for (const sections of [SIDEPOD_SECTIONS, mirrorSections(SIDEPOD_SECTIONS)]) {
       const pod = new LoftSurface(sections);
-      batch.add('livery', pod.build({ segmentsAlong: 40, segmentsAround: 36, capStart: false }));
+      batch.add('livery', pod.build({ segmentsAlong: this.seg(40, 8), segmentsAround: this.seg(36, 8), capStart: false }));
       // Boca del radiador: tapa oscura un poco hacia adentro.
       batch.add('dark', pod.buildCap((sections[0]?.z ?? 0) + 0.02, -1, 0.93));
     }
@@ -583,14 +613,14 @@ export class CarModel {
 
   private buildFrontWing(batch: PartBatch): void {
     // Plano principal de lado a lado; flaps a cada lado del morro.
-    batch.add('carbon', wingElement(0.3, -2.98, 0.07, 4, -0.95, 0.95));
+    batch.add('carbon', wingElement(0.3, -2.98, 0.07, 4, -0.95, 0.95, this.foil));
     const flaps: Array<[number, number, number, number, MaterialKey]> = [
       [0.2, -2.72, 0.11, 14, 'carbon'],
       [0.17, -2.57, 0.16, 24, 'primary'],
       [0.14, -2.45, 0.21, 34, 'primary'],
     ];
     for (const [chord, z, y, angle, material] of flaps) {
-      batch.addMirrored(material, wingElement(chord, z, y, angle, 0.15, 0.95));
+      batch.addMirrored(material, wingElement(chord, z, y, angle, 0.15, 0.95, this.foil));
     }
     // Placas laterales y soportes del morro.
     const endplate: Array<[number, number]> = [
@@ -606,9 +636,13 @@ export class CarModel {
   }
 
   private buildRearWing(batch: PartBatch): void {
-    batch.add('secondary', wingElement(0.26, 2.36, 0.84, 10, -0.485, 0.485));
+    batch.add('secondary', wingElement(0.26, 2.36, 0.84, 10, -0.485, 0.485, this.foil));
     // Viga inferior (beam wing).
-    batch.add('carbon', wingElement(0.14, 2.4, 0.36, 8, -0.4, 0.4), wingElement(0.12, 2.5, 0.42, 18, -0.4, 0.4));
+    batch.add(
+      'carbon',
+      wingElement(0.14, 2.4, 0.36, 8, -0.4, 0.4, this.foil),
+      wingElement(0.12, 2.5, 0.42, 18, -0.4, 0.4, this.foil),
+    );
     // Placas laterales con el logo del equipo.
     const endplate: Array<[number, number]> = [
       [2.26, 0.62],
@@ -637,7 +671,7 @@ export class CarModel {
     // Pivote en el borde de fuga: al abrir, el borde de ataque sube.
     const teZ = zLE + Math.cos(rad) * chord;
     const teY = yLE + Math.sin(rad) * chord;
-    const geometry = this.own.own(wingElement(chord, zLE, yLE, angle, -0.485, 0.485));
+    const geometry = this.own.own(wingElement(chord, zLE, yLE, angle, -0.485, 0.485, this.foil));
     geometry.translate(0, -teY, -teZ);
     const flap = new Mesh(geometry, materials.secondary);
     this.drsPivot.position.set(0, teY, teZ);
@@ -658,14 +692,14 @@ export class CarModel {
       new Vector3(0, 0.84, -0.44),
       ...[...right].reverse().map(([x, y, z]) => new Vector3(-x, y, z)),
     ];
-    batch.add('gloss', new TubeGeometry(new CatmullRomCurve3(path), 64, 0.022, 10, false));
+    batch.add('gloss', new TubeGeometry(new CatmullRomCurve3(path), this.seg(64, 10), 0.022, this.seg(10, 4), false));
     const strut = new CatmullRomCurve3([
       new Vector3(0, 0.84, -0.44),
       new Vector3(0, 0.78, -0.52),
       new Vector3(0, 0.68, -0.6),
       new Vector3(0, 0.6, -0.66),
     ]);
-    batch.add('gloss', new TubeGeometry(strut, 16, 0.02, 10, false));
+    batch.add('gloss', new TubeGeometry(strut, this.seg(16, 3), 0.02, this.seg(10, 4), false));
   }
 
   private buildSuspension(batch: PartBatch): void {
@@ -688,7 +722,7 @@ export class CarModel {
     // Espejos: brazo, carcasa y vidrio mirando hacia atrás.
     batch.addMirrored('carbon', rod(new Vector3(0.27, 0.57, -0.52), new Vector3(0.43, 0.635, -0.6), 0.02, 0.012));
     const housing = new LoftSurface(MIRROR_SECTIONS);
-    batch.addMirrored('primary', housing.build({ segmentsAlong: 10, segmentsAround: 24 }));
+    batch.addMirrored('primary', housing.build({ segmentsAlong: this.seg(10, 3), segmentsAround: this.seg(24, 6) }));
     const glass = new PlaneGeometry(0.13, 0.042);
     glass.translate(0.47, 0.645, -0.579);
     batch.addMirrored('mirror', glass);
@@ -704,13 +738,13 @@ export class CarModel {
   }
 
   private buildDriver(materials: Record<MaterialKey, Material>): void {
-    const shell = this.own.own(new SphereGeometry(0.125, 40, 28));
+    const shell = this.own.own(new SphereGeometry(0.125, this.seg(40, 8), this.seg(28, 6)));
     shell.scale(0.95, 0.95, 1.08);
     const helmet = new Mesh(shell, materials.helmet);
     // Visera: franja de la esfera mirando hacia adelante.
     const visorGeometry = this.own.own(
       // phi = 1,5π mira hacia −Z (adelante): la visera cubre ±60° alrededor.
-      new SphereGeometry(0.1265, 40, 12, Math.PI * 1.17, Math.PI * 0.66, Math.PI * 0.36, Math.PI * 0.18),
+      new SphereGeometry(0.1265, this.seg(40, 6), this.seg(12, 3), Math.PI * 1.17, Math.PI * 0.66, Math.PI * 0.36, Math.PI * 0.18),
     );
     visorGeometry.scale(0.95, 0.95, 1.08);
     const visor = new Mesh(visorGeometry, materials.visor);
@@ -728,10 +762,10 @@ export class CarModel {
       return rig;
     };
     return {
-      fl: place(buildWheel(d.frontTireWidth, -1, materials, this.own), -d.frontTrackHalf, d.frontAxleZ),
-      fr: place(buildWheel(d.frontTireWidth, 1, materials, this.own), d.frontTrackHalf, d.frontAxleZ),
-      rl: place(buildWheel(d.rearTireWidth, -1, materials, this.own), -d.rearTrackHalf, d.rearAxleZ),
-      rr: place(buildWheel(d.rearTireWidth, 1, materials, this.own), d.rearTrackHalf, d.rearAxleZ),
+      fl: place(buildWheel(d.frontTireWidth, -1, materials, this.own, this.seg), -d.frontTrackHalf, d.frontAxleZ),
+      fr: place(buildWheel(d.frontTireWidth, 1, materials, this.own, this.seg), d.frontTrackHalf, d.frontAxleZ),
+      rl: place(buildWheel(d.rearTireWidth, -1, materials, this.own, this.seg), -d.rearTrackHalf, d.rearAxleZ),
+      rr: place(buildWheel(d.rearTireWidth, 1, materials, this.own, this.seg), d.rearTrackHalf, d.rearAxleZ),
     };
   }
 }

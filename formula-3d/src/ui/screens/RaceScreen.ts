@@ -9,6 +9,7 @@
  */
 
 import gsap from 'gsap';
+import { Vector3 } from 'three';
 import { activeAssists, type ActiveAssists } from '../../assists/presets';
 import type { Game } from '../../core/Game';
 import { PerformanceGovernor, type GovernorDecision } from '../../core/render/PerformanceGovernor';
@@ -18,10 +19,16 @@ import type { RaceParams } from '../../core/screens/params';
 import { clamp } from '../../core/utils/math';
 import { formatLapTime } from '../../core/utils/format';
 import { ENGINEER_NAME, RADIO_LINES, type RadioMoment } from '../../data/radio';
+import { liveryOf, pickRivals, playerCode } from '../../data/teams';
+import { PLAYER_DEFAULT_LIVERY } from '../../garage/livery';
+import { difficultyValue } from '../../race/ai/difficulty';
+import type { RivalCar } from '../../race/render/RivalFleet';
 import { DrivingInput, type DrivingEvent } from '../../race/input/DrivingInput';
 import { F1_SPEC } from '../../race/physics/CarSpec';
 import { Session, type RaceResult, type SessionEvent } from '../../race/Session';
 import { RaceAudio, type SurfaceMix } from '../../race/audio/RaceAudio';
+import type { Listener } from '../../race/audio/BotEngines';
+import type { Vehicle } from '../../race/physics/Vehicle';
 import { CAMERA_LABELS } from '../../race/camera/RaceCamera';
 import { INTRO_DURATION, RaceWorld } from '../../race/RaceWorld';
 import { BuildCancelled } from '../../tracks/TrackBuilder';
@@ -43,11 +50,33 @@ const RUMBLE_INTERVAL = 90;
 const DEFAULT_RACE_LAPS = 3;
 /** Espera entre la bandera a cuadros y el panel de fin de carrera (ms). */
 const FINISH_PANEL_DELAY = 2600;
+/** Frecuencia de la torre de posiciones (s) y de los rivales en el minimapa (s). */
+const STANDINGS_INTERVAL = 0.25;
+const MINIMAP_INTERVAL = 0.05;
+/** Tiempo mínimo entre dos mensajes de radio por cambios de posición (ms). */
+const POSITION_RADIO_GAP = 12_000;
 /** Choque (m/s) que merece un mensaje del ingeniero, y tiempo mínimo entre dos (ms). */
 const RADIO_IMPACT = 14;
 const RADIO_IMPACT_GAP = 20_000;
 
 const QUALITY_LABELS = { low: 'Baja', medium: 'Media', high: 'Alta', ultra: 'Ultra' } as const;
+
+/** Los bots de la sesión, como los dibuja la flota de rivales. */
+function rivalCars(session: Session): RivalCar[] {
+  return session.cars.flatMap((car) =>
+    car.driver
+      ? [
+          {
+            vehicle: car.vehicle,
+            livery: liveryOf(car.driver),
+            get ghost() {
+              return car.ghost;
+            },
+          },
+        ]
+      : [],
+  );
+}
 
 /** Qué íconos de ayudas se muestran en el tablero. */
 function hudAssists(assists: ActiveAssists): HudAssists {
@@ -86,6 +115,15 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private readonly lastRadioLine = new Map<RadioMoment, string>();
   private covered = false;
   private readonly governor = new PerformanceGovernor();
+  private standingsTimer = 0;
+  private minimapTimer = 0;
+  private lastPositionRadio = -Infinity;
+  private readonly rivalDots: Array<{ x: number; z: number }> = [];
+  private botVehicles: Vehicle[] = [];
+  private readonly listener: Listener = { x: 0, y: 0, z: 0, forwardX: 0, forwardY: 0, forwardZ: -1, upX: 0, upY: 1, upZ: 0, vx: 0, vz: 0 };
+  private readonly listenerForward = new Vector3();
+  private readonly listenerUp = new Vector3();
+  private readonly listenerVelocity = { x: 0, z: 0 };
 
   constructor(game: Game) {
     super(game, 'screen--race');
@@ -155,6 +193,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (simulating) {
       const impact = session.takeImpact();
       this.audio.update(tel, this.surfaces, impact);
+      this.updateTrafficAudio(world, session);
       if (impact > 3) world.raceCamera.kick(clamp(impact / 20, 0.2, 1.2));
       if (this.phase === 'running') this.rumble(tel.rumble, impact);
       const now = performance.now();
@@ -164,8 +203,16 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       }
     }
 
-    this.updateHud();
+    this.updateHud(dt);
     if (this.phase === 'running') this.governPerformance(dt);
+    // Con el panel final abierto, la clasificación se completa a medida que llegan los demás.
+    if (this.phase === 'results' && session.order) {
+      this.standingsTimer -= dt;
+      if (this.standingsTimer <= 0) {
+        this.standingsTimer = STANDINGS_INTERVAL * 2;
+        this.finish?.updateStandings(session.standings());
+      }
+    }
   }
 
   override onAction(action: UiAction): void {
@@ -226,8 +273,22 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       const record = game.save.data.records[track.def.id]?.bestLap ?? null;
       const laps = this.params.mode === 'race' ? (this.params.laps ?? DEFAULT_RACE_LAPS) : null;
       const assists = activeAssists(settings.assists);
-      const session = new Session(track, F1_SPEC, record, { mode: this.params.mode, laps }, assists);
-      const world = await RaceWorld.create(session.vehicle, settings.game.defaultCamera, {
+      const race = settings.race;
+      const rivals = this.params.mode === 'race' ? pickRivals(this.params.rivals ?? race.rivals) : [];
+      const pilot = game.save.data.profile.name;
+      const session = new Session(
+        track,
+        F1_SPEC,
+        record,
+        {
+          mode: this.params.mode,
+          laps,
+          rivals: { drivers: rivals, difficulty: this.params.difficulty ?? difficultyValue(race) },
+          player: { name: pilot, code: playerCode(pilot), number: PLAYER_DEFAULT_LIVERY.number },
+        },
+        assists,
+      );
+      const world = await RaceWorld.create(session.vehicle, rivalCars(session), settings.game.defaultCamera, {
         renderer: game.render.renderer,
         quality: settings.graphics.quality,
         anisotropy: game.render.maxAnisotropy,
@@ -293,6 +354,11 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const settings = this.game.settings;
     this.hud = new Hud(track, settings.game.units);
     this.hud.configure(session.config.laps, hudAssists(session.activeAssists));
+    const rivals = session.cars.filter((car) => !car.isPlayer);
+    this.botVehicles = rivals.map((car) => car.vehicle);
+    this.hud.configureRace(session.order ? { count: session.cars.length, rivalColors: rivals.map((car) => car.team.primary) } : null);
+    this.rivalDots.length = 0;
+    for (let i = 0; i < rivals.length; i++) this.rivalDots.push({ x: 0, z: 0 });
     this.hud.setVisible(false);
     this.pause = new PauseMenu({
       onChoice: (choice) => this.onPauseChoice(choice),
@@ -311,8 +377,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
     const def = track.def;
     const laps = session.config.laps;
+    const grid = session.order ? ` · LARGAS P${session.position} DE ${session.cars.length}` : '';
     this.introCard.replaceChildren(
-      h('span', { class: 'race__intro-kicker', text: laps === null ? 'PRÁCTICA LIBRE' : `CARRERA · ${laps} VUELTAS` }),
+      h('span', { class: 'race__intro-kicker', text: laps === null ? 'PRÁCTICA LIBRE' : `CARRERA · ${laps} VUELTAS${grid}` }),
       h('span', { class: 'race__intro-title', text: def.grandPrix }),
       h('span', { class: 'race__intro-track', text: `${def.name} · ${def.lengthKm.toFixed(3)} km` }),
       h('span', {
@@ -441,7 +508,11 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           const early = session.isRace && session.timer.lap < 2;
           this.hud?.message(
             'DRS NO DISPONIBLE',
-            early ? 'En carrera se habilita desde la vuelta 2' : 'Sólo en las zonas marcadas en verde en el mapa',
+            early
+              ? 'En carrera se habilita desde la vuelta 2'
+              : session.hasRivals && session.isRace
+                ? 'Hay que pasar la detección a menos de 1 s del de adelante'
+                : 'Sólo en las zonas marcadas en verde en el mapa',
             'bad',
           );
         }
@@ -494,6 +565,30 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         case 'drsEnabled':
           this.radio('drsEnabled');
           break;
+        case 'drsArmed':
+          hud.message('DRS DISPONIBLE', 'A menos de 1 s: ábrelo en la próxima zona', 'good');
+          break;
+        case 'position':
+          this.onPositionChange(event.from, event.to);
+          break;
+        case 'fastestLap': {
+          const car = session.cars[event.index];
+          if (!car || !session.hasRivals) break;
+          if (car.isPlayer) {
+            hud.message('VUELTA RÁPIDA DE LA CARRERA', formatLapTime(event.time), 'best');
+            this.own.timeout(() => this.radio('fastestLap'), 1400);
+          } else if (session.order && session.order.runners.some((r) => r.lapsDone > 1)) {
+            hud.message(`VUELTA RÁPIDA · ${car.code}`, formatLapTime(event.time), 'info');
+          }
+          break;
+        }
+        case 'leaderFinished': {
+          const winner = session.cars[event.index];
+          if (winner && !winner.isPlayer && session.phase === 'running') {
+            hud.message('BANDERA A CUADROS', `${winner.name} gana: termina al cruzar la línea`, 'gold');
+          }
+          break;
+        }
         case 'lastLap':
           hud.message('ÚLTIMA VUELTA', '', 'gold');
           this.own.timeout(() => this.radio('lastLap'), 1200);
@@ -527,10 +622,39 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     }
   }
 
+  /** Puesto ganado o perdido: el HUD lo marca solo; la radio habla de vez en cuando. */
+  private onPositionChange(from: number, to: number): void {
+    const session = this.session;
+    if (!session || session.phase !== 'running' || session.timer.lap < 1) return;
+    const now = performance.now();
+    if (to === 1 && from > 1) {
+      this.lastPositionRadio = now;
+      this.radio('leading');
+      return;
+    }
+    if (now - this.lastPositionRadio < POSITION_RADIO_GAP) return;
+    this.lastPositionRadio = now;
+    this.radio(to < from ? 'positionGained' : 'positionLost');
+  }
+
   /** Bandera a cuadros: mensaje, radio y, al rato, el panel de fin de carrera. */
   private onFinished(result: RaceResult): void {
-    this.hud?.message('BANDERA A CUADROS', `Tiempo total ${formatLapTime(result.totalTime)}`, 'gold');
-    this.own.timeout(() => this.radio('finished'), 900);
+    const withRivals = result.starters > 1;
+    this.hud?.message(
+      'BANDERA A CUADROS',
+      withRivals ? `Terminaste P${result.position} de ${result.starters}` : `Tiempo total ${formatLapTime(result.totalTime)}`,
+      'gold',
+    );
+    const moment: RadioMoment = !withRivals
+      ? 'finished'
+      : result.position === 1
+        ? 'raceWin'
+        : result.position <= 3
+          ? 'podium'
+          : result.position <= 10
+            ? 'pointsFinish'
+            : 'finished';
+    this.own.timeout(() => this.radio(moment), 900);
     if (this.driving) this.driving.drsRequested = false;
     this.pendingFinish = result;
     this.own.timeout(() => this.showFinish(), FINISH_PANEL_DELAY);
@@ -548,7 +672,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.driving?.release();
     this.hud?.setVisible(false);
     const personalBest = result.laps.some((lap) => lap.valid && lap.time === this.session?.timer.personalBest);
-    this.finish.show(result, personalBest);
+    this.finish.show(result, personalBest, this.session.standings());
   }
 
   private onFinishChoice(choice: FinishChoice): void {
@@ -671,6 +795,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (!session || !world) return;
     session.restart();
     this.pendingFinish = null;
+    this.hud?.configureRace(
+      session.order ? { count: session.cars.length, rivalColors: session.cars.filter((car) => !car.isPlayer).map((car) => car.team.primary) } : null,
+    );
     world.snap();
     world.setStartLights(0);
     this.hud?.setLights(0);
@@ -689,7 +816,54 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
   // ─── HUD y vibración ───────────────────────────────────────────────────
 
-  private updateHud(): void {
+  /** Motores de los rivales en 3D, oídos desde la cámara. */
+  private updateTrafficAudio(world: RaceWorld, session: Session): void {
+    if (this.botVehicles.length === 0) return;
+    const camera = world.camera;
+    camera.getWorldDirection(this.listenerForward);
+    this.listenerUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    session.vehicle.worldVelocity(this.listenerVelocity);
+    const l = this.listener;
+    l.x = camera.position.x;
+    l.y = camera.position.y;
+    l.z = camera.position.z;
+    l.forwardX = this.listenerForward.x;
+    l.forwardY = this.listenerForward.y;
+    l.forwardZ = this.listenerForward.z;
+    l.upX = this.listenerUp.x;
+    l.upY = this.listenerUp.y;
+    l.upZ = this.listenerUp.z;
+    l.vx = this.listenerVelocity.x;
+    l.vz = this.listenerVelocity.z;
+    this.audio.updateTraffic(l, this.botVehicles);
+  }
+
+  /** Torre de posiciones (4 veces por segundo) y rivales en el minimapa (20 por segundo). */
+  private updateRivals(dt: number): void {
+    const session = this.session;
+    const hud = this.hud;
+    if (!session?.order || !hud) return;
+    this.standingsTimer -= dt;
+    if (this.standingsTimer <= 0) {
+      this.standingsTimer = STANDINGS_INTERVAL;
+      hud.updateStandings(session.standings());
+    }
+    this.minimapTimer -= dt;
+    if (this.minimapTimer <= 0) {
+      this.minimapTimer = MINIMAP_INTERVAL;
+      let i = 0;
+      for (const car of session.cars) {
+        if (car.isPlayer) continue;
+        const dot = this.rivalDots[i++];
+        if (!dot) continue;
+        dot.x = car.vehicle.x;
+        dot.z = car.vehicle.z;
+      }
+      hud.setRivals(this.rivalDots);
+    }
+  }
+
+  private updateHud(dt: number): void {
     const session = this.session;
     const world = this.world;
     const hud = this.hud;
@@ -723,7 +897,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       x: world.rig.pose.x,
       z: world.rig.pose.z,
       wrongWay: this.phase === 'running' && session.wrongWay,
+      position: session.order ? session.position : null,
+      slipstream: session.player.slipstream,
     });
+    this.updateRivals(dt);
     const units = this.game.settings.game.units;
     world.rig.wheel.setDisplay({
       gear: tel.gear,

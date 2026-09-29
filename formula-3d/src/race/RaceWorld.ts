@@ -1,6 +1,6 @@
 /**
- * Mundo 3D de una sesión en pista: el circuito, el auto del jugador y las
- * cámaras (de carrera y de presentación). Es la vista que dibuja el
+ * Mundo 3D de una sesión en pista: el circuito, el auto del jugador, los
+ * rivales (instanciados) y las cámaras (de carrera y de presentación). Es la vista que dibuja el
  * `RenderHost` mientras la pantalla de carrera está activa.
  */
 
@@ -16,6 +16,7 @@ import { RaceCamera } from './camera/RaceCamera';
 import { performanceModel } from './physics/CarSpec';
 import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
+import { RivalFleet, type RivalCar } from './render/RivalFleet';
 
 /** Duración de la vuelta de cámara de presentación (s). */
 export const INTRO_DURATION = 4.2;
@@ -32,6 +33,8 @@ export class RaceWorld implements RenderView {
   readonly raceCamera: RaceCamera;
   /** La ayuda de la línea de trazada. */
   readonly racingLine: RacingLineMesh;
+  /** Autos rivales (null en práctica libre). */
+  readonly rivals: RivalFleet | null;
   private introTime = -1;
   private time = 0;
 
@@ -40,6 +43,7 @@ export class RaceWorld implements RenderView {
     private readonly vehicle: Vehicle,
     anisotropy: number,
     cameraMode: CameraMode,
+    rivals: readonly RivalCar[],
   ) {
     this.scene.add(trackScene.root);
     this.scene.environment = trackScene.sky.environment;
@@ -50,6 +54,8 @@ export class RaceWorld implements RenderView {
     this.raceCamera = new RaceCamera(this.rig, cameraMode);
     this.racingLine = new RacingLineMesh(vehicle.track.racingLine, performanceModel(vehicle.spec));
     this.scene.add(this.racingLine.mesh);
+    this.rivals = rivals.length > 0 ? new RivalFleet(rivals, anisotropy) : null;
+    if (this.rivals) this.scene.add(this.rivals.root);
   }
 
   /** Muestra la línea de trazada según la ayuda elegida. */
@@ -68,11 +74,12 @@ export class RaceWorld implements RenderView {
   /** Construye el circuito por etapas y arma el mundo. */
   static async create(
     vehicle: Vehicle,
+    rivals: readonly RivalCar[],
     cameraMode: CameraMode,
     options: BuildOptions,
   ): Promise<RaceWorld> {
     const trackScene = await buildTrackScene(vehicle.track, options);
-    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode);
+    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, rivals);
   }
 
   get camera(): RaceCamera['camera'] {
@@ -101,11 +108,13 @@ export class RaceWorld implements RenderView {
   /** Antes de cada paso fijo (para interpolar la pose del auto). */
   beforeStep(): void {
     this.rig.beforeStep();
+    this.rivals?.beforeStep();
   }
 
   /** Sin interpolación: tras colocar el auto en otro lugar. */
   snap(): void {
     this.rig.snap();
+    this.rivals?.snap();
     this.raceCamera.resetFollow();
   }
 
@@ -118,6 +127,7 @@ export class RaceWorld implements RenderView {
     } else {
       this.raceCamera.update(dt, telemetry);
     }
+    this.rivals?.update(dt, alpha, this.camera.position);
     const shift = this.vehicle.spec.shiftRpm;
     this.rig.wheel.update(this.vehicle.steerAngle, (telemetry.rpm - (shift - 3200)) / 3200, telemetry.limiter, this.time);
     this.racingLine.update(dt, this.time, this.vehicle.projection.s, Math.max(0, this.vehicle.vx));
@@ -135,6 +145,7 @@ export class RaceWorld implements RenderView {
   }
 
   dispose(): void {
+    this.rivals?.dispose();
     this.racingLine.dispose();
     this.rig.dispose();
     this.trackScene.dispose();

@@ -20,9 +20,15 @@ import {
   type AssistConfig,
   createDefaultGame,
   createDefaultGraphics,
+  createDefaultRace,
+  DIFFICULTY_LEVELS,
+  RIVALS_MAX,
+  RIVALS_MIN,
   type CameraMode,
+  type DifficultyLevel,
   type SpeedUnit,
 } from '../../core/save/schema';
+import { DIFFICULTY_INFO } from '../../race/ai/difficulty';
 import type { ScreenParams, SettingsTab } from '../../core/screens/params';
 import { Disposer } from '../../core/utils/Disposer';
 import { h, prefersReducedMotion } from '../dom';
@@ -451,11 +457,42 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         get: () => gm().units,
         set: (units) => this.game.updateSettings((s) => (s.game.units = units)),
       }),
+      selectorRow<DifficultyLevel>(ctx, {
+        label: 'Dificultad de los rivales',
+        help: 'Cambia el ritmo, las frenadas, la agresividad y los errores de los bots. Personalizada usa el valor de abajo (0–100).',
+        options: DIFFICULTY_LEVELS.map((level) => ({ value: level, label: DIFFICULTY_INFO[level].label })),
+        get: () => this.game.settings.race.difficulty,
+        set: (difficulty) => this.game.updateSettings((s) => (s.race.difficulty = difficulty)),
+      }),
+      sliderRow(ctx, {
+        label: 'Dificultad personalizada',
+        help: '0 es un paseo; 100, rivales al límite en cada curva. Se usa con la dificultad Personalizada.',
+        min: 0,
+        max: 100,
+        step: 5,
+        format: (value) => String(Math.round(value)),
+        get: () => this.game.settings.race.customDifficulty,
+        set: (value) => this.game.updateSettings((s) => (s.race.customDifficulty = value)),
+      }),
+      sliderRow(ctx, {
+        label: 'Rivales en carrera',
+        help: 'Cantidad de bots en la carrera rápida (de 10 a 20 autos con el tuyo). Menos autos pesan menos en equipos modestos.',
+        min: RIVALS_MIN,
+        max: RIVALS_MAX,
+        step: 1,
+        format: (value) => `${Math.round(value) + 1} autos`,
+        get: () => this.game.settings.race.rivals,
+        set: (value) => this.game.updateSettings((s) => (s.race.rivals = value)),
+      }),
       actionRow(ctx, {
         label: 'Restablecer juego',
-        help: 'Vuelve a la cámara cockpit y a km/h.',
+        help: 'Vuelve a la cámara cockpit, km/h, dificultad Amateur y 12 autos.',
         icon: 'reset',
-        run: () => this.game.updateSettings((s) => (s.game = createDefaultGame())),
+        run: () =>
+          this.game.updateSettings((s) => {
+            s.game = createDefaultGame();
+            s.race = createDefaultRace();
+          }),
       }),
     ];
   }

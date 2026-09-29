@@ -1,8 +1,9 @@
 /**
  * HUD de carrera, estilo transmisión:
- * - arriba a la izquierda, la torre de tiempos: vuelta, tiempo en curso con
- *   delta en vivo, última y mejor vuelta, y los tres sectores coloreados,
- * - arriba a la derecha, el minimapa con las zonas de DRS y el auto,
+ * - arriba a la izquierda, la torre de tiempos: posición (en carrera), vuelta,
+ *   tiempo en curso con delta en vivo, última y mejor vuelta, y los tres
+ *   sectores coloreados; debajo, la torre de posiciones con los intervalos,
+ * - arriba a la derecha, el minimapa con las zonas de DRS y los autos,
  * - abajo a la derecha, el tablero: LEDs de cambio, marcha, velocidad,
  *   pedales, DRS y luces de control de tracción y ABS,
  * - al centro, avisos (vuelta anulada, mejor vuelta, sentido contrario).
@@ -17,7 +18,9 @@ import { formatDelta, formatLapTime } from '../../core/utils/format';
 import type { Track } from '../../tracks/Track';
 import type { SectorResult } from '../../race/session/LapTimer';
 import { LIGHT_COUNT } from '../../race/session/StartLights';
+import type { StandingRow } from '../../race/Session';
 import { h, prefersReducedMotion, svg } from '../dom';
+import { Standings } from './Standings';
 
 const LED_COUNT = 15;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -30,7 +33,8 @@ export interface HudState {
   limiter: boolean;
   throttle: number;
   brake: number;
-  drs: 'off' | 'available' | 'open';
+  /** armed = habilitado para la próxima zona (detección a menos de 1 s). */
+  drs: 'off' | 'armed' | 'available' | 'open';
   tcActive: boolean;
   absActive: boolean;
   brakeAssistActive: boolean;
@@ -48,6 +52,16 @@ export interface HudState {
   x: number;
   z: number;
   wrongWay: boolean;
+  /** Posición en carrera (null sin rivales). */
+  position: number | null;
+  /** Rebufo del auto (0–1). */
+  slipstream: number;
+}
+
+/** Un rival en el minimapa. */
+export interface MinimapCar {
+  x: number;
+  z: number;
 }
 
 type MessageTone = 'info' | 'good' | 'bad' | 'best' | 'gold';
@@ -90,6 +104,8 @@ class Minimap {
   private readonly scale: number;
   private readonly offsetX: number;
   private readonly offsetZ: number;
+  private readonly rivalLayer: SVGGElement;
+  private rivals: SVGCircleElement[] = [];
 
   constructor(track: Track) {
     const g = track.geometry;
@@ -148,6 +164,8 @@ class Minimap {
     line.setAttribute('class', 'minimap__start');
     svg.append(line);
 
+    this.rivalLayer = document.createElementNS(SVG_NS, 'g');
+    svg.append(this.rivalLayer);
     this.car = document.createElementNS(SVG_NS, 'circle');
     this.car.setAttribute('r', '5');
     this.car.setAttribute('class', 'minimap__car');
@@ -160,6 +178,27 @@ class Minimap {
   setCar(x: number, z: number): void {
     this.car.setAttribute('cx', this.px(x).toFixed(1));
     this.car.setAttribute('cy', this.pz(z).toFixed(1));
+  }
+
+  /** Crea un punto por rival, con el color de su equipo. */
+  setRivalColors(colors: readonly string[]): void {
+    this.rivals = colors.map((color) => {
+      const dot = document.createElementNS(SVG_NS, 'circle');
+      dot.setAttribute('r', '3.6');
+      dot.setAttribute('class', 'minimap__rival');
+      dot.style.fill = color;
+      return dot;
+    });
+    this.rivalLayer.replaceChildren(...this.rivals);
+  }
+
+  setRivals(cars: readonly MinimapCar[]): void {
+    this.rivals.forEach((dot, i) => {
+      const car = cars[i];
+      if (!car) return;
+      // Con transform (sin reescribir atributos de geometría): más barato para el navegador.
+      dot.setAttribute('transform', `translate(${this.px(car.x).toFixed(1)} ${this.pz(car.z).toFixed(1)})`);
+    });
   }
 
   private px(x: number): number {
@@ -181,6 +220,13 @@ export class Hud {
   private readonly lapTime = h('span', { class: 'timing__time' });
   private readonly delta = h('span', { class: 'timing__delta' });
   private readonly invalid = h('span', { class: 'timing__invalid', text: 'ANULADA' });
+  // Posición en carrera ("P3/12").
+  private readonly placeValue = h('span', { class: 'timing__place-value' });
+  private readonly placeTotal = h('span', { class: 'timing__place-total' });
+  private readonly place = h('span', { class: 'timing__place' }, h('span', { class: 'timing__place-p', text: 'P' }), this.placeValue, this.placeTotal);
+  private readonly standings = new Standings();
+  private readonly tow = h('div', { class: 'hud__tow', text: 'REBUFO' });
+  private lastPlace = 0;
   private readonly lastValue = h('span', { class: 'timing__value' });
   private readonly bestValue = h('span', { class: 'timing__value' });
   private readonly pbValue = h('span', { class: 'timing__value' });
@@ -240,7 +286,7 @@ export class Hud {
     const timing = h(
       'div',
       { class: 'hud__timing timing' },
-      h('div', { class: 'timing__head' }, this.lapLabel, this.invalid),
+      h('div', { class: 'timing__head' }, this.place, this.lapLabel, this.invalid),
       h('div', { class: 'timing__main' }, this.lapTime, this.delta),
       h('div', { class: 'timing__sectors' }, ...this.sectors),
       row('ÚLTIMA', this.lastValue),
@@ -282,7 +328,9 @@ export class Hud {
       'div',
       { class: 'hud' },
       timing,
+      this.standings.element,
       this.minimap.element,
+      this.tow,
       dash,
       this.lights,
       this.messages,
@@ -323,6 +371,7 @@ export class Hud {
     toggle(this.ledBar, 'is-limiter', state.limiter);
     setTransform(this.throttleBar, `scaleY(${state.throttle.toFixed(2)})`);
     setTransform(this.brakeBar, `scaleY(${state.brake.toFixed(2)})`);
+    toggle(this.drs, 'is-armed', state.drs === 'armed');
     toggle(this.drs, 'is-available', state.drs === 'available');
     toggle(this.drs, 'is-open', state.drs === 'open');
     toggle(this.tc, 'is-active', state.tcActive);
@@ -357,6 +406,23 @@ export class Hud {
     setText(this.pbValue, state.personalBest === null ? '–:––.–––' : formatLapTime(state.personalBest));
 
     this.minimap.setCar(state.x, state.z);
+    toggle(this.tow, 'is-visible', state.slipstream > 0.3);
+    if (state.position !== null && state.position !== this.lastPlace) {
+      // Cada puesto ganado o perdido hace "saltar" el número.
+      const gained = this.lastPlace > 0 && state.position < this.lastPlace;
+      const lost = this.lastPlace > 0 && state.position > this.lastPlace;
+      this.lastPlace = state.position;
+      setText(this.placeValue, String(state.position));
+      if ((gained || lost) && !prefersReducedMotion()) {
+        this.own.tween(
+          gsap.fromTo(
+            this.placeValue,
+            { scale: 1.45, color: gained ? '#27e06b' : '#ff3b4a' },
+            { scale: 1, color: '#ffffff', duration: 0.6, ease: 'back.out(2.4)', overwrite: true },
+          ),
+        );
+      }
+    }
     toggle(this.wrongWay, 'is-visible', state.wrongWay);
   }
 
@@ -458,11 +524,34 @@ export class Hud {
     );
   }
 
+  /**
+   * Carrera con rivales: cantidad de autos (para "P3/12") y colores de los
+   * rivales en el minimapa. `null` = sin rivales (práctica).
+   */
+  configureRace(cars: { count: number; rivalColors: readonly string[] } | null): void {
+    toggle(this.place, 'is-visible', cars !== null);
+    this.standings.setVisible(cars !== null);
+    this.lastPlace = 0;
+    setText(this.placeTotal, cars ? `/${cars.count}` : '');
+    this.minimap.setRivalColors(cars?.rivalColors ?? []);
+  }
+
+  /** Torre de posiciones (tabla completa, del primero al último). */
+  updateStandings(rows: readonly StandingRow[]): void {
+    this.standings.update(rows);
+  }
+
+  /** Rivales en el minimapa (en el mismo orden que sus colores). */
+  setRivals(cars: readonly MinimapCar[]): void {
+    this.minimap.setRivals(cars);
+  }
+
   /** Entrada animada del HUD. */
   reveal(): void {
     const quick = prefersReducedMotion();
     const tl = gsap.timeline({ defaults: { ease: 'power3.out', duration: quick ? 0.01 : 0.6 } });
     tl.from(this.root.querySelector('.hud__timing'), { x: -60, opacity: 0 }, 0);
+    tl.from(this.standings.element, { x: -60, opacity: 0 }, 0.05);
     tl.from(this.minimap.element, { x: 60, opacity: 0 }, 0.08);
     tl.from(this.root.querySelector('.hud__dash'), { y: 60, opacity: 0 }, 0.12);
     this.own.tween(tl);

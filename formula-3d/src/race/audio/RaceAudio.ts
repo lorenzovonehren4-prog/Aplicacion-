@@ -3,6 +3,7 @@
  * (bus de efectos): chirrido de neumáticos al derrapar o bloquear, vibración
  * de los pianos, crujido de la grava y el pasto, viento que crece con la
  * velocidad, golpe seco al cambiar de marcha e impactos contra los muros.
+ * Los motores de los rivales suenan en 3D (ver `BotEngines`).
  *
  * Todo es síntesis con ruido filtrado: no hay archivos de audio.
  */
@@ -11,7 +12,8 @@ import type { AudioManager } from '../../audio/AudioManager';
 import { EngineSynth } from '../../audio/EngineSynth';
 import { createNoiseBuffer } from '../../audio/UiSounds';
 import { clamp } from '../../core/utils/math';
-import type { Telemetry } from '../physics/Vehicle';
+import type { Telemetry, Vehicle } from '../physics/Vehicle';
+import { BotEngines, type Listener } from './BotEngines';
 
 /** Constante de tiempo de los cambios de volumen de los efectos continuos (s). */
 const SMOOTH = 0.05;
@@ -280,6 +282,7 @@ class EffectsGraph {
 export class RaceAudio {
   private engine: EngineSynth | null = null;
   private effects: EffectsGraph | null = null;
+  private bots: BotEngines | null = null;
   private lastGear = 0;
   private muted = false;
 
@@ -302,6 +305,13 @@ export class RaceAudio {
       this.lastGear = tel.gear;
     }
     if (impact > 1.5) this.effects.impact(impact / 25);
+  }
+
+  /** Motores de los rivales: la cámara es el oyente. */
+  updateTraffic(listener: Listener, bots: readonly Vehicle[]): void {
+    if (this.muted || bots.length === 0) return;
+    this.ensure();
+    this.bots?.update(listener, bots);
   }
 
   /** Sonidos de un momento de la carrera (semáforo, DRS, radio). */
@@ -331,14 +341,17 @@ export class RaceAudio {
     if (muted) {
       this.engine?.setState(4000, 0);
       this.effects?.silence();
+      this.bots?.silence();
     }
   }
 
   dispose(): void {
     this.engine?.stop(0.3);
     this.effects?.dispose();
+    this.bots?.dispose();
     this.engine = null;
     this.effects = null;
+    this.bots = null;
   }
 
   private ensure(): void {
@@ -349,5 +362,6 @@ export class RaceAudio {
     if (!ctx || !engineBus || !effectsBus || ctx.state !== 'running') return;
     this.engine = new EngineSynth(ctx, engineBus);
     this.effects = new EffectsGraph(ctx, effectsBus);
+    this.bots = new BotEngines(ctx, engineBus);
   }
 }
