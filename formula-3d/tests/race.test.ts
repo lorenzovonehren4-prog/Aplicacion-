@@ -227,8 +227,9 @@ describe('carrera con rivales', () => {
     expect(table.map((row) => row.position)).toEqual(table.map((_, i) => i + 1));
     for (const row of table) {
       expect(Number.isFinite(row.finishTime)).toBe(true);
+      // Trazado real (curvas más exigentes) y bots más prudentes en los niveles fáciles.
       expect(row.bestLap).toBeGreaterThan(70);
-      expect(row.bestLap).toBeLessThan(110);
+      expect(row.bestLap).toBeLessThan(130);
     }
     expect(table[1]?.gap.seconds ?? 0).toBeGreaterThanOrEqual(0);
     expect(session.result?.starters).toBe(12);

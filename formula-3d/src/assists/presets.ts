@@ -98,7 +98,7 @@ export const LEVEL_INFO: Readonly<Record<AssistLevel, { name: string; descriptio
   beginner: {
     name: 'Principiante',
     description:
-      'El auto frena solo antes de las curvas, te ayuda a girar hacia el ápice, no derrapa y se pega más al piso. Ideal para empezar.',
+      'El auto frena solo antes de las curvas, te ayuda a girar hacia el ápice, corrige el volante si vas a salirte, no derrapa y se pega más al piso. Ideal para empezar.',
   },
   intermediate: {
     name: 'Intermedio',

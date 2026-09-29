@@ -64,7 +64,7 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 1.6.0: las 9 fases del documento de diseño están completas, con
+Versión 1.7.0: las 9 fases del documento de diseño están completas, con
 más tracción en curvas, carga y carrera más fluidas, pistas más anchas,
 gráficos mejorados, circuitos con más detalle (asfalto con goma y marcas,
 árboles con viento, barreras de neumáticos, horizonte y público animado) y

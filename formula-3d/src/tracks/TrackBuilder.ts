@@ -134,7 +134,8 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
         const zones = pitZone ? [...stands, ...bridges, pitZone] : [...stands, ...bridges];
         buildTrees(ctx, (x, z) => {
           if (lakePolygon && insidePolygon(x, z, lakePolygon)) return false;
-          g.project(x, z, projection, projection.index);
+          // Búsqueda completa (ver buildTrees): el tramo más cercano de verdad.
+          g.project(x, z, projection);
           const side = projection.d < 0 ? 'left' : 'right';
           const wall = (side === 'left' ? t.wallLeft : t.wallRight)[projection.index] ?? g.halfWidth + 10;
           const off = Math.abs(projection.d);

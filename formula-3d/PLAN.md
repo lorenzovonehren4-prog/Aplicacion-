@@ -1038,6 +1038,27 @@ revisión propia del código + resumen y espera de confirmación.
 - [x] Pruebas adaptadas a los trazados reales (quiebres rápidos cuentan como
       curvas del análisis; el piloto de prueba por el centro es más lento).
 
+### Versión 1.7 — Árboles fuera de la pista, guardián de bordes y bots más justos ✅
+
+- [x] Árboles sobre el asfalto: para decidir si un árbol queda lejos de la
+      pista se buscaba el tramo más cercano partiendo del árbol anterior; en
+      los trazados reales (tramos que pasan cerca) a veces encontraba otro
+      tramo. Ahora es una búsqueda completa. Prueba: en ambos circuitos la
+      proyección da siempre el tramo más cercano.
+- [x] Guardián de bordes (Principiante, en `SteeringAssist`): a menos de
+      4,5 m del borde y yendo hacia afuera, el volante se mezcla (hasta 90 %)
+      con uno que vuelve a 2 m adentro del borde. Prueba: a 180 km/h en
+      diagonal hacia el borde sin tocar el volante, sin la ayuda se sale y con
+      ella no pisa ni el piano.
+- [x] Ayuda de frenado Completa: la referencia era la velocidad por el centro
+      de la pista, que en los trazados reales es mucho más lenta que la
+      trazada (60 contra 100 km/h en la curva más lenta de Albert Park): te
+      dejaba más lento que los bots. Ahora usa un punto intermedio (65 % hacia
+      la trazada) con 8 % de margen.
+- [x] Bots más prudentes en curva en los niveles fáciles: ritmo en curva
+      Novato 71 %, Amateur 77 %, Profesional 85 %, Leyenda 94 % de la
+      trazada ideal (antes 79/84/90/95 %), y frenan antes en los niveles bajos.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1121,3 +1142,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.4**: texturas, ayudas de frenado/dirección y línea dinámica (pedido del usuario).
 - **Versión 1.5**: rojo con tiempo en la línea dinámica y gráficos de pista (pedido del usuario).
 - **Versión 1.6**: trazados reales, pistas más anchas y dirección progresiva (pedido del usuario).
+- **Versión 1.7**: árboles fuera de la pista, guardián de bordes y bots más justos (pedido del usuario).

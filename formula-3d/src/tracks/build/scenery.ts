@@ -164,7 +164,9 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
     for (let z = minZ - reach; z < maxZ + reach; z += cell) {
       const px = x + rng.range(0, cell);
       const pz = z + rng.range(0, cell);
-      g.project(px, pz, projection, projection.index);
+      // Búsqueda completa: partir del árbol anterior puede dar un tramo de la
+      // pista que no es el más cercano (trazados reales con tramos vecinos).
+      g.project(px, pz, projection);
       const off = Math.abs(projection.d);
       // Más denso cerca de la pista, raleando hacia afuera.
       if (off > reach || rng.next() > 1 - off / (reach * 1.6)) continue;

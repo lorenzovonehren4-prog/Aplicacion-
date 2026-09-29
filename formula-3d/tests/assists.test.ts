@@ -253,6 +253,35 @@ describe('ayuda de dirección y anti-derrape', () => {
     expect(result.maxSlip).toBeLessThan(0.1);
   });
 
+  it('guardián de bordes: yendo hacia el borde sin tocar el volante, no se sale', () => {
+    /** Mayor distancia al centro (m) en 4 s yendo en diagonal hacia la derecha a 180 km/h. */
+    const drift = (enabled: boolean): number => {
+      const car = new Vehicle(F1_SPEC, track);
+      const g = track.geometry;
+      const s0 = track.startS - 150;
+      car.placeAt(s0, 3);
+      const i = g.indexAt(s0);
+      // Rumbo de la pista y 6° hacia la derecha (girar a la derecha baja el rumbo).
+      car.heading = Math.atan2(-(g.tx[i] ?? 0), -(g.tz[i] ?? 1)) - 0.1;
+      car.vx = 50;
+      car.gearbox.reset(6);
+      car.electronics = { tractionControl: 1, abs: true, stability: 1, antiSlide: 1, gripBoost: 1.08 };
+      const steering = new SteeringAssist(g, line);
+      steering.enabled = enabled;
+      const input: DriverInput = { throttle: 0.5, brake: 0, steer: 0, drs: false };
+      const out: DriverInput = { ...input };
+      let widest = 0;
+      for (let t = 0; t < 4; t += STEP) {
+        steering.apply(input, car, out);
+        car.step(STEP, out);
+        widest = Math.max(widest, Math.abs(car.projection.d));
+      }
+      return widest;
+    };
+    expect(drift(false)).toBeGreaterThan(track.geometry.halfWidth + 2);
+    expect(drift(true)).toBeLessThan(track.geometry.halfWidth - 0.5);
+  });
+
   it('en las rectas no toca el volante (se puede cambiar de carril)', () => {
     const car = new Vehicle(F1_SPEC, track);
     car.placeAt(track.startS - 250, 0);

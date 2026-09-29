@@ -51,9 +51,11 @@ export function botParams(value: number, driver: Pick<DriverDef, 'skill' | 'aggr
   // El talento separa a los pilotos ±1,5 % alrededor del ritmo de la dificultad.
   const talent = (driver.skill - 0.84) * 0.12;
   return {
-    pace: Math.min(0.97, lerp(0.77, 0.955, t) + talent),
+    // Ritmo en curva: en los niveles fáciles bastante por debajo de la trazada
+    // ideal (los trazados reales tienen curvas más exigentes), sube rápido cerca de Leyenda.
+    pace: Math.min(0.97, lerp(0.7, 0.955, t * t * 0.4 + t * 0.6) + talent),
     topThrottle: Math.min(1, lerp(0.86, 1, t) + talent * 0.5),
-    braking: Math.min(0.95, lerp(0.62, 0.92, t) + talent),
+    braking: Math.min(0.95, lerp(0.58, 0.92, t) + talent),
     aggression: Math.min(1, Math.max(0, lerp(0.15, 0.75, t) * 0.5 + driver.aggression * 0.5)),
     mistakesPerLap: lerp(0.45, 0.03, t),
     reaction: lerp(0.45, 0.2, t) + (random - 0.5) * 0.16,

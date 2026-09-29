@@ -58,6 +58,22 @@ describe('geometría de Albert Park', () => {
     }
   });
 
+  it('la búsqueda completa da siempre el tramo más cercano (nada de árboles sobre la pista)', () => {
+    for (const def of TRACKS) {
+      const tg = Track.load(def).geometry;
+      const out = { index: 0, s: 0, d: 0 };
+      const p = { x: 0, z: 0 };
+      for (let k = 0; k < 300; k++) {
+        // Puntos a 0–60 m de la pista, repartidos por toda la vuelta.
+        tg.pointAt((k * 173.7) % tg.length, ((k * 29) % 121) - 60, p);
+        tg.project(p.x, p.z, out);
+        let nearest = Infinity;
+        for (let i = 0; i < tg.count; i++) nearest = Math.min(nearest, Math.hypot((tg.x[i] ?? 0) - p.x, (tg.z[i] ?? 0) - p.z));
+        expect(Math.abs(out.d), `${def.id}: punto ${k}`).toBeLessThan(nearest + 1);
+      }
+    }
+  });
+
   it('la búsqueda global encuentra el punto aunque no haya pista', () => {
     const p = { x: 0, z: 0 };
     g.pointAt(2500, 3, p);

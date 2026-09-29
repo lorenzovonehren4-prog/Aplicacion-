@@ -9,7 +9,8 @@
  * sigas la trazada) y la de la trazada ideal (más rápida). Cuanto más baja la
  * ayuda, más se acerca a la ideal: sólo actúa cuando de verdad no llegas.
  *
- * - Completa: frena todo lo necesario y levanta el acelerador antes.
+ * - Completa: frena todo lo necesario y levanta el acelerador antes (con una
+ *   referencia a mitad de camino entre el centro y la trazada ideal).
  * - Media: hasta 50 % de freno y sólo si vas bastante pasado.
  * - Baja: hasta 25 % y sólo en emergencias.
  */
@@ -43,7 +44,10 @@ interface LevelTuning {
 }
 
 const TUNING: Readonly<Record<Exclude<BrakingLevel, 'off'>, LevelTuning>> = {
-  full: { blend: 0, reaction: 0.35, margin: 0.95, threshold: 0, maxBrake: 1, ramp: 2.5, liftThrottle: true },
+  // Completa: entre el centro y la trazada (con la ayuda de dirección el auto
+  // va por la trazada; por el centro sólo, las curvas reales son mucho más
+  // cerradas y te frenaba de más: más lento que los bots).
+  full: { blend: 0.65, reaction: 0.35, margin: 0.92, threshold: 0, maxBrake: 1, ramp: 2.5, liftThrottle: true },
   medium: { blend: 0.5, reaction: 0.15, margin: 1, threshold: 3, maxBrake: 0.5, ramp: 5, liftThrottle: false },
   low: { blend: 1, reaction: 0, margin: 1, threshold: 4, maxBrake: 0.25, ramp: 5, liftThrottle: false },
 };
