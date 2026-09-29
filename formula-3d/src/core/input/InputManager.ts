@@ -67,6 +67,8 @@ export class InputManager {
   private readonly padHeld = new Map<UiAction, HeldState>();
   private readonly keyHandlers = new Set<KeyHandler>();
   private readonly keysDown = new Set<string>();
+  /** Captura de la próxima tecla (reasignar controles): se la lleva entera. */
+  private capture: KeyHandler | null = null;
   private pad: Gamepad | null = null;
   private readonly getGamepads: () => ReadonlyArray<Gamepad | null>;
   private device: InputDevice = 'keyboard';
@@ -108,6 +110,17 @@ export class InputManager {
   onKey(handler: KeyHandler): () => void {
     this.keyHandlers.add(handler);
     return () => this.keyHandlers.delete(handler);
+  }
+
+  /**
+   * La próxima tecla pulsada va sólo a `handler` (no genera acciones ni
+   * atajos). Devuelve la función para cancelar la captura.
+   */
+  captureNextKey(handler: KeyHandler): () => void {
+    this.capture = handler;
+    return () => {
+      if (this.capture === handler) this.capture = null;
+    };
   }
 
   /** Último dispositivo usado (para mostrar las ayudas de controles correctas). */
@@ -195,6 +208,14 @@ export class InputManager {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     // Atajos del navegador o del sistema (Ctrl+R, Alt+Tab...) no son del juego.
     if (isTypingTarget(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
+    const capture = this.capture;
+    if (capture && !event.repeat) {
+      event.preventDefault();
+      this.capture = null;
+      this.setDevice('keyboard');
+      capture(event.code);
+      return;
+    }
     const action = KEY_ACTIONS[event.code];
     this.setDevice('keyboard');
     this.keysDown.add(event.code);

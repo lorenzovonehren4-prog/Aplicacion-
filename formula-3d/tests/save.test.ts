@@ -84,7 +84,7 @@ describe('sanitizeSave', () => {
       showFps: true,
       autoPerformance: true,
     });
-    expect(data.settings.audio).toEqual({ master: 1, engine: 0.8, effects: 0.8, ui: 0.3 });
+    expect(data.settings.audio).toEqual({ master: 1, engine: 0.8, effects: 0.8, ui: 0.3, music: 0.5 });
     expect(data.updatedAt).toBe(NOW + 10);
   });
 
@@ -100,13 +100,13 @@ describe('sanitizeSave', () => {
       },
       defaults(),
     );
-    expect(data.settings.controls).toEqual({ steeringSensitivity: 1.5, steeringDeadzone: 0, vibration: true });
+    expect(data.settings.controls).toMatchObject({ steeringSensitivity: 1.5, steeringDeadzone: 0, vibration: true });
     // Ayudas: lo inválido vuelve al valor por defecto campo por campo.
     expect(data.settings.assists).toEqual({
       level: 'beginner',
       custom: { braking: 'low', traction: 'medium', abs: true, line: 'corners', lineType: 'dynamic' },
     });
-    expect(data.settings.game).toEqual({ defaultCamera: 'cockpit', units: 'mph' });
+    expect(data.settings.game).toEqual({ defaultCamera: 'cockpit', units: 'mph', language: 'es' });
     expect(data.records).toEqual({ australia: { bestLap: 81.5 }, monza: { bestLap: null } });
   });
 

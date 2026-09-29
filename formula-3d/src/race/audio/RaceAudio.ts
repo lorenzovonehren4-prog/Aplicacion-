@@ -192,6 +192,67 @@ class EffectsGraph {
     };
   }
 
+  /**
+   * Bandera a cuadros: ovación del público (ruido de banda ancha que crece y se
+   * apaga, con "olas") y un acorde de fanfarria corto.
+   */
+  flag(): void {
+    const now = this.ctx.currentTime;
+    const crowd = this.ctx.createBufferSource();
+    crowd.buffer = this.noise;
+    crowd.loop = true;
+    const band = this.ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 1100;
+    band.Q.value = 0.6;
+    const swell = this.ctx.createGain();
+    swell.gain.setValueAtTime(0.0001, now);
+    swell.gain.exponentialRampToValueAtTime(0.22, now + 0.6);
+    swell.gain.setValueAtTime(0.22, now + 1.6);
+    swell.gain.exponentialRampToValueAtTime(0.0001, now + 4.2);
+    // Olas de la tribuna.
+    const wave = this.ctx.createOscillator();
+    wave.frequency.value = 1.7;
+    const waveDepth = this.ctx.createGain();
+    waveDepth.gain.value = 0.06;
+    wave.connect(waveDepth).connect(swell.gain);
+    crowd.connect(band).connect(swell).connect(this.out);
+    crowd.start(now, Math.random());
+    crowd.stop(now + 4.3);
+    wave.start(now);
+    wave.stop(now + 4.3);
+    crowd.onended = () => {
+      crowd.disconnect();
+      band.disconnect();
+      swell.disconnect();
+      wave.disconnect();
+      waveDepth.disconnect();
+    };
+    // Fanfarria: acorde mayor con metales sintéticos (sierra filtrada).
+    for (const [i, hz] of [392, 493.88, 587.33, 783.99].entries()) {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = hz;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(700, now);
+      filter.frequency.linearRampToValueAtTime(2400, now + 0.25);
+      const gain = this.ctx.createGain();
+      const start = now + i * 0.06;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.05, start + 0.05);
+      gain.gain.setValueAtTime(0.05, now + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+      osc.connect(filter).connect(gain).connect(this.out);
+      osc.start(start);
+      osc.stop(now + 1.65);
+      osc.onended = () => {
+        filter.disconnect();
+        gain.disconnect();
+      };
+    }
+  }
+
   /** Radio del equipo: "chasquido" de apertura del canal. */
   radio(): void {
     const now = this.ctx.currentTime;
@@ -315,7 +376,7 @@ export class RaceAudio {
   }
 
   /** Sonidos de un momento de la carrera (semáforo, DRS, radio). */
-  cue(kind: 'light' | 'lightsOut' | 'drs' | 'radio'): void {
+  cue(kind: 'light' | 'lightsOut' | 'drs' | 'radio' | 'flag'): void {
     this.ensure();
     const effects = this.effects;
     if (!effects) return;
@@ -331,6 +392,9 @@ export class RaceAudio {
         break;
       case 'radio':
         effects.radio();
+        break;
+      case 'flag':
+        effects.flag();
         break;
     }
   }

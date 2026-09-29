@@ -1,0 +1,204 @@
+/* ─── Tutorial inicial ───────────────────────────────────────────────────
+   El auto del estudio gira a la izquierda; a la derecha, una tarjeta por
+   paso con puntos de avance arriba. */
+
+.screen--tutorial {
+  pointer-events: none;
+}
+
+.screen--tutorial > * {
+  pointer-events: auto;
+}
+
+.tut__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none !important;
+  background: linear-gradient(270deg, rgba(5, 6, 8, 0.95) 0%, rgba(5, 6, 8, 0.8) 40%, rgba(5, 6, 8, 0) 70%);
+}
+
+.tut__panel {
+  position: absolute;
+  top: var(--gutter);
+  bottom: var(--gutter);
+  right: var(--gutter);
+  width: min(560px, calc(100% - 2 * var(--gutter)));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tut__logo {
+  align-self: flex-start;
+}
+
+.tut__dots {
+  display: flex;
+  gap: 8px;
+}
+
+.tut__dots > i {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  transform: skewX(var(--skew));
+  transition: background 0.3s;
+}
+
+.tut__dots > i.is-on {
+  background: var(--c-accent);
+}
+
+.tut__card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.tut__kicker {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.tut__title {
+  font-size: clamp(26px, 2.8vw, 38px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.05;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.tut__text {
+  max-width: 52ch;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--c-text-2);
+}
+
+.tut__input {
+  width: 100%;
+  padding: 10px 4px;
+  font: 900 34px var(--font-text);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid var(--c-accent);
+  outline: none;
+  user-select: text;
+}
+
+.tut__input::placeholder {
+  color: var(--c-text-3);
+}
+
+.tut__card .mbtn {
+  width: min(340px, 100%);
+}
+
+.tut__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tut__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 18px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.tut__option b {
+  font-size: 20px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+.tut__option span {
+  font-size: 14px;
+  color: var(--c-text-2);
+}
+
+.tut__option.is-focused,
+.tut__option:hover {
+  background: linear-gradient(90deg, rgba(255, 42, 60, 0.3), rgba(255, 42, 60, 0.05));
+  box-shadow: inset 4px 0 0 var(--c-accent);
+}
+
+.tut__reco {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding: 8px 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--c-text-2);
+  background: rgba(57, 255, 136, 0.07);
+  box-shadow: inset 3px 0 0 #39ff88;
+}
+
+.tut__reco b {
+  color: #39ff88;
+  font-size: 15px;
+}
+
+.tut__keys {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.tut__key {
+  display: grid;
+  grid-template-columns: 70px 64px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 15px;
+}
+
+.tut__key kbd {
+  padding: 4px 8px;
+  text-align: center;
+  font: 700 13px var(--font-num);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px var(--c-line-strong);
+  border-radius: 4px;
+}
+
+.tut__key kbd.is-pad {
+  font-family: var(--font-text);
+  color: var(--c-text-2);
+}
+
+.tut__footer {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border-top: 1px solid var(--c-line);
+}
+
+@media (max-width: 900px) {
+  .tut__scrim {
+    background: rgba(5, 6, 8, 0.85);
+  }
+}

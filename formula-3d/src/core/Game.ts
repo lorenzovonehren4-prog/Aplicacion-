@@ -4,11 +4,14 @@
  */
 
 import { AudioManager } from '../audio/AudioManager';
+import { MenuMusic } from '../audio/MenuMusic';
 import type { UiSound } from '../audio/UiSounds';
 import { StudioScene } from '../garage/StudioScene';
 import { liveryFromSetup } from '../garage/setup';
 import { DiagonalWipe } from '../ui/anim/DiagonalWipe';
+import { AchievementToasts } from '../ui/components/AchievementToast';
 import { FpsMeter } from '../ui/components/FpsMeter';
+import { achievementContext, getAchievement, newAchievements } from '../progression/career';
 import { EventBus } from './EventBus';
 import type { GameEvents } from './events';
 import { GameLoop } from './GameLoop';
@@ -16,7 +19,7 @@ import { InputManager } from './input/InputManager';
 import { detectQuality } from './render/quality';
 import { RenderHost } from './render/RenderHost';
 import { SaveManager } from './save/SaveManager';
-import type { Settings } from './save/schema';
+import type { SaveData, Settings } from './save/schema';
 import { createBestStorage } from './save/storage';
 import type { ScreenParams } from './screens/params';
 import { ScreenManager } from './screens/ScreenManager';
@@ -38,6 +41,9 @@ export class Game {
   readonly screens: ScreenManager<ScreenParams>;
   readonly loop: GameLoop;
   private readonly fpsMeter: FpsMeter;
+  private readonly toasts: AchievementToasts;
+  /** Música de los menús (se apaga en la pista). */
+  private music: MenuMusic | null = null;
   private readonly own = new Disposer();
   private studioPromise: Promise<StudioScene> | null = null;
   private studio: StudioScene | null = null;
@@ -60,6 +66,8 @@ export class Game {
       onError: (error) => console.error('[Pantallas]', error),
     });
     this.fpsMeter = new FpsMeter(layers.overlay);
+    this.toasts = new AchievementToasts(layers.overlay, () => this.playUi('rewardBig'));
+    this.own.add(() => this.toasts.dispose());
 
     this.loop = new GameLoop({
       fixedUpdate: (step) => this.screens.fixedUpdate(step),
@@ -71,14 +79,26 @@ export class Game {
       render: () => this.render.render(),
     });
 
-    // Entrada → pantallas; el primer gesto habilita el audio.
-    this.own.add(input.onAnyInput(() => audio.unlock()));
+    // Entrada → pantallas; el primer gesto habilita el audio (y la música del menú).
+    this.own.add(
+      input.onAnyInput(() => {
+        audio.unlock();
+        this.updateMusic();
+      }),
+    );
+    this.own.add(this.events.on('screen:changed', () => this.updateMusic()));
+    this.own.add(() => this.music?.stop());
     this.own.add(input.onAction((action) => this.screens.dispatch(action)));
     this.own.add(input.onDeviceChange((device) => this.events.emit('input:device', { device })));
 
     // Cada cambio de ajustes se aplica al instante.
     this.own.add(save.onChange((data) => this.applySettings(data.settings)));
     this.applySettings(save.data.settings);
+
+    // Logros: se revisan después de cada cambio del guardado (carreras, nivel,
+    // pase, garaje…) y también al arrancar, por si un guardado viejo ya los cumple.
+    this.own.add(save.onChange((data) => this.checkAchievements(data)));
+    this.own.timeout(() => this.checkAchievements(save.data), 1500);
 
     // Tamaño del lienzo.
     const resize = (): void => this.render.resize(layers.stage.clientWidth, layers.stage.clientHeight);
@@ -123,6 +143,38 @@ export class Game {
   /** Modifica los ajustes: se guardan y se aplican enseguida. */
   updateSettings(mutator: (settings: Settings) => void): void {
     this.save.update((data) => mutator(data.settings));
+  }
+
+  /** Música en los menús; en la pista (y antes del primer gesto) no suena. */
+  private updateMusic(): void {
+    const ctx = this.audio.context;
+    const bus = this.audio.bus('music');
+    // En pista no hay música, tampoco con Ajustes o el manual abiertos encima de la carrera.
+    const stack = this.screens.stackIds;
+    const inMenus = stack.length > 0 && !stack.includes('race') && !stack.includes('splash');
+    if (inMenus && ctx && bus && ctx.state === 'running') {
+      if (!this.music) {
+        this.music = new MenuMusic(ctx, bus);
+        this.music.start();
+      }
+    } else if (!inMenus && this.music) {
+      this.music.stop();
+      this.music = null;
+    }
+  }
+
+  /** Anota los logros recién cumplidos y los anuncia. */
+  private checkAchievements(data: DeepReadonly<SaveData>): void {
+    const fresh = newAchievements(achievementContext(data), data.achievements);
+    if (fresh.length === 0) return;
+    const now = Date.now();
+    this.save.update((draft) => {
+      for (const id of fresh) draft.achievements[id] = now;
+    });
+    for (const id of fresh) {
+      const achievement = getAchievement(id);
+      if (achievement) this.toasts.show(achievement);
+    }
   }
 
   /** Reproduce un sonido de interfaz (no hace nada si el audio aún no está listo). */

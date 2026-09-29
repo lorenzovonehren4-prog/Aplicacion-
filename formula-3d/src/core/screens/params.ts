@@ -63,4 +63,7 @@ export interface ScreenParams {
   results: ResultsParams;
   pass: undefined;
   garage: undefined;
+  profile: undefined;
+  assistsManual: undefined;
+  tutorial: undefined;
 }

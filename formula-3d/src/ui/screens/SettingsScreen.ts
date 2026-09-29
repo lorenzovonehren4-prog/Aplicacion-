@@ -27,6 +27,7 @@ import {
   type CameraMode,
   type DifficultyLevel,
   type SpeedUnit,
+  type Language,
 } from '../../core/save/schema';
 import { DIFFICULTY_INFO } from '../../race/ai/difficulty';
 import type { ScreenParams, SettingsTab } from '../../core/screens/params';
@@ -35,7 +36,8 @@ import { h, prefersReducedMotion } from '../dom';
 import { finished } from '../anim/finished';
 import { assistCards } from '../components/AssistCards';
 import { ControlHints } from '../components/ControlHints';
-import { actionRow, selectorRow, sliderRow, toggleRow, type RowContext, type SettingRow } from '../components/SettingRows';
+import { actionRow, keyBindingRow, selectorRow, sliderRow, toggleRow, type RowContext, type SettingRow } from '../components/SettingRows';
+import { createDefaultBindings, DRIVE_ACTION_LABELS, DRIVE_ACTIONS, isBindableKey, keyLabel } from '../../core/input/bindings';
 import {
   BRAKING_LABELS,
   LINE_LABELS,
@@ -333,6 +335,15 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         get: () => a().ui,
         set: (v) => this.game.updateSettings((s) => (s.audio.ui = v)),
       }),
+      sliderRow(ctx, {
+        label: 'Música',
+        help: 'La música del menú: se compone sola mientras suena (nunca se repite igual). En carrera no hay música.',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        get: () => a().music,
+        set: (v) => this.game.updateSettings((s) => (s.audio.music = v)),
+      }),
       actionRow(ctx, {
         label: 'Restablecer sonido',
         help: 'Vuelve a los volúmenes de fábrica.',
@@ -369,9 +380,42 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         get: () => c().vibration,
         set: (on) => this.game.updateSettings((s) => (s.controls.vibration = on)),
       }),
+      ...DRIVE_ACTIONS.map((action) =>
+        keyBindingRow(ctx, {
+          label: DRIVE_ACTION_LABELS[action],
+          help: 'ENTER y después la tecla nueva (Esc cancela). Si esa tecla ya la usaba otra acción, se intercambian. Los menús siempre se manejan con flechas, Enter y Esc.',
+          get: () => keyLabel(c().keys[action]),
+          listen: (done) =>
+            this.game.input.captureNextKey((code) => {
+              if (code === 'Escape' || !isBindableKey(code)) {
+                if (code !== 'Escape') this.game.playUi('locked');
+                done(null);
+                return;
+              }
+              this.game.updateSettings((s) => {
+                const keys = s.controls.keys;
+                // La acción que tenía esa tecla se queda con la tecla anterior de ésta.
+                const other = DRIVE_ACTIONS.find((a) => a !== action && keys[a] === code);
+                if (other) keys[other] = keys[action];
+                keys[action] = code;
+              });
+              for (const row of this.rows) row.refresh?.();
+              done(code);
+            }),
+        }),
+      ),
+      actionRow(ctx, {
+        label: 'Restablecer teclas',
+        help: 'Teclado de fábrica: ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · C cámara · R volver a pista · P (o Esc) pausa.',
+        icon: 'reset',
+        run: () => {
+          this.game.updateSettings((s) => (s.controls.keys = createDefaultBindings()));
+          for (const row of this.rows) row.refresh?.();
+        },
+      }),
       actionRow(ctx, {
         label: 'Restablecer controles',
-        help: 'Teclado: ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · C cámara · R volver a pista · Esc pausa. Gamepad: RT/LT, stick izquierdo, X, Y, Select y Start.',
+        help: 'Vuelve la sensibilidad, la zona muerta, la vibración y las teclas a los valores de fábrica. Gamepad: RT/LT, stick izquierdo, X DRS, Y cámara, Select volver a pista y Start pausa.',
         icon: 'reset',
         run: () => this.game.updateSettings((s) => (s.controls = createDefaultControls())),
       }),
@@ -386,6 +430,12 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         s.assists = { level: 'custom', custom: { ...assistConfig(activeAssists(s.assists)), [key]: value } };
       });
     return [
+      actionRow(ctx, {
+        label: 'Manual de ayudas',
+        help: 'Qué hace cada ayuda, con demos animadas: la frenada, la tracción, el ABS y los colores de la línea.',
+        icon: 'book',
+        run: () => void this.game.screens.push('assistsManual', undefined),
+      }),
       assistCards(ctx, {
         get: () => this.game.settings.assists,
         select: (level) => this.game.updateSettings((s) => (s.assists.level = level)),
@@ -438,7 +488,7 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
     return [
       selectorRow<CameraMode>(ctx, {
         label: 'Cámara por defecto',
-        help: 'La cámara con la que sales a pista. Durante la carrera se cambia con C (o Y en el gamepad).',
+        help: 'La cámara con la que sales a pista. Durante la carrera se cambia con la tecla de cámara (C de fábrica) o Y en el gamepad.',
         options: [
           { value: 'cockpit', label: 'Cockpit' },
           { value: 'tcam', label: 'T-cam' },
@@ -446,6 +496,13 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         ],
         get: () => gm().defaultCamera,
         set: (camera) => this.game.updateSettings((s) => (s.game.defaultCamera = camera)),
+      }),
+      selectorRow<Language>(ctx, {
+        label: 'Idioma',
+        help: 'El juego está hecho en español (textos, radio del equipo y manual).',
+        options: [{ value: 'es', label: 'Español' }],
+        get: () => gm().language,
+        set: (language) => this.game.updateSettings((s) => (s.game.language = language)),
       }),
       selectorRow<SpeedUnit>(ctx, {
         label: 'Unidades de velocidad',

@@ -18,6 +18,7 @@ import type { Game } from '../../core/Game';
 import { PerformanceGovernor, type GovernorDecision } from '../../core/render/PerformanceGovernor';
 import { QUALITY_PRESETS } from '../../core/render/quality';
 import type { UiAction } from '../../core/input/actions';
+import { keyLabel } from '../../core/input/bindings';
 import type { RaceParams, ResultsParams } from '../../core/screens/params';
 import { clamp } from '../../core/utils/math';
 import { formatLapTime } from '../../core/utils/format';
@@ -27,6 +28,7 @@ import { isFinished, PLAYER_ID, pointsFor, recordRound, standings as championshi
 import { liveryFromSetup } from '../../garage/setup';
 import { difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
 import { applyXp, computeXp, snapshotOf } from '../../progression/xp';
+import { recordSession } from '../../progression/career';
 import type { RivalCar } from '../../race/render/RivalFleet';
 import { DrivingInput, type DrivingEvent } from '../../race/input/DrivingInput';
 import { F1_SPEC } from '../../race/physics/CarSpec';
@@ -428,14 +430,16 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.skipHint.replaceChildren(
       new ControlHints([{ keys: [{ keyboard: 'ENTER', gamepad: 'A' }], label: 'Saltar' }], this.game.input.lastDevice).element,
     );
+    // Las teclas son las elegidas en Ajustes → Controles.
+    const keys = this.game.settings.controls.keys;
     this.startHints = new ControlHints(
       [
-        { keys: [{ keyboard: '↑', gamepad: 'RT' }], label: 'Acelerar' },
-        { keys: [{ keyboard: '↓', gamepad: 'LT' }], label: 'Frenar' },
-        { keys: [{ keyboard: '←→', gamepad: 'L' }], label: 'Doblar' },
-        { keys: [{ keyboard: 'D', gamepad: 'X' }], label: 'DRS' },
-        { keys: [{ keyboard: 'C', gamepad: 'Y' }], label: 'Cámara' },
-        { keys: [{ keyboard: 'R', gamepad: 'SELECT' }], label: 'Volver a pista' },
+        { keys: [{ keyboard: keyLabel(keys.throttle), gamepad: 'RT' }], label: 'Acelerar' },
+        { keys: [{ keyboard: keyLabel(keys.brake), gamepad: 'LT' }], label: 'Frenar' },
+        { keys: [{ keyboard: `${keyLabel(keys.left)}${keyLabel(keys.right)}`, gamepad: 'L' }], label: 'Doblar' },
+        { keys: [{ keyboard: keyLabel(keys.drs), gamepad: 'X' }], label: 'DRS' },
+        { keys: [{ keyboard: keyLabel(keys.camera), gamepad: 'Y' }], label: 'Cámara' },
+        { keys: [{ keyboard: keyLabel(keys.reset), gamepad: 'SELECT' }], label: 'Volver a pista' },
         { keys: [{ keyboard: 'ESC', gamepad: 'START' }], label: 'Pausa' },
       ],
       this.game.input.lastDevice,
@@ -691,6 +695,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   /** Bandera a cuadros: mensaje, radio y, al rato, el panel de fin de carrera. */
   private onFinished(result: RaceResult): void {
     const withRivals = result.starters > 1;
+    this.audio.cue('flag');
     this.hud?.message(
       'BANDERA A CUADROS',
       withRivals ? `Terminaste P${result.position} de ${result.starters}` : `Tiempo total ${formatLapTime(result.totalTime)}`,
@@ -776,8 +781,26 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     );
     const before = snapshotOf(this.game.save.data.progression);
     const gain = applyXp(this.game.save.data.progression, award.total);
+    const lapsDriven = result ? result.laps.length : (session?.timer.laps.length ?? 0);
+    const trackKm = (this.track?.length ?? 0) / 1000;
+    const stats = recordSession(this.game.save.data.stats, {
+      mode: this.params.mode,
+      trackId: this.params.trackId,
+      position: result?.position ?? 1,
+      starters: result?.starters ?? 1,
+      raceLaps: result ? (this.params.laps ?? DEFAULT_RACE_LAPS) : 0,
+      validLaps: result ? result.laps.filter((lap) => lap.valid).length : this.soloLaps,
+      distanceKm: lapsDriven * trackKm,
+      fastestLap: withRivals && playerRow?.fastestLap === true,
+      clean: result !== null && result.contacts === 0 && result.laps.every((lap) => lap.valid),
+      overtakes: this.overtakes,
+      difficulty,
+      assistMultiplier: xpMultiplier(settings.assists),
+      seasonPosition,
+    });
     this.game.save.update((data) => {
       data.progression = gain.progression;
+      data.stats = stats;
     });
     const track = this.track?.def;
     const modeLabel =

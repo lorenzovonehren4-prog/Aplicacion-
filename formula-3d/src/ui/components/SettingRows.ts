@@ -219,3 +219,50 @@ export function actionRow(ctx: RowContext, options: ActionOptions): SettingRow {
   });
   return { element };
 }
+
+// ─── Tecla reasignable ───────────────────────────────────────────────────
+
+export interface KeyBindingOptions extends RowBase {
+  /** Nombre corto de la tecla actual. */
+  get(): string;
+  /**
+   * Empieza a escuchar la próxima tecla; `done` recibe el código o null si se
+   * canceló. Devuelve la función para dejar de escuchar.
+   */
+  listen(done: (code: string | null) => void): () => void;
+}
+
+/** Fila "Acelerar  [ ↑ ]": ENTER espera la nueva tecla (Esc cancela). */
+export function keyBindingRow(ctx: RowContext, options: KeyBindingOptions): SettingRow {
+  const key = h('span', { class: 'keybind__key' });
+  const control = h('div', { class: 'keybind' }, key);
+  const element = rowShell(options.label, control, 'srow--keybind');
+  let stop: (() => void) | null = null;
+  const refresh = (): void => {
+    key.textContent = options.get();
+  };
+  const cancel = (): void => {
+    stop?.();
+    stop = null;
+    control.classList.remove('is-waiting');
+    refresh();
+  };
+  ctx.own.add(cancel);
+  ctx.nav.add(element, {
+    onConfirm: () => {
+      if (stop) return;
+      ctx.play('confirm');
+      control.classList.add('is-waiting');
+      key.textContent = 'Pulsa una tecla…';
+      stop = options.listen((code) => {
+        stop = null;
+        control.classList.remove('is-waiting');
+        ctx.play(code === null ? 'back' : 'tick');
+        refresh();
+      });
+    },
+    onFocus: () => ctx.showHelp(options.label, options.help),
+  });
+  refresh();
+  return { element, refresh };
+}

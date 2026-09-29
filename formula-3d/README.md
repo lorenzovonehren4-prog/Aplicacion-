@@ -42,6 +42,8 @@ El ratón también funciona en todos los menús.
 | Volver a la pista | R | Select |
 | Pausa | Esc o P | Start (o B) |
 
+Las teclas del manejo se cambian en Ajustes → Controles.
+
 La caja de cambios es automática (8 marchas).
 
 ## Comandos
@@ -62,16 +64,13 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Fase 7 de 9: Albert Park y Monza, con pantalla de selección de carrera.
+Fase 8 de 9: Albert Park y Monza, con pantalla de selección de carrera.
 Modos: práctica libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales
-con IA de 5 dificultades), contrarreloj con fantasma de tu mejor vuelta y
-campeonato con puntos y tabla que se guarda entre sesiones. Cada sesión suma
-XP (niveles 1–100) y avanza el pase de temporada de 50 niveles con
-recompensas ficticias. En el garaje se pinta el auto (patrones y colores), se
-elige el acabado (mate, metalizado, carbono, cromo, perlado…), las llantas,
-el alerón trasero, el casco, la franja del neumático y el número, con vista
-previa en vivo en el estudio 3D. Clima soleado, nublado o atardecer, choques,
-rebufo, DRS con detección, posiciones en vivo, física de monoplaza estable en
-curvas rápidas, tres cámaras, sonido 3D, HUD con radio, ayudas por niveles,
-línea de trazada y rendimiento automático. Ver la sección **Fases** de
-`PLAN.md`.
+con IA de 5 dificultades), contrarreloj con fantasma y campeonato con puntos.
+XP y niveles 1–100, pase de temporada de 50 niveles, garaje con vista previa
+en vivo, perfil con estadísticas, récords, vitrina de trofeos y 21 logros.
+Tutorial la primera vez (nombre y nivel de ayudas recomendado), manual de
+ayudas con demos animadas, teclas reasignables y música de menú generativa.
+Clima, choques, rebufo, DRS, física estable en curvas rápidas, tres cámaras,
+sonido 3D, HUD con radio, ayudas por niveles y rendimiento automático. Ver la
+sección **Fases** de `PLAN.md`.

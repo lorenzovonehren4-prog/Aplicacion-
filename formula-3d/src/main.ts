@@ -21,6 +21,9 @@ import './styles/screens/raceSelect.css';
 import './styles/screens/results.css';
 import './styles/screens/pass.css';
 import './styles/screens/garage.css';
+import './styles/screens/profile.css';
+import './styles/screens/manual.css';
+import './styles/screens/tutorial.css';
 
 import { Game, type GameLayers } from './core/Game';
 import { GAME_NAME } from './data/game';

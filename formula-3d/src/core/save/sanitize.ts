@@ -6,6 +6,8 @@
  */
 
 import { ownsItemId, PATTERNS, type GarageSetup } from '../../garage/setup';
+import { ACHIEVEMENTS, createDefaultStats, type CareerStats, type TrackStats } from '../../progression/career';
+import { DRIVE_ACTIONS, isBindableKey, type KeyBindings } from '../input/bindings';
 import { getItem, isItemId, STARTER_ITEM_IDS, type ItemKind } from '../../progression/items';
 import { MAX_LEVEL, xpToNextLevel } from '../../progression/levels';
 import { PASS_MAX_XP, passRewardsBetween, SEASON } from '../../progression/seasonPass';
@@ -27,6 +29,7 @@ import {
   RIVALS_MAX,
   RIVALS_MIN,
   SPEED_UNITS,
+  LANGUAGES,
   type AssistSettings,
   type AudioSettings,
   type ControlSettings,
@@ -146,6 +149,7 @@ function sanitizeAudio(raw: unknown, defaults: AudioSettings): AudioSettings {
     engine: num(r.engine, defaults.engine, 0, 1),
     effects: num(r.effects, defaults.effects, 0, 1),
     ui: num(r.ui, defaults.ui, 0, 1),
+    music: num(r.music, defaults.music, 0, 1),
   };
 }
 
@@ -155,6 +159,7 @@ function sanitizeControls(raw: unknown, defaults: ControlSettings): ControlSetti
     steeringSensitivity: num(r.steeringSensitivity, defaults.steeringSensitivity, 0.5, 1.5),
     steeringDeadzone: num(r.steeringDeadzone, defaults.steeringDeadzone, 0, 0.3),
     vibration: bool(r.vibration, defaults.vibration),
+    keys: sanitizeBindings(r.keys, defaults.keys),
   };
 }
 
@@ -178,6 +183,7 @@ function sanitizeGame(raw: unknown, defaults: GameSettings): GameSettings {
   return {
     defaultCamera: oneOf(r.defaultCamera, CAMERA_MODES, defaults.defaultCamera),
     units: oneOf(r.units, SPEED_UNITS, defaults.units),
+    language: oneOf(r.language, LANGUAGES, defaults.language),
   };
 }
 
@@ -266,6 +272,62 @@ function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): R
   return records;
 }
 
+/** Teclas del manejo: válidas y sin repetir (una repetida vuelve a la de fábrica). */
+function sanitizeBindings(raw: unknown, defaults: KeyBindings): KeyBindings {
+  const r = record(raw);
+  const result = { ...defaults };
+  const used = new Set<string>();
+  for (const action of DRIVE_ACTIONS) {
+    const code = r[action];
+    if (typeof code === 'string' && isBindableKey(code) && !used.has(code)) result[action] = code;
+    used.add(result[action]);
+  }
+  // Si una tecla por defecto quedó repetida con una elegida, se vuelve a fábrica completa.
+  return new Set(Object.values(result)).size === DRIVE_ACTIONS.length ? result : { ...defaults };
+}
+
+const MAX_COUNT = 1_000_000;
+
+function sanitizeStats(raw: unknown): CareerStats {
+  const r = record(raw);
+  const base = createDefaultStats();
+  const counter = (key: keyof Omit<CareerStats, 'tracks' | 'distanceKm'>): number => num(r[key], 0, 0, MAX_COUNT, true);
+  const tracks: Record<string, TrackStats> = {};
+  for (const [id, value] of Object.entries(record(r.tracks))) {
+    if (!/^[a-z0-9-]{1,32}$/.test(id)) continue;
+    const t = record(value);
+    tracks[id] = { races: num(t.races, 0, 0, MAX_COUNT, true), wins: num(t.wins, 0, 0, MAX_COUNT, true), podiums: num(t.podiums, 0, 0, MAX_COUNT, true) };
+  }
+  return {
+    ...base,
+    races: counter('races'),
+    wins: counter('wins'),
+    podiums: counter('podiums'),
+    pointsFinishes: counter('pointsFinishes'),
+    fastestLaps: counter('fastestLaps'),
+    cleanRaces: counter('cleanRaces'),
+    overtakes: counter('overtakes'),
+    laps: counter('laps'),
+    distanceKm: num(r.distanceKm, 0, 0, 10_000_000),
+    legendWins: counter('legendWins'),
+    unassistedWins: counter('unassistedWins'),
+    longRaces: counter('longRaces'),
+    seasons: counter('seasons'),
+    championships: counter('championships'),
+    tracks,
+  };
+}
+
+function sanitizeAchievements(raw: unknown): Record<string, number> {
+  const r = record(raw);
+  const result: Record<string, number> = {};
+  for (const achievement of ACHIEVEMENTS) {
+    const when = r[achievement.id];
+    if (typeof when === 'number' && Number.isFinite(when) && when > 0) result[achievement.id] = Math.round(when);
+  }
+  return result;
+}
+
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 function color(value: unknown, fallback: string): string {
@@ -322,5 +384,7 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
     records: sanitizeRecords(r.records, defaults.records),
     championship: sanitizeChampionship(r.championship),
     garage: sanitizeGarage(r.garage, defaults.garage, progression),
+    stats: sanitizeStats(r.stats),
+    achievements: sanitizeAchievements(r.achievements),
   };
 }

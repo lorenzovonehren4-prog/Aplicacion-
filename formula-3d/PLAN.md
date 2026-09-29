@@ -829,13 +829,26 @@ revisión propia del código + resumen y espera de confirmación.
 - [x] Lo elegido se guarda (`SaveData.garage`, con saneo: sólo piezas que se
       tienen) y se ve en el menú, en la carrera y en la torre (número).
 
-### Fase 8 — Perfil, ajustes completos, audio completo, manual y tutorial
+### Fase 8 — Perfil, ajustes completos, audio completo, manual y tutorial ✅
 
-- [ ] Perfil: estadísticas, récords por circuito, vitrina de trofeos y logros.
-- [ ] Ajustes completos (reasignar teclas, idioma, etc.).
-- [ ] Audio completo: efectos restantes, música generativa de menú.
-- [ ] Manual de ayudas con demos animadas (mini auto en curva vista desde arriba).
-- [ ] Tutorial inicial (nombre, experiencia → nivel de ayudas recomendado).
+- [x] Perfil (`ProfileScreen.ts`): tarjeta con nombre editable, 10
+      estadísticas de la trayectoria (`progression/career.ts`, se suman al
+      terminar cada sesión), récords por circuito, vitrina de trofeos (oro si
+      ganaste en el circuito, plata si subiste al podio, copa del campeonato)
+      y 21 logros de bronce, plata y oro con su avance. Los logros se revisan
+      después de cada cambio del guardado y se anuncian con un aviso animado.
+- [x] Ajustes completos: las 8 teclas del manejo se reasignan (intercambio si
+      la tecla ya estaba usada; la navegación de menús queda fija), volumen de
+      música, idioma (español) y acceso al manual desde Ayudas y desde la
+      selección de carrera.
+- [x] Audio: música generativa de menú (`audio/MenuMusic.ts`: acordes por
+      cadena de Markov, bajo, arpegio con eco, percusión suave; se apaga en la
+      pista) y ovación + fanfarria con la bandera a cuadros.
+- [x] Manual de ayudas (`AssistsManualScreen.ts`) con demos animadas en canvas
+      (`ui/components/AssistDemo.ts`): frenado, tracción, ABS (sin y con la
+      ayuda), línea fija y dinámica, y la tabla de niveles.
+- [x] Tutorial inicial (`TutorialScreen.ts`): nombre, experiencia → nivel de
+      ayudas recomendado (se aplica) y los controles con las teclas elegidas.
 
 ### Fase 9 — Pulido final
 
@@ -851,13 +864,9 @@ revisión propia del código + resumen y espera de confirmación.
 
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
-| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 8 |
 | Celebraciones de podio ganadas | En el catálogo (confeti, champán, fuegos artificiales); se ven en el podio 3D | 9 |
-| Volumen de Música | No se muestra hasta que haya música | 8 |
-| Manual de ayudas | Los textos de cada ayuda ya están en `assists/presets.ts` | 8 |
-| Tutorial inicial | El splash va siempre al menú; las ayudas arrancan en Principiante | 8 |
-| Nombre del piloto editable | Por ahora "PILOTO" | 8 (tutorial y perfil) |
-| Música de menú | — | 8 |
+| Poles en las estadísticas | El documento las pide, pero el juego no tiene sesión de clasificación (la parrilla se arma sola): el perfil muestra victorias, podios, vueltas rápidas y demás. Si se agrega una clasificación, `CareerStats` suma el campo | Fuera del alcance de las 9 fases |
+| Otros idiomas | Ajustes → Juego → Idioma existe con Español (el documento pide español por defecto); traducir todos los textos queda fuera del alcance | Fuera del alcance de las 9 fases |
 | Logos del equipo en los pontones de los rivales | Los rivales llevan colores y número; el logo (decal) sólo el auto del jugador. Con los rivales instanciados hace falta un atlas de logos por equipo: se deja para el pulido (la Fase 7 se dedicó al garaje y al manejo pedido por el usuario) | 9 |
 | Patrones y acabados en los rivales | Los rivales usan su color de equipo con el acabado brillante (instanciados, un solo material) | 9 |
 | Humo y chispas en los choques entre autos | Suenan y sacuden la cámara; las partículas llegan con el resto de efectos | 9 |
@@ -879,6 +888,9 @@ revisión propia del código + resumen y espera de confirmación.
   2 vueltas con 11 bots y el jugador manejado por un `BotDriver`, comprobando
   que todos reciben la bandera, la tabla y los intervalos, y que casi no hay
   choques fuertes. La prueba de humo verifica la torre y el minimapa.
+- Trayectoria, logros y teclas se prueban sin navegador
+  (`tests/career.test.ts`). La prueba de humo pasa por el tutorial (nombre y
+  experiencia), abre el perfil y el manual.
 - El garaje se prueba sin navegador (`tests/garage.test.ts`): propiedad de
   ítems por fábrica / nivel / pase, conversión a livery y saneo. La prueba de
   humo entra al garaje, cambia de pestaña con Q y sube el número.
@@ -917,4 +929,5 @@ revisión propia del código + resumen y espera de confirmación.
   la 4 y la 5).
 - **Fase 6**: completa.
 - **Fase 7**: completa (incluye el ajuste de curvas rápidas que pidió el
-  usuario); se espera su confirmación para la Fase 8.
+  usuario).
+- **Fase 8**: completa; se espera la confirmación del usuario para la Fase 9.

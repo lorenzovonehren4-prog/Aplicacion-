@@ -2,7 +2,7 @@
  * Pantalla de inicio: línea de luz → destello → el logo aparece con desenfoque
  * → "pulsa cualquier tecla". Al pulsar suena un motor acelerando (con dos
  * cambios de marcha) y se pasa al menú. El primer gesto también habilita el
- * audio del navegador. (La Fase 8 agrega aquí el desvío al tutorial inicial.)
+ * audio del navegador. La primera vez sigue al tutorial inicial; después, al menú.
  *
  * Mientras se ve el logo se prepara el estudio 3D del menú en segundo plano.
  */
@@ -172,7 +172,9 @@ export class SplashScreen extends BaseScreen {
 
     await Promise.all([waited, this.studioReady]);
     if (this.own.isDisposed) return;
-    await this.game.screens.goTo('menu', undefined);
+    // La primera vez, el tutorial (nombre y nivel de ayudas); después, directo al menú.
+    if (this.game.save.data.profile.tutorialDone) await this.game.screens.goTo('menu', undefined);
+    else await this.game.screens.goTo('tutorial', undefined);
   }
 
   private playRev(): void {

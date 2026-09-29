@@ -30,7 +30,7 @@ import { WEATHER_INFO } from '../../tracks/weather';
 import { finished } from '../anim/finished';
 import { ControlHints } from '../components/ControlHints';
 import { createMenuButton } from '../components/MenuButton';
-import { selectorRow, sliderRow, type RowContext, type SettingRow } from '../components/SettingRows';
+import { actionRow, selectorRow, sliderRow, type RowContext, type SettingRow } from '../components/SettingRows';
 import { TrackMap } from '../components/TrackMap';
 import { h, prefersReducedMotion } from '../dom';
 import { BaseScreen } from './BaseScreen';
@@ -220,7 +220,13 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
       get: () => this.game.settings.assists.level,
       set: (value) => this.game.updateSettings((s) => (s.assists.level = value)),
     });
-    if (this.mode !== 'quickRace') return [weather, assists];
+    const manual = actionRow(ctx, {
+      label: 'Manual de ayudas',
+      help: 'Qué hace cada ayuda, con demos animadas.',
+      icon: 'book',
+      run: () => void this.game.screens.push('assistsManual', undefined),
+    });
+    if (this.mode !== 'quickRace') return [weather, assists, manual];
     return [
       selectorRow<RaceLaps>(ctx, {
         label: 'Vueltas',
@@ -258,6 +264,7 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
       }),
       assists,
       weather,
+      manual,
     ];
   }
 

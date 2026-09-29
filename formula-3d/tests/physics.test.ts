@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createDefaultControls } from '../src/core/save/schema';
 import { F1_SPEC } from '../src/race/physics/CarSpec';
 import { Gearbox } from '../src/race/physics/Gearbox';
 import { magicFormula, Vehicle } from '../src/race/physics/Vehicle';
@@ -230,7 +231,7 @@ describe('curvas rápidas con la flecha mantenida', () => {
 describe('mandos de manejo', () => {
   it('curva del stick con zona muerta y sensibilidad', async () => {
     const { shapeStick } = await import('../src/race/input/DrivingInput');
-    const base = { steeringSensitivity: 1, steeringDeadzone: 0.1, vibration: true };
+    const base = { ...createDefaultControls(), steeringSensitivity: 1, steeringDeadzone: 0.1, vibration: true };
     expect(shapeStick(0.05, base)).toBe(0);
     expect(shapeStick(1, base)).toBeCloseTo(1);
     expect(shapeStick(-1, base)).toBeCloseTo(-1);

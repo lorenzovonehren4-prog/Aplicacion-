@@ -68,9 +68,25 @@ async function main() {
     await page.screenshot({ path: `${shots}01-splash.png` });
     log('splash visible');
 
-    step = 'menú';
+    // ─── Tutorial (primera vez) ───
+    step = 'tutorial';
     await page.keyboard.press('Enter');
+    await waitForScreen(page, 'tutorial');
+    await page.waitForSelector('.tut__input:focus');
+    await page.keyboard.type('Smoke');
+    await page.screenshot({ path: `${shots}01b-tutorial-nombre.png` });
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.tut__option.is-focused');
+    await expectText(page, '.tut__reco b', 'Te recomendamos: Principiante');
+    await page.screenshot({ path: `${shots}01c-tutorial-experiencia.png` });
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.tut__key');
+    await page.keyboard.press('Enter');
+    log('tutorial: nombre, experiencia → Principiante y controles');
+
+    step = 'menú';
     await waitForScreen(page, 'menu');
+    await expectText(page, '.pcard__name', 'Smoke');
     await page.screenshot({ path: `${shots}02-menu.png` });
     const locked = await page.locator('.mbtn.is-locked').count();
     log(`menú visible (${locked} accesos bloqueados para fases futuras)`);
@@ -133,6 +149,27 @@ async function main() {
     await waitForScreen(page, 'menu');
     await page.mouse.move(2, 2);
     log('garaje: pinturas, pestañas con Q / E y número 7 → 8 guardado');
+
+    // ─── Perfil y manual de ayudas ───
+    step = 'perfil';
+    await page.locator('.mbtn', { hasText: 'Perfil' }).click();
+    await waitForScreen(page, 'profile');
+    await page.mouse.move(2, 2);
+    const achievements = await page.locator('.ach').count();
+    if (achievements < 15) throw new Error(`El perfil muestra ${achievements} logros.`);
+    await page.screenshot({ path: `${shots}04d-perfil.png` });
+    await page.keyboard.press('Escape');
+    await waitForScreen(page, 'menu');
+    step = 'manual';
+    await page.locator('.mbtn', { hasText: 'Manual de ayudas' }).click();
+    await page.waitForSelector('.screen--manual .demo__canvas');
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${shots}04e-manual.png` });
+    await page.keyboard.press('Escape');
+    await waitForScreen(page, 'menu');
+    await page.mouse.move(2, 2);
+    log('perfil con logros y manual de ayudas con demos');
 
     // ─── Recarga: lo guardado debe seguir ───
     step = 'recarga';

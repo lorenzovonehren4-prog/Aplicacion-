@@ -13,6 +13,8 @@ import {
 } from '../render/quality';
 import { STARTER_ITEM_IDS } from '../../progression/items';
 import { createDefaultGarage, type GarageSetup } from '../../garage/setup';
+import { createDefaultStats, type CareerStats } from '../../progression/career';
+import { createDefaultBindings, type KeyBindings } from '../input/bindings';
 
 export const SAVE_VERSION = 1;
 
@@ -41,6 +43,8 @@ export interface AudioSettings {
   /** Derrapes, pianos, viento, choques. */
   effects: number;
   ui: number;
+  /** Música generativa del menú. */
+  music: number;
 }
 
 export interface ControlSettings {
@@ -50,6 +54,8 @@ export interface ControlSettings {
   steeringDeadzone: number;
   /** Vibración del gamepad en pianos y choques. */
   vibration: boolean;
+  /** Teclas del manejo (reasignables). */
+  keys: KeyBindings;
 }
 
 export const CAMERA_MODES = ['cockpit', 'tcam', 'chase'] as const;
@@ -58,9 +64,14 @@ export type CameraMode = (typeof CAMERA_MODES)[number];
 export const SPEED_UNITS = ['kmh', 'mph'] as const;
 export type SpeedUnit = (typeof SPEED_UNITS)[number];
 
+export const LANGUAGES = ['es'] as const;
+export type Language = (typeof LANGUAGES)[number];
+
 export interface GameSettings {
   defaultCamera: CameraMode;
   units: SpeedUnit;
+  /** Idioma de la interfaz (por ahora sólo español). */
+  language: Language;
 }
 
 // ─── Rivales (ver PLAN.md §5.5) ───────────────────────────────────────────
@@ -146,7 +157,7 @@ export interface TrackRecord {
 }
 
 export interface Profile {
-  /** Nombre del piloto (lo pide el tutorial de la Fase 8). */
+  /** Nombre del piloto (lo pide el tutorial inicial; se cambia en Perfil). */
   name: string;
   avatarId: string;
   titleId: string;
@@ -180,6 +191,10 @@ export interface SaveData {
   championship: ChampionshipState | null;
   /** Lo que el jugador armó en el garaje (pintura, material, llantas…). */
   garage: GarageSetup;
+  /** Estadísticas de toda la trayectoria. */
+  stats: CareerStats;
+  /** Logros conseguidos: id → fecha (ms). */
+  achievements: Record<string, number>;
 }
 
 /** Resultado de un piloto en una carrera del campeonato. */
@@ -219,14 +234,14 @@ export function createDefaultGraphics(quality: QualityLevel): GraphicsSettings {
 }
 
 export function createDefaultAudio(): AudioSettings {
-  return { master: 0.8, engine: 0.8, effects: 0.8, ui: 0.6 };
+  return { master: 0.8, engine: 0.8, effects: 0.8, ui: 0.6, music: 0.5 };
 }
 
 export function createDefaultControls(): ControlSettings {
-  return { steeringSensitivity: 1, steeringDeadzone: 0.08, vibration: true };
+  return { steeringSensitivity: 1, steeringDeadzone: 0.08, vibration: true, keys: createDefaultBindings() };
 }
 
-/** "¿Nuevo? Empieza en Principiante": el tutorial de la Fase 8 recomienda otro si hace falta. */
+/** "¿Nuevo? Empieza en Principiante": el tutorial inicial recomienda otro nivel según la experiencia. */
 export function createDefaultAssists(): AssistSettings {
   return {
     level: 'beginner',
@@ -235,7 +250,7 @@ export function createDefaultAssists(): AssistSettings {
 }
 
 export function createDefaultGame(): GameSettings {
-  return { defaultCamera: 'cockpit', units: 'kmh' };
+  return { defaultCamera: 'cockpit', units: 'kmh', language: 'es' };
 }
 
 export function createDefaultProgression(): Progression {
@@ -270,5 +285,7 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
     records: {},
     championship: null,
     garage: createDefaultGarage(),
+    stats: createDefaultStats(),
+    achievements: {},
   };
 }

@@ -7,9 +7,10 @@
  * predecible sin pedal ni volante.
  * Gamepad: gatillos analógicos y stick con zona muerta y curva de respuesta.
  *
- * Teclas: ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · C cámara · R volver a
- * pista · Esc pausa. Gamepad: RT/LT, stick izquierdo, X DRS, Y cámara,
- * Select volver a pista, Start pausa.
+ * Teclas (reasignables en Ajustes → Controles, `core/input/bindings.ts`): por
+ * defecto ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · C cámara · R volver a
+ * pista · P pausa (Esc pausa siempre). Gamepad: RT/LT, stick izquierdo, X DRS,
+ * Y cámara, Select volver a pista, Start pausa.
  */
 
 import type { InputManager } from '../../core/input/InputManager';
@@ -25,20 +26,8 @@ export interface DrivingControls {
 
 export type DrivingEvent = 'camera' | 'drs' | 'reset' | 'pause';
 
-const KEYS = {
-  throttle: ['ArrowUp'],
-  brake: ['ArrowDown'],
-  left: ['ArrowLeft'],
-  right: ['ArrowRight'],
-} as const;
-
-const KEY_EVENTS: Readonly<Record<string, DrivingEvent>> = {
-  KeyC: 'camera',
-  KeyD: 'drs',
-  KeyR: 'reset',
-  // Esc llega como la acción de interfaz "volver" (la pantalla de carrera la usa para pausar).
-  KeyP: 'pause',
-};
+/** Acciones de un toque (las teclas vienen de los ajustes; Esc llega como "volver" y también pausa). */
+const KEY_EVENTS: ReadonlyArray<DrivingEvent> = ['camera', 'drs', 'reset', 'pause'];
 
 /** Botones del gamepad (mapeo estándar) → evento. */
 const PAD_EVENTS: ReadonlyArray<readonly [number, DrivingEvent]> = [
@@ -74,7 +63,8 @@ export class DrivingInput {
     private readonly assisted: () => boolean = () => false,
   ) {
     this.offKey = input.onKey((code) => {
-      const event = KEY_EVENTS[code];
+      const keys = this.settings().keys;
+      const event = KEY_EVENTS.find((name) => keys[name] === code);
       if (event) this.emit(event);
     });
   }
@@ -98,11 +88,11 @@ export class DrivingInput {
     const pad = this.input.gamepad;
     this.pollPadEvents(pad);
 
-    const key = (codes: readonly string[]): boolean => codes.some((code) => this.input.isKeyDown(code));
-    const keyThrottle = key(KEYS.throttle);
-    const keyBrake = key(KEYS.brake);
-    const keyLeft = key(KEYS.left);
-    const keyRight = key(KEYS.right);
+    const keys = settings.keys;
+    const keyThrottle = this.input.isKeyDown(keys.throttle);
+    const keyBrake = this.input.isKeyDown(keys.brake);
+    const keyLeft = this.input.isKeyDown(keys.left);
+    const keyRight = this.input.isKeyDown(keys.right);
 
     // Gatillos y stick del gamepad.
     const padThrottle = pad?.buttons[7]?.value ?? 0;
