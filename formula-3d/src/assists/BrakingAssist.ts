@@ -43,7 +43,7 @@ interface LevelTuning {
 }
 
 const TUNING: Readonly<Record<Exclude<BrakingLevel, 'off'>, LevelTuning>> = {
-  full: { blend: 0, reaction: 0.3, margin: 0.96, threshold: 0, maxBrake: 1, ramp: 2.5, liftThrottle: true },
+  full: { blend: 0, reaction: 0.35, margin: 0.95, threshold: 0, maxBrake: 1, ramp: 2.5, liftThrottle: true },
   medium: { blend: 0.5, reaction: 0.15, margin: 1, threshold: 3, maxBrake: 0.5, ramp: 5, liftThrottle: false },
   low: { blend: 1, reaction: 0, margin: 1, threshold: 4, maxBrake: 0.25, ramp: 5, liftThrottle: false },
 };

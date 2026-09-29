@@ -94,7 +94,7 @@ export const F1_SPEC: Readonly<CarSpec> = {
   drsDownforceCut: 0.12,
 
   grip: 1.55,
-  longitudinalGrip: 1.22,
+  longitudinalGrip: 1.3,
   peakSlipAngle: 0.13,
   slipFalloff: 0.25,
   frontGripBias: 0.96,
@@ -106,7 +106,7 @@ export const F1_SPEC: Readonly<CarSpec> = {
   shiftRpm: 11_900,
   limiterRpm: 12_500,
   gearRatios: [19.17, 13.79, 10.85, 8.94, 7.58, 6.52, 5.61, 4.72],
-  gearTorqueMap: [0.6, 0.72, 0.84, 0.93, 1, 1, 1, 1],
+  gearTorqueMap: [0.56, 0.7, 0.84, 0.93, 1, 1, 1, 1],
   shiftTime: 0.06,
   reverseRatio: 18,
   reverseMaxSpeed: 7,

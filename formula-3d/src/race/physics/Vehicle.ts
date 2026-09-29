@@ -416,13 +416,15 @@ export class Vehicle {
     const slipRear = Math.atan2(this.vy - spec.cgToRear * this.yawRate, denom);
     const shape = tireShape(spec);
     // Círculo de fricción algo generoso (×0,85): se puede doblar un poco frenando a fondo.
+    // Atrás, al acelerar, todavía más (×0,7): el diferencial y la carga aerodinámica
+    // sostienen la cola a la salida de las curvas (tracción con el volante girado).
     const usageFront = Math.min(1, Math.abs(longFront) / Math.max(1, longCapFront)) * 0.85;
-    const usageRear = Math.min(1, Math.abs(longRear) / Math.max(1, longCapRear)) * 0.85;
+    const usageRear = Math.min(1, Math.abs(longRear) / Math.max(1, longCapRear)) * (longRear > 0 ? 0.7 : 0.85);
     let lateralFront = -capFront * magicFormula(slipFront, shape) * Math.sqrt(1 - usageFront * usageFront);
     let lateralRear = -capRear * magicFormula(slipRear, shape) * Math.sqrt(1 - usageRear * usageRear);
     lateralFront *= 1 - 0.75 * lockFront;
     // Ruedas que patinan pierden agarre lateral de forma progresiva (se puede corregir).
-    lateralRear *= (1 - 0.7 * lockRear) * (1 - 0.35 * wheelspin);
+    lateralRear *= (1 - 0.7 * lockRear) * (1 - 0.2 * wheelspin);
 
     // ─── Arrastre de la superficie por rueda (tira del auto hacia el pasto) ───
     let surfaceFx = 0;

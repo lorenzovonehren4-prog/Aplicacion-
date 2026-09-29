@@ -228,6 +228,34 @@ describe('curvas rápidas con la flecha mantenida', () => {
   });
 });
 
+describe('tracción a la salida de las curvas', () => {
+  /** Curva lenta con el volante girado y acelerador a fondo sin control de tracción: deriva máx y velocidad ganada. */
+  function exitCorner(kmh: number): { drift: number; gained: number } {
+    const car = new Vehicle(F1_SPEC, SKIDPAD);
+    car.placeAt(0, 0);
+    car.vx = kmh / 3.6;
+    car.electronics = { tractionControl: 0, abs: true, stability: 0 };
+    let drift = 0;
+    // Se asienta en la curva a velocidad constante y después pisa a fondo con medio volante.
+    for (let t = 0; t < 1.5; t += STEP) car.step(STEP, { throttle: 0.35, brake: 0, steer: 0.5, drs: false });
+    const start = car.speed;
+    for (let t = 0; t < 1.5; t += STEP) {
+      car.step(STEP, { throttle: 1, brake: 0, steer: 0.5, drs: false });
+      drift = Math.max(drift, Math.abs(Math.atan2(car.vy, car.vx)));
+    }
+    return { drift, gained: car.speed - start };
+  }
+
+  it('a fondo con el volante girado la cola aguanta y el auto acelera', () => {
+    for (const kmh of [80, 120]) {
+      const { drift, gained } = exitCorner(kmh);
+      console.info(`salida de curva a ${kmh} km/h: deriva ${((drift * 180) / Math.PI).toFixed(1)}° · +${(gained * 3.6).toFixed(0)} km/h`);
+      expect(drift).toBeLessThan(0.2);
+      expect(gained).toBeGreaterThan(3);
+    }
+  });
+});
+
 describe('mandos de manejo', () => {
   it('curva del stick con zona muerta y sensibilidad', async () => {
     const { shapeStick } = await import('../src/race/input/DrivingInput');
