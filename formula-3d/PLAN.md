@@ -1014,6 +1014,30 @@ revisión propia del código + resumen y espera de confirmación.
       franjas de corte suaves y manchas de pasto seco.
 - [x] Árboles con copas subdivididas en Alta y Ultra (no se ven facetadas).
 
+### Versión 1.6 — Trazados reales, pistas más anchas y dirección progresiva ✅
+
+- [x] Trazado real: nuevo formato de circuito `layout: { kind: 'points' }`
+      con la línea central medida (TUMFTM racetrack-database, de
+      OpenStreetMap, LGPL-3.0; archivos en `tracks/data/real/` con su
+      licencia). Conversión: eje z invertido (norte = −Z), inicio rotado a la
+      salida de la última curva, suavizado gaussiano de 16 m (los vértices del
+      mapa tenían quiebres que el juego tomaba como curvas cerradas: Ascari a
+      71 km/h) y re-muestreo cada 6 m. Albert Park con el trazado de 2022 (la
+      vieja chicana 9-10 suavizada en curva rápida: 5,303 → 5,278 km, como el
+      cambio real). La trazada ideal da ~81 s en Albert Park y ~78 s en Monza.
+- [x] Meta, sectores, boxes, DRS (4 zonas en Albert Park), escapatorias,
+      tribunas, puente de la Sopraelevata y el lago (contorno calculado dentro
+      del circuito, a 75 m de la pista) reubicados sobre los trazados reales.
+- [x] Pistas más anchas que las reales para tener más margen: Albert Park
+      18 m, Monza 17,5 m.
+- [x] Dirección con teclado progresiva: el giro sale del tiempo que mantienes
+      la flecha, giro = (t / T)^1,6, con T de 0,35 s (despacio) a 1 s (a
+      fondo) y ×1,4 con la dirección asistida: un toque de 0,15 s a 250 km/h
+      gira ~3 %. La ayuda de dirección ayuda en proporción a lo que pides (un
+      toque ya no se convierte en volantazo).
+- [x] Pruebas adaptadas a los trazados reales (quiebres rápidos cuentan como
+      curvas del análisis; el piloto de prueba por el centro es más lento).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1096,3 +1120,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.3**: menús y su calidad (pedido del usuario).
 - **Versión 1.4**: texturas, ayudas de frenado/dirección y línea dinámica (pedido del usuario).
 - **Versión 1.5**: rojo con tiempo en la línea dinámica y gráficos de pista (pedido del usuario).
+- **Versión 1.6**: trazados reales, pistas más anchas y dirección progresiva (pedido del usuario).

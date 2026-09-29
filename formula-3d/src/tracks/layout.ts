@@ -5,9 +5,12 @@
  *
  * Si el trazado de diseño no cierra exactamente (siempre queda un pequeño
  * desfase de redondeo), el error se reparte a lo largo de toda la vuelta.
+ *
+ * Los trazados reales (`kind: 'points'`) ya vienen como puntos: sólo se
+ * miden las distancias.
  */
 
-import type { TrackLayout } from './TrackDefinition';
+import type { PointsLayout, TrackLayout } from './TrackDefinition';
 
 export interface TracedLayout {
   /** Puntos en coordenadas de diseño (x, z), sin repetir el primero al final. */
@@ -34,7 +37,25 @@ function right(theta: number): [number, number] {
   return [Math.cos(theta), Math.sin(theta)];
 }
 
+/** Trazado real: los puntos tal cual, con su distancia acumulada (cierra solo). */
+function tracePoints(layout: PointsLayout): TracedLayout {
+  const points = layout.points.map(([px, pz]) => [px, pz] as [number, number]);
+  const distances: number[] = [];
+  let travelled = 0;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i] ?? [0, 0];
+    const previous = points[i - 1];
+    if (previous) travelled += Math.hypot(p[0] - previous[0], p[1] - previous[1]);
+    distances.push(travelled);
+  }
+  const first = points[0] ?? [0, 0];
+  const last = points[points.length - 1] ?? first;
+  const length = travelled + Math.hypot(first[0] - last[0], first[1] - last[1]);
+  return { points, distances, length, closureError: 0, headingError: 0 };
+}
+
 export function traceLayout(layout: TrackLayout, step = 8): TracedLayout {
+  if (layout.kind === 'points') return tracePoints(layout);
   let x = layout.start[0];
   let z = layout.start[1];
   let theta = layout.heading * DEG;

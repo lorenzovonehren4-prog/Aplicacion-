@@ -59,13 +59,13 @@ describe('práctica libre', () => {
 
   it('con el piloto automático completa una vuelta válida, pasa por las zonas de DRS y la cronometra', () => {
     const session = practice();
-    const events = drive(session, 150, (list) => list.some((e) => e.kind === 'lapCompleted'));
+    const events = drive(session, 200, (list) => list.some((e) => e.kind === 'lapCompleted'));
     const lap = events.find((e) => e.kind === 'lapCompleted');
     expect(lap?.kind).toBe('lapCompleted');
     if (lap?.kind !== 'lapCompleted') return;
     expect(lap.lap.valid).toBe(true);
     expect(lap.lap.time).toBeGreaterThan(80);
-    expect(lap.lap.time).toBeLessThan(125);
+    expect(lap.lap.time).toBeLessThan(160);
     expect(lap.personalBest).toBe(true);
     expect(events.filter((e) => e.kind === 'sector')).toHaveLength(2);
     expect(events.filter((e) => e.kind === 'drsZone' && e.entered).length).toBeGreaterThanOrEqual(3);
@@ -120,7 +120,7 @@ describe('carrera', () => {
 
   it('a 2 vueltas: DRS desde la vuelta 2, última vuelta, bandera y enfriamiento', () => {
     const session = race(2);
-    const events = drive(session, 260, (list) => list.some((e) => e.kind === 'finished'));
+    const events = drive(session, 360, (list) => list.some((e) => e.kind === 'finished'));
     const kinds = events.map((e) => e.kind);
     // En la vuelta 1 no hay DRS; se habilita al empezar la 2, que es la última.
     const firstOpen = kinds.indexOf('drsOpened');

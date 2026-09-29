@@ -8,9 +8,9 @@
  * - Sólo corrige si ya estás girando hacia el mismo lado que pide la curva:
  *   si no tocas el volante o giras al revés (para adelantar o esquivar), no
  *   hace nada. Nunca maneja por ti.
- * - Con teclado (siempre a fondo) quita casi todo el giro de más, que haría
- *   patinar el tren delantero y cerrarse hacia adentro; con un giro tímido,
- *   completa lo que falta.
+ * - Si giras de más, quita casi todo el exceso (que haría patinar el tren
+ *   delantero); si giras de menos, ayuda en proporción a lo que pides: un
+ *   toque corto recibe poca ayuda.
  */
 
 import type { RacingLine } from '../tracks/RacingLine';
@@ -73,13 +73,15 @@ export class SteeringAssist {
     if (corner < 0.5) return out;
     const ideal = this.idealSteer(car);
     if (Math.sign(ideal) !== Math.sign(input.steer)) return out;
-    // Más giro que el ideal (típico con teclado, siempre a fondo): se queda
-    // casi en el ideal, dejando un poco de tu intención para cerrar la línea.
-    // Menos giro que el ideal: completa buena parte de lo que falta.
+    // Más giro que el ideal: se queda casi en el ideal, dejando un poco de tu
+    // intención para cerrar la línea. Menos giro que el ideal: ayuda en
+    // proporción a lo que pides (un toque corto recibe poca ayuda: nunca un
+    // volantazo que no pediste).
+    const asked = Math.min(1, Math.abs(input.steer) / Math.max(1e-3, Math.abs(ideal)));
     const steer =
       Math.abs(input.steer) >= Math.abs(ideal)
         ? ideal + (input.steer - ideal) * EXTRA_KEPT
-        : input.steer + (ideal - input.steer) * STRENGTH;
+        : input.steer + (ideal - input.steer) * STRENGTH * asked;
     this.active = Math.abs(steer - input.steer) > 0.08;
     out.steer = steer;
     return out;

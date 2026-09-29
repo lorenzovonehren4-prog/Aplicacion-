@@ -29,13 +29,26 @@ export type LayoutSegment =
       name?: string;
     };
 
-export interface TrackLayout {
+/** Trazado de diseño armado con rectas y arcos (como con una tortuga). */
+export interface SegmentLayout {
+  kind?: 'segments';
   /** Punto de partida del primer tramo, en el plano (x, z). */
   start: readonly [number, number];
   /** Rumbo inicial en grados: 0 = hacia −Z (norte), 90 = hacia +X (este). */
   heading: number;
   segments: readonly LayoutSegment[];
 }
+
+/**
+ * Trazado real: la línea central medida del circuito, como puntos (x, z) en
+ * metros en sentido de marcha (vuelta cerrada: el último se une al primero).
+ */
+export interface PointsLayout {
+  kind: 'points';
+  points: ReadonlyArray<readonly [number, number]>;
+}
+
+export type TrackLayout = SegmentLayout | PointsLayout;
 
 export interface Grandstand {
   /** Posición a lo largo del circuito (m de diseño). */

@@ -2,9 +2,12 @@
  * Mandos de manejo a partir del teclado y el gamepad. Ver PLAN.md §4.7.
  *
  * Teclado: los mandos son digitales, así que se suavizan con rampas (el
- * acelerador sube en ~0,17 s; la dirección gira más despacio a alta velocidad
- * y vuelve al centro más rápido de lo que gira), para que el auto sea
- * predecible sin pedal ni volante.
+ * acelerador sube en ~0,17 s). La dirección es progresiva según cuánto
+ * tiempo mantienes la flecha: un toque corto gira apenas y mantenerla gira
+ * cada vez más (curva que arranca suave: giro = (tiempo / T)^1,6), hasta el
+ * tope en T segundos. T crece con la velocidad (a fondo en una recta, un
+ * toque no mueve el auto) y es más largo con la dirección asistida. Al
+ * soltar vuelve al centro más rápido de lo que gira.
  * Gamepad: gatillos analógicos y stick con zona muerta y curva de respuesta.
  *
  * Teclas (reasignables en Ajustes → Controles, `core/input/bindings.ts`): por
@@ -42,6 +45,8 @@ const THROTTLE_DOWN = 9;
 const BRAKE_UP = 7;
 const BRAKE_DOWN = 10;
 const STEER_RETURN = 5.5;
+/** Exponente de la curva de giro progresivo del teclado (1 = lineal; más, arranque más suave). */
+const STEER_CURVE = 1.6;
 
 export class DrivingInput {
   readonly controls: DrivingControls = { throttle: 0, brake: 0, steer: 0 };
@@ -110,14 +115,20 @@ export class DrivingInput {
       c.steer = damp(c.steer, padSteer, assisted ? 11 : 20, dt);
     } else {
       const target = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0);
-      // Más rápido a baja velocidad (maniobrar) y más suave a alta (estabilidad).
-      const rate = (3.8 - 2.1 * clamp(speed / 80, 0, 1)) * settings.steeringSensitivity * (assisted ? 0.8 : 1);
       if (target === 0) {
         c.steer = moveTowards(c.steer, 0, STEER_RETURN * dt);
+      } else if (Math.sign(c.steer) !== 0 && Math.sign(c.steer) !== target) {
+        // Cambiar de lado: primero vuelve al centro (rápido) y después gira.
+        c.steer = moveTowards(c.steer, 0, (STEER_RETURN + 2) * dt);
       } else {
-        // Cambiar de lado usa la vuelta al centro + el giro.
-        const opposite = Math.sign(c.steer) !== 0 && Math.sign(c.steer) !== target;
-        c.steer = moveTowards(c.steer, target, (opposite ? rate + STEER_RETURN : rate) * dt);
+        // Segundos de flecha pulsada hasta el tope: pocos para maniobrar
+        // despacio, más a alta velocidad y con la dirección asistida.
+        const fullLock =
+          ((0.35 + 0.65 * clamp(speed / 80, 0, 1)) / Math.max(0.3, settings.steeringSensitivity)) * (assisted ? 1.4 : 1);
+        // Sin guardar el tiempo: se deduce del giro actual (así un toque suelto
+        // y vuelto a pulsar sigue desde donde quedó).
+        const held = Math.pow(Math.abs(c.steer), 1 / STEER_CURVE) * fullLock + dt;
+        c.steer = target * Math.min(1, Math.pow(held / fullLock, STEER_CURVE));
       }
     }
 

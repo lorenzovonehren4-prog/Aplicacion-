@@ -64,7 +64,7 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 1.5.0: las 9 fases del documento de diseño están completas, con
+Versión 1.6.0: las 9 fases del documento de diseño están completas, con
 más tracción en curvas, carga y carrera más fluidas, pistas más anchas,
 gráficos mejorados, circuitos con más detalle (asfalto con goma y marcas,
 árboles con viento, barreras de neumáticos, horizonte y público animado) y
@@ -73,7 +73,9 @@ recorre la vuelta, vista previa del campeonato), texturas nítidas
 (anisotrópico 8–16×, mipmaps, doble resolución y detalle cercano), ayuda de
 dirección hacia el ápice con anti-derrape en Principiante y línea de
 trazada dinámica en todos los niveles, que se pone roja con tiempo para
-frenar suave y doblar.
+frenar suave y doblar. Los circuitos usan el trazado real (línea central
+medida) y son algo más anchos que los reales; la dirección con teclado es
+progresiva (cuanto más tiempo mantienes la flecha, más gira).
 Albert Park y Monza, con pantalla de selección de carrera. Modos: práctica
 libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales con IA de 5
 dificultades), contrarreloj con fantasma y campeonato con puntos. XP y
@@ -91,3 +93,11 @@ tres cámaras, sonido 3D, HUD con radio, ayudas por niveles y rendimiento
 automático. Después de una carrera con rivales, el podio 3D con confeti,
 serpentinas, champán y fuegos artificiales (el festejo equipado se luce más).
 Ver la sección **Fases** de `PLAN.md`.
+
+## Créditos de datos
+
+Los trazados de Albert Park y Monza vienen de la
+[TUMFTM racetrack-database](https://github.com/TUMFTM/racetrack-database)
+(Universidad Técnica de Múnich), derivada de OpenStreetMap (© colaboradores
+de OpenStreetMap), bajo licencia LGPL-3.0. Los archivos convertidos y la
+licencia están en `src/tracks/data/real/`.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { InputManager } from '../src/core/input/InputManager';
 import { createDefaultControls } from '../src/core/save/schema';
 import { F1_SPEC } from '../src/race/physics/CarSpec';
 import { Gearbox } from '../src/race/physics/Gearbox';
@@ -68,12 +69,14 @@ describe('prestaciones del monoplaza', () => {
       break;
     }
     // Recta infinita: se reubica al auto en la recta cada vez que se acerca a la curva.
+    // La recta real tiene leves curvas: el volante sigue el centro, el pie va a fondo.
     let top = 0;
     let s = track.gridSlot(19).s;
     for (let i = 0; i < 120 * 45; i++) {
-      car.step(STEP, { throttle: 1, brake: 0, steer: 0, drs: false });
+      const steer = autopilot(car, track).steer;
+      car.step(STEP, { throttle: 1, brake: 0, steer, drs: false });
       top = Math.max(top, car.speed);
-      if (track.geometry.deltaS(s, car.projection.s) > 700) {
+      if (track.geometry.deltaS(s, car.projection.s) > 380) {
         const speed = car.vx;
         const gear = car.gearbox.gear;
         car.placeAt(s, 0);
@@ -155,10 +158,11 @@ describe('vuelta completa con piloto automático', () => {
     expect(travelled).toBeGreaterThanOrEqual(track.length);
     expect(impacts).toBe(0);
     expect(offTrackTime).toBeLessThan(1);
-    // El piloto de prueba va por el centro y con margen: más lento que un humano
-    // (con las curvas lentas del trazado real, unos 112 s; la trazada ideal, ~71 s).
+    // El piloto de prueba va por el centro y con margen: mucho más lento que un
+    // humano. En el trazado real las curvas por el centro son cerradas (unos
+    // 138 s); por la trazada ideal la vuelta es de ~81 s.
     expect(time).toBeGreaterThan(75);
-    expect(time).toBeLessThan(118);
+    expect(time).toBeLessThan(150);
     expect(maxLateralG).toBeGreaterThan(2.5);
   });
 });
@@ -268,5 +272,35 @@ describe('mandos de manejo', () => {
     expect(shapeStick(0.55, base)).toBeLessThan(0.5);
     // Más sensibilidad = más respuesta a mitad de recorrido.
     expect(shapeStick(0.55, { ...base, steeringSensitivity: 1.5 })).toBeGreaterThan(shapeStick(0.55, base));
+  });
+
+  it('teclado: el giro crece con el tiempo que mantienes la flecha (un toque gira poco)', async () => {
+    const { DrivingInput } = await import('../src/race/input/DrivingInput');
+    const keys = new Set<string>();
+    const fake = {
+      isKeyDown: (code: string) => keys.has(code),
+      get gamepad() {
+        return null;
+      },
+      onKey: () => () => undefined,
+    } as unknown as InputManager;
+    /** Giro después de mantener la flecha derecha `seconds` a `speed` m/s. */
+    const hold = (seconds: number, speed: number, assisted: boolean): number => {
+      const input = new DrivingInput(fake, createDefaultControls, () => assisted);
+      keys.add('ArrowRight');
+      for (let t = 0; t < seconds - 1e-9; t += STEP) input.update(STEP, speed);
+      keys.clear();
+      return input.controls.steer;
+    };
+    // A 250 km/h con la dirección asistida: un toque de 0,15 s casi no gira…
+    expect(hold(0.15, 70, true)).toBeLessThan(0.05);
+    // …medio segundo gira algo, y mantenerla llega al tope.
+    expect(hold(0.5, 70, true)).toBeGreaterThan(0.1);
+    expect(hold(0.5, 70, true)).toBeLessThan(0.3);
+    expect(hold(1.5, 70, true)).toBe(1);
+    // Despacio (maniobrar) llega al tope enseguida.
+    expect(hold(0.4, 3, false)).toBe(1);
+    // Más tiempo pulsada = más giro, siempre.
+    expect(hold(0.3, 40, false)).toBeLessThan(hold(0.6, 40, false));
   });
 });

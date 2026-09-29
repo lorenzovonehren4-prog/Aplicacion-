@@ -10,11 +10,27 @@ import { Vehicle, type DriverInput } from '../src/race/physics/Vehicle';
 import { AUSTRALIA } from '../src/tracks/data/australia';
 import { LINE_GREEN, LINE_RED, LINE_YELLOW } from '../src/tracks/RacingLine';
 import { Track } from '../src/tracks/Track';
+import type { Corner } from '../src/tracks/TrackAnalysis';
 
 const STEP = 1 / 120;
 const track = Track.load(AUSTRALIA);
 const line = track.racingLine;
 const centerline = { speedAt: (s: number) => track.centerSpeedAt(s) };
+
+/**
+ * Frenadas fuertes (más de 100 km/h menos) que llegan por una recta: ninguna
+ * otra curva con frenada termina en los `clear` m antes de su punto de
+ * frenada (en el trazado real hay quiebres rápidos que no cuentan).
+ */
+function hardCorners(clear = 150): Corner[] {
+  const all = track.analysis.corners;
+  const braking = all.filter((c) => c.brakingPoint !== null);
+  return braking.filter((c, i) => {
+    const previous = braking[(i - 1 + braking.length) % braking.length];
+    const room = previous && previous !== c ? track.geometry.deltaS(previous.end, c.brakingPoint ?? c.start) : Infinity;
+    return c.entrySpeed - c.safeSpeed > 28 && room > clear;
+  });
+}
 
 describe('niveles de ayudas', () => {
   it('cada nivel activa lo que dice la tabla del documento de diseño', () => {
@@ -57,8 +73,9 @@ describe('trazada ideal', () => {
   });
 
   it('en las curvas lentas después de una recta entra por afuera y toca el ápice por dentro', () => {
-    // Frenadas fuertes (más de 100 km/h): llegan desde una recta, sin otra curva pegada.
-    const slow = track.analysis.corners.filter((c) => c.entrySpeed - c.safeSpeed > 28);
+    // Sólo curvas cerradas de verdad (un quiebre rápido con frenada, pegado a
+    // la curva siguiente, se entra del lado que prepara esa otra curva).
+    const slow = hardCorners().filter((c) => c.radius < 80);
     expect(slow.length).toBeGreaterThanOrEqual(3);
     for (const corner of slow) {
       const inside = corner.direction === 'right' ? 1 : -1;
@@ -68,8 +85,9 @@ describe('trazada ideal', () => {
   });
 
   it('pinta de rojo las frenadas y de verde las rectas; en "sólo curvas" las rectas se ocultan', () => {
-    const c1 = track.analysis.corners[0];
-    if (!c1?.brakingPoint) throw new Error('La curva 1 debería tener frenada.');
+    // La primera frenada fuerte (en el trazado real hay quiebres rápidos antes).
+    const c1 = hardCorners()[0];
+    if (!c1?.brakingPoint) throw new Error('Falta una frenada fuerte.');
     // En los 150 m antes del ápice de la curva 1 hay frenada fuerte (rojo).
     let reddest = 0;
     for (let x = 0; x < 150; x += line.step) reddest = Math.max(reddest, line.state[line.indexAt(c1.apex - x)] ?? 0);
@@ -260,8 +278,8 @@ describe('línea dinámica', () => {
 
   it('el color depende de TU velocidad: a la velocidad de la curva es verde, pasado se pone rojo', () => {
     const mesh = new RacingLineMesh(line, performanceModel(F1_SPEC));
-    const c1 = track.analysis.corners[0];
-    if (!c1) throw new Error('Falta la curva 1.');
+    const c1 = hardCorners()[0];
+    if (!c1) throw new Error('Falta una frenada fuerte.');
     const s = c1.apex - 80;
     expect(mesh.computeTargets(s, line.speedAt(c1.apex))[line.indexAt(c1.apex)]).toBe(LINE_GREEN);
     expect(mesh.computeTargets(s, 85)[line.indexAt(s)]).toBe(LINE_RED);
@@ -272,23 +290,29 @@ describe('línea dinámica', () => {
     const mesh = new RacingLineMesh(line, performanceModel(F1_SPEC));
     /** Metros que usa el auto real para bajar de `from` a `to` frenando al 50 % en una recta. */
     const brakingDistance = (from: number, to: number): number => {
+      // En la recta principal, con el volante siguiendo el centro (la recta real no es perfecta).
       const car = new Vehicle(F1_SPEC, track);
-      car.placeAt(track.startS - 900, 0);
+      car.placeAt(track.startS - 100, 0);
       car.gearbox.reset(7);
       car.vx = from;
+      const follower = new LineFollower(track);
       const input: DriverInput = { throttle: 0, brake: 0.5, steer: 0, drs: false };
       const start = car.projection.s;
-      for (let t = 0; t < 10 && car.vx > to; t += STEP) car.step(STEP, input);
+      for (let t = 0; t < 10 && car.vx > to; t += STEP) {
+        input.steer = follower.drive(car, STEP, { ...input }).steer;
+        car.step(STEP, input);
+      }
       return track.geometry.deltaS(start, car.projection.s);
     };
-    // Las frenadas más fuertes (desde una recta).
+    // Las frenadas fuertes que llegan por una recta larga (el rojo es de esa curva).
     const all = track.analysis.corners;
-    const hard = all.filter((c) => c.entrySpeed - c.safeSpeed > 28);
+    const hard = hardCorners(250);
     expect(hard.length).toBeGreaterThanOrEqual(3);
     for (const corner of hard) {
       const speed = corner.entrySpeed;
-      // Desde la salida de la curva anterior (si no, el rojo sería de esa otra curva).
-      const previous = all[(all.indexOf(corner) - 1 + all.length) % all.length];
+      const index = all.indexOf(corner);
+      let previous = all[(index - 1 + all.length) % all.length];
+      for (let k = 1; k < all.length && previous?.brakingPoint === null; k++) previous = all[(index - 1 - k + all.length * 2) % all.length];
       const room = previous ? track.geometry.deltaS(previous.end, corner.apex) : 600;
       let red = -1;
       let yellow = -1;

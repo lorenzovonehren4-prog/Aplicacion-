@@ -46,7 +46,7 @@ describe('fantasma', () => {
     expect(session.isTimeTrial).toBe(true);
     expect(session.ghost).toBeNull();
     const events: SessionEvent[] = [];
-    for (let t = 0; t < 150 && !events.some((e) => e.kind === 'ghostLap'); t += STEP) {
+    for (let t = 0; t < 400 && !events.some((e) => e.kind === 'ghostLap'); t += STEP) {
       const input = autopilot(session.vehicle, track);
       events.push(...session.step(STEP, input, false));
     }
