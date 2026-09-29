@@ -382,6 +382,19 @@ Nada más cambia.
   potencia en cada cambio y caída de rpm audible).
 - **Dirección**: ángulo máximo que baja con la velocidad, suavizado, y un
   amortiguador de guiñada para que el auto sea estable y predecible.
+- **Curvas rápidas** (ajuste de la Fase 7, a pedido del usuario: con la flecha
+  mantenida el auto hacía trompo desde ~240 km/h):
+  - *Limitador de agarre*: sobre ~45 km/h las ruedas no giran más allá del
+    pico de deriva respecto de la dirección real del eje delantero (lo que
+    haría un piloto; con teclado no se puede dosificar). Deja contravolantear.
+  - El *control de estabilidad* (ayuda de Principiante) mira sólo la deriva
+    trasera; antes la comparaba con la delantera y con el volante a fondo
+    nunca se activaba.
+  - Balance aerodinámico 42 % adelante (era 44 %): a alta velocidad la cola
+    tiene más carga que la trompa, como en un F1 real.
+  - Medido con la flecha mantenida 3 s (`tests/physics.test.ts`): sin
+    trompos a 180, 240 ni 290 km/h; deriva máxima ≈ 12° sin ayudas y ≈ 8°
+    con estabilidad; más de 4 g laterales a 290 km/h.
 - **Colisiones** [4]: autos como cápsulas orientadas (dos círculos) → impulso con
   restitución baja y fricción; muros por coordenada de pista (`|d| > límite`) →
   rebote que conserva parte de la velocidad tangencial + sacudida de cámara.
@@ -791,11 +804,30 @@ revisión propia del código + resumen y espera de confirmación.
       detalle del elegido y títulos / avatares que se equipan con ENTER (se
       ven en la tarjeta del piloto del menú).
 
-### Fase 7 — Garaje
+### Fase 7 — Garaje ✅
 
-- [ ] Catálogo de ítems con rarezas y niveles.
-- [ ] Garaje 3D: colores, patrones de livery, número, llantas, franja del
-      neumático, alerones, casco, materiales PBR. Vista previa en vivo.
+- [x] Curvas rápidas estables (pedido del usuario al empezar la fase): ver
+      §5.2 "Curvas rápidas".
+- [x] Catálogo con rarezas y niveles (`progression/items.ts`): de fábrica
+      (brillante, tapa aerodinámica, alerón y casco del equipo), 50 del pase
+      y 10 que se desbloquean por nivel de piloto (llantas blancas en el 3,
+      casco de franja en el 5, alerón de alta carga en el 8, metal satinado en
+      el 12… cromo en el 25, pintura "Veterano" en el 40, casco "Leyenda" en
+      el 50). Patrones y colores especiales también piden nivel
+      (`garage/setup.ts`).
+- [x] Garaje (`GarageScreen.ts`) en el mismo estudio del menú, con la cámara
+      que se acerca a la pieza de cada pestaña (costado, vista general, rueda,
+      alerón, casco, morro). Enfocar un ítem lo muestra en vivo (también los
+      bloqueados, con candado y cómo se consiguen); ENTER equipa. Pintura:
+      pinturas listas + patrón y tres colores; neumático: franja del compuesto;
+      número 1–99.
+- [x] Auto personalizable (`CarModel.setLivery`): 6 patrones de livery en
+      canvas, acabados PBR con `MeshPhysicalMaterial` (brillante, mate, metal
+      satinado, metalizado, carbono visible, cromo, perlado con iridiscencia),
+      llantas con rayos, 6 formas de alerón trasero (se reconstruye sólo el
+      alerón), 7 diseños de casco.
+- [x] Lo elegido se guarda (`SaveData.garage`, con saneo: sólo piezas que se
+      tienen) y se ve en el menú, en la carrera y en la torre (número).
 
 ### Fase 8 — Perfil, ajustes completos, audio completo, manual y tutorial
 
@@ -819,17 +851,15 @@ revisión propia del código + resumen y espera de confirmación.
 
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
-| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 7, 8 |
-| Usar pinturas, materiales, llantas, alerones y cascos ganados | Ya están en `progression.unlocked` con sus datos de dibujo (`progression/items.ts`); el garaje los aplica | 7 |
+| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 8 |
 | Celebraciones de podio ganadas | En el catálogo (confeti, champán, fuegos artificiales); se ven en el podio 3D | 9 |
-| Nivel del piloto como requisito de ítems del garaje | La curva 1–100 ya funciona; los ítems del garaje con nivel mínimo llegan con el garaje | 7 |
 | Volumen de Música | No se muestra hasta que haya música | 8 |
 | Manual de ayudas | Los textos de cada ayuda ya están en `assists/presets.ts` | 8 |
 | Tutorial inicial | El splash va siempre al menú; las ayudas arrancan en Principiante | 8 |
 | Nombre del piloto editable | Por ahora "PILOTO" | 8 (tutorial y perfil) |
 | Música de menú | — | 8 |
-| Patrones de livery y materiales | El auto usa la livery base del jugador | 7 |
-| Logos del equipo en los pontones de los rivales | Los rivales llevan colores y número; el logo (decal) sólo el auto del jugador | 7 |
+| Logos del equipo en los pontones de los rivales | Los rivales llevan colores y número; el logo (decal) sólo el auto del jugador. Con los rivales instanciados hace falta un atlas de logos por equipo: se deja para el pulido (la Fase 7 se dedicó al garaje y al manejo pedido por el usuario) | 9 |
+| Patrones y acabados en los rivales | Los rivales usan su color de equipo con el acabado brillante (instanciados, un solo material) | 9 |
 | Humo y chispas en los choques entre autos | Suenan y sacuden la cámara; las partículas llegan con el resto de efectos | 9 |
 
 ### Notas de pruebas
@@ -849,6 +879,9 @@ revisión propia del código + resumen y espera de confirmación.
   2 vueltas con 11 bots y el jugador manejado por un `BotDriver`, comprobando
   que todos reciben la bandera, la tabla y los intervalos, y que casi no hay
   choques fuertes. La prueba de humo verifica la torre y el minimapa.
+- El garaje se prueba sin navegador (`tests/garage.test.ts`): propiedad de
+  ítems por fábrica / nivel / pase, conversión a livery y saneo. La prueba de
+  humo entra al garaje, cambia de pestaña con Q y sube el número.
 - La progresión se prueba sin navegador (`tests/progression.test.ts`):
   catálogo, XP de cada modo, subidas de nivel, pase y saneo de lo equipado.
   La prueba de humo abre el pase de temporada desde el menú.
@@ -882,4 +915,6 @@ revisión propia del código + resumen y espera de confirmación.
 - **Fase 4**: completa (incluye la ronda de rendimiento).
 - **Fase 5**: completa (el usuario pidió seguir sin esperar confirmación entre
   la 4 y la 5).
-- **Fase 6**: completa; se espera la confirmación del usuario para la Fase 7.
+- **Fase 6**: completa.
+- **Fase 7**: completa (incluye el ajuste de curvas rápidas que pidió el
+  usuario); se espera su confirmación para la Fase 8.

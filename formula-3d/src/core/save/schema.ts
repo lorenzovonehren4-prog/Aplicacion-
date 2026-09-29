@@ -12,6 +12,7 @@ import {
   type ShadowLevel,
 } from '../render/quality';
 import { STARTER_ITEM_IDS } from '../../progression/items';
+import { createDefaultGarage, type GarageSetup } from '../../garage/setup';
 
 export const SAVE_VERSION = 1;
 
@@ -177,6 +178,8 @@ export interface SaveData {
   records: Record<string, TrackRecord>;
   /** Campeonato en curso (o terminado, hasta empezar otro). */
   championship: ChampionshipState | null;
+  /** Lo que el jugador armó en el garaje (pintura, material, llantas…). */
+  garage: GarageSetup;
 }
 
 /** Resultado de un piloto en una carrera del campeonato. */
@@ -266,5 +269,6 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
     },
     records: {},
     championship: null,
+    garage: createDefaultGarage(),
   };
 }

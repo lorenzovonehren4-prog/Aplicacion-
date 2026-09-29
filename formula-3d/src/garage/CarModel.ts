@@ -23,6 +23,7 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
+  type MeshPhysicalMaterialParameters,
   PlaneGeometry,
   Shape,
   SphereGeometry,
@@ -41,12 +42,13 @@ import {
   createHelmetTexture,
   createLiveryTexture,
   createNumberTexture,
+  createRimTexture,
   createTireTexture,
-  createWheelCoverTexture,
   createWordmarkTexture,
   TIRE_SIDEWALL_POINTS,
 } from './carTextures';
-import type { LiveryConfig } from './livery';
+import type { Finish, WingShape } from '../progression/items';
+import type { LiveryConfig, RimsLook } from './livery';
 import { LoftSurface, type LoftSection } from './Loft';
 
 /** Nombre ficticio del equipo del jugador y de la marca de neumáticos. */
@@ -142,19 +144,46 @@ type MaterialKey =
   | 'helmet'
   | 'visor';
 
-function createMaterials(livery: LiveryConfig, anisotropy: number, own: Disposer): Record<MaterialKey, Material> {
-  const tex = <T extends Texture>(t: T): T => own.own(t);
-  const liveryMap = tex(createLiveryTexture(livery, anisotropy));
-  const carbonMap = tex(createCarbonTexture(anisotropy));
+/** Parámetros de la pintura según el acabado elegido en el garaje. */
+const FINISHES: Readonly<Record<Finish, Partial<MeshPhysicalMaterialParameters>>> = {
+  gloss: { roughness: 0.32, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.09, iridescence: 0, envMapIntensity: 1 },
+  matte: { roughness: 0.78, metalness: 0.05, clearcoat: 0, clearcoatRoughness: 0.5, iridescence: 0, envMapIntensity: 1 },
+  satin: { roughness: 0.48, metalness: 0.75, clearcoat: 0.25, clearcoatRoughness: 0.4, iridescence: 0, envMapIntensity: 1.2 },
+  metallic: { roughness: 0.26, metalness: 0.62, clearcoat: 1, clearcoatRoughness: 0.05, iridescence: 0, envMapIntensity: 1.2 },
+  carbon: { roughness: 0.34, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, iridescence: 0, envMapIntensity: 1 },
+  // Cromo: casi espejo, con más reflejo del entorno para que no se vea negro en lugares oscuros.
+  chrome: { roughness: 0.1, metalness: 0.9, clearcoat: 1, clearcoatRoughness: 0.02, iridescence: 0, envMapIntensity: 2.2 },
+  pearl: {
+    roughness: 0.24,
+    metalness: 0.3,
+    clearcoat: 1,
+    clearcoatRoughness: 0.06,
+    iridescence: 1,
+    iridescenceIOR: 1.55,
+    iridescenceThicknessRange: [180, 640],
+    envMapIntensity: 1.2,
+  },
+};
+
+/** Materiales pintados (los que cambian con el acabado). */
+const PAINTED: readonly MaterialKey[] = ['livery', 'primary', 'secondary', 'endplate', 'helmet'];
+
+/** Llantas de fábrica (tapa lisa) si la livery no dice otra cosa. */
+function rimsOf(livery: LiveryConfig): RimsLook {
+  return livery.rims ?? { spokes: 10, color: '#50545c', accent: livery.tireStripe, cover: true };
+}
+
+function createMaterials(own: Disposer): Record<MaterialKey, Material> {
+  const carbonMap = own.own(createCarbonTexture(4));
   carbonMap.repeat.set(22, 22);
 
   const paint = { roughness: 0.32, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.09 };
   const decal = { transparent: true, polygonOffset: true, polygonOffsetFactor: -2, ...paint };
 
   const materials: Record<MaterialKey, Material> = {
-    livery: new MeshPhysicalMaterial({ ...paint, map: liveryMap }),
-    primary: new MeshPhysicalMaterial({ ...paint, color: livery.primary }),
-    secondary: new MeshPhysicalMaterial({ ...paint, color: livery.secondary }),
+    livery: new MeshPhysicalMaterial({ ...paint }),
+    primary: new MeshPhysicalMaterial({ ...paint }),
+    secondary: new MeshPhysicalMaterial({ ...paint }),
     carbon: new MeshPhysicalMaterial({
       map: carbonMap,
       roughness: 0.42,
@@ -169,32 +198,12 @@ function createMaterials(livery: LiveryConfig, anisotropy: number, own: Disposer
     metal: new MeshStandardMaterial({ color: '#3b3f46', roughness: 0.32, metalness: 0.95 }),
     mirror: new MeshStandardMaterial({ color: '#dfe6ee', roughness: 0.04, metalness: 1 }),
     light: new MeshStandardMaterial({ color: '#300006', emissive: '#ff1a2e', emissiveIntensity: 4 }),
-    number: new MeshPhysicalMaterial({ ...decal, map: tex(createNumberTexture(livery, anisotropy)) }),
-    wordmark: new MeshPhysicalMaterial({
-      ...decal,
-      map: tex(createWordmarkTexture(TEAM_WORDMARK, livery.accent, anisotropy, { outline: livery.secondary })),
-    }),
-    endplate: new MeshPhysicalMaterial({
-      ...paint,
-      map: tex(
-        createWordmarkTexture(TEAM_WORDMARK, livery.accent, anisotropy, {
-          background: livery.secondary,
-          stripe: livery.primary,
-          scale: 0.62,
-        }),
-      ),
-    }),
-    tire: new MeshStandardMaterial({
-      map: tex(createTireTexture(livery.tireStripe, TIRE_BRAND, anisotropy)),
-      roughness: 0.82,
-      metalness: 0,
-    }),
-    cover: new MeshStandardMaterial({
-      map: tex(createWheelCoverTexture(livery.tireStripe, anisotropy)),
-      roughness: 0.3,
-      metalness: 0.85,
-    }),
-    helmet: new MeshPhysicalMaterial({ ...paint, map: tex(createHelmetTexture(livery, anisotropy)) }),
+    number: new MeshPhysicalMaterial({ ...decal }),
+    wordmark: new MeshPhysicalMaterial({ ...decal }),
+    endplate: new MeshPhysicalMaterial({ ...paint }),
+    tire: new MeshStandardMaterial({ roughness: 0.82, metalness: 0 }),
+    cover: new MeshStandardMaterial({ roughness: 0.3, metalness: 0.85 }),
+    helmet: new MeshPhysicalMaterial({ ...paint }),
     visor: new MeshPhysicalMaterial({
       color: '#07080a',
       roughness: 0.04,
@@ -206,6 +215,38 @@ function createMaterials(livery: LiveryConfig, anisotropy: number, own: Disposer
   };
   for (const material of Object.values(materials)) own.own(material);
   return materials;
+}
+
+/**
+ * Aplica una livery a los materiales: texturas nuevas (las anteriores se
+ * liberan con `own`), colores y el acabado de la pintura.
+ */
+function paintMaterials(materials: Record<MaterialKey, Material>, livery: LiveryConfig, anisotropy: number, own: Disposer): void {
+  const tex = <T extends Texture>(t: T): T => own.own(t);
+  const physical = (key: MaterialKey): MeshPhysicalMaterial => materials[key] as MeshPhysicalMaterial;
+  const standard = (key: MaterialKey): MeshStandardMaterial => materials[key] as MeshStandardMaterial;
+  physical('livery').map = tex(createLiveryTexture(livery, anisotropy));
+  physical('primary').color.set(livery.primary);
+  physical('secondary').color.set(livery.secondary);
+  physical('number').map = tex(createNumberTexture(livery, anisotropy));
+  physical('wordmark').map = tex(createWordmarkTexture(TEAM_WORDMARK, livery.accent, anisotropy, { outline: livery.secondary }));
+  physical('endplate').map = tex(
+    createWordmarkTexture(TEAM_WORDMARK, livery.accent, anisotropy, { background: livery.secondary, stripe: livery.primary, scale: 0.62 }),
+  );
+  standard('tire').map = tex(createTireTexture(livery.tireStripe, TIRE_BRAND, anisotropy));
+  const rims = rimsOf(livery);
+  const cover = standard('cover');
+  cover.map = tex(createRimTexture(rims, anisotropy));
+  cover.roughness = rims.cover ? 0.3 : rims.color === '#e9eef3' ? 0.08 : 0.28;
+  cover.metalness = rims.cover ? 0.85 : 0.8;
+  physical('helmet').map = tex(createHelmetTexture(livery, anisotropy));
+  // El acabado afecta la pintura del auto (el casco conserva su laca).
+  const finish = FINISHES[livery.finish ?? 'gloss'];
+  for (const key of PAINTED) {
+    if (key === 'helmet') continue;
+    physical(key).setValues(finish);
+  }
+  for (const material of Object.values(materials)) material.needsUpdate = true;
 }
 
 // ─── Utilidades de geometría ─────────────────────────────────────────────
@@ -483,11 +524,23 @@ export class CarModel {
   private readonly lightMaterial: MeshStandardMaterial;
   private readonly own = new Disposer();
   private readonly detail: number;
+  private readonly anisotropy: number;
+  private readonly materials: Record<MaterialKey, Material>;
+  /** Texturas de la livery actual (se cambian enteras al pintar en el garaje). */
+  private liveryOwn = new Disposer();
+  /** Alerón trasero aparte: su forma cambia en el garaje. */
+  private readonly rearWing = new Group();
+  private rearWingOwn = new Disposer();
+  private wingShape: WingShape;
 
   constructor(options: CarModelOptions) {
-    const anisotropy = options.anisotropy ?? 4;
+    this.anisotropy = options.anisotropy ?? 4;
     this.detail = clamp(options.detail ?? 1, 0.05, 1);
-    const materials = createMaterials(options.livery, anisotropy, this.own);
+    const materials = createMaterials(this.own);
+    this.materials = materials;
+    paintMaterials(materials, options.livery, this.anisotropy, this.liveryOwn);
+    this.own.add(() => this.liveryOwn.dispose());
+    this.own.add(() => this.rearWingOwn.dispose());
     this.lightMaterial = materials.light as MeshStandardMaterial;
     this.root.name = 'monoplaza';
 
@@ -495,7 +548,11 @@ export class CarModel {
     this.buildBody(batch);
     this.buildFloor(batch);
     this.buildFrontWing(batch);
-    this.buildRearWing(batch);
+    this.wingShape = options.livery.wing ?? 'standard';
+    this.buildRearWing(this.wingShape);
+    this.root.add(this.rearWing);
+    // Luz trasera de lluvia.
+    batch.add('light', box(0.09, 0.05, 0.02, 0, 0.265, 2.395));
     this.buildHalo(batch);
     this.buildSuspension(batch);
     this.buildDetails(batch);
@@ -505,9 +562,29 @@ export class CarModel {
     this.buildDriver(materials);
     this.wheels = this.buildWheels(materials);
 
-    this.root.traverse((object) => {
+    this.applyShadowFlags(this.root);
+  }
+
+  /**
+   * Cambia la decoración en vivo (garaje): texturas, colores, acabado,
+   * llantas, casco y, si cambió, la forma del alerón trasero.
+   */
+  setLivery(livery: LiveryConfig): void {
+    const previous = this.liveryOwn;
+    this.liveryOwn = new Disposer();
+    paintMaterials(this.materials, livery, this.anisotropy, this.liveryOwn);
+    previous.dispose();
+    const shape = livery.wing ?? 'standard';
+    if (shape !== this.wingShape) {
+      this.wingShape = shape;
+      this.buildRearWing(shape);
+    }
+  }
+
+  private applyShadowFlags(root: Group): void {
+    root.traverse((object) => {
       if (object instanceof Mesh) {
-        const decal = object.material === materials.number || object.material === materials.wordmark;
+        const decal = object.material === this.materials.number || object.material === this.materials.wordmark;
         object.castShadow = !decal;
         object.receiveShadow = true;
       }
@@ -635,31 +712,75 @@ export class CarModel {
     batch.addMirrored('carbon', plate([[-2.9, 0.09], [-2.66, 0.09], [-2.66, 0.14], [-2.9, 0.13]], 0.055, 0.012));
   }
 
-  private buildRearWing(batch: PartBatch): void {
-    batch.add('secondary', wingElement(0.26, 2.36, 0.84, 10, -0.485, 0.485, this.foil));
-    // Viga inferior (beam wing).
-    batch.add(
-      'carbon',
-      wingElement(0.14, 2.4, 0.36, 8, -0.4, 0.4, this.foil),
-      wingElement(0.12, 2.5, 0.42, 18, -0.4, 0.4, this.foil),
-    );
-    // Placas laterales con el logo del equipo.
-    const endplate: Array<[number, number]> = [
-      [2.26, 0.62],
-      [2.33, 0.56],
-      [2.7, 0.6],
-      [2.78, 0.7],
-      [2.76, 1.02],
-      [2.44, 1.03],
-      [2.3, 0.94],
-    ];
+  /** Alerón trasero según la forma elegida (se reconstruye al cambiarla en el garaje). */
+  private buildRearWing(shape: WingShape): void {
+    this.rearWingOwn.dispose();
+    this.rearWingOwn = new Disposer();
+    this.rearWing.clear();
+    const batch = new PartBatch();
+    const foil = this.foil;
+    // Placas laterales con el logo del equipo (más altas en "alta carga", en punta en "hoja").
+    const endplate: Array<[number, number]> =
+      shape === 'tall'
+        ? [[2.26, 0.62], [2.33, 0.56], [2.7, 0.6], [2.8, 0.72], [2.78, 1.14], [2.44, 1.16], [2.3, 1.02]]
+        : shape === 'blade'
+          ? [[2.22, 0.6], [2.33, 0.56], [2.72, 0.62], [2.84, 1.08], [2.5, 1.0], [2.3, 0.92]]
+          : [[2.26, 0.62], [2.33, 0.56], [2.7, 0.6], [2.78, 0.7], [2.76, 1.02], [2.44, 1.03], [2.3, 0.94]];
     // La copia del otro lado invierte U: si no, el logo se leería espejado.
     const rightPlate = plate(endplate, 0.49, 0.012);
     batch.add('endplate', rightPlate, flipPlanarU(mirrorX(rightPlate)));
-    // Soporte central "cuello de cisne".
-    batch.add('carbon', plate([[2.12, 0.3], [2.3, 0.3], [2.52, 0.86], [2.4, 0.86]], 0, 0.02));
-    // Luz trasera.
-    batch.add('light', box(0.09, 0.05, 0.02, 0, 0.265, 2.395));
+    // Viga inferior (beam wing), igual en todas.
+    batch.add('carbon', wingElement(0.14, 2.4, 0.36, 8, -0.4, 0.4, foil), wingElement(0.12, 2.5, 0.42, 18, -0.4, 0.4, foil));
+    const pylon = (): void => {
+      batch.add('carbon', plate([[2.12, 0.3], [2.3, 0.3], [2.52, 0.86], [2.4, 0.86]], 0, 0.02));
+    };
+    switch (shape) {
+      case 'standard':
+        batch.add('secondary', wingElement(0.26, 2.36, 0.84, 10, -0.485, 0.485, foil));
+        pylon();
+        break;
+      case 'tall':
+        batch.add('secondary', wingElement(0.3, 2.34, 0.82, 17, -0.485, 0.485, foil), wingElement(0.16, 2.3, 1.06, 24, -0.485, 0.485, foil));
+        pylon();
+        break;
+      case 'spoon':
+        // Plano en cuchara: el centro más bajo y con menos ángulo que las puntas.
+        batch.add(
+          'secondary',
+          wingElement(0.28, 2.36, 0.8, 5, -0.2, 0.2, foil),
+          wingElement(0.26, 2.36, 0.83, 8, 0.2, 0.34, foil),
+          wingElement(0.26, 2.36, 0.83, 8, -0.34, -0.2, foil),
+          wingElement(0.24, 2.36, 0.86, 11, 0.34, 0.485, foil),
+          wingElement(0.24, 2.36, 0.86, 11, -0.485, -0.34, foil),
+        );
+        pylon();
+        break;
+      case 'twin':
+        batch.add('secondary', wingElement(0.24, 2.36, 0.86, 10, -0.485, 0.485, foil), wingElement(0.2, 2.4, 0.62, 12, -0.485, 0.485, foil));
+        pylon();
+        break;
+      case 'swan': {
+        batch.add('secondary', wingElement(0.26, 2.36, 0.84, 10, -0.485, 0.485, foil));
+        // Cuello de cisne: dos soportes que suben por detrás y toman el plano desde arriba.
+        for (const x of [-0.13, 0.13]) {
+          const neck = new CatmullRomCurve3([
+            new Vector3(x, 0.3, 2.16),
+            new Vector3(x, 0.72, 2.3),
+            new Vector3(x, 1.0, 2.46),
+            new Vector3(x, 1.02, 2.62),
+            new Vector3(x, 0.9, 2.62),
+          ]);
+          batch.add('carbon', new TubeGeometry(neck, this.seg(24, 6), 0.018, this.seg(8, 4), false));
+        }
+        break;
+      }
+      case 'blade':
+        batch.add('secondary', wingElement(0.2, 2.4, 0.86, 6, -0.485, 0.485, foil));
+        pylon();
+        break;
+    }
+    for (const mesh of batch.build(this.materials, this.rearWingOwn)) this.rearWing.add(mesh);
+    this.applyShadowFlags(this.rearWing);
   }
 
   private buildDrsFlap(materials: Record<MaterialKey, Material>): void {

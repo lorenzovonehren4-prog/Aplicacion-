@@ -5,7 +5,7 @@
  */
 
 import { CanvasTexture, Color, RepeatWrapping, SRGBColorSpace } from 'three';
-import type { LiveryConfig } from './livery';
+import type { LiveryConfig, RimsLook } from './livery';
 
 const DISPLAY_FONT = '"Titillium Web", "Segoe UI", system-ui, sans-serif';
 const NUMBER_FONT = '"Orbitron", "Titillium Web", system-ui, sans-serif';
@@ -79,6 +79,8 @@ export function createLiveryTexture(livery: LiveryConfig, anisotropy: number): C
     ctx.fill();
   }
 
+  drawPattern(ctx, livery, W, H);
+
   // Filetes de acento sobre el límite.
   ctx.strokeStyle = livery.accent;
   ctx.lineWidth = 5;
@@ -92,15 +94,133 @@ export function createLiveryTexture(livery: LiveryConfig, anisotropy: number): C
     ctx.stroke();
   }
 
-  // Franja central sobre el morro y la cubierta del motor.
-  const stripe = ctx.createLinearGradient(0, 0, W, 0);
-  stripe.addColorStop(0, livery.accent);
-  stripe.addColorStop(0.45, livery.accent);
-  stripe.addColorStop(0.7, `${livery.accent}00`);
-  ctx.fillStyle = stripe;
-  ctx.fillRect(0, rowFor(0.515, H), W, rowFor(0.485, H) - rowFor(0.515, H));
+  // Franja central sobre el morro y la cubierta del motor (el patrón de franjas trae las suyas).
+  if (livery.pattern !== 'stripes') {
+    const stripe = ctx.createLinearGradient(0, 0, W, 0);
+    stripe.addColorStop(0, livery.accent);
+    stripe.addColorStop(0.45, livery.accent);
+    stripe.addColorStop(0.7, `${livery.accent}00`);
+    ctx.fillStyle = stripe;
+    ctx.fillRect(0, rowFor(0.515, H), W, rowFor(0.485, H) - rowFor(0.515, H));
+  }
+
+  // Carbono visible: el tejido asoma bajo la pintura.
+  if (livery.finish === 'carbon') drawWeave(ctx, W, H, 0.38);
 
   return toTexture(canvas, anisotropy);
+}
+
+/**
+ * Decoración del patrón sobre la parte alta (encima del color de base y
+ * debajo de los filetes). X = del morro (0) a la cola (1); v 0,5 = arriba.
+ */
+function drawPattern(ctx: CanvasRenderingContext2D, livery: LiveryConfig, W: number, H: number): void {
+  const { secondary, accent } = livery;
+  switch (livery.pattern ?? 'solid') {
+    case 'solid':
+      return;
+    case 'stripes':
+      // Dos franjas paralelas a lo largo del lomo, con filete de acento.
+      for (const center of [0.462, 0.538]) {
+        ctx.fillStyle = secondary;
+        ctx.fillRect(0, rowFor(center + 0.022, H), W, rowFor(center - 0.022, H) - rowFor(center + 0.022, H));
+        ctx.fillStyle = accent;
+        ctx.fillRect(0, rowFor(center + 0.026, H), W, 3);
+        ctx.fillRect(0, rowFor(center - 0.022, H), W, 3);
+      }
+      return;
+    case 'split': {
+      // La mitad trasera en el color secundario, cortada en diagonal.
+      ctx.fillStyle = secondary;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.42, 0);
+      ctx.lineTo(W, 0);
+      ctx.lineTo(W, H);
+      ctx.lineTo(W * 0.42, H);
+      ctx.lineTo(W * 0.56, H * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.42, 0);
+      ctx.lineTo(W * 0.56, H * 0.5);
+      ctx.lineTo(W * 0.42, H);
+      ctx.stroke();
+      return;
+    }
+    case 'chevron':
+      // Flechas que apuntan hacia adelante en los costados y el lomo.
+      ctx.lineJoin = 'miter';
+      for (let x = 0.3; x < 1; x += 0.11) {
+        for (const [color, width] of [
+          [accent, 30],
+          [secondary, 18],
+        ] as const) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width;
+          ctx.beginPath();
+          ctx.moveTo(W * (x + 0.06), rowFor(0.2, H));
+          ctx.lineTo(W * x, rowFor(0.5, H));
+          ctx.lineTo(W * (x + 0.06), rowFor(0.8, H));
+          ctx.stroke();
+        }
+      }
+      return;
+    case 'gradient': {
+      // Del principal (morro) al secundario (cola), con un velo del acento en el medio.
+      const fade = ctx.createLinearGradient(0, 0, W, 0);
+      fade.addColorStop(0, `${secondary}00`);
+      fade.addColorStop(0.35, `${secondary}00`);
+      fade.addColorStop(1, secondary);
+      ctx.fillStyle = fade;
+      ctx.fillRect(0, 0, W, H);
+      const glow = ctx.createLinearGradient(0, 0, W, 0);
+      glow.addColorStop(0.3, `${accent}00`);
+      glow.addColorStop(0.55, `${accent}66`);
+      glow.addColorStop(0.8, `${accent}00`);
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, rowFor(0.75, H), W, rowFor(0.25, H) - rowFor(0.75, H));
+      return;
+    }
+    case 'geometric': {
+      // Triángulos en los costados, iguales siempre (generador fijo).
+      let seed = 7;
+      const random = (): number => {
+        seed = (seed * 16807) % 2147483647;
+        return seed / 2147483647;
+      };
+      for (let i = 0; i < 26; i++) {
+        const x = 0.15 + random() * 0.8;
+        const v = 0.28 + random() * 0.44;
+        const size = 0.03 + random() * 0.05;
+        ctx.fillStyle = i % 3 === 0 ? accent : secondary;
+        ctx.beginPath();
+        ctx.moveTo(W * x, rowFor(v + size * 2, H));
+        ctx.lineTo(W * (x + size), rowFor(v - size * 2, H));
+        ctx.lineTo(W * (x - size), rowFor(v - size * 2, H));
+        ctx.closePath();
+        ctx.fill();
+      }
+      return;
+    }
+  }
+}
+
+/** Tejido de fibra de carbono semitransparente sobre lo ya pintado. */
+function drawWeave(ctx: CanvasRenderingContext2D, W: number, H: number, alpha: number): void {
+  const cell = 8;
+  ctx.globalAlpha = alpha;
+  for (let y = 0; y < H; y += cell) {
+    for (let x = 0; x < W; x += cell) {
+      const odd = ((x + y) / cell) % 2 === 0;
+      ctx.fillStyle = odd ? '#000000' : '#3a3d44';
+      ctx.fillRect(x, y, cell, cell / 2);
+      ctx.fillStyle = odd ? '#3a3d44' : '#000000';
+      ctx.fillRect(x, y + cell / 2, cell, cell / 2);
+    }
+  }
+  ctx.globalAlpha = 1;
 }
 
 /** Número del auto con contorno (fondo transparente). */
@@ -300,28 +420,159 @@ export function createWheelCoverTexture(accent: string, anisotropy: number): Can
   return toTexture(canvas, anisotropy);
 }
 
+/** Llanta a la vista (sin tapa): rayos del color de la llanta sobre el fondo oscuro, aro y tuerca. */
+export function createRimTexture(rims: RimsLook, anisotropy: number): CanvasTexture {
+  if (rims.cover) return createWheelCoverTexture(rims.accent, anisotropy);
+  const S = 512;
+  const [canvas, ctx] = makeCanvas(S, S);
+  const c = S / 2;
+  ctx.fillStyle = '#08090b';
+  ctx.fillRect(0, 0, S, S);
+  // Interior de la llanta: barril oscuro con un brillo.
+  const barrel = ctx.createRadialGradient(c * 0.85, c * 0.8, 20, c, c, c);
+  barrel.addColorStop(0, '#26292f');
+  barrel.addColorStop(1, '#0b0c0f');
+  ctx.fillStyle = barrel;
+  ctx.beginPath();
+  ctx.arc(c, c, c - 30, 0, Math.PI * 2);
+  ctx.fill();
+  // Rayos: más finos cuantos más son, con un filo claro.
+  const width = Math.max(14, 150 / rims.spokes);
+  for (let i = 0; i < rims.spokes; i++) {
+    const a = (i / rims.spokes) * Math.PI * 2;
+    ctx.save();
+    ctx.translate(c, c);
+    ctx.rotate(a);
+    const spoke = ctx.createLinearGradient(-width / 2, 0, width / 2, 0);
+    spoke.addColorStop(0, shade(rims.color, -0.18));
+    spoke.addColorStop(0.5, shade(rims.color, 0.12));
+    spoke.addColorStop(1, shade(rims.color, -0.22));
+    ctx.fillStyle = spoke;
+    ctx.beginPath();
+    ctx.moveTo(-width * 0.7, 40);
+    ctx.lineTo(width * 0.7, 40);
+    ctx.lineTo(width * 0.45, c - 34);
+    ctx.lineTo(-width * 0.45, c - 34);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  // Aro exterior y tuerca central.
+  ctx.strokeStyle = rims.color;
+  ctx.lineWidth = 20;
+  ctx.beginPath();
+  ctx.arc(c, c, c - 36, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = rims.accent;
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.arc(c, c, c - 24, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = shade(rims.color, -0.1);
+  ctx.beginPath();
+  ctx.arc(c, c, 58, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = rims.accent;
+  ctx.beginPath();
+  ctx.arc(c, c, 30, 0, Math.PI * 2);
+  ctx.fill();
+  return toTexture(canvas, anisotropy);
+}
+
 /** Casco: mapeo equirrectangular sobre una esfera (X = vuelta, Y = de arriba a abajo). */
 export function createHelmetTexture(livery: LiveryConfig, anisotropy: number): CanvasTexture {
   const W = 512;
   const H = 256;
   const [canvas, ctx] = makeCanvas(W, H);
-  ctx.fillStyle = '#f4f4f2';
+  const look = livery.helmet;
+  if (!look || look.design === 'team') {
+    // De fábrica: blanco con los colores del auto.
+    ctx.fillStyle = '#f4f4f2';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = livery.primary;
+    ctx.fillRect(0, 0, W, H * 0.3);
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.3);
+    for (let x = 0; x <= W; x += 8) ctx.lineTo(x, H * 0.36 + Math.sin((x / W) * Math.PI * 4) * 10);
+    ctx.lineTo(W, H * 0.3);
+    ctx.closePath();
+    ctx.fillStyle = livery.secondary;
+    ctx.fill();
+    ctx.fillStyle = livery.primary;
+    ctx.fillRect(0, H * 0.72, W, H * 0.28);
+    ctx.fillStyle = livery.accent;
+    ctx.fillRect(0, H * 0.7, W, 6);
+    return toTexture(canvas, anisotropy);
+  }
+  const [base, second, third] = look.colors;
+  ctx.fillStyle = base;
   ctx.fillRect(0, 0, W, H);
-  // Corona en color principal.
-  ctx.fillStyle = livery.primary;
-  ctx.fillRect(0, 0, W, H * 0.3);
-  // Franja ondulada en secundario.
-  ctx.beginPath();
-  ctx.moveTo(0, H * 0.3);
-  for (let x = 0; x <= W; x += 8) ctx.lineTo(x, H * 0.36 + Math.sin((x / W) * Math.PI * 4) * 10);
-  ctx.lineTo(W, H * 0.3);
-  ctx.closePath();
-  ctx.fillStyle = livery.secondary;
-  ctx.fill();
-  // Filete de acento y parte baja.
-  ctx.fillStyle = livery.primary;
-  ctx.fillRect(0, H * 0.72, W, H * 0.28);
-  ctx.fillStyle = livery.accent;
-  ctx.fillRect(0, H * 0.7, W, 6);
+  switch (look.design) {
+    case 'stripe':
+      ctx.fillStyle = second;
+      ctx.fillRect(0, H * 0.3, W, H * 0.12);
+      ctx.fillStyle = third;
+      ctx.fillRect(0, H * 0.44, W, 5);
+      break;
+    case 'gold':
+      ctx.fillStyle = second;
+      ctx.fillRect(0, H * 0.28, W, H * 0.1);
+      ctx.fillStyle = third;
+      ctx.fillRect(0, H * 0.4, W, 6);
+      break;
+    case 'split':
+      ctx.fillStyle = second;
+      ctx.fillRect(W * 0.5, 0, W * 0.5, H);
+      ctx.fillStyle = third;
+      ctx.fillRect(W * 0.5 - 4, 0, 8, H);
+      ctx.fillRect(0, 0, 8, H);
+      break;
+    case 'flame':
+      for (const [color, top] of [
+        [second, 0.35],
+        [third, 0.5],
+      ] as const) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        for (let x = 0; x <= W; x += 16) ctx.lineTo(x, H * top + Math.abs(Math.sin((x / W) * Math.PI * 10)) * H * 0.18);
+        ctx.lineTo(W, H);
+        ctx.closePath();
+        ctx.fill();
+      }
+      break;
+    case 'stars': {
+      let seed = 11;
+      const random = (): number => {
+        seed = (seed * 16807) % 2147483647;
+        return seed / 2147483647;
+      };
+      for (let i = 0; i < 70; i++) {
+        ctx.fillStyle = i % 4 === 0 ? third : second;
+        ctx.beginPath();
+        ctx.arc(random() * W, random() * H * 0.85, 1.5 + random() * 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case 'circuit':
+      ctx.strokeStyle = second;
+      ctx.lineWidth = 4;
+      for (let i = 0; i < 12; i++) {
+        const y = H * (0.15 + (i % 6) * 0.12);
+        const x = (i * 97) % W;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 60, y);
+        ctx.lineTo(x + 80, y + 20);
+        ctx.lineTo(x + 150, y + 20);
+        ctx.stroke();
+        ctx.fillStyle = third;
+        ctx.beginPath();
+        ctx.arc(x + 150, y + 20, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+  }
   return toTexture(canvas, anisotropy);
 }

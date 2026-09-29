@@ -10,7 +10,7 @@ import { shadowMapSize } from '../core/render/quality';
 import { RacingLineMesh } from '../assists/RacingLineMesh';
 import type { CameraMode, GraphicsSettings, LineMode, LineType } from '../core/save/schema';
 import { clamp } from '../core/utils/math';
-import { PLAYER_DEFAULT_LIVERY } from '../garage/livery';
+import type { LiveryConfig } from '../garage/livery';
 import { buildTrackScene, type BuildOptions, type TrackScene } from '../tracks/TrackBuilder';
 import { RaceCamera } from './camera/RaceCamera';
 import { performanceModel } from './physics/CarSpec';
@@ -48,13 +48,14 @@ export class RaceWorld implements RenderView {
     cameraMode: CameraMode,
     rivals: readonly RivalCar[],
     ghost: boolean,
+    livery: LiveryConfig,
   ) {
     this.exposure = trackScene.look.exposure;
     this.scene.add(trackScene.root);
     this.scene.environment = trackScene.sky.environment;
     this.scene.environmentIntensity = 1;
     this.scene.fog = trackScene.sky.fog;
-    this.rig = new CarRig(vehicle, PLAYER_DEFAULT_LIVERY, anisotropy);
+    this.rig = new CarRig(vehicle, livery, anisotropy);
     this.scene.add(this.rig.root);
     this.raceCamera = new RaceCamera(this.rig, cameraMode);
     this.racingLine = new RacingLineMesh(vehicle.track.racingLine, performanceModel(vehicle.spec));
@@ -81,12 +82,13 @@ export class RaceWorld implements RenderView {
   /** Construye el circuito por etapas y arma el mundo. */
   static async create(
     vehicle: Vehicle,
-    extras: { rivals: readonly RivalCar[]; ghost: boolean },
+    /** Rivales, fantasma (contrarreloj) y la decoración del auto del jugador (la del garaje). */
+    extras: { rivals: readonly RivalCar[]; ghost: boolean; livery: LiveryConfig },
     cameraMode: CameraMode,
     options: BuildOptions,
   ): Promise<RaceWorld> {
     const trackScene = await buildTrackScene(vehicle.track, options);
-    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, extras.rivals, extras.ghost);
+    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, extras.rivals, extras.ghost, extras.livery);
   }
 
   get camera(): RaceCamera['camera'] {

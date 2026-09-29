@@ -62,4 +62,5 @@ export interface ScreenParams {
   race: RaceParams;
   results: ResultsParams;
   pass: undefined;
+  garage: undefined;
 }

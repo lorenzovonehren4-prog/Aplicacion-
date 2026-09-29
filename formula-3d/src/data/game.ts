@@ -3,9 +3,9 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '0.6.0';
+export const GAME_VERSION = '0.7.0';
 /** Fase de desarrollo actual (se muestra junto a la versión). */
-export const DEV_PHASE = 6;
+export const DEV_PHASE = 7;
 
 export type MenuItemId =
   | 'practice'

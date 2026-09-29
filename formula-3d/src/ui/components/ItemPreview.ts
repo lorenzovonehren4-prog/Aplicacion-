@@ -130,6 +130,10 @@ function materialPreview(item: Extract<Item, { kind: 'material' }>): SVGSVGEleme
       defs.append(linear(fill, [[0, '#9a2432'], [1, '#4a0f17']]));
       highlightOpacity = 0.12;
       break;
+    case 'satin':
+      defs.append(linear(fill, [[0, '#b8c0cc'], [0.5, '#6b7482'], [1, '#353b45']]));
+      highlightOpacity = 0.22;
+      break;
     case 'metallic':
       defs.append(linear(fill, [[0, '#dfe6f0'], [0.35, '#6b7a90'], [0.6, '#b7c3d4'], [1, '#2a3342']]));
       break;
@@ -179,6 +183,23 @@ function materialPreview(item: Extract<Item, { kind: 'material' }>): SVGSVGEleme
 
 function rimsPreview(item: Extract<Item, { kind: 'rims' }>): SVGSVGElement {
   const spokes: SVGElement[] = [];
+  if (item.cover) {
+    // Tapa aerodinámica: disco liso con los rayos insinuados y el aro de color.
+    const defs = el('defs', {});
+    const disc = nextId('rd');
+    defs.append(
+      el('radialGradient', { id: disc, cx: 0.4, cy: 0.35, r: 0.7 }, el('stop', { offset: 0, 'stop-color': '#5a5f68' }), el('stop', { offset: 1, 'stop-color': '#1b1c20' })),
+    );
+    return svg(
+      'ipreview--rims',
+      defs,
+      el('circle', { cx: 60, cy: 60, r: 54, fill: '#15171b' }),
+      el('circle', { cx: 60, cy: 60, r: 38, fill: `url(#${disc})` }),
+      el('circle', { cx: 60, cy: 60, r: 33, fill: 'none', stroke: item.accent, 'stroke-width': 3 }),
+      el('circle', { cx: 60, cy: 60, r: 9, fill: '#0d0e10' }),
+      el('circle', { cx: 60, cy: 60, r: 5, fill: item.accent }),
+    );
+  }
   const width = Math.max(3, 26 / item.spokes + 1.5);
   for (let i = 0; i < item.spokes; i++) {
     const angle = (i * 360) / item.spokes;
@@ -215,6 +236,16 @@ function wingPreview(item: Extract<Item, { kind: 'wing' }>): SVGSVGElement {
     case 'standard':
       parts = [pylon, ...plates(), ...plane(56, 10), ...plane(42, 7)];
       break;
+    case 'tall':
+      parts = [
+        pylon,
+        el('rect', { x: 12, y: 14, width: 9, height: 70, rx: 2, fill: carbon }),
+        el('rect', { x: 99, y: 14, width: 9, height: 70, rx: 2, fill: carbon }),
+        ...plane(54, 12),
+        ...plane(38, 10),
+        ...plane(24, 7),
+      ];
+      break;
     case 'spoon':
       parts = [pylon, ...plates(), el('path', { d: 'M20 46 Q60 70 100 46 L100 56 Q60 80 20 56 Z', fill: carbon }), el('path', { d: 'M20 46 Q60 70 100 46', stroke: edge, 'stroke-width': 2, fill: 'none' })];
       break;
@@ -250,6 +281,13 @@ function helmetPreview(item: Extract<Item, { kind: 'helmet' }>): SVGSVGElement {
   defs.append(linear(shine, [[0, 'rgba(255,255,255,0.4)'], [0.5, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,0.3)']], true));
   const design: SVGElement[] = [el('rect', { x: 0, y: 0, width: SIZE, height: SIZE, fill: base })];
   switch (item.design) {
+    case 'team':
+      design.push(
+        el('rect', { x: 0, y: 0, width: SIZE, height: 42, fill: second }),
+        el('path', { d: 'M0 42 Q30 50 60 42 T120 42 L120 50 Q90 58 60 50 T0 50 Z', fill: third }),
+        el('rect', { x: 0, y: 80, width: SIZE, height: 40, fill: second }),
+      );
+      break;
     case 'stripe':
       design.push(el('rect', { x: 0, y: 44, width: SIZE, height: 8, fill: second }));
       break;

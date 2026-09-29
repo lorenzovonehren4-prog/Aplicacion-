@@ -1,7 +1,25 @@
 /**
- * Livery (decoración) del monoplaza. En la Fase 7 el garaje agrega patrones,
- * materiales y más opciones; por ahora: colores, número y franja del neumático.
+ * Livery (decoración) del monoplaza: colores, patrón, acabado de la pintura,
+ * número, franja del neumático, llantas, forma del alerón y casco. Lo que falta
+ * toma el valor de fábrica (los rivales y el fantasma sólo definen colores y
+ * número). El garaje la arma a partir de lo elegido (`garage/setup.ts`).
  */
+
+import type { Finish, HelmetDesign, PaintPattern, WingShape } from '../progression/items';
+
+export interface RimsLook {
+  spokes: number;
+  color: string;
+  accent: string;
+  /** Tapa aerodinámica lisa sobre los rayos. */
+  cover: boolean;
+}
+
+export interface HelmetLook {
+  /** Base, segundo y tercer color (el diseño `team` usa los del auto). */
+  colors: [string, string, string];
+  design: HelmetDesign;
+}
 
 export interface LiveryConfig {
   /** Color principal de la carrocería. */
@@ -14,6 +32,11 @@ export interface LiveryConfig {
   number: number;
   /** Color de la franja del neumático (compuesto). */
   tireStripe: string;
+  pattern?: PaintPattern;
+  finish?: Finish;
+  rims?: RimsLook | undefined;
+  wing?: WingShape;
+  helmet?: HelmetLook | undefined;
 }
 
 /** Livery de fábrica del auto del jugador (equipo ficticio "Ápice"). */

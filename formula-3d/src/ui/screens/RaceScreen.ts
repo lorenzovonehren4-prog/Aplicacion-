@@ -24,7 +24,7 @@ import { formatLapTime } from '../../core/utils/format';
 import { ENGINEER_NAME, RADIO_LINES, type RadioMoment } from '../../data/radio';
 import { DRIVERS, liveryOf, pickRivals, playerCode, type DriverDef } from '../../data/teams';
 import { isFinished, PLAYER_ID, pointsFor, recordRound, standings as championshipStandings } from '../../race/championship';
-import { PLAYER_DEFAULT_LIVERY } from '../../garage/livery';
+import { liveryFromSetup } from '../../garage/setup';
 import { difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
 import { applyXp, computeXp, snapshotOf } from '../../progression/xp';
 import type { RivalCar } from '../../race/render/RivalFleet';
@@ -300,12 +300,13 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           mode: this.params.mode,
           laps,
           rivals: { drivers: rivals, difficulty: this.params.difficulty ?? difficultyValue(race) },
-          player: { name: pilot, code: playerCode(pilot), number: PLAYER_DEFAULT_LIVERY.number },
+          player: { name: pilot, code: playerCode(pilot), number: game.save.data.garage.number },
           ghost: storedGhost ? decodeGhost(storedGhost) : null,
         },
         assists,
       );
-      const world = await RaceWorld.create(session.vehicle, { rivals: rivalCars(session), ghost: session.isTimeTrial }, settings.game.defaultCamera, {
+      const livery = liveryFromSetup(game.save.data.garage);
+      const world = await RaceWorld.create(session.vehicle, { rivals: rivalCars(session), ghost: session.isTimeTrial, livery }, settings.game.defaultCamera, {
         renderer: game.render.renderer,
         quality: settings.graphics.quality,
         anisotropy: game.render.maxAnisotropy,

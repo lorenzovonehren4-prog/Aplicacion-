@@ -116,6 +116,24 @@ async function main() {
     await page.mouse.move(2, 2);
     log('pase de temporada: 50 niveles, recorrido con las flechas y vuelta al menú');
 
+    // ─── Garaje ───
+    step = 'garaje';
+    await page.locator('.mbtn', { hasText: 'Garaje' }).click();
+    await waitForScreen(page, 'garage');
+    await page.mouse.move(2, 2);
+    const paints = await page.locator('.gcard').count();
+    if (paints < 10) throw new Error(`El garaje muestra ${paints} pinturas.`);
+    // Pestaña Número (Q da la vuelta hasta la última) y un número nuevo.
+    await page.keyboard.press('KeyQ');
+    await page.waitForSelector('.tab.is-active >> text=Número');
+    await page.keyboard.press('ArrowRight');
+    await expectText(page, '.garage__row--number .selector__value', '8');
+    await page.screenshot({ path: `${shots}04c-garaje.png` });
+    await page.keyboard.press('Escape');
+    await waitForScreen(page, 'menu');
+    await page.mouse.move(2, 2);
+    log('garaje: pinturas, pestañas con Q / E y número 7 → 8 guardado');
+
     // ─── Recarga: lo guardado debe seguir ───
     step = 'recarga';
     await page.waitForTimeout(700); // escritura agrupada del guardado (400 ms)

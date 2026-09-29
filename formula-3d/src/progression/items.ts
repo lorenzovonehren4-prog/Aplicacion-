@@ -1,8 +1,9 @@
 /**
- * Catálogo de ítems que se ganan jugando (pase de temporada). Todos los
- * nombres son inventados. Cada ítem trae los datos con los que se dibuja su
- * vista previa (`ui/components/ItemPreview.ts`) y, desde la Fase 7, con los que
- * el garaje lo aplica al auto.
+ * Catálogo de ítems que se ganan jugando: los de fábrica (todos los tienen),
+ * los del pase de temporada y los que se desbloquean al llegar a un nivel de
+ * piloto (`level`). Todos los nombres son inventados. Cada ítem trae los datos
+ * con los que se dibuja su vista previa (`ui/components/ItemPreview.ts`) y con
+ * los que el garaje lo aplica al auto (`garage/setup.ts`).
  *
  * Rarezas: Común (gris), Raro (azul), Épico (violeta), Legendario (dorado).
  */
@@ -31,9 +32,10 @@ export const KIND_INFO: Readonly<Record<ItemKind, { label: string; use: string }
 };
 
 export type PaintPattern = 'solid' | 'stripes' | 'split' | 'chevron' | 'gradient' | 'geometric';
-export type Finish = 'gloss' | 'matte' | 'metallic' | 'carbon' | 'chrome' | 'pearl';
-export type WingShape = 'standard' | 'spoon' | 'twin' | 'swan' | 'blade';
-export type HelmetDesign = 'stripe' | 'flame' | 'split' | 'stars' | 'circuit' | 'gold';
+export type Finish = 'gloss' | 'matte' | 'satin' | 'metallic' | 'carbon' | 'chrome' | 'pearl';
+export type WingShape = 'standard' | 'tall' | 'spoon' | 'twin' | 'swan' | 'blade';
+/** `team`: el diseño de fábrica, con los colores del auto. */
+export type HelmetDesign = 'team' | 'stripe' | 'flame' | 'split' | 'stars' | 'circuit' | 'gold';
 export type AvatarGlyph = 'initials' | 'visor' | 'bolt' | 'crown' | 'checker' | 'wing' | 'comet' | 'flame';
 export type CelebrationStyle = 'confetti' | 'champagne' | 'fireworks';
 
@@ -42,13 +44,15 @@ interface BaseItem {
   name: string;
   rarity: Rarity;
   description: string;
+  /** Nivel de piloto con el que se desbloquea solo (ítems fuera del pase). */
+  level?: number;
 }
 
 export type Item = BaseItem &
   (
     | { kind: 'paint'; colors: readonly [string, string, string]; pattern: PaintPattern }
     | { kind: 'material'; finish: Finish }
-    | { kind: 'rims'; spokes: number; color: string; accent: string }
+    | { kind: 'rims'; spokes: number; color: string; accent: string; /** Tapa aerodinámica sobre los rayos (la de fábrica). */ cover?: boolean }
     | { kind: 'wing'; shape: WingShape }
     | { kind: 'helmet'; colors: readonly [string, string, string]; design: HelmetDesign }
     | { kind: 'avatar'; glyph: AvatarGlyph; colors: readonly [string, string] }
@@ -58,6 +62,10 @@ export type Item = BaseItem &
 
 /** Ítems que todos tienen desde el principio. */
 const STARTER_ITEMS: readonly Item[] = [
+  { id: 'material-gloss', kind: 'material', name: 'Brillante', finish: 'gloss', rarity: 'common', description: 'Laca transparente de fábrica: la pintura brilla como recién salida del taller.' },
+  { id: 'rims-factory', kind: 'rims', name: 'Tapa aerodinámica', spokes: 10, color: '#50545c', accent: '#ff2a3c', cover: true, rarity: 'common', description: 'Tapa lisa sobre los rayos, con un aro de color. La de fábrica.' },
+  { id: 'wing-standard', kind: 'wing', name: 'Alerón de fábrica', shape: 'standard', rarity: 'common', description: 'Plano principal con flap y viga inferior: el equilibrio de siempre.' },
+  { id: 'helmet-team', kind: 'helmet', name: 'Casco del equipo', colors: ['#f4f4f2', '#c8102e', '#111317'], design: 'team', rarity: 'common', description: 'Blanco con los colores de tu auto: cambia cuando pintas el monoplaza.' },
   { id: 'title-rookie', kind: 'title', name: 'Novato del paddock', text: 'Novato del paddock', rarity: 'common', description: 'Todos empiezan en algún lado.' },
   { id: 'avatar-initials', kind: 'avatar', name: 'Iniciales', glyph: 'initials', colors: ['#c8102e', '#ffffff'], rarity: 'common', description: 'La inicial de tu nombre en el color del equipo.' },
 ];
@@ -116,7 +124,21 @@ const SEASON_ONE_ITEMS: readonly Item[] = [
   { id: 'paint-apex-gold', kind: 'paint', name: 'Ápice dorado', colors: ['#d4a93c', '#0d0d0d', '#fff3c4'], pattern: 'stripes', rarity: 'legendary', description: 'Oro y negro: la librea de quien completó la temporada.' },
 ];
 
-export const ITEMS: readonly Item[] = [...STARTER_ITEMS, ...SEASON_ONE_ITEMS];
+/** Se desbloquean solos al llegar al nivel de piloto indicado. */
+const LEVEL_ITEMS: readonly Item[] = [
+  { id: 'rims-classic', kind: 'rims', name: 'Blanco clásico', spokes: 6, color: '#eef0f2', accent: '#c8102e', level: 3, rarity: 'common', description: 'Seis radios blancos con aro rojo.' },
+  { id: 'helmet-stripe', kind: 'helmet', name: 'Franja azul', colors: ['#f4f4f2', '#1f6fd1', '#0b1a33'], design: 'stripe', level: 5, rarity: 'common', description: 'Blanco con una franja azul de lado a lado.' },
+  { id: 'wing-tall', kind: 'wing', name: 'Alta carga', shape: 'tall', level: 8, rarity: 'rare', description: 'Placas más altas y plano más inclinado: pensado para circuitos lentos.' },
+  { id: 'material-satin', kind: 'material', name: 'Metal satinado', finish: 'satin', level: 12, rarity: 'rare', description: 'Metálico pero sin brillo: un acabado de prototipo.' },
+  { id: 'rims-bronze', kind: 'rims', name: 'Bronce', spokes: 9, color: '#a8743a', accent: '#1a1a1a', level: 15, rarity: 'rare', description: 'Nueve radios de bronce cepillado.' },
+  { id: 'helmet-circuit-red', kind: 'helmet', name: 'Circuito rojo', colors: ['#1a0507', '#ff2a3c', '#ffd6da'], design: 'circuit', level: 20, rarity: 'rare', description: 'Negro con pistas rojas como una placa electrónica.' },
+  { id: 'material-chrome', kind: 'material', name: 'Cromo espejo', finish: 'chrome', level: 25, rarity: 'epic', description: 'Refleja todo el estudio. Sólo para quien llega al nivel 25.' },
+  { id: 'rims-chrome', kind: 'rims', name: 'Cromadas', spokes: 12, color: '#e9eef3', accent: '#9aa6b2', level: 30, rarity: 'epic', description: 'Doce radios cromados que destellan al girar.' },
+  { id: 'paint-veteran', kind: 'paint', name: 'Veterano', colors: ['#0d0d0d', '#d4a93c', '#f4f4f2'], pattern: 'chevron', level: 40, rarity: 'legendary', description: 'Negro con flechas doradas: cuarenta niveles de experiencia en la pintura.' },
+  { id: 'helmet-legend', kind: 'helmet', name: 'Leyenda', colors: ['#d4a93c', '#0d0d0d', '#fff3c4'], design: 'stars', level: 50, rarity: 'legendary', description: 'Oro con estrellas negras: para quien llegó al nivel 50.' },
+];
+
+export const ITEMS: readonly Item[] = [...STARTER_ITEMS, ...SEASON_ONE_ITEMS, ...LEVEL_ITEMS];
 
 const byId = new Map(ITEMS.map((item) => [item.id, item]));
 

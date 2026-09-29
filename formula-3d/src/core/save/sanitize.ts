@@ -5,6 +5,7 @@
  * a su valor por defecto sin afectar a los demás.
  */
 
+import { ownsItemId, PATTERNS, type GarageSetup } from '../../garage/setup';
 import { getItem, isItemId, STARTER_ITEM_IDS, type ItemKind } from '../../progression/items';
 import { MAX_LEVEL, xpToNextLevel } from '../../progression/levels';
 import { PASS_MAX_XP, passRewardsBetween, SEASON } from '../../progression/seasonPass';
@@ -265,6 +266,30 @@ function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): R
   return records;
 }
 
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+function color(value: unknown, fallback: string): string {
+  return typeof value === 'string' && HEX_COLOR.test(value) ? value.toLowerCase() : fallback;
+}
+
+/** Garaje: cada pieza tiene que ser del tipo correcto y estar desbloqueada. */
+function sanitizeGarage(raw: unknown, defaults: GarageSetup, progression: Progression): GarageSetup {
+  const r = record(raw);
+  const colors = Array.isArray(r.colors) ? r.colors : [];
+  const piece = (value: unknown, kind: ItemKind, fallback: string): string =>
+    typeof value === 'string' && getItem(value)?.kind === kind && ownsItemId(value, progression) ? value : fallback;
+  return {
+    pattern: oneOf(r.pattern, PATTERNS.map((p) => p.id), defaults.pattern),
+    colors: [color(colors[0], defaults.colors[0]), color(colors[1], defaults.colors[1]), color(colors[2], defaults.colors[2])],
+    material: piece(r.material, 'material', defaults.material),
+    rims: piece(r.rims, 'rims', defaults.rims),
+    wing: piece(r.wing, 'wing', defaults.wing),
+    helmet: piece(r.helmet, 'helmet', defaults.helmet),
+    number: num(r.number, defaults.number, 1, 99, true),
+    tireStripe: color(r.tireStripe, defaults.tireStripe),
+  };
+}
+
 /**
  * Devuelve un guardado válido a partir de cualquier valor. `defaults` aporta
  * los valores por defecto (por ejemplo, la calidad gráfica detectada).
@@ -296,5 +321,6 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
     },
     records: sanitizeRecords(r.records, defaults.records),
     championship: sanitizeChampionship(r.championship),
+    garage: sanitizeGarage(r.garage, defaults.garage, progression),
   };
 }

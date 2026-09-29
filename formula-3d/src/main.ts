@@ -20,6 +20,7 @@ import './styles/screens/race.css';
 import './styles/screens/raceSelect.css';
 import './styles/screens/results.css';
 import './styles/screens/pass.css';
+import './styles/screens/garage.css';
 
 import { Game, type GameLayers } from './core/Game';
 import { GAME_NAME } from './data/game';

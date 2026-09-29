@@ -1,5 +1,5 @@
 /**
- * Estudio 3D del menú principal (y del garaje en la Fase 7): el monoplaza sobre
+ * Estudio 3D del menú principal y del garaje: el monoplaza sobre
  * una plataforma giratoria, luces de estudio, piso oscuro con reflejos,
  * sombras suaves y tiras de luz al fondo que brillan con el bloom.
  */
@@ -160,8 +160,28 @@ interface Orbit {
   angle: number;
   radius: number;
   height: number;
-  targetY: number;
 }
+
+/** Encuadres del garaje: la cámara se acerca a la pieza que se está editando. */
+export type StudioShot = 'overview' | 'side' | 'front' | 'wheel' | 'rear' | 'helmet';
+
+interface ShotDef {
+  angle: number;
+  radius: number;
+  height: number;
+  /** Punto que mira la cámara (y alrededor del cual gira). */
+  look: [number, number, number];
+}
+
+// Ángulo 0 = detrás del auto (+Z); π = de frente. El morro apunta a −Z.
+const SHOTS: Readonly<Record<StudioShot, ShotDef>> = {
+  overview: { angle: -2.35, radius: 8.6, height: 1.8, look: [0, 0.42, 0] },
+  side: { angle: -Math.PI / 2 - 0.12, radius: 7.4, height: 1.25, look: [0, 0.45, 0] },
+  front: { angle: -2.75, radius: 4.4, height: 2.5, look: [0, 0.3, -1.9] },
+  wheel: { angle: -1.95, radius: 3.1, height: 0.62, look: [-0.8, 0.36, -1.78] },
+  rear: { angle: 0.62, radius: 4.8, height: 1.75, look: [0, 0.8, 2.3] },
+  helmet: { angle: -2.45, radius: 2.5, height: 1.35, look: [0, 0.74, -0.2] },
+};
 
 export class StudioScene implements RenderView {
   readonly scene = new Scene();
@@ -179,7 +199,11 @@ export class StudioScene implements RenderView {
   private readonly reflectorGeometry: CircleGeometry;
   private readonly platform = new Group();
 
-  private readonly orbit: Orbit = { angle: -0.6, radius: 9, height: 1.5, targetY: 0.42 };
+  private readonly orbit: Orbit = { angle: -0.6, radius: 9, height: 1.5 };
+  /** Punto que mira la cámara (y el que se quiere mirar), para los encuadres del garaje. */
+  private readonly look = new Vector3(0, 0.42, 0);
+  private readonly lookTarget = new Vector3(0, 0.42, 0);
+  private shot: StudioShot | null = null;
   private readonly orbitTarget: Orbit = { ...this.orbit };
   /** Velocidad de giro automático de la cámara (rad/s). */
   private orbitSpeed = 0.07;
@@ -285,6 +309,30 @@ export class StudioScene implements RenderView {
     this.updateViewOffset();
   }
 
+  /**
+   * Encuadre del garaje (la cámara deja de girar sola y se acerca a la pieza),
+   * o `null` para volver al giro lento del menú.
+   */
+  setShot(shot: StudioShot | null): void {
+    this.shot = shot;
+    if (shot === null) {
+      this.orbitSpeed = 0.07;
+      this.orbitTarget.radius = 9;
+      this.orbitTarget.height = 1.5;
+      this.lookTarget.set(0, 0.42, 0);
+      return;
+    }
+    const def = SHOTS[shot];
+    this.orbitSpeed = 0;
+    // El ángulo actual se lleva a la vuelta más cercana del destino: gira por el camino corto.
+    const turns = Math.round((this.orbit.angle - def.angle) / (Math.PI * 2));
+    this.orbit.angle -= turns * Math.PI * 2;
+    this.orbitTarget.angle = def.angle;
+    this.orbitTarget.radius = def.radius;
+    this.orbitTarget.height = def.height;
+    this.lookTarget.set(...def.look);
+  }
+
   /** Acercamiento cinematográfico de entrada: arranca cerca y bajo y se abre. */
   playIntro(): void {
     this.orbit.radius = 5.4;
@@ -298,6 +346,9 @@ export class StudioScene implements RenderView {
     this.orbit.angle = damp(this.orbit.angle, this.orbitTarget.angle, 1.6, dt);
     this.orbit.radius = damp(this.orbit.radius, this.orbitTarget.radius, 1.4, dt);
     this.orbit.height = damp(this.orbit.height, this.orbitTarget.height, 1.4, dt);
+    this.look.x = damp(this.look.x, this.lookTarget.x, 2.2, dt);
+    this.look.y = damp(this.look.y, this.lookTarget.y, 2.2, dt);
+    this.look.z = damp(this.look.z, this.lookTarget.z, 2.2, dt);
     this.pointer.smoothX = damp(this.pointer.smoothX, this.pointer.x, 2.5, dt);
     this.pointer.smoothY = damp(this.pointer.smoothY, this.pointer.y, 2.5, dt);
     this.applyOrbitToCamera();
@@ -336,10 +387,12 @@ export class StudioScene implements RenderView {
   // ─── Interno ───────────────────────────────────────────────────────────
 
   private applyOrbitToCamera(): void {
-    const angle = this.orbit.angle + this.pointer.smoothX * 0.12;
+    // En el garaje la cámara se balancea apenas alrededor del encuadre.
+    const sway = this.shot !== null ? Math.sin(this.time * 0.35) * 0.1 : 0;
+    const angle = this.orbit.angle + this.pointer.smoothX * 0.12 + sway;
     const height = this.orbit.height + this.pointer.smoothY * 0.25;
-    this.camera.position.set(Math.sin(angle) * this.orbit.radius, height, Math.cos(angle) * this.orbit.radius);
-    this.camera.lookAt(TARGET.set(0, this.orbit.targetY, 0));
+    this.camera.position.set(this.look.x + Math.sin(angle) * this.orbit.radius, height, this.look.z + Math.cos(angle) * this.orbit.radius);
+    this.camera.lookAt(TARGET.copy(this.look));
   }
 
   private updateViewOffset(): void {

@@ -6,7 +6,7 @@
 import { AudioManager } from '../audio/AudioManager';
 import type { UiSound } from '../audio/UiSounds';
 import { StudioScene } from '../garage/StudioScene';
-import { PLAYER_DEFAULT_LIVERY } from '../garage/livery';
+import { liveryFromSetup } from '../garage/setup';
 import { DiagonalWipe } from '../ui/anim/DiagonalWipe';
 import { FpsMeter } from '../ui/components/FpsMeter';
 import { EventBus } from './EventBus';
@@ -138,7 +138,7 @@ export class Game {
     if (this.studioPromise) return this.studioPromise;
     const generation = ++this.studioGeneration;
     const promise = (async () => {
-      const studio = new StudioScene(this.render.renderer, { livery: PLAYER_DEFAULT_LIVERY }, this.render.maxAnisotropy);
+      const studio = new StudioScene(this.render.renderer, { livery: liveryFromSetup(this.save.data.garage) }, this.render.maxAnisotropy);
       studio.onGraphicsChanged(this.render.currentGraphics);
       // Con compilación paralela de shaders se espera sin trabar la animación;
       // sin ella, se compila de una vez (evita el tirón del primer fotograma).

@@ -28,6 +28,7 @@ const OPENERS: Partial<Record<MenuItemId, (game: Game) => Promise<boolean>>> = {
   timeTrial: (game) => game.screens.goTo('raceSelect', { mode: 'timeTrial' }),
   championship: (game) => game.screens.goTo('championship', undefined),
   pass: (game) => game.screens.goTo('pass', undefined),
+  garage: (game) => game.screens.goTo('garage', undefined),
   settings: (game) => game.screens.push('settings', undefined),
 };
 
