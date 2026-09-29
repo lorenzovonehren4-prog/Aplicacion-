@@ -101,7 +101,7 @@
 .pass__strip {
   display: flex;
   align-items: flex-end;
-  padding: 14px 40vw 6px;
+  padding: 14px 40vw 6px 2vw;
 }
 
 .ptier {
@@ -266,6 +266,10 @@
   width: auto;
 }
 
+.pass__card-slot .ipreview__title-text {
+  font-size: 12px;
+}
+
 .pass__info {
   display: flex;
   flex-direction: column;
@@ -381,4 +385,8 @@
   .pass__card-slot {
     height: 200px;
   }
+}
+
+.pass__backdrop {
+  --fx-glow: rgba(245, 197, 66, 0.1);
 }

@@ -5,7 +5,7 @@
  *   esa dirección (sirve para listas, grillas y paneles sin configurar nada).
  * - Si no hay nada en esa dirección, en vertical da la vuelta al otro extremo.
  * - Un elemento puede manejar ←/→ por su cuenta (sliders, selectores).
- * - Pasar el ratón por encima mueve el foco; el clic confirma.
+ * - Mover el ratón por encima mueve el foco; el clic confirma.
  */
 
 import type { UiAction } from '../../core/input/actions';
@@ -51,7 +51,11 @@ export class FocusNavigator {
     if (!element.hasAttribute('tabindex') && !(element instanceof HTMLButtonElement)) {
       element.tabIndex = -1;
     }
-    own.listen(element, 'pointerenter', () => {
+    // Sólo si el ratón de verdad se mueve encima: al abrir una pantalla el
+    // cursor quieto puede quedar sobre un elemento y no debe robarle el foco
+    // al que la pantalla eligió (con `pointerenter` pasaba).
+    own.listen(element, 'pointermove', (event) => {
+      if (event.movementX === 0 && event.movementY === 0) return;
       if (this.enabled && this.current !== item) this.setFocus(item, true);
     });
     own.listen(element, 'click', (event) => {

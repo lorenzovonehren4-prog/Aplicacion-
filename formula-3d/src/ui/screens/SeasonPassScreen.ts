@@ -48,7 +48,7 @@ export class SeasonPassScreen extends BaseScreen {
     this.own.listen(back, 'click', () => this.onBack());
     const progress = passProgress(this.passXp);
     this.root.append(
-      h('div', { class: 'pass__backdrop' }),
+      h('div', { class: 'pass__backdrop fx-backdrop' }),
       this.header(progress.tier),
       this.track,
       this.detail,

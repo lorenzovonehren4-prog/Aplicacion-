@@ -30,7 +30,9 @@ import { getTrack, TRACKS } from '../../tracks/registry';
 import { WEATHER_INFO } from '../../tracks/weather';
 import { finished } from '../anim/finished';
 import { ControlHints } from '../components/ControlHints';
+import { createCountryFlag } from '../components/CountryFlag';
 import { createMenuButton } from '../components/MenuButton';
+import { createTrackThumb } from '../components/TrackMap';
 import { selectorRow, sliderRow, type RowContext, type SettingRow } from '../components/SettingRows';
 import { h, prefersReducedMotion } from '../dom';
 import { BaseScreen } from './BaseScreen';
@@ -66,7 +68,7 @@ export class ChampionshipScreen extends BaseScreen {
     this.own.add(this.game.events.on('settings:changed', () => this.refreshRows()));
     const back = h('button', { class: 'rsel__back', attrs: { type: 'button' }, text: 'Volver' });
     this.own.listen(back, 'click', () => this.onBack());
-    this.root.append(h('div', { class: 'rsel__backdrop' }), this.panel, this.side, h('footer', { class: 'rsel__footer' }, this.hints.element, back));
+    this.root.append(h('div', { class: 'rsel__backdrop fx-backdrop' }), this.panel, this.side, h('footer', { class: 'rsel__footer' }, this.hints.element, back));
     this.render();
   }
 
@@ -157,6 +159,8 @@ export class ChampionshipScreen extends BaseScreen {
             text: `Corres todo el calendario contra los mismos rivales. Cada carrera reparte ${POINTS.join('-')} puntos del 1.º al 10.º; gana el título quien sume más. Puedes dejarla y seguir otro día: queda guardada.`,
           }),
         ),
+        this.previewCalendar(),
+        this.pointsChart(),
         this.help(),
       );
     }
@@ -321,6 +325,46 @@ export class ChampionshipScreen extends BaseScreen {
   }
 
   /** Ayuda de la opción enfocada (abajo, del lado derecho). */
+  /** Calendario de la temporada: una tarjeta por carrera con el trazado y la bandera. */
+  private previewCalendar(): HTMLElement {
+    return h(
+      'div',
+      { class: 'champ__cards' },
+      ...TRACKS.map((track, i) =>
+        h(
+          'div',
+          { class: 'champ__card' },
+          createTrackThumb(track, 'champ__thumb'),
+          h(
+            'div',
+            { class: 'champ__card-info' },
+            h('span', { class: 'champ__card-round', text: `Ronda ${i + 1}` }),
+            h('b', { class: 'champ__card-name', text: track.name }),
+            h('span', { class: 'champ__card-gp' }, createCountryFlag(track.countryCode, 'champ__card-flag'), track.grandPrix),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /** Reparto de puntos del 1.º al 10.º, en barras. */
+  private pointsChart(): HTMLElement {
+    const top = POINTS[0] ?? 1;
+    return h(
+      'div',
+      { class: 'champ__points', attrs: { 'aria-label': `Puntos del 1.º al 10.º: ${POINTS.join(', ')}` } },
+      ...POINTS.map((points, i) =>
+        h(
+          'div',
+          { class: `champ__bar${i < 3 ? ` is-p${i + 1}` : ''}`, style: { '--h': String(points / top), '--i': String(i) } },
+          h('span', { class: 'champ__bar-value', text: String(points) }),
+          h('span', { class: 'champ__bar-fill' }),
+          h('span', { class: 'champ__bar-pos', text: `${i + 1}.º` }),
+        ),
+      ),
+    );
+  }
+
   private help(): HTMLElement {
     return h('aside', { class: 'rsel__help champ__help' }, this.helpTitle, this.helpText);
   }

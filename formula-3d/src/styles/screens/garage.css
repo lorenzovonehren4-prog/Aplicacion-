@@ -29,7 +29,13 @@
 
 .garage__panel .tabs {
   flex: none;
-  flex-wrap: wrap;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.garage__panel .tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .garage__content {
@@ -358,9 +364,10 @@
   }
 }
 
-/* Pestañas compactas: las seis entran en una fila. */
+/* Pestañas compactas: las siete entran en una fila. */
 .garage__panel .tab {
-  padding-inline: 11px;
-  font-size: 14px;
-  letter-spacing: 0.06em;
+  flex: none;
+  padding-inline: 10px;
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
 }

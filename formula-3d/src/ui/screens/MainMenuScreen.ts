@@ -9,7 +9,7 @@
 
 import gsap from 'gsap';
 import type { Game } from '../../core/Game';
-import { GAME_VERSION, DEV_PHASE, MAIN_MENU, type MenuItem, type MenuItemId } from '../../data/game';
+import { GAME_VERSION, MAIN_MENU, type MenuItem, type MenuItemId } from '../../data/game';
 import type { StudioScene } from '../../garage/StudioScene';
 import { h, prefersReducedMotion } from '../dom';
 import { ControlHints } from '../components/ControlHints';
@@ -100,7 +100,7 @@ export class MainMenuScreen extends BaseScreen {
         'div',
         { class: 'menu__meta' },
         storageNote,
-        h('span', { class: 'menu__version', text: `v${GAME_VERSION} · Fase ${DEV_PHASE} de 9` }),
+        h('span', { class: 'menu__version', text: `v${GAME_VERSION}` }),
       ),
     );
 

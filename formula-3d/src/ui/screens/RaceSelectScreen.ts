@@ -144,7 +144,7 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
       h('aside', { class: 'rsel__help' }, this.helpTitle, this.helpText),
     );
     this.root.append(
-      h('div', { class: 'rsel__backdrop' }),
+      h('div', { class: 'rsel__backdrop fx-backdrop' }),
       this.panel,
       this.stage,
       h('footer', { class: 'rsel__footer' }, this.hints.element, back),

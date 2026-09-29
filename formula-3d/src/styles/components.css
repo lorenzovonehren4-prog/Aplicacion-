@@ -794,3 +794,74 @@
     opacity: 0.55;
   }
 }
+
+/* ─── Fondo animado de las pantallas 2D ────────────────────────────────────
+   Se suma al fondo propio de cada pantalla (`.rsel__backdrop`, etc.):
+   - dos resplandores que derivan muy despacio (color según la pantalla),
+   - rayas de velocidad finas que cruzan en diagonal sin fin,
+   - viñeta en los bordes.
+   Sólo se animan `transform` (lo mueve el compositor: no cuesta cuadros). */
+
+.fx-backdrop {
+  overflow: hidden;
+  box-shadow: inset 0 0 min(22vw, 260px) rgba(0, 0, 0, 0.75);
+}
+
+.fx-backdrop::before,
+.fx-backdrop::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.fx-backdrop::before {
+  inset: -25%;
+  background:
+    radial-gradient(circle at 32% 38%, var(--fx-glow, rgba(255, 42, 60, 0.13)), transparent 28%),
+    radial-gradient(circle at 70% 66%, var(--fx-glow-2, rgba(90, 120, 255, 0.06)), transparent 30%);
+  animation: fx-drift 28s ease-in-out infinite alternate;
+}
+
+/* El período de las rayas medido sobre X es 380 px / sen(115°) ≈ 419,3 px:
+   correrlas exactamente eso hace que la animación empalme sin salto. */
+.fx-backdrop::after {
+  top: -10%;
+  bottom: -10%;
+  left: -420px;
+  right: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    transparent 0 150px,
+    rgba(255, 255, 255, 0.028) 150px 151px,
+    transparent 151px 290px,
+    rgba(255, 42, 60, 0.05) 290px 292px,
+    transparent 292px 380px
+  );
+  animation: fx-streaks 16s linear infinite;
+}
+
+@keyframes fx-drift {
+  from {
+    transform: translate3d(-3%, -2%, 0) rotate(-4deg);
+  }
+  to {
+    transform: translate3d(4%, 3%, 0) rotate(5deg);
+  }
+}
+
+@keyframes fx-streaks {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(419.3px, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-backdrop::before,
+  .fx-backdrop::after {
+    animation: none;
+  }
+}

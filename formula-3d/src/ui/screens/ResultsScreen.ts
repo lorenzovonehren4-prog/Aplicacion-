@@ -99,7 +99,7 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
     this.buildMain();
     this.buildSide();
     this.root.append(
-      h('div', { class: 'res__backdrop' }),
+      h('div', { class: 'res__backdrop fx-backdrop' }),
       h('div', { class: 'res__stripes' }),
       this.main,
       this.side,

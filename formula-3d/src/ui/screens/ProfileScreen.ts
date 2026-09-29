@@ -27,6 +27,11 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 type TrophyMetal = 'gold' | 'silver' | 'none';
 
 /** Copa en SVG (oro, plata o apagada). */
+/** "1 victoria", "3 victorias". */
+function plural(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
 function trophyCup(metal: TrophyMetal, big = false): SVGSVGElement {
   const colors: Record<TrophyMetal, readonly [string, string, string]> = {
     gold: ['#fff1b8', '#f5c542', '#8a6410'],
@@ -75,7 +80,7 @@ export class ProfileScreen extends BaseScreen {
     this.own.add(this.game.events.on('input:device', ({ device }) => this.hints?.setDevice(device)));
     const back = h('button', { class: 'rsel__back', attrs: { type: 'button' }, text: 'Volver' });
     this.own.listen(back, 'click', () => this.onBack());
-    this.root.append(h('div', { class: 'rsel__backdrop' }), this.panel, this.side, h('footer', { class: 'rsel__footer' }, this.hints.element, back));
+    this.root.append(h('div', { class: 'rsel__backdrop fx-backdrop' }), this.panel, this.side, h('footer', { class: 'rsel__footer' }, this.hints.element, back));
     this.buildPanel();
     this.buildSide();
   }
@@ -117,7 +122,7 @@ export class ProfileScreen extends BaseScreen {
       ['Podios', formatInteger(stats.podiums)],
       ['Vueltas rápidas', formatInteger(stats.fastestLaps)],
       ['Carreras limpias', formatInteger(stats.cleanRaces)],
-      ['Adelantamientos', formatInteger(stats.overtakes)],
+      ['Adelanta\u00ADmientos', formatInteger(stats.overtakes)],
       ['Vueltas válidas', formatInteger(stats.laps)],
       ['Km recorridos', formatInteger(stats.distanceKm)],
       ['Campeonatos', `${formatInteger(stats.championships)} / ${formatInteger(stats.seasons)}`],
@@ -138,7 +143,7 @@ export class ProfileScreen extends BaseScreen {
         h('span', { class: 'precord__code', text: track.countryCode }),
         h('span', { class: 'precord__name' }, h('b', { text: track.name }), h('small', { text: track.grandPrix })),
         h('span', { class: 'precord__lap', text: record?.bestLap ? formatLapTime(record.bestLap) : '—:——.———' }),
-        h('span', { class: 'precord__meta', text: `${t?.wins ?? 0} V · ${t?.podiums ?? 0} P${record?.ghost ? ' · fantasma' : ''}` }),
+        h('span', { class: 'precord__meta', text: `${plural(t?.wins ?? 0, 'victoria', 'victorias')} · ${plural(t?.podiums ?? 0, 'podio', 'podios')}${record?.ghost ? ' · fantasma' : ''}` }),
       );
       records.append(row);
     }

@@ -649,6 +649,7 @@
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01));
   box-shadow: inset 0 0 0 1px var(--c-line-strong);
   transform: skewX(var(--skew));
+  overflow: hidden;
 }
 
 .ipreview__title-text {
@@ -702,4 +703,9 @@
   .res__actions {
     grid-template-columns: 1fr;
   }
+}
+
+.res__backdrop {
+  --fx-glow: rgba(245, 197, 66, 0.1);
+  --fx-glow-2: rgba(255, 42, 60, 0.08);
 }

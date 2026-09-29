@@ -5,6 +5,7 @@
  */
 
 import {
+  AdditiveBlending,
   CanvasTexture,
   CircleGeometry,
   Color,
@@ -22,6 +23,7 @@ import {
   RingGeometry,
   Scene,
   ShadowMaterial,
+  ShaderMaterial,
   SpotLight,
   SRGBColorSpace,
   Vector3,
@@ -498,16 +500,44 @@ export class StudioScene implements RenderView {
     backdrop.position.y = 5.5;
     this.scene.add(backdrop);
 
-    // Tiras de luz verticales alrededor: profundidad y brillo con el bloom.
-    const stripGeometry = this.own.own(new PlaneGeometry(0.08, 4.2));
-    const white = this.own.own(new MeshBasicMaterial({ color: new Color('#dfe8ff').multiplyScalar(2.2), fog: false }));
-    const red = this.own.own(new MeshBasicMaterial({ color: new Color('#ff2a3c').multiplyScalar(2.4), fog: false }));
+    // Tiras de luz verticales alrededor: paneles LED con el brillo que se
+    // desvanece hacia las puntas y los costados (no palos duros), aditivos.
+    const stripGeometry = this.own.own(new PlaneGeometry(0.5, 5));
+    const stripMaterial = (hex: string, power: number): ShaderMaterial =>
+      this.own.own(
+        new ShaderMaterial({
+          vertexShader: /* glsl */ `
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }`,
+          fragmentShader: /* glsl */ `
+            uniform vec3 color;
+            varying vec2 vUv;
+            void main() {
+              float across = abs(vUv.x - 0.5) * 2.0;
+              // Núcleo fino y brillante con un halo suave alrededor.
+              float glow = exp(-across * across * 90.0) + 0.22 * exp(-across * across * 7.0);
+              float ends = smoothstep(0.0, 0.3, vUv.y) * smoothstep(1.0, 0.72, vUv.y);
+              gl_FragColor = vec4(color * glow * ends, 1.0);
+            }`,
+          uniforms: { color: { value: new Color(hex).multiplyScalar(power) } },
+          transparent: true,
+          blending: AdditiveBlending,
+          depthWrite: false,
+          fog: false,
+        }),
+      );
+    const white = stripMaterial('#dfe8ff', 1.5);
+    const red = stripMaterial('#ff2a3c', 1.8);
     const count = 14;
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * Math.PI * 2;
       const strip = new Mesh(stripGeometry, i % 7 === 3 ? red : white);
-      strip.position.set(Math.sin(angle) * 15, 2.4, Math.cos(angle) * 15);
-      strip.lookAt(0, 2.4, 0);
+      strip.position.set(Math.sin(angle) * 15, 2.6, Math.cos(angle) * 15);
+      strip.lookAt(0, 2.6, 0);
+      strip.renderOrder = 4;
       this.scene.add(strip);
     }
   }

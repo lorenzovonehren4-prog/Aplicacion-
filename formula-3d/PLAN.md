@@ -939,6 +939,28 @@ revisión propia del código + resumen y espera de confirmación.
       recorte por cámara): ~0,78 M triángulos en Albert Park; el peor cuadro
       visto fue ~0,95 M en la recta de Monza (tope: 1,5 M).
 
+### Versión 1.3 — Menús ✅
+
+- [x] Fondo animado común de las pantallas 2D (`.fx-backdrop`): resplandores
+      que derivan despacio, rayas de velocidad que cruzan sin fin y viñeta.
+      Sólo anima `transform` (lo resuelve el compositor) y se apaga con
+      "reducir movimiento".
+- [x] Mapa del circuito en la selección de carrera: sectores marcados (S1–S3
+      y sus límites) y un destello con estela que recorre la vuelta.
+- [x] Campeonato sin temporada en curso: tarjetas del calendario con el
+      trazado y la bandera, y el reparto de puntos en barras (oro, plata,
+      bronce).
+- [x] Estudio del menú y del garaje: las tiras de luz del fondo ahora son
+      paneles LED con brillo suave (antes, palos rectos duros).
+- [x] Defectos corregidos: "Adelantamientos" se cortaba letra por letra en el
+      perfil; los nombres de la vitrina pisaban el estante; la tira del pase
+      dejaba media pantalla vacía al principio; el título grande del pase se
+      encimaba con su tipo; las siete pestañas del garaje ya entran en una
+      fila; récords con texto claro ("0 victorias · 0 podios"); el pie del
+      menú ya no muestra la fase de desarrollo.
+- [x] El cursor quieto ya no le roba el foco a la pantalla que se abre: el
+      foco sigue al ratón sólo cuando se mueve de verdad (`pointermove`).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1018,3 +1040,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Fase 9**: completa. Versión 1.0.0: las 9 fases del documento están hechas.
 - **Versión 1.1**: tracción, fluidez, pistas y gráficos (pedido del usuario).
 - **Versión 1.2**: gráficos y calidad de las pistas (pedido del usuario).
+- **Versión 1.3**: menús y su calidad (pedido del usuario).
