@@ -89,7 +89,7 @@ export const F1_SPEC: Readonly<CarSpec> = {
   airDensity: 1.225,
   dragArea: 1.42,
   downforceArea: 4.4,
-  aeroBalanceFront: 0.44,
+  aeroBalanceFront: 0.42,
   drsDragCut: 0.16,
   drsDownforceCut: 0.12,
 

@@ -101,6 +101,10 @@ const WALL_RESTITUTION = 0.18;
 const WALL_FRICTION = 0.32;
 /** Giro máximo que puede provocar un solo impacto (rad/s): el auto real absorbe energía. */
 const MAX_IMPACT_SPIN = 2.2;
+/** Desde qué rapidez actúa el limitador de dirección (m/s), en cuánto entra del todo y cuánto del pico de deriva deja usar. */
+const STEER_GUARD_FROM = 12;
+const STEER_GUARD_RAMP = 14;
+const STEER_GUARD_REACH = 1;
 /** Rapidez (1/s) con la que el control de estabilidad corrige la guiñada. */
 const STABILITY_GAIN = 7;
 /** Puntos del contorno del auto relativos al CG, en pares (x adelante, y izquierda). */
@@ -290,7 +294,19 @@ export class Vehicle {
     // ─── Dirección: el ángulo máximo baja con la velocidad ───
     const maxSteer =
       spec.maxSteerHigh + (spec.maxSteerLow - spec.maxSteerHigh) / (1 + (speed / spec.steerSpeedFalloff) ** 2);
-    const target = -input.steer * maxSteer;
+    let target = -input.steer * maxSteer;
+    // Limitador de agarre: a velocidad, las ruedas no giran más allá del ángulo
+    // que da el máximo agarre delantero respecto de hacia dónde va el eje (lo que
+    // haría un piloto; con teclado no se puede dosificar). Girar más sólo haría
+    // patinar el tren delantero y, al recuperar agarre, cruzar la cola. Deja
+    // contravolantear: el rango sigue la dirección real del eje.
+    const guard = Math.min(1, Math.max(0, (speed - STEER_GUARD_FROM) / STEER_GUARD_RAMP));
+    if (guard > 0) {
+      const flow = Math.atan2(this.vy + spec.cgToFront * this.yawRate, Math.max(speed, 3));
+      const reach = spec.peakSlipAngle * STEER_GUARD_REACH;
+      const limited = Math.max(flow - reach, Math.min(flow + reach, target));
+      target += (limited - target) * guard;
+    }
     const rack = 5 * dt;
     this.steerAngle += Math.max(-rack, Math.min(rack, target - this.steerAngle));
 
@@ -439,7 +455,7 @@ export class Vehicle {
     const ay = fy / spec.mass - this.yawRate * this.vx;
     this.vx += ax * dt;
     this.vy += ay * dt;
-    this.yawRate += ((mz + this.stabilityMoment(slipFront, slipRear, capFront + capRear)) / spec.yawInertia) * dt;
+    this.yawRate += ((mz + this.stabilityMoment(slipRear, capFront + capRear)) / spec.yawInertia) * dt;
 
     // Detenido: sin deslizamiento residual.
     if (stopped && Math.abs(this.vx) < 0.3) {
@@ -490,15 +506,17 @@ export class Vehicle {
   }
 
   /**
-   * Control de estabilidad: si la cola desliza más que el tren delantero
+   * Control de estabilidad: si la cola se acerca al límite de su agarre
    * (sobreviraje), un momento lleva la guiñada hacia la que pide la dirección.
+   * Mira la deriva trasera sola: con el volante muy girado el tren delantero
+   * también deriva mucho y compararlos escondía el trompo.
    */
-  private stabilityMoment(slipFront: number, slipRear: number, lateralCapacity: number): number {
+  private stabilityMoment(slipRear: number, lateralCapacity: number): number {
     const gain = this.electronics.stability;
     const speed = this.vx;
     if (gain <= 0 || speed < 8) return 0;
     const peak = this.spec.peakSlipAngle;
-    const oversteer = Math.abs(slipRear) - Math.max(Math.abs(slipFront), peak * 0.6);
+    const oversteer = Math.abs(slipRear) - peak * 0.7;
     if (oversteer <= 0) return 0;
     // Guiñada de referencia: la geométrica, limitada por el agarre disponible.
     const maxYaw = lateralCapacity / (this.spec.mass * speed);

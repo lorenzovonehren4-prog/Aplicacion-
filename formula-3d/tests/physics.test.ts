@@ -6,6 +6,7 @@ import { AUSTRALIA } from '../src/tracks/data/australia';
 import { Track } from '../src/tracks/Track';
 import { autopilot } from './helpers/autopilot';
 import { KeyboardPilot } from './helpers/keyboardPilot';
+import { SKIDPAD } from './helpers/skidpad';
 
 const track = Track.load(AUSTRALIA);
 const STEP = 1 / 120;
@@ -192,6 +193,37 @@ describe('vuelta completa con teclado', () => {
     expect(offTrackTime).toBeLessThan(2);
     // Sin trompos: la deriva del auto nunca pasa de ~12°.
     expect(maxSlip).toBeLessThan(0.21);
+  });
+});
+
+describe('curvas rápidas con la flecha mantenida', () => {
+  /** Mantiene la flecha (con la rampa del teclado) 3 s a velocidad constante; devuelve la deriva máxima (rad). */
+  function holdCorner(kmh: number, stability: number): { drift: number; ay: number } {
+    const car = new Vehicle(F1_SPEC, SKIDPAD);
+    car.placeAt(0, 0);
+    car.vx = kmh / 3.6;
+    car.electronics = { tractionControl: 1, abs: true, stability };
+    const target = car.vx;
+    let steer = 0;
+    let drift = 0;
+    let ay = 0;
+    for (let t = 0; t < 3; t += STEP) {
+      steer = Math.min(1, steer + ((3.8 - 2.1 * Math.min(1, car.speed / 80)) * STEP));
+      car.step(STEP, { throttle: car.vx < target ? 0.6 : 0.2, brake: 0, steer, drs: false });
+      drift = Math.max(drift, Math.abs(Math.atan2(car.vy, car.vx)));
+      ay = Math.max(ay, Math.abs(car.telemetry.ay));
+    }
+    return { drift, ay };
+  }
+
+  it('no hace trompo a 180, 240 ni 290 km/h, con o sin control de estabilidad', () => {
+    for (const kmh of [180, 240, 290]) {
+      // Sin ayudas la cola puede moverse un poco (≤ 14°); con el control de estabilidad casi nada (≤ 9°).
+      expect(holdCorner(kmh, 0).drift).toBeLessThan(0.25);
+      expect(holdCorner(kmh, 1).drift).toBeLessThan(0.16);
+    }
+    // Y dobla con la carga aerodinámica: más de 4 g a 290 km/h.
+    expect(holdCorner(290, 1).ay / 9.81).toBeGreaterThan(4);
   });
 });
 
