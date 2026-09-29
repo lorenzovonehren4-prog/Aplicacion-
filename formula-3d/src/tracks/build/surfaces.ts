@@ -55,7 +55,25 @@ export function buildGround(ctx: BuildContext): void {
 
   const grass = ctx.own.own(createGrass(ctx.anisotropy));
   grass.repeat.set(size / 5, size / 5);
-  addMesh(ctx, plane, new MeshStandardMaterial({ map: grass, vertexColors: true, roughness: 0.95 }), { name: 'suelo' });
+  const material = new MeshStandardMaterial({ map: grass, vertexColors: true, roughness: 0.95 });
+  // Franjas de césped cortado (claras y oscuras, de 9 m), como se ven en la TV,
+  // y un cuadriculado suave más grande: se calculan con la posición del mundo.
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGroundXZ = (modelMatrix * vec4(position, 1.0)).xz;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        float mow = step(0.5, fract(dot(vGroundXZ, vec2(0.0786, 0.0786)) ));
+        float checker = step(0.5, fract(dot(vGroundXZ, vec2(-0.0262, 0.0262))));
+        diffuseColor.rgb *= 0.86 + 0.2 * mow + 0.04 * checker;`,
+      );
+  };
+  material.customProgramCacheKey = () => 'cesped-cortado';
+  addMesh(ctx, plane, material, { name: 'suelo' });
 }
 
 export function buildAsphalt(ctx: BuildContext): void {

@@ -37,7 +37,7 @@ export class RaceWorld implements RenderView {
   /** Exposición según el clima (a pleno sol, 1). */
   readonly exposure: number;
   /** A cielo abierto sólo brillan los reflejos intensos del sol. */
-  readonly bloomThreshold = 1.2;
+  readonly bloomThreshold = 1.9;
   /** En pausa la imagen se congela (el renderer no vuelve a dibujar). */
   frozen = false;
   readonly rig: CarRig;
@@ -329,6 +329,8 @@ export class RaceWorld implements RenderView {
 
   onGraphicsChanged(graphics: GraphicsSettings): void {
     this.hazeEnabled = graphics.quality === 'high' || graphics.quality === 'ultra';
+    // Gradación de color y viñeta con posprocesado (una pasada liviana).
+    this.speedFx.grade = graphics.postprocessing ? 1 : 0;
     // Sin mapa de sombras el sol deja de proyectarlas (auto y escenario).
     this.trackScene.sky.setShadowMapSize(shadowMapSize(graphics.shadows, graphics.quality));
   }

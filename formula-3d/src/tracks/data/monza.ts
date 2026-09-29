@@ -83,7 +83,7 @@ export const MONZA: TrackDefinition = {
   environment: {
     sunAzimuth: 250,
     sunElevation: 34,
-    turbidity: 3.5,
+    turbidity: 2.6,
     fogDensity: 0.00016,
   },
 };

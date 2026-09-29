@@ -46,7 +46,7 @@ export function weatherLook(env: TrackEnvironment, weather: Weather): WeatherLoo
     sunIntensity: 3.2,
     turbidity: env.turbidity,
     rayleigh: 1.2,
-    mieCoefficient: 0.004,
+    mieCoefficient: 0.0022,
     cloudCoverage: 0.32,
     cloudDensity: 0.45,
     skyLight: '#bcd4ff',

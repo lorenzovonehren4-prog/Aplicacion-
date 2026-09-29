@@ -36,6 +36,7 @@ import type { GraphicsSettings } from '../core/save/schema';
 import { Disposer } from '../core/utils/Disposer';
 import { damp } from '../core/utils/math';
 import { CarModel } from './CarModel';
+import { StudioAtmosphere } from './StudioAtmosphere';
 import type { LiveryConfig } from './livery';
 
 const FLOOR_RADIUS = 20;
@@ -213,6 +214,9 @@ export class StudioScene implements RenderView {
   private viewport = { width: 1, height: 1 };
   private reflectionScale = 0;
   private time = 0;
+  /** Conos de luz, polvo y pulso del piso (se arma al conocer la calidad). */
+  private atmosphere: StudioAtmosphere | null = null;
+  private atmosphereAmount = -1;
 
   constructor(
     private readonly renderer: WebGLRenderer,
@@ -353,6 +357,8 @@ export class StudioScene implements RenderView {
     this.pointer.smoothY = damp(this.pointer.smoothY, this.pointer.y, 2.5, dt);
     this.applyOrbitToCamera();
 
+    this.atmosphere?.update(dt);
+
     // Luz trasera "respirando", como un auto encendido en boxes.
     this.car.setRearLight(0.35 + 0.65 * (0.5 + 0.5 * Math.sin(this.time * 2.2)));
   }
@@ -368,6 +374,7 @@ export class StudioScene implements RenderView {
     }
     this.shadowCatcher.visible = shadows;
     this.setReflectionScale(QUALITY_PRESETS[graphics.quality].reflectionScale);
+    this.buildAtmosphere(QUALITY_PRESETS[graphics.quality].particles);
   }
 
   onResize(width: number, height: number, pixelRatio: number): void {
@@ -375,9 +382,11 @@ export class StudioScene implements RenderView {
     this.camera.aspect = width / height;
     this.updateViewOffset();
     this.resizeReflection(pixelRatio);
+    this.atmosphere?.setViewHeight(height * pixelRatio);
   }
 
   dispose(): void {
+    this.atmosphere?.dispose();
     this.destroyReflector();
     this.car.dispose();
     this.own.dispose();
@@ -385,6 +394,24 @@ export class StudioScene implements RenderView {
   }
 
   // ─── Interno ───────────────────────────────────────────────────────────
+
+  /** Conos visibles bajo los focos, polvo en el aire y el pulso del piso. */
+  private buildAtmosphere(amount: number): void {
+    if (amount === this.atmosphereAmount) return;
+    this.atmosphereAmount = amount;
+    this.atmosphere?.dispose();
+    this.atmosphere = new StudioAtmosphere(
+      [
+        { from: this.keyLight.position, to: new Vector3(0, 0, 0), color: '#fff4e6', intensity: 0.16, radius: 2.4 },
+        { from: new Vector3(-3.2, 7.6, 2.6), to: new Vector3(-0.6, 0, 0.4), color: '#dfe8ff', intensity: 0.09, radius: 1.8 },
+        { from: this.rimLight.position, to: new Vector3(0, 0.2, 0), color: '#ff2a3c', intensity: 0.1, radius: 1.6 },
+      ],
+      PLATFORM_RADIUS,
+      amount,
+    );
+    this.atmosphere.setViewHeight(this.viewport.height * this.renderer.getPixelRatio());
+    this.scene.add(this.atmosphere.root);
+  }
 
   private applyOrbitToCamera(): void {
     // En el garaje la cámara se balancea apenas alrededor del encuadre.

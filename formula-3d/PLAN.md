@@ -894,6 +894,29 @@ revisión propia del código + resumen y espera de confirmación.
       pasada de velocidad se precompila, y pruebas nuevas (cámara lenta,
       partículas, festejo en el guardado). Versión 1.0.0.
 
+### Versión 1.1 — Mejoras pedidas después de la Fase 9 ✅
+
+- [x] Tracción en curvas: al acelerar, el eje trasero reserva más agarre
+      lateral (círculo de fricción ×0,7 en tracción). A fondo en una curva a
+      80 km/h sin control de tracción, antes giraba en trompo (76° de
+      deriva); ahora sale con ~5°. Prueba nueva en `physics.test.ts`.
+- [x] Fluidez: pantalla de carga animada con CSS (sigue fluida aunque el hilo
+      principal esté ocupado), precalentamiento de la GPU (`core/render/prewarm.ts`:
+      el circuito entero se dibuja oculto antes de mostrarse; también el estudio
+      y el podio), cuadros de verdad detrás de la carga antes de descubrir la
+      pista, el rendimiento automático ya no baja el nivel de calidad en plena
+      carrera (queda para la próxima sesión) y el límite de FPS dibuja uno de
+      cada N cuadros del monitor (ritmo parejo en 120/144 Hz).
+- [x] Pistas: asfalto más ancho (Albert Park 16 m, Monza 15,5 m) y radios de
+      curva ajustados a las velocidades reales (Lesmo 1 de 281 a ~173 km/h,
+      curva 13 de Albert Park a ~155). Los trazados siguen cerrando exacto;
+      DRS y escapatorias reubicados. Sin datos oficiales de coordenadas, las
+      formas siguen siendo aproximaciones con rectas y arcos.
+- [x] Gráficos: estudio del menú con conos de luz visibles, polvo en el aire
+      y pulso de luz en el piso (`garage/StudioAtmosphere.ts`); césped con
+      franjas de corte; gradación de color y viñeta en carrera; menos bruma
+      (el resplandor del cielo cerca del sol ya no lava la imagen).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -971,3 +994,4 @@ revisión propia del código + resumen y espera de confirmación.
   usuario).
 - **Fase 8**: completa.
 - **Fase 9**: completa. Versión 1.0.0: las 9 fases del documento están hechas.
+- **Versión 1.1**: tracción, fluidez, pistas y gráficos (pedido del usuario).
