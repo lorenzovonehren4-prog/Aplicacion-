@@ -62,8 +62,10 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Fase 3 de 9: práctica libre y carrera rápida (3 vueltas con semáforo) en
-Albert Park, con física de monoplaza, tres cámaras, sonido, HUD completo con
-radio del equipo, sistema de ayudas por niveles y línea de trazada fija o
-dinámica. Los rivales llegan en la Fase 4. Ver la sección **Fases** de
+Fase 4 de 9: práctica libre y carrera rápida (3 vueltas con semáforo) en
+Albert Park contra 9–19 rivales con IA (5 dificultades), choques entre autos,
+rebufo, DRS con detección, posiciones e intervalos en vivo y clasificación
+final. Física de monoplaza, tres cámaras, sonido (motores rivales en 3D), HUD
+completo con radio del equipo, sistema de ayudas por niveles, línea de
+trazada fija o dinámica y rendimiento automático. Ver la sección **Fases** de
 `PLAN.md`.

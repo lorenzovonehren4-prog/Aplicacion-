@@ -7,8 +7,9 @@
 export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'assists' | 'game';
 
 /**
- * Modos de sesión en pista: práctica libre (Fase 2) y carrera (Fase 3, sin
- * rivales hasta la Fase 4). Contrarreloj y campeonato llegan en la Fase 5.
+ * Modos de sesión en pista: práctica libre (Fase 2, sin rivales) y carrera
+ * (Fase 3; con rivales desde la Fase 4). Contrarreloj y campeonato llegan en
+ * la Fase 5.
  */
 export type SessionMode = 'practice' | 'race';
 

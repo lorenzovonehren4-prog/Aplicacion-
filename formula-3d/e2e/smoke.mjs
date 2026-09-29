@@ -6,7 +6,8 @@
  * Recorre: splash → menú → Ajustes (cambia calidad y volumen) → vuelve →
  * recarga → comprueba que lo guardado sigue ahí → Práctica libre (carga del
  * circuito, presentación, manejo, cambio de cámara, pausa) → sale al menú →
- * Carrera rápida (semáforo, largada, Ajustes → Ayudas desde la pausa). Falla
+ * Carrera rápida (semáforo, largada, rivales en la torre y el minimapa,
+ * Ajustes → Ayudas desde la pausa). Falla
  * si aparece cualquier error o advertencia en la consola. Guarda capturas en
  * e2e/capturas/.
  *
@@ -176,6 +177,17 @@ async function main() {
     await expectText(page, '.timing__lap', 'VUELTA 1/3');
     await page.screenshot({ path: `${shots}10-largada.png` });
     log('semáforo de 5 luces → ¡apagadas! → vuelta 1/3');
+
+    step = 'carrera: rivales';
+    // Rivales: posición "P7/12", torre de posiciones y puntos en el minimapa.
+    await page.waitForSelector('.timing__place.is-visible');
+    const place = (await page.locator('.timing__place').textContent())?.replace(/\s+/g, '');
+    const rows = await page.locator('.standings.is-visible .standings__row:not(.is-empty)').count();
+    const dots = await page.locator('.minimap__rival').count();
+    if (!/^P\d+\/12$/.test(place ?? '') || rows < 10 || dots !== 11) {
+      throw new Error(`Rivales incompletos: posición "${place}", ${rows} filas en la torre, ${dots} puntos en el minimapa.`);
+    }
+    log(`rivales en pista: ${place}, torre con ${rows} filas y ${dots} rivales en el minimapa`);
 
     step = 'carrera: ayudas';
     await page.keyboard.press('Escape');

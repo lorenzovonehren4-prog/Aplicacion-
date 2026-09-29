@@ -303,6 +303,10 @@
   color: var(--c-text-2);
 }
 
+.timing__lap {
+  white-space: nowrap;
+}
+
 .timing__place {
   display: none;
   align-items: baseline;

@@ -1,7 +1,7 @@
 {
   "name": "apice-gp",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "ÁPICE GP — juego de monoplazas en 3D para navegador (Vite + TypeScript + Three.js).",
   "scripts": {

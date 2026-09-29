@@ -3,9 +3,9 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '0.3.0';
+export const GAME_VERSION = '0.4.0';
 /** Fase de desarrollo actual (se muestra junto a la versión). */
-export const DEV_PHASE = 3;
+export const DEV_PHASE = 4;
 
 /** Títulos del piloto (el pase de temporada agrega más en la Fase 6). */
 export const PLAYER_TITLES: Readonly<Record<string, string>> = {
@@ -52,7 +52,7 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'quickRace',
         label: 'Carrera rápida',
         icon: 'flag',
-        description: 'Largada con semáforo y 3 vueltas en Albert Park. Los rivales llegan en la Fase 4 y la elección de circuito, vueltas y clima en la 5.',
+        description: 'Largada con semáforo y 3 vueltas en Albert Park contra rivales. Dificultad y cantidad de autos en Ajustes → Juego.',
         phase: 3,
       },
       {

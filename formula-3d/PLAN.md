@@ -452,21 +452,48 @@ Nada más cambia.
 
 ### 5.5 Bots (`race/ai/`)
 
-- Siguen la trazada ideal con un **desplazamiento lateral** propio que cambia con
-  suavidad: para adelantar (eligen el lado libre al detectar un auto más lento
-  adelante), para defender (cierran el interior antes de la frenada, una vez) y
-  para evitar choques (se abren si hay un auto al lado).
-- Velocidad objetivo = perfil de velocidad × factor de dificultad; puntos de
-  frenada desplazados según dificultad; mantienen distancia con el auto de
-  adelante para no chocar por detrás.
-- **Dificultad** (Novato, Amateur, Profesional, Leyenda, Personalizada 0–100)
-  mueve: velocidad máxima (−8 % a +1 %), puntos de frenada, agresividad (qué tan
-  rápido deciden adelantar/defender) y frecuencia de errores (frenadas largas,
-  salidas leves).
-- Parrilla de 10 a 20 autos. Equipos, pilotos, números y colores **ficticios**
-  en `data/teams.ts`.
-- Rendimiento: los autos de bots comparten geometría; las piezas estáticas se
-  fusionan por material y hay un **LOD** para autos lejanos.
+Implementado en la Fase 4 (`race/ai/BotDriver.ts`, `race/ai/difficulty.ts`).
+
+- Cada bot maneja un `Vehicle` con la **misma física** que el jugador (con
+  control de tracción, ABS y algo de estabilidad de fábrica).
+- Siguen la trazada ideal con un **carril** propio (desplazamiento lateral
+  respecto de la trazada) que cambia a 2,2 m/s: para adelantar (lado libre;
+  si caben los dos, el interior de la próxima curva), para defender (un solo
+  movimiento, sólo en recta y fuera de las frenadas) y para no cerrarse sobre
+  un auto que tienen al lado (límites laterales con su movimiento previsto).
+- **Frenadas planificadas**: la velocidad objetivo es la menor que exige
+  cualquier punto de adelante contando lo que se puede frenar hasta él
+  (`√(v_ref² + 2·a·d)` con la frenada disponible a esa velocidad × dificultad).
+- **Tráfico**: si el de adelante tapa el camino (ahora o según su movimiento
+  lateral) y no se lo puede pasar, lo siguen a `1,5 m + v·(0,3 − 0,14·agresividad)`
+  con una frenada prudente (el de adelante puede frenar más fuerte). Por fuera
+  de una curva y a la par, ceden. Nadie cede a un auto casi detenido (evita
+  que dos se queden esperándose).
+- **Control del auto**: freno progresivo que se reduce al doblar, pie fuera del
+  acelerador y contravolanteo (persecución medida sobre la dirección de la
+  marcha) sólo cuando el auto desliza de verdad (> ~7°).
+- **Primera vuelta prudente** (30 s): frenadas más largas y sin maniobras al
+  frenar. Reacción a la largada por piloto (0,2–0,45 s).
+- **Errores**: al llegar a una frenada, con probabilidad `errores por vuelta /
+  frenadas por vuelta`, frenan más tarde durante 2,2 s (se pasan y abren).
+- **Atascos**: detenido 5 s → vuelve a la trazada 10 m atrás como **fantasma**
+  3,5 s (no choca, parpadea). El jugador también es fantasma al usar R.
+- **Dificultad** (0–100; Novato 8, Amateur 38, Profesional 68, Leyenda 95,
+  Personalizada = control deslizante) → ritmo en curva 0,77–0,955 de la
+  trazada, tope del acelerador 0,86–1, frenada 0,62–0,92, agresividad y
+  0,45–0,03 errores por vuelta; el talento del piloto mueve el ritmo ±1,5 %.
+  Vueltas medidas en Albert Park: Novato ≈ 89–93 s, Amateur ≈ 83–87 s,
+  Profesional ≈ 78–81 s, Leyenda ≈ 75–77 s (la trazada teórica da 70 s).
+- Parrilla de 10 a 20 autos (Ajustes → Juego → Rivales; 12 por defecto),
+  ordenada por ritmo con el jugador en la mitad. 10 equipos y 19 pilotos
+  **ficticios** en `data/teams.ts`.
+- **Choques entre autos** (`race/physics/CarCollisions.ts`): cada auto son tres
+  círculos a lo largo del eje; separación a medias e impulso en el punto de
+  contacto (rebote 0,15, fricción 0,3, giro limitado).
+- **Rebufo**: detrás de otro auto (hasta 45 m, desalineado < 1,7 m, a más de
+  ~160 km/h) baja el arrastre hasta 25 %, suavizado.
+- Simulación de prueba (12 autos, 3 vueltas): 1 toque en Novato, ~15 en
+  Amateur/Profesional, todos terminan; 0,08 ms por paso de física con 12 autos.
 
 ### 5.6 Reglas y modos (`race/rules/`)
 
@@ -475,13 +502,17 @@ Nada más cambia.
   auto: el acelerador sólo sube las vueltas del motor y se larga al apagarse
   las luces. Por eso no hay salidas anticipadas (decisión de la Fase 3: con
   caja y embrague automáticos no hay un gesto del jugador que las provoque).
-- En carrera el DRS se habilita desde la vuelta 2 (como en la realidad); en
-  práctica, en cualquier zona. La largada detenida cuenta el tiempo desde las
+- En carrera el DRS se habilita desde la vuelta 2 (como en la realidad) y con
+  rivales hace falta pasar el **punto de detección a menos de 1 s** del auto de
+  adelante (el HUD lo marca con el DRS punteado y un aviso); se pierde al salir
+  de la zona. En práctica, en cualquier zona. La largada detenida cuenta el tiempo desde las
   luces; cruzar la línea desde la parrilla no abre otra vuelta.
 - Vueltas, tiempo por vuelta y por sector, mejor vuelta, delta en vivo contra tu
   mejor vuelta (verde/rojo), posiciones por `vueltas × longitud + s`, gaps.
 - Fin: el líder cruza la meta en la última vuelta → bandera a cuadros → el resto
-  termina su vuelta.
+  termina al cruzar la línea (los doblados, con menos vueltas).
+  `race/session/RaceOrder.ts`: progreso continuo por auto, intervalos por hora
+  de paso en puntos cada 25 m (como la TV), vuelta rápida de la carrera.
 - **Carrera rápida**: circuito, vueltas (3/5/10), dificultad, rivales (9–19),
   ayudas, clima (soleado / nublado / atardecer).
 - **Contrarreloj**: sin rivales; fantasma de tu mejor vuelta (posición y rumbo a
@@ -528,12 +559,36 @@ cruzar la meta.
 ### 5.10 Rendimiento
 
 - Presupuesto en calidad Media: ≤ 350 draw calls, ≤ 1,5 M triángulos, 60 FPS en
-  una PC normal con gráfica integrada reciente.
+  una PC normal con gráfica integrada reciente. Medido en la parrilla con 12
+  autos: Media 233 llamadas / 457 k triángulos; Baja 156 / 307 k.
 - Sin asignaciones en el bucle caliente (vectores reutilizados).
 - `InstancedMesh` para árboles, público, conos y partículas; mallas estáticas del
-  circuito fusionadas por material.
+  circuito fusionadas por material. Árboles y público van **en celdas** (320 m y
+  120 m) para que el recorte por cámara descarte lo que no se ve, y los árboles
+  son low-poly con sombreado plano (Albert Park bajó de 2,2 M a 417 k triángulos).
+- **Rivales** (`race/render/RivalFleet.ts`): el mismo modelo procedural con
+  menos detalle (`CarModel.detail`), convertido en mallas instanciadas. Cerca
+  (≤ 75 m, hasta 8 autos): carrocería, flap del DRS, números (atlas), neumáticos
+  y tapas que giran — 5 llamadas para todos. Lejos: todo fusionado — 1 llamada.
+  Colores del equipo por instancia con una textura máscara (rojo/verde/azul =
+  principal/secundario/acento).
 - Sombras: una luz direccional cuya cámara de sombras sigue al jugador.
-- Todo se escala con el nivel de calidad (sección 4.4).
+- Todo se escala con el nivel de calidad (sección 4.4). La calidad inicial se
+  elige por la GPU (`WEBGL_debug_renderer_info`): por software o móvil → Baja,
+  dedicada o Apple M con ≥ 6 núcleos → Alta, el resto → Media.
+- **Rendimiento automático** (Ajustes → Gráficos, activado por defecto,
+  `core/render/PerformanceGovernor.ts`): en carrera mide los FPS; si no llegan
+  al 82 % del objetivo baja la resolución (−15 % hasta 60 %) y después la
+  calidad; si se cumplen 20 s seguidos sube la resolución de a 5 %, y si una
+  subida vuelve a bajar los FPS no lo intenta más (no oscila).
+- HUD sin `backdrop-filter` (obligaba a releer el canvas en cada cuadro); sólo
+  la pausa difumina el fondo, y con la pausa la escena deja de redibujarse.
+- Sin posprocesado ni MSAA se dibuja directo al canvas (sin el composer).
+- Planos de cámara por modo (cockpit 0,08 m, T-cam 0,12 m, persecución 0,3 m;
+  lejano 6 km): más precisión de profundidad, sin parpadeo a lo lejos.
+- Pantalla del volante a 10 Hz como máximo (marcha y DRS al instante); la
+  trazada se precompila en la carga aunque esté apagada.
+- Torre de posiciones a 4 Hz y rivales del minimapa a 20 Hz (con `transform`).
 
 ---
 
@@ -653,12 +708,25 @@ revisión propia del código + resumen y espera de confirmación.
 - [ ] Posición (P3/20), tabla lateral con gaps y minimapa con posiciones:
       necesitan rivales → Fase 4.
 
-### Fase 4 — Bots, colisiones y posiciones
+### Fase 4 — Bots, colisiones y posiciones ✅
 
-- [ ] IA (sección 5.5), dificultades, 10–20 autos, equipos ficticios.
-- [ ] Colisiones auto-auto y auto-muro.
-- [ ] Posiciones y gaps en vivo; rebufo.
-- [ ] Optimización de autos (fusión por material, LOD) y motores 3D de bots.
+- [x] Rendimiento primero (el juego iba lento): árboles y público en celdas y
+      low-poly, calidad inicial según la GPU, rendimiento automático, HUD sin
+      `backdrop-filter`, pausa sin redibujar, planos de cámara por modo (§5.10).
+- [x] IA (sección 5.5), 5 dificultades, 10–20 autos, 10 equipos y 19 pilotos
+      ficticios; dificultad y cantidad de rivales en Ajustes → Juego.
+- [x] Colisiones auto-auto (auto-muro desde la Fase 2) y autos fantasma al
+      volver a pista.
+- [x] Posición "P3/12" (salta al ganar o perder puestos), torre con intervalos
+      (primeros tres + ventana alrededor del jugador), vuelta rápida en violeta,
+      rivales con su color en el minimapa, indicador de rebufo.
+- [x] Rebufo y DRS con detección a 1 s; los bots también los usan.
+- [x] Bandera a cuadros para todos; panel final con la clasificación completa
+      (se completa a medida que llegan los demás, doblados con "+1 VUELTA").
+- [x] Rivales instanciados con LOD y motores 3D de los 3 más cercanos
+      (PannerNode + Doppler).
+- [x] Radio: posición ganada/perdida, líder, vuelta rápida, DRS disponible,
+      victoria/podio/puntos.
 
 ### Fase 5 — Monza, selección de carrera y modos
 
@@ -706,8 +774,7 @@ revisión propia del código + resumen y espera de confirmación.
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
 | Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 5, 6, 7, 8 |
-| Carrera rápida configurable | Fija: Albert Park, 3 vueltas (`OPENERS.quickRace`); `RaceParams.laps` ya existe | 5 |
-| Posición, tabla lateral con gaps y minimapa con posiciones | El HUD tiene el lugar; faltan los rivales | 4 |
+| Carrera rápida configurable | Fija: Albert Park, 3 vueltas (`OPENERS.quickRace`); `RaceParams` ya acepta `laps`, `rivals` y `difficulty`; dificultad y rivales se eligen en Ajustes → Juego | 5 |
 | Pantalla de resultados con XP y recompensas | Por ahora el panel de fin de carrera (`FinishPanel`) | 6 |
 | Volumen de Música | No se muestra hasta que haya música | 8 |
 | Manual de ayudas | Los textos de cada ayuda ya están en `assists/presets.ts` | 8 |
@@ -715,10 +782,9 @@ revisión propia del código + resumen y espera de confirmación.
 | Nombre del piloto editable | Por ahora "PILOTO" | 8 (tutorial y perfil) |
 | Música de menú | — | 8 |
 | Patrones de livery y materiales | El auto usa la livery base del jugador | 7 |
-| Autos de bots livianos (piezas compartidas, LOD) | `CarModel` crea sus propias texturas | 4 |
-| DRS con detección (a menos de 1 s del de adelante) | En práctica, toda la zona; en carrera, desde la vuelta 2; `DrsZone.detection` ya está en los datos | 4 |
-| Rebufo | `Vehicle.slipstream` existe y reduce el arrastre; nadie lo fija todavía | 4 |
-| Bots sobre la trazada | `LineFollower` ya sigue la trazada con un perfil de velocidad | 4 |
+| XP por adelantamientos y carrera limpia | `RaceResult` ya trae posición, autos y choques del jugador (`contacts`) | 6 |
+| Logos del equipo en los pontones de los rivales | Los rivales llevan colores y número; el logo (decal) sólo el auto del jugador | 7 |
+| Humo y chispas en los choques entre autos | Suenan y sacuden la cámara; las partículas llegan con el resto de efectos | 9 |
 
 ### Notas de pruebas
 
@@ -733,6 +799,10 @@ revisión propia del código + resumen y espera de confirmación.
   `LineFollower` del juego por el centro de la pista; el "piloto de teclado"
   (`tests/helpers/keyboardPilot.ts`) lo traduce a flechas pulsadas y pasa por
   las mismas rampas que el juego.
+- Las carreras con rivales se prueban sin navegador (`tests/race.test.ts`):
+  2 vueltas con 11 bots y el jugador manejado por un `BotDriver`, comprobando
+  que todos reciben la bandera, la tabla y los intervalos, y que casi no hay
+  choques fuertes. La prueba de humo verifica la torre y el minimapa.
 - Para jugar sin instalar nada: `npm run build:artifact` arma un solo HTML
   (JS, CSS y fuentes incrustados) en `dist-artifact/`, que se publica como
   página de claude.ai.
@@ -741,7 +811,8 @@ revisión propia del código + resumen y espera de confirmación.
 
 | Riesgo | Mitigación |
 |---|---|
-| Rendimiento con 20 autos detallados | Fusión por material, LOD, instancias, presupuesto por calidad. |
+| Rendimiento con 20 autos detallados | Rivales instanciados en 2 niveles de detalle (6 llamadas de dibujo para todos), rendimiento automático. |
+| Bots que se chocan entre ellos | Carril con límites laterales previstos, ceder por fuera, frenada prudente detrás de otro, primera vuelta prudente, simulaciones en las pruebas. |
 | Manejo poco divertido | Modelo simple y ajustable, ayudas de estabilidad, sesión de ajuste dedicada. |
 | Audio bloqueado por el navegador | Contexto creado en el primer gesto (pantalla "pulsa cualquier tecla"). |
 | Guardado corrupto o bloqueado | Saneo campo por campo + cadena IndexedDB → localStorage → memoria. |
@@ -753,4 +824,6 @@ revisión propia del código + resumen y espera de confirmación.
 
 - **Fase 1**: completa.
 - **Fase 2**: completa.
-- **Fase 3**: completa. A la espera de confirmación para empezar la Fase 4.
+- **Fase 3**: completa.
+- **Fase 4**: completa (incluye la ronda de rendimiento).
+- **Fase 5**: en curso (el usuario pidió seguir sin esperar confirmación).
