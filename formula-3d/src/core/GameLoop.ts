@@ -41,6 +41,11 @@ export class GameLoop {
   private lastFrameTime: number | null = null;
   private accumulator = 0;
   private minFrameMs = 0;
+  /**
+   * Velocidad del tiempo del juego (1 = normal; menos = cámara lenta). Afecta
+   * a la simulación y al `dt` de `update`; el menú y las medidas usan tiempo real.
+   */
+  timeScale = 1;
 
   private framesInWindow = 0;
   private windowStart: number | null = null;
@@ -102,8 +107,9 @@ export class GameLoop {
       this.lastFrameTime = time;
     }
 
-    const dt = this.lastTime === null ? 0 : Math.min(MAX_DT, Math.max(0, (time - this.lastTime) / 1000));
+    const realDt = this.lastTime === null ? 0 : Math.min(MAX_DT, Math.max(0, (time - this.lastTime) / 1000));
     this.lastTime = time;
+    const dt = realDt * Math.max(0, this.timeScale);
 
     if (this.callbacks.fixedUpdate) {
       this.accumulator += dt;
@@ -120,7 +126,7 @@ export class GameLoop {
     const alpha = this.callbacks.fixedUpdate ? this.accumulator / FIXED_STEP : 1;
     this.callbacks.update(dt, alpha);
     this.callbacks.render();
-    this.measure(time, dt);
+    this.measure(time, realDt);
   }
 
   private measure(time: number, dt: number): void {

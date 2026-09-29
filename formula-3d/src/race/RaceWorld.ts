@@ -6,7 +6,8 @@
 
 import { MathUtils, Scene, Vector3 } from 'three';
 import type { RenderView } from '../core/render/RenderHost';
-import { shadowMapSize } from '../core/render/quality';
+import { QUALITY_PRESETS, shadowMapSize } from '../core/render/quality';
+import { createSpeedFx, HAZE_POINTS } from '../core/render/SpeedPass';
 import { RacingLineMesh } from '../assists/RacingLineMesh';
 import type { CameraMode, GraphicsSettings, LineMode, LineType } from '../core/save/schema';
 import { clamp } from '../core/utils/math';
@@ -16,11 +17,19 @@ import { RaceCamera } from './camera/RaceCamera';
 import { performanceModel } from './physics/CarSpec';
 import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
+import { CheckeredFlag } from './render/CheckeredFlag';
 import { GhostCar } from './render/GhostCar';
 import { RivalFleet, type RivalCar } from './render/RivalFleet';
+import { TrackEffects } from './render/TrackEffects';
 
-/** Duración de la vuelta de cámara de presentación (s). */
+/** Duración de la vuelta de cámara alrededor del auto, al final de la presentación (s). */
 export const INTRO_DURATION = 4.2;
+/** Vuelo sobre la pista (s). */
+const FLY_DURATION = 4.8;
+/** Paneo por la parrilla (s). */
+const GRID_DURATION = 3.6;
+
+export type IntroShot = 'flyover' | 'grid' | 'orbit';
 
 export class RaceWorld implements RenderView {
   readonly scene = new Scene();
@@ -38,8 +47,21 @@ export class RaceWorld implements RenderView {
   readonly rivals: RivalFleet | null;
   /** Auto fantasma (sólo en contrarreloj). */
   readonly ghost: GhostCar | null;
+  /** Humo, tierra y chispas. */
+  readonly effects: TrackEffects;
+  /** Desenfoque de velocidad y aire caliente de los escapes (lo lee el `RenderHost`). */
+  readonly speedFx = createSpeedFx();
+  /** Con "reducir movimiento" no hay desenfoque ni apertura del FOV. */
+  motionEffects = true;
   private introTime = -1;
   private time = 0;
+  private readonly flag = new CheckeredFlag();
+  private readonly probe = new Vector3();
+  private readonly lookAt = new Vector3();
+  private readonly point = { x: 0, z: 0 };
+  /** Tramo de pista (s) que ocupa la parrilla, para el paneo de la presentación. */
+  private gridSpan: { from: number; to: number } | null = null;
+  private readonly hazeDistance: number[] = Array.from({ length: HAZE_POINTS }, () => Infinity);
 
   private constructor(
     readonly trackScene: TrackScene,
@@ -49,6 +71,7 @@ export class RaceWorld implements RenderView {
     rivals: readonly RivalCar[],
     ghost: boolean,
     livery: LiveryConfig,
+    particles: number,
   ) {
     this.exposure = trackScene.look.exposure;
     this.scene.add(trackScene.root);
@@ -64,6 +87,30 @@ export class RaceWorld implements RenderView {
     if (this.rivals) this.scene.add(this.rivals.root);
     this.ghost = ghost ? new GhostCar(anisotropy) : null;
     if (this.ghost) this.scene.add(this.ghost.root);
+    this.effects = new TrackEffects(this.scene, particles);
+
+    // Bandera a cuadros del lado de los boxes, sobre la línea de meta, con la tela sobre la pista.
+    const track = vehicle.track;
+    const geometry = track.geometry;
+    const pitSign = track.def.pits.side === 'right' ? 1 : -1;
+    const tangent = { x: 0, z: 0 };
+    geometry.pointAt(geometry.designToS(track.def.startLine), pitSign * (geometry.halfWidth + 1), this.point, tangent);
+    this.flag.root.position.set(this.point.x, 0, this.point.z);
+    // Hacia el centro de la pista = −(derecha) · lado de boxes; derecha = (−tz, tx).
+    const towardX = pitSign * tangent.z;
+    const towardZ = -pitSign * tangent.x;
+    this.flag.root.rotation.y = Math.atan2(-towardZ, towardX);
+    this.scene.add(this.flag.root);
+  }
+
+  /** La bandera a cuadros sale a flamear (el jugador terminó). */
+  showCheckeredFlag(): void {
+    this.flag.show();
+  }
+
+  /** Vuelve a guardar la bandera (al reiniciar la sesión). */
+  hideCheckeredFlag(): void {
+    this.flag.hide();
   }
 
   /** Muestra la línea de trazada según la ayuda elegida. */
@@ -88,7 +135,7 @@ export class RaceWorld implements RenderView {
     options: BuildOptions,
   ): Promise<RaceWorld> {
     const trackScene = await buildTrackScene(vehicle.track, options);
-    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, extras.rivals, extras.ghost, extras.livery);
+    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, extras.rivals, extras.ghost, extras.livery, QUALITY_PRESETS[options.quality].particles);
   }
 
   get camera(): RaceCamera['camera'] {
@@ -99,18 +146,52 @@ export class RaceWorld implements RenderView {
     return this.introTime >= 0;
   }
 
-  /** Empieza la presentación: la cámara gira alrededor del auto en la parrilla. */
-  startIntro(): void {
+  /** Duración total de la presentación (s): depende de si hay parrilla que mostrar. */
+  get introDuration(): number {
+    return FLY_DURATION + (this.gridSpan ? GRID_DURATION : 0) + INTRO_DURATION;
+  }
+
+  /** Toma de la presentación que se está viendo (null fuera de ella). */
+  get introShot(): IntroShot | null {
+    if (this.introTime < 0) return null;
+    if (this.introTime < FLY_DURATION) return 'flyover';
+    if (this.gridSpan && this.introTime < FLY_DURATION + GRID_DURATION) return 'grid';
+    return 'orbit';
+  }
+
+  /**
+   * Empieza la presentación: un vuelo sobre la pista hasta la recta, un paneo
+   * a ras del suelo por la parrilla (si hay rivales) y la vuelta alrededor del auto.
+   * @param cars los autos en la parrilla (el jugador incluido)
+   */
+  startIntro(cars: readonly Vehicle[] = []): void {
     this.introTime = 0;
     this.rig.setDriverVisible(true);
+    const geometry = this.vehicle.track.geometry;
+    const playerS = this.vehicle.projection.s;
+    if (cars.length > 1) {
+      // Extremos de la parrilla, relativos al jugador.
+      let back = 0;
+      let front = 0;
+      for (const car of cars) {
+        const delta = geometry.deltaS(playerS, car.projection.s);
+        back = Math.min(back, delta);
+        front = Math.max(front, delta);
+      }
+      this.gridSpan = { from: playerS + back - 10, to: playerS + front + 8 };
+    } else {
+      this.gridSpan = null;
+    }
   }
 
   /** Termina la presentación y pasa suave a la cámara de carrera. */
   endIntro(): void {
     if (this.introTime < 0) return;
+    // Desde la órbita se funde con la cámara de carrera; desde el vuelo o el paneo, corte directo.
+    const blend = this.introShot === 'orbit' ? 1.1 : 0.05;
     this.introTime = -1;
     const camera = this.camera;
-    this.raceCamera.blendFrom(camera.position.clone(), camera.quaternion.clone(), camera.fov, 1.1);
+    this.raceCamera.blendFrom(camera.position.clone(), camera.quaternion.clone(), camera.fov, blend);
     this.rig.setDriverVisible(this.raceCamera.currentMode !== 'cockpit');
   }
 
@@ -146,8 +227,73 @@ export class RaceWorld implements RenderView {
       wheel.update(this.vehicle.steerAngle, (telemetry.rpm - (shift - 3200)) / 3200, telemetry.limiter, this.time);
     }
     this.racingLine.update(dt, this.time, this.vehicle.projection.s, Math.max(0, this.vehicle.vx));
-    this.trackScene.sky.follow(this.rig.pose.x, this.rig.pose.z);
+    // Las sombras cubren lo que se mira: en el vuelo y el paneo, el punto de mira.
+    const shot = this.introShot;
+    if (shot === 'flyover' || shot === 'grid') this.trackScene.sky.follow(this.lookAt.x, this.lookAt.z);
+    else this.trackScene.sky.follow(this.rig.pose.x, this.rig.pose.z);
     this.trackScene.update(this.time);
+    this.flag.update(dt, this.time);
+  }
+
+  /**
+   * Partículas y efectos de velocidad del cuadro (después de `update`).
+   * @param cars todos los autos de la sesión (el jugador incluido)
+   * @param simulating false en la presentación: nada emite ni se mueve
+   */
+  updateEffects(dt: number, cars: readonly Vehicle[], simulating: boolean): void {
+    const camera = this.camera;
+    this.effects.update(simulating ? dt : 0, cars, camera, simulating);
+    const fx = this.speedFx;
+    fx.time = this.time;
+    const v = this.vehicle;
+
+    // Empuje (DRS o rebufo) → FOV; velocidad → desenfoque radial desde el punto de fuga.
+    const rush = this.motionEffects && simulating ? Math.max(v.drs, Math.min(1, v.slipstream * 1.4)) : 0;
+    this.raceCamera.setRush(rush);
+    const fast = MathUtils.smoothstep(v.speed, 42, 88);
+    const mode = this.raceCamera.currentMode;
+    const modeFactor = mode === 'chase' ? 0.7 : mode === 'tcam' ? 1 : 0.85;
+    fx.blur = this.motionEffects && simulating && this.introTime < 0 ? (fast * 0.75 + rush * 0.35) * modeFactor : 0;
+    if (fx.blur > 0) {
+      const ahead = 300;
+      this.probe.set(v.x - Math.sin(v.heading) * ahead, 0.8, v.z - Math.cos(v.heading) * ahead).project(camera);
+      if (this.probe.z < 1) fx.center.set(clamp(this.probe.x * 0.5 + 0.5, 0.2, 0.8), clamp(this.probe.y * 0.5 + 0.5, 0.25, 0.75));
+      else fx.center.set(0.5, 0.5);
+    }
+
+    // Aire caliente detrás de los escapes de los autos más cercanos a la cámara.
+    const distances = this.hazeDistance;
+    distances.fill(Infinity);
+    for (const point of fx.haze) point.set(0, 0, 0, 0);
+    const focal = 1 / Math.tan((camera.fov * Math.PI) / 360);
+    const cockpit = mode === 'cockpit' || mode === 'tcam';
+    for (const car of cars) {
+      if (car === v && (cockpit || this.introTime >= 0)) continue;
+      const back = car.spec.cgToRear + 0.75;
+      this.probe.set(car.x + Math.sin(car.heading) * back, 0.62, car.z + Math.cos(car.heading) * back);
+      const distance = this.probe.distanceTo(camera.position);
+      if (distance > 45 || distance < 1.5) continue;
+      // Inserción ordenada en los HAZE_POINTS más cercanos (sin crear arreglos).
+      let slot = -1;
+      for (let i = 0; i < HAZE_POINTS; i++) {
+        if (distance < (distances[i] ?? Infinity)) {
+          slot = i;
+          break;
+        }
+      }
+      if (slot < 0) continue;
+      this.probe.project(camera);
+      if (this.probe.z >= 1 || Math.abs(this.probe.x) > 1.2 || Math.abs(this.probe.y) > 1.2) continue;
+      for (let i = HAZE_POINTS - 1; i > slot; i--) {
+        distances[i] = distances[i - 1] ?? Infinity;
+        const previous = fx.haze[i - 1];
+        if (previous) fx.haze[i]?.copy(previous);
+      }
+      distances[slot] = distance;
+      const heat = (1 - distance / 45) * (0.55 + 0.45 * car.telemetry.throttle);
+      const radius = clamp((0.85 * focal) / distance * 0.5, 0.015, 0.22);
+      fx.haze[slot]?.set(this.probe.x * 0.5 + 0.5, this.probe.y * 0.5 + 0.5, heat, radius);
+    }
   }
 
   onGraphicsChanged(graphics: GraphicsSettings): void {
@@ -155,11 +301,14 @@ export class RaceWorld implements RenderView {
     this.trackScene.sky.setShadowMapSize(shadowMapSize(graphics.shadows, graphics.quality));
   }
 
-  onResize(width: number, height: number): void {
+  onResize(width: number, height: number, pixelRatio: number): void {
     this.raceCamera.setAspect(width / Math.max(1, height));
+    this.effects.setViewHeight(height * pixelRatio);
   }
 
   dispose(): void {
+    this.flag.dispose();
+    this.effects.dispose();
     this.ghost?.dispose();
     this.rivals?.dispose();
     this.racingLine.dispose();
@@ -168,9 +317,54 @@ export class RaceWorld implements RenderView {
     this.scene.clear();
   }
 
-  /** Órbita de presentación: arranca baja y cerca del alerón y se abre por el costado. */
+  /** Cámara de la presentación según la toma. */
   private updateIntroCamera(): void {
-    const t = clamp(this.introTime / INTRO_DURATION, 0, 1);
+    const camera = this.camera;
+    camera.up.set(0, 1, 0);
+    const shot = this.introShot;
+    if (shot === 'flyover') this.flyoverCamera(this.introTime / FLY_DURATION);
+    else if (shot === 'grid') this.gridCamera((this.introTime - FLY_DURATION) / GRID_DURATION);
+    else this.orbitCamera((this.introTime - FLY_DURATION - (this.gridSpan ? GRID_DURATION : 0)) / INTRO_DURATION);
+  }
+
+  /** Vuelo alto a lo largo de la pista, bajando hacia la recta de la parrilla. */
+  private flyoverCamera(progress: number): void {
+    const t = clamp(progress, 0, 1);
+    const geometry = this.vehicle.track.geometry;
+    const gridS = this.gridSpan ? this.gridSpan.from : this.vehicle.projection.s - 10;
+    // Viene de 900 m antes de la parrilla, a un costado de la pista y bajando.
+    const s = gridS - 900 + 700 * t;
+    const side = geometry.halfWidth + 40 - 22 * t;
+    geometry.pointAt(s, side, this.point);
+    const camera = this.camera;
+    camera.position.set(this.point.x, 52 - 30 * MathUtils.smoothstep(t, 0, 1), this.point.z);
+    geometry.pointAt(s + 170, 0, this.point);
+    this.lookAt.set(this.point.x, 0, this.point.z);
+    camera.lookAt(this.lookAt);
+    this.setIntroFov(48);
+  }
+
+  /** A ras del suelo, al borde del asfalto, recorriendo la parrilla de atrás hacia adelante. */
+  private gridCamera(progress: number): void {
+    const span = this.gridSpan;
+    if (!span) return;
+    const t = MathUtils.smootherstep(clamp(progress, 0, 1), 0, 1);
+    const geometry = this.vehicle.track.geometry;
+    // Del lado opuesto a los boxes (ahí no hay muro de pits que tape).
+    const sign = this.vehicle.track.def.pits.side === 'right' ? -1 : 1;
+    const s = span.from + (span.to - span.from) * t;
+    geometry.pointAt(s, sign * (geometry.halfWidth - 0.6), this.point);
+    const camera = this.camera;
+    camera.position.set(this.point.x, 1.25, this.point.z);
+    geometry.pointAt(s + 9, -sign * 1.5, this.point);
+    this.lookAt.set(this.point.x, 0.55, this.point.z);
+    camera.lookAt(this.lookAt);
+    this.setIntroFov(40);
+  }
+
+  /** Órbita alrededor del auto: arranca baja y cerca del alerón y se abre por el costado. */
+  private orbitCamera(progress: number): void {
+    const t = clamp(progress, 0, 1);
     const ease = MathUtils.smootherstep(t, 0, 1);
     const pose = this.rig.pose;
     const angle = pose.heading + Math.PI * (0.15 + 1.05 * ease);
@@ -178,9 +372,13 @@ export class RaceWorld implements RenderView {
     const height = 0.55 + 1.7 * ease;
     const camera = this.camera;
     camera.position.set(pose.x + Math.sin(angle) * radius, height, pose.z + Math.cos(angle) * radius);
-    camera.up.set(0, 1, 0);
-    camera.lookAt(new Vector3(pose.x, 0.55, pose.z));
-    const fov = 42 + 14 * ease;
+    this.lookAt.set(pose.x, 0.55, pose.z);
+    camera.lookAt(this.lookAt);
+    this.setIntroFov(42 + 14 * ease);
+  }
+
+  private setIntroFov(fov: number): void {
+    const camera = this.camera;
     if (Math.abs(camera.fov - fov) > 0.01) {
       camera.fov = fov;
       camera.updateProjectionMatrix();

@@ -68,6 +68,9 @@ export class RaceCamera {
   private headZ = 0;
   private shake = 0;
   private time = 0;
+  /** Sensación de empuje (0–1) con el DRS abierto o en el rebufo: abre el FOV. */
+  private rush = 0;
+  private rushTarget = 0;
   /** Sacudones activados (se desactivan con "reducir movimiento"). */
   shakeEnabled = true;
 
@@ -129,6 +132,11 @@ export class RaceCamera {
     this.headZ = 0;
   }
 
+  /** Empuje deseado (0–1): el DRS abierto o el rebufo de otro auto. */
+  setRush(amount: number): void {
+    this.rushTarget = clamp(amount, 0, 1);
+  }
+
   /** Suma un sacudón (0–1) que se apaga solo. */
   kick(amount: number): void {
     this.shake = Math.min(1.5, this.shake + amount);
@@ -144,6 +152,7 @@ export class RaceCamera {
     this.headX = damp(this.headX, clamp(telemetry.ay * 0.0035, -0.05, 0.05), 6, dt);
     this.headZ = damp(this.headZ, clamp(telemetry.ax * 0.0028, -0.045, 0.045), 6, dt);
     this.shake = Math.max(0, this.shake - dt * 3);
+    this.rush = damp(this.rush, this.rushTarget, this.rushTarget > this.rush ? 2.5 : 1.5, dt);
 
     this.computePose(this.mode, this.current, telemetry);
     if (this.transition < 1 && this.previousMode) {
@@ -212,6 +221,8 @@ export class RaceCamera {
         break;
       }
     }
+    // Con el empuje, el campo visual se abre unos grados (sensación de aceleración).
+    pose.fov += this.rush * 5;
     // Orientación mirando al objetivo, con el "arriba" del auto en cockpit y T-cam.
     this.local.copy(this.target).sub(pose.position).normalize();
     if (mode === 'chase') {

@@ -24,6 +24,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { GraphicsSettings } from '../save/schema';
 import { QUALITY_PRESETS } from './quality';
+import { SpeedPass, type SpeedFx } from './SpeedPass';
 
 /** Lo que una pantalla 3D entrega para dibujar. */
 export interface RenderView {
@@ -41,6 +42,8 @@ export interface RenderView {
    * vuelve a dibujar hasta que cambie algo. Ahorra GPU y batería.
    */
   readonly frozen?: boolean;
+  /** Desenfoque de velocidad y aire caliente (sólo con posprocesado). */
+  readonly speedFx?: SpeedFx;
   /** Ajustes gráficos nuevos (sombras, reflejos...). */
   onGraphicsChanged?(graphics: GraphicsSettings): void;
   /** Tamaño nuevo del lienzo en píxeles CSS y densidad de píxeles efectiva. */
@@ -61,6 +64,7 @@ export class RenderHost {
   private readonly renderPass: RenderPass;
   private readonly bloomPass: UnrealBloomPass;
   private readonly outputPass: OutputPass;
+  private readonly speedPass = new SpeedPass();
   private view: RenderView | null = null;
   private graphics: GraphicsSettings;
   private width = 1;
@@ -216,6 +220,7 @@ export class RenderHost {
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.view.scene, this.view.camera);
     } else {
+      this.speedPass.apply(this.view.speedFx, this.graphics.postprocessing);
       this.composer.render();
     }
     this.lastStats = {
@@ -227,6 +232,7 @@ export class RenderHost {
   dispose(): void {
     this.composer.dispose();
     this.bloomPass.dispose();
+    this.speedPass.dispose();
     this.outputPass.dispose();
     this.renderer.dispose();
   }
@@ -237,6 +243,7 @@ export class RenderHost {
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(this.renderPass);
     composer.addPass(this.bloomPass);
+    composer.addPass(this.speedPass);
     composer.addPass(this.outputPass);
     return composer;
   }

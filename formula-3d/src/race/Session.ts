@@ -160,6 +160,8 @@ export class Session {
   private assists: ActiveAssists;
   /** Choque más fuerte desde la última lectura (m/s). */
   private impactPeak = 0;
+  /** Choques entre autos desde la última lectura (x, z, velocidad), para las chispas. */
+  private readonly contactPoints: number[] = [];
   private inDrsZone = false;
   private drsWasOpen = false;
   private cooldownTime = 0;
@@ -319,6 +321,13 @@ export class Session {
     return peak;
   }
 
+  /** Recorre y vacía los choques entre autos acumulados (punto medio y velocidad). */
+  takeContacts(visit: (x: number, z: number, speed: number) => void): void {
+    const points = this.contactPoints;
+    for (let i = 0; i + 2 < points.length; i += 3) visit(points[i] ?? 0, points[i + 1] ?? 0, points[i + 2] ?? 0);
+    points.length = 0;
+  }
+
   /** Tabla de posiciones (del primero al último). Vacía si no hay rivales. */
   standings(): StandingRow[] {
     const order = this.order;
@@ -402,6 +411,10 @@ export class Session {
       for (const contact of resolveCarCollisions(this.vehicles, this.contacts, this.solid)) {
         const involvesPlayer = contact.a === this.player.index || contact.b === this.player.index;
         if (involvesPlayer && contact.speed > CONTACT_SPEED && this.phase === 'running') this.playerContacts++;
+        const a = this.vehicles[contact.a];
+        const b = this.vehicles[contact.b];
+        // Con tope: si nadie los lee (pausa), no crecen sin límite.
+        if (a && b && contact.speed > 1.5 && this.contactPoints.length < 48) this.contactPoints.push((a.x + b.x) / 2, (a.z + b.z) / 2, contact.speed);
       }
       this.recoverStuckBots();
     }

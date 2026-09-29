@@ -38,12 +38,13 @@ import type { Listener } from '../../race/audio/BotEngines';
 import { decodeGhost, encodeGhost, GhostPlayer, type GhostLap, type GhostPose } from '../../race/session/Ghost';
 import type { Vehicle } from '../../race/physics/Vehicle';
 import { CAMERA_LABELS } from '../../race/camera/RaceCamera';
-import { INTRO_DURATION, RaceWorld } from '../../race/RaceWorld';
+import { RaceWorld, type IntroShot } from '../../race/RaceWorld';
 import { BuildCancelled } from '../../tracks/TrackBuilder';
 import { getTrack } from '../../tracks/registry';
 import { Track } from '../../tracks/Track';
 import { h, prefersReducedMotion } from '../dom';
 import { ControlHints } from '../components/ControlHints';
+import { createCountryFlag } from '../components/CountryFlag';
 import { FinishPanel } from '../race/FinishPanel';
 import { Hud, type HudAssists } from '../race/Hud';
 import { LoadingOverlay } from '../race/LoadingOverlay';
@@ -58,6 +59,10 @@ const RUMBLE_INTERVAL = 90;
 const DEFAULT_RACE_LAPS = 3;
 /** Espera entre la bandera a cuadros y el panel de fin de carrera (ms). */
 const FINISH_PANEL_DELAY = 2600;
+/** Cámara lenta de la llegada: velocidad, segundos (reales) a esa velocidad y de vuelta a la normal. */
+const SLOW_MOTION_SCALE = 0.3;
+const SLOW_MOTION_HOLD = 1.3;
+const SLOW_MOTION_RAMP = 0.9;
 /** Frecuencia de la torre de posiciones (s) y de los rivales en el minimapa (s). */
 const STANDINGS_INTERVAL = 0.25;
 const MINIMAP_INTERVAL = 0.05;
@@ -103,6 +108,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private track: Track | null = null;
   private session: Session | null = null;
   private world: RaceWorld | null = null;
+  /** Los autos que emiten partículas (el jugador y los rivales). */
+  private effectCars: Vehicle[] = [];
+  private readonly contactBurst = (x: number, z: number, speed: number): void => this.world?.effects.burst(x, z, speed);
   private loading: LoadingOverlay | null = null;
   private hud: Hud | null = null;
   private pause: PauseMenu | null = null;
@@ -114,6 +122,12 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private readonly skipHint = h('div', { class: 'race__skip' });
   private startHints: ControlHints | null = null;
   private introElapsed = 0;
+  /** Rótulo de la toma de la presentación que se ve (lugar, parrilla, piloto). */
+  private readonly introCaption = h('span', { class: 'race__intro-shot' });
+  private introCaptions: Record<IntroShot, string> = { flyover: '', grid: '', orbit: '' };
+  private introShot: IntroShot | null = null;
+  /** Inicio de la cámara lenta de la llegada (`performance.now()`, −1 = sin cámara lenta). */
+  private slowMotionStart = -1;
   private introTimeline: gsap.core.Timeline | null = null;
   private cancelled = false;
   private lastRumble = 0;
@@ -180,6 +194,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (!session || !world || this.phase === 'loading') return;
     const vehicle = session.vehicle;
     const tel = vehicle.telemetry;
+    this.updateSlowMotion();
 
     // Los mandos se leen siempre (Start del gamepad sale de la pausa), pero sólo
     // cuentan en pista.
@@ -187,11 +202,14 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (this.phase !== 'running') this.driving?.release();
     if (this.phase === 'intro') {
       this.introElapsed += dt;
-      if (this.introElapsed >= INTRO_DURATION) this.finishIntro();
+      this.updateIntroCaption(world.introShot);
+      if (this.introElapsed >= world.introDuration) this.finishIntro();
     }
 
     const simulating = this.phase === 'running' || this.phase === 'results';
     world.update(dt, simulating ? alpha : 1, tel);
+    if (simulating) session.takeContacts(this.contactBurst);
+    world.updateEffects(dt, this.effectCars, simulating);
 
     // Superficies bajo las ruedas (sonido y vibración).
     let grass = 0;
@@ -221,7 +239,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
     this.updateGhost();
     this.updateHud(dt);
-    if (this.phase === 'running') this.governPerformance(dt);
+    if (this.phase === 'running' && this.slowMotionStart < 0) this.governPerformance(dt);
     // Con el panel final abierto, la clasificación se completa a medida que llegan los demás.
     if (this.phase === 'results' && session.order) {
       this.standingsTimer -= dt;
@@ -270,6 +288,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   override exit(): void {
     this.cancelled = true;
     this.phase = 'leaving';
+    this.stopSlowMotion();
     this.game.render.setView(null);
     this.stopRumble();
     this.driving?.dispose();
@@ -322,12 +341,14 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       }
       this.session = session;
       this.world = world;
+      this.effectCars = session.cars.map((car) => car.vehicle);
       world.raceCamera.shakeEnabled = !prefersReducedMotion();
+      world.motionEffects = !prefersReducedMotion();
       world.configureLine(assists.line, assists.lineType);
 
       // Precompila los shaders con la cámara de presentación (evita tirones al arrancar).
       this.loading?.setProgress(0.95, 'Preparando sombreadores');
-      world.startIntro();
+      world.startIntro(this.effectCars);
       world.update(0, 1, session.vehicle.telemetry);
       // También lo que ahora está oculto (trazada apagada, fantasma, rivales lejanos…):
       // que aparezca más tarde no debe dar un tirón por compilar su sombreador.
@@ -415,10 +436,24 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         : round !== undefined
           ? `CAMPEONATO · RONDA ${round + 1} · ${laps} VUELTAS${grid}`
           : `CARRERA · ${laps} VUELTAS${grid}`;
+    const pilot = this.game.save.data.profile.name;
+    this.introCaptions = {
+      flyover: `${def.city}, ${def.country}`,
+      grid: session.order ? `La parrilla · ${session.cars.length} autos · largas P${session.position}` : '',
+      orbit: `${pilot} · #${this.game.save.data.garage.number}`,
+    };
+    this.introShot = null;
     this.introCard.replaceChildren(
       h('span', { class: 'race__intro-kicker', text: kicker }),
-      h('span', { class: 'race__intro-title', text: def.grandPrix }),
-      h('span', { class: 'race__intro-track', text: `${def.name} · ${def.lengthKm.toFixed(3)} km` }),
+      h('span', { class: 'race__intro-head' }, createCountryFlag(def.countryCode, 'race__intro-flag'), h('span', { class: 'race__intro-title', text: def.grandPrix })),
+      h('span', { class: 'race__intro-track', text: `${def.name} · ${def.country}` }),
+      h(
+        'span',
+        { class: 'race__intro-facts' },
+        h('span', {}, h('b', { text: `${def.lengthKm.toFixed(3)} km` }), h('small', { text: 'Longitud' })),
+        h('span', {}, h('b', { text: String(def.turns) }), h('small', { text: 'Curvas' })),
+        h('span', {}, h('b', { text: formatLapTime(def.lapRecord.seconds) }), h('small', { text: `Récord · ${def.lapRecord.driver} (${def.lapRecord.year})` })),
+      ),
       h('span', {
         class: 'race__intro-record',
         text:
@@ -426,6 +461,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
             ? 'Todavía no tienes récord aquí'
             : `Tu récord: ${formatLapTime(session.timer.personalBest)}`,
       }),
+      this.introCaption,
     );
     this.skipHint.replaceChildren(
       new ControlHints([{ keys: [{ keyboard: 'ENTER', gamepad: 'A' }], label: 'Saltar' }], this.game.input.lastDevice).element,
@@ -476,13 +512,25 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const quick = prefersReducedMotion();
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
     tl.fromTo(
-      this.introCard.children,
+      // El rótulo de la toma entra por su cuenta (`updateIntroCaption`).
+      [...this.introCard.children].filter((child) => child !== this.introCaption),
       { x: -50, opacity: 0 },
       { x: 0, opacity: 1, duration: quick ? 0.01 : 0.7, stagger: quick ? 0 : 0.12 },
       0.2,
     );
     tl.fromTo(this.skipHint, { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.8);
     this.introTimeline = this.own.tween(tl);
+  }
+
+  /** Al cambiar de toma, el rótulo cambia con un fundido corto. */
+  private updateIntroCaption(shot: IntroShot | null): void {
+    if (!shot || shot === this.introShot) return;
+    this.introShot = shot;
+    const text = this.introCaptions[shot];
+    const caption = this.introCaption;
+    caption.textContent = text;
+    caption.hidden = text === '';
+    if (text && !prefersReducedMotion()) this.own.tween(gsap.fromTo(caption, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }));
   }
 
   private finishIntro(): void {
@@ -696,6 +744,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private onFinished(result: RaceResult): void {
     const withRivals = result.starters > 1;
     this.audio.cue('flag');
+    this.world?.showCheckeredFlag();
+    // Cámara lenta al cruzar la línea (no con "reducir movimiento").
+    if (!prefersReducedMotion()) this.slowMotionStart = performance.now();
     this.hud?.message(
       'BANDERA A CUADROS',
       withRivals ? `Terminaste P${result.position} de ${result.starters}` : `Tiempo total ${formatLapTime(result.totalTime)}`,
@@ -714,6 +765,23 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (this.driving) this.driving.drsRequested = false;
     this.pendingFinish = result;
     this.own.timeout(() => this.showFinish(), FINISH_PANEL_DELAY);
+  }
+
+  /** Cámara lenta de la llegada: 30 % de velocidad y vuelta gradual a la normal (tiempo real). */
+  private updateSlowMotion(): void {
+    if (this.slowMotionStart < 0) return;
+    const elapsed = (performance.now() - this.slowMotionStart) / 1000;
+    if (this.phase === 'paused' || elapsed >= SLOW_MOTION_HOLD + SLOW_MOTION_RAMP) {
+      this.stopSlowMotion();
+      return;
+    }
+    const ramp = clamp((elapsed - SLOW_MOTION_HOLD) / SLOW_MOTION_RAMP, 0, 1);
+    this.game.loop.timeScale = SLOW_MOTION_SCALE + (1 - SLOW_MOTION_SCALE) * ramp * ramp;
+  }
+
+  private stopSlowMotion(): void {
+    this.slowMotionStart = -1;
+    this.game.loop.timeScale = 1;
   }
 
   /**
@@ -1003,6 +1071,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       session.order ? { count: session.cars.length, rivalColors: session.cars.filter((car) => !car.isPlayer).map((car) => car.team.primary) } : null,
     );
     world.snap();
+    world.effects.clear();
+    world.hideCheckeredFlag();
+    this.stopSlowMotion();
+    session.takeContacts(() => undefined);
     world.setStartLights(0);
     this.hud?.setLights(0);
     this.hud?.clearSectors();
