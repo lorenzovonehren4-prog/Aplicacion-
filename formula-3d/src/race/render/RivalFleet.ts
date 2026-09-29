@@ -561,10 +561,10 @@ export class RivalFleet {
       }
     }
 
-    for (const mesh of [this.nearBody, this.nearFlap, this.nearNumbers]) this.commit(mesh, nearCount);
-    this.commit(this.tires, nearCount * 4);
-    this.commit(this.covers, nearCount * 4);
-    this.commit(this.farBody, farCount);
+    for (const mesh of [this.nearBody, this.nearFlap, this.nearNumbers]) this.flushInstances(mesh, nearCount);
+    this.flushInstances(this.tires, nearCount * 4);
+    this.flushInstances(this.covers, nearCount * 4);
+    this.flushInstances(this.farBody, farCount);
   }
 
   dispose(): void {
@@ -626,7 +626,7 @@ export class RivalFleet {
     });
   }
 
-  private commit(mesh: InstancedMesh | null, count: number): void {
+  private flushInstances(mesh: InstancedMesh | null, count: number): void {
     if (!mesh) return;
     mesh.count = count;
     mesh.visible = count > 0;

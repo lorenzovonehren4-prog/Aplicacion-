@@ -37,7 +37,7 @@ const SLIDE_ANGLE = 0.12;
 /** Rapidez con la que el bot cambia de carril (m/s). */
 const LANE_RATE = 2.2;
 /** Tiempo mínimo que sostiene la decisión de adelantar por un lado (s). */
-const COMMIT_TIME = 1.6;
+const PASS_HOLD_TIME = 1.6;
 /** Tiempo detenido lejos de la largada tras el cual el bot pide volver a pista (s). */
 const STUCK_TIME = 5;
 /** Duración de un error (frenada pasada o salida ancha) (s). */
@@ -57,7 +57,7 @@ export class BotDriver {
   private laneTarget = 0;
   /** Lado del adelantamiento en curso (−1 izquierda, 1 derecha, 0 ninguno) y hasta cuándo sostenerlo. */
   private passSide = 0;
-  private commit = 0;
+  private passHold = 0;
   /** Tiempo siguiendo a alguien sin poder pasar (s). */
   private stuckBehind = 0;
   /** Ya cerró la puerta a quien lo ataca (una sola maniobra por ataque). */
@@ -106,7 +106,7 @@ export class BotDriver {
     this.lane = car ? car.projection.d - this.track.racingLine.offsetAt(car.projection.s) : 0;
     this.laneTarget = this.lane;
     this.passSide = 0;
-    this.commit = 0;
+    this.passHold = 0;
     this.stuckBehind = 0;
     this.defended = false;
     this.throttle = 0;
@@ -232,7 +232,7 @@ export class BotDriver {
       targetSpeed = Math.min(targetSpeed, Math.max(0, outsideOf.vx - 2));
     }
 
-    this.commit = Math.max(0, this.commit - dt);
+    this.passHold = Math.max(0, this.passHold - dt);
     if (blocker) {
       const theirSpeed = Math.max(0, blocker.vx);
       const closing = speed - theirSpeed;
@@ -242,7 +242,7 @@ export class BotDriver {
       const wantsPass =
         blockerGap < 40 && (closing > 1.5 || (this.stuckBehind > 2.5 - 1.5 * p.aggression && targetSpeed > theirSpeed + 0.5));
       if (wantsPass && this.passSide === 0 && !(cautious && braking)) this.passSide = this.chooseSide(s, blocker, minD, maxD);
-      if (this.passSide !== 0) this.commit = Math.max(this.commit, wantsPass ? COMMIT_TIME : 0);
+      if (this.passSide !== 0) this.passHold = Math.max(this.passHold, wantsPass ? PASS_HOLD_TIME : 0);
       const lateral = Math.abs(blocker.projection.d - d);
       // Mientras no esté al costado, no lo toca: velocidad para frenar detrás si hace falta.
       if (this.passSide === 0 || lateral < BLOCKING_WIDTH) {
@@ -256,7 +256,7 @@ export class BotDriver {
     } else {
       this.stuckBehind = 0;
     }
-    if (this.commit <= 0 && (!blocker || blockerGap > 45)) this.passSide = 0;
+    if (this.passHold <= 0 && (!blocker || blockerGap > 45)) this.passSide = 0;
 
     // ─── Carril deseado ───
     if (this.passSide !== 0 && blocker) {
@@ -349,7 +349,7 @@ export class BotDriver {
     this.lane = 0;
     this.laneTarget = 0;
     this.passSide = 0;
-    this.commit = 0;
+    this.passHold = 0;
     this.throttle = 0;
     this.brake = 0;
   }
