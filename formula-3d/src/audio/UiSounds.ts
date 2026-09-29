@@ -16,10 +16,12 @@ export type UiSound =
   | 'levelUp'
   | 'flip'
   | 'reward'
-  | 'rewardBig';
+  | 'rewardBig'
+  | 'cheer'
+  | 'firework';
 
 /** Separación mínima entre dos sonidos iguales (evita metralla al mantener una tecla). */
-const MIN_GAP: Partial<Record<UiSound, number>> = { move: 0.035, tick: 0.03 };
+const MIN_GAP: Partial<Record<UiSound, number>> = { move: 0.035, tick: 0.03, firework: 0.08 };
 
 export class UiSounds {
   private readonly noise: AudioBuffer;
@@ -90,7 +92,42 @@ export class UiSounds {
         this.blip(now + 0.2, 2637, 2637, 0.7, 0.05, 'sine');
         this.whoosh(now, 0.6, 1200, 8000, 0.12);
         break;
+      case 'cheer':
+        // Ovación del público: rumor que crece y se apaga, con aplausos sueltos.
+        this.crowd(now, 3.6, 0.2);
+        for (let i = 0; i < 40; i++) this.click(now + 0.2 + Math.random() * 2.8, 1400 + Math.random() * 2400, 0.03, 0.05 + Math.random() * 0.05);
+        break;
+      case 'firework':
+        // Estallido grave y crepitar de chispas.
+        this.blip(now, 120, 45, 0.35, 0.22, 'sine');
+        this.click(now, 900, 0.18, 0.2);
+        for (let i = 0; i < 12; i++) this.click(now + 0.12 + Math.random() * 0.7, 3000 + Math.random() * 4000, 0.015, 0.03 + Math.random() * 0.04);
+        break;
     }
+  }
+
+  /** Rumor de público: ruido filtrado con una envolvente lenta. */
+  private crowd(at: number, duration: number, peak: number): void {
+    const source = this.ctx.createBufferSource();
+    source.buffer = this.noise;
+    source.loop = true;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1100;
+    filter.Q.value = 0.6;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(peak, at + duration * 0.25);
+    gain.gain.setValueAtTime(peak, at + duration * 0.55);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+    source.connect(filter).connect(gain).connect(this.output);
+    source.start(at);
+    source.stop(at + duration + 0.05);
+    source.onended = () => {
+      source.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
   }
 
   /** Tono con barrido de frecuencia y envolvente rápida. */

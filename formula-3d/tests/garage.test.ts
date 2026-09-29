@@ -55,6 +55,16 @@ describe('garaje', () => {
     expect(garage.tireStripe).toBe(factory.tireStripe);
   });
 
+  it('festejo del podio: el de fábrica siempre; los del pase, sólo si se ganaron', () => {
+    expect(createDefaultGarage().celebration).toBe('celebration-streamers');
+    const won = sanitizeSave({ progression: { unlocked: ['celebration-fireworks'] }, garage: { celebration: 'celebration-fireworks' } }, defaults());
+    expect(won.garage.celebration).toBe('celebration-fireworks');
+    const notWon = sanitizeSave({ garage: { celebration: 'celebration-confetti' } }, defaults());
+    expect(notWon.garage.celebration).toBe('celebration-streamers');
+    const wrongKind = sanitizeSave({ garage: { celebration: 'rims-factory' } }, defaults());
+    expect(wrongKind.garage.celebration).toBe('celebration-streamers');
+  });
+
   it('patrones y paleta: lo básico sin nivel y lo especial más adelante', () => {
     expect(PATTERNS[0]).toMatchObject({ id: 'solid', level: 1 });
     expect(PATTERNS.every((p, i) => i === 0 || p.level >= (PATTERNS[i - 1]?.level ?? 0))).toBe(true);

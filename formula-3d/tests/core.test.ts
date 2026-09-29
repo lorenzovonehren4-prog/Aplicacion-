@@ -185,6 +185,21 @@ describe('GameLoop', () => {
     expect(alpha).toBeLessThan(1);
   });
 
+  it('la cámara lenta (timeScale) frena la simulación pero no los cuadros', () => {
+    const fixed = vi.fn();
+    const render = vi.fn();
+    const scheduler = manualScheduler();
+    const loop = new GameLoop({ fixedUpdate: fixed, update: vi.fn(), render }, scheduler);
+    loop.timeScale = 0.3;
+    loop.start();
+    scheduler.fire(0);
+    for (let i = 1; i <= 60; i++) scheduler.fire((i * 1000) / 60);
+    // Un segundo real a 30 % = 0.3 s de simulación (36 pasos de 120 Hz).
+    expect(fixed.mock.calls.length).toBeGreaterThanOrEqual(35);
+    expect(fixed.mock.calls.length).toBeLessThanOrEqual(36);
+    expect(render).toHaveBeenCalledTimes(61);
+  });
+
   it('acota el dt al volver de una pestaña oculta', () => {
     const fixed = vi.fn();
     const loop = new GameLoop({ fixedUpdate: fixed, update: vi.fn(), render: vi.fn() }, manualScheduler());

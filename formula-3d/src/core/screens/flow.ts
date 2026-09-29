@@ -56,9 +56,9 @@ export const SCREEN_FLOW: FlowTable = {
     trackIntro: ['race'],
     // Reiniciar es ir de la carrera a una carrera nueva.
     race: ['results', 'race', 'menu', 'championship'],
-    // Desde resultados: repetir, otra carrera, el campeonato, el pase o el menú (el podio llega en la Fase 9).
+    // Desde resultados: el podio (carreras con rivales), repetir, otra carrera, el campeonato, el pase o el menú.
     results: ['podium', 'menu', 'raceSelect', 'race', 'championship', 'pass'],
-    podium: ['menu', 'raceSelect'],
+    podium: ['menu', 'raceSelect', 'race', 'championship'],
   },
   push: {
     menu: ['settings', 'assistsManual'],

@@ -1,7 +1,7 @@
 /**
  * Garaje: el monoplaza en el estudio del menú, con la cámara acercándose a lo
- * que se edita. Pestañas (Q / E): Pintura, Material, Llantas, Alerón, Casco y
- * Número.
+ * que se edita. Pestañas (Q / E): Pintura, Material, Llantas, Alerón, Casco,
+ * Número y Festejo (cómo se celebra en el podio).
  * - Enfocar un ítem lo muestra en el auto (también los bloqueados, para ver
  *   cómo quedan); ENTER lo equipa si está desbloqueado. Al salir de la
  *   pestaña o del garaje vuelve lo equipado.
@@ -32,7 +32,7 @@ import { h, prefersReducedMotion, svg } from '../dom';
 import { ICONS } from '../icons';
 import { BaseScreen } from './BaseScreen';
 
-type GarageTab = 'paint' | 'material' | 'rims' | 'wing' | 'helmet' | 'number';
+type GarageTab = 'paint' | 'material' | 'rims' | 'wing' | 'helmet' | 'number' | 'celebration';
 
 const TABS: ReadonlyArray<{ id: GarageTab; label: string; shot: StudioShot }> = [
   { id: 'paint', label: 'Pintura', shot: 'side' },
@@ -41,14 +41,16 @@ const TABS: ReadonlyArray<{ id: GarageTab; label: string; shot: StudioShot }> = 
   { id: 'wing', label: 'Alerón', shot: 'rear' },
   { id: 'helmet', label: 'Casco', shot: 'helmet' },
   { id: 'number', label: 'Número', shot: 'front' },
+  { id: 'celebration', label: 'Festejo', shot: 'overview' },
 ];
 
 /** Qué campo del garaje equipa cada tipo de ítem. */
-const SLOT: Partial<Record<ItemKind, 'material' | 'rims' | 'wing' | 'helmet'>> = {
+const SLOT: Partial<Record<ItemKind, 'material' | 'rims' | 'wing' | 'helmet' | 'celebration'>> = {
   material: 'material',
   rims: 'rims',
   wing: 'wing',
   helmet: 'helmet',
+  celebration: 'celebration',
 };
 
 /** Pintura de fábrica (no es un ítem: son los colores del equipo). */
@@ -239,12 +241,17 @@ export class GarageScreen extends BaseScreen {
         return [this.itemGrid('helmet')];
       case 'number':
         return [this.numberRow(), h('p', { class: 'garage__note', text: 'El número va en el morro y a los lados de la cubierta del motor. En carrera aparece en la torre de posiciones.' })];
+      case 'celebration':
+        return [
+          this.itemGrid('celebration'),
+          h('p', { class: 'garage__note', text: 'En el podio siempre hay un poco de todo; el festejo equipado es el que se luce (y el que suena más fuerte).' }),
+        ];
     }
   }
 
   // ─── Grillas de ítems ──────────────────────────────────────────────────
 
-  private itemGrid(kind: 'material' | 'rims' | 'wing' | 'helmet'): HTMLElement {
+  private itemGrid(kind: 'material' | 'rims' | 'wing' | 'helmet' | 'celebration'): HTMLElement {
     const slot = SLOT[kind];
     const items = ITEMS.filter((item) => item.kind === kind);
     // Primero lo que se tiene; después lo bloqueado, por nivel requerido o del pase.

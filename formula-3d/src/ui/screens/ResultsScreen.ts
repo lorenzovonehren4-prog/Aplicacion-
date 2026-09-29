@@ -208,6 +208,8 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
     const race = p.race;
     const selectMode: RaceSelectMode = race.mode === 'race' ? 'quickRace' : race.mode;
     const list: Action[] = [];
+    // Carrera con rivales: primero, el podio.
+    if (p.podium.length >= 3) list.push({ label: 'Ver el podio', icon: 'trophy', run: () => void this.game.screens.goTo('podium', p) });
     if (race.championshipRound !== undefined) {
       list.push({ label: 'Ver campeonato', icon: 'trophy', run: () => void this.game.screens.goTo('championship', undefined) });
     } else {

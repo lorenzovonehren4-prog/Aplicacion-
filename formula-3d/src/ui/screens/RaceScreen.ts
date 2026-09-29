@@ -19,7 +19,7 @@ import { PerformanceGovernor, type GovernorDecision } from '../../core/render/Pe
 import { QUALITY_PRESETS } from '../../core/render/quality';
 import type { UiAction } from '../../core/input/actions';
 import { keyLabel } from '../../core/input/bindings';
-import type { RaceParams, ResultsParams } from '../../core/screens/params';
+import type { PodiumEntry, RaceParams, ResultsParams } from '../../core/screens/params';
 import { clamp } from '../../core/utils/math';
 import { formatLapTime } from '../../core/utils/format';
 import { ENGINEER_NAME, RADIO_LINES, type RadioMoment } from '../../data/radio';
@@ -807,7 +807,23 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (!this.results) return;
     this.game.playUi('confirm');
     this.phase = 'leaving';
-    void this.game.screens.goTo('results', this.results);
+    // El podio con el orden de ahora: los que venían atrás ya pudieron terminar.
+    void this.game.screens.goTo('results', { ...this.results, podium: this.podiumEntries() });
+  }
+
+  /** Los tres primeros de la carrera (vacío sin rivales), con sus autos. */
+  private podiumEntries(): PodiumEntry[] {
+    const session = this.session;
+    if (!session?.order) return [];
+    return session
+      .standings()
+      .slice(0, 3)
+      .flatMap((row) => {
+        const car = session.cars[row.index];
+        if (!car) return [];
+        const livery = car.driver ? liveryOf(car.driver) : liveryFromSetup(this.game.save.data.garage);
+        return [{ name: row.name, teamName: row.teamName, teamColor: row.teamColor, livery, isPlayer: row.isPlayer }];
+      });
   }
 
   /**
@@ -892,6 +908,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       before,
       after: snapshotOf(gain.progression),
       rewards: gain.rewards,
+      podium: this.podiumEntries(),
     };
   }
 

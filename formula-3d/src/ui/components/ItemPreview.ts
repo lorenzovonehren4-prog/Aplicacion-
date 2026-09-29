@@ -375,6 +375,16 @@ function celebrationPreview(item: Extract<Item, { kind: 'celebration' }>): SVGSV
   const pick = (): string => colors[Math.floor(random() * colors.length)] ?? '#ffffff';
   const parts: SVGElement[] = [];
   switch (item.style) {
+    case 'streamers':
+      // Serpentinas: curvas onduladas que caen.
+      for (let i = 0; i < 7; i++) {
+        const x = 14 + i * 15 + (random() - 0.5) * 6;
+        const phase = random() * 6;
+        let d = `M${x.toFixed(1)} 6`;
+        for (let y = 14; y <= 114; y += 8) d += ` L${(x + Math.sin(y * 0.09 + phase) * 6).toFixed(1)} ${y}`;
+        parts.push(el('path', { d, fill: 'none', stroke: i % 3 === 1 ? '#ffffff' : '#f5c542', 'stroke-width': 2.4, 'stroke-linecap': 'round', opacity: (0.6 + random() * 0.4).toFixed(2) }));
+      }
+      break;
     case 'confetti':
       for (let i = 0; i < 34; i++) {
         const x = 8 + random() * 104;

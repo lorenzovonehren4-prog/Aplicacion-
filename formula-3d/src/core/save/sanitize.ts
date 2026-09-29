@@ -347,6 +347,7 @@ function sanitizeGarage(raw: unknown, defaults: GarageSetup, progression: Progre
     rims: piece(r.rims, 'rims', defaults.rims),
     wing: piece(r.wing, 'wing', defaults.wing),
     helmet: piece(r.helmet, 'helmet', defaults.helmet),
+    celebration: piece(r.celebration, 'celebration', defaults.celebration),
     number: num(r.number, defaults.number, 1, 99, true),
     tireStripe: color(r.tireStripe, defaults.tireStripe),
   };

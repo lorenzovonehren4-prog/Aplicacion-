@@ -5,7 +5,7 @@
  * - Pintura: un patrón y tres colores. Los patrones y algunos colores piden un
  *   nivel de piloto; las pinturas ganadas (pase o nivel) son combinaciones
  *   listas que se aplican de una.
- * - Material, llantas, alerón y casco: ítems del catálogo
+ * - Material, llantas, alerón, casco y festejo del podio: ítems del catálogo
  *   (`progression/items.ts`) que se tienen por el pase, por nivel o de fábrica.
  * - Número (1–99) y franja del neumático (colores de compuesto).
  */
@@ -24,6 +24,8 @@ export interface GarageSetup {
   rims: string;
   wing: string;
   helmet: string;
+  /** Festejo del podio (ítem de celebración). */
+  celebration: string;
   number: number;
   tireStripe: string;
 }
@@ -36,6 +38,7 @@ export function createDefaultGarage(): GarageSetup {
     rims: 'rims-factory',
     wing: 'wing-standard',
     helmet: 'helmet-team',
+    celebration: 'celebration-streamers',
     number: PLAYER_DEFAULT_LIVERY.number,
     tireStripe: PLAYER_DEFAULT_LIVERY.tireStripe,
   };

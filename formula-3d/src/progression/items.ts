@@ -37,7 +37,8 @@ export type WingShape = 'standard' | 'tall' | 'spoon' | 'twin' | 'swan' | 'blade
 /** `team`: el diseño de fábrica, con los colores del auto. */
 export type HelmetDesign = 'team' | 'stripe' | 'flame' | 'split' | 'stars' | 'circuit' | 'gold';
 export type AvatarGlyph = 'initials' | 'visor' | 'bolt' | 'crown' | 'checker' | 'wing' | 'comet' | 'flame';
-export type CelebrationStyle = 'confetti' | 'champagne' | 'fireworks';
+/** `streamers`: el festejo de fábrica (serpentinas doradas). */
+export type CelebrationStyle = 'streamers' | 'confetti' | 'champagne' | 'fireworks';
 
 interface BaseItem {
   id: string;
@@ -68,6 +69,7 @@ const STARTER_ITEMS: readonly Item[] = [
   { id: 'helmet-team', kind: 'helmet', name: 'Casco del equipo', colors: ['#f4f4f2', '#c8102e', '#111317'], design: 'team', rarity: 'common', description: 'Blanco con los colores de tu auto: cambia cuando pintas el monoplaza.' },
   { id: 'title-rookie', kind: 'title', name: 'Novato del paddock', text: 'Novato del paddock', rarity: 'common', description: 'Todos empiezan en algún lado.' },
   { id: 'avatar-initials', kind: 'avatar', name: 'Iniciales', glyph: 'initials', colors: ['#c8102e', '#ffffff'], rarity: 'common', description: 'La inicial de tu nombre en el color del equipo.' },
+  { id: 'celebration-streamers', kind: 'celebration', name: 'Serpentinas', style: 'streamers', rarity: 'common', description: 'Serpentinas doradas que caen sobre el podio. El festejo de siempre.' },
 ];
 
 /** Recompensas de la temporada 1, del nivel 1 al 50 del pase. */

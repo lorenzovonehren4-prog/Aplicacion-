@@ -4,6 +4,7 @@
  * fase agrega las suyas.
  */
 
+import type { LiveryConfig } from '../../garage/livery';
 import type { ProgressSnapshot, XpAward } from '../../progression/xp';
 import type { Weather } from '../save/schema';
 
@@ -33,6 +34,15 @@ export interface RaceParams {
   championshipRound?: number;
 }
 
+/** Un piloto del podio (lo necesario para dibujar su auto y su cartel). */
+export interface PodiumEntry {
+  name: string;
+  teamName: string;
+  teamColor: string;
+  livery: LiveryConfig;
+  isPlayer: boolean;
+}
+
 /** Resultados de una sesión, con la XP ya sumada al guardado. */
 export interface ResultsParams {
   /** La sesión que terminó (para repetirla o seguir con la siguiente). */
@@ -51,6 +61,8 @@ export interface ResultsParams {
   after: ProgressSnapshot;
   /** Ítems nuevos del pase. */
   rewards: string[];
+  /** Los tres primeros (vacío sin rivales): para la pantalla del podio. */
+  podium: PodiumEntry[];
 }
 
 export interface ScreenParams {
@@ -61,6 +73,7 @@ export interface ScreenParams {
   championship: undefined;
   race: RaceParams;
   results: ResultsParams;
+  podium: ResultsParams;
   pass: undefined;
   garage: undefined;
   profile: undefined;
