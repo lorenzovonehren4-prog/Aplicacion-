@@ -155,9 +155,10 @@ describe('vuelta completa con piloto automático', () => {
     expect(travelled).toBeGreaterThanOrEqual(track.length);
     expect(impacts).toBe(0);
     expect(offTrackTime).toBeLessThan(1);
-    // El piloto de prueba va por el centro y con margen: más lento que un humano.
+    // El piloto de prueba va por el centro y con margen: más lento que un humano
+    // (con las curvas lentas del trazado real, unos 112 s; la trazada ideal, ~71 s).
     expect(time).toBeGreaterThan(75);
-    expect(time).toBeLessThan(110);
+    expect(time).toBeLessThan(118);
     expect(maxLateralG).toBeGreaterThan(2.5);
   });
 });

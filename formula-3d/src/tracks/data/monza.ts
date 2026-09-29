@@ -7,7 +7,8 @@
  * hasta la meta. Dos zonas de DRS y mucha arboleda.
  *
  * El trazado aproxima el real con rectas y arcos (cierra exacto con estas
- * medidas) y se escala a 5,793 km.
+ * medidas) y se escala a 5,793 km. Roggia, las Lesmo, Ascari y la entrada de
+ * la Parabolica tienen radios ajustados a sus velocidades reales.
  */
 
 import type { TrackDefinition } from '../TrackDefinition';
@@ -22,7 +23,7 @@ export const MONZA: TrackDefinition = {
   lengthKm: 5.793,
   turns: 11,
   lapRecord: { seconds: 80.874, driver: 'L. Brenner', year: 2025 },
-  width: 13,
+  width: 15.5,
   layout: {
     start: [0, 0],
     heading: 0,
@@ -34,23 +35,23 @@ export const MONZA: TrackDefinition = {
       { kind: 'straight', length: 160 },
       { kind: 'turn', direction: 'right', radius: 440.3, angle: 61.2, name: 'Curva Grande' },
       { kind: 'straight', length: 300 },
-      { kind: 'turn', direction: 'left', radius: 36, angle: 62, name: 'Roggia' },
+      { kind: 'turn', direction: 'left', radius: 29, angle: 62, name: 'Roggia' },
       { kind: 'straight', length: 12 },
-      { kind: 'turn', direction: 'right', radius: 38, angle: 67, name: 'Roggia' },
+      { kind: 'turn', direction: 'right', radius: 30, angle: 67, name: 'Roggia' },
       { kind: 'straight', length: 312.6 },
-      { kind: 'turn', direction: 'right', radius: 96.4, angle: 73.2, name: 'Lesmo 1' },
+      { kind: 'turn', direction: 'right', radius: 56, angle: 73.2, name: 'Lesmo 1' },
       { kind: 'straight', length: 153.1 },
-      { kind: 'turn', direction: 'right', radius: 76, angle: 73, name: 'Lesmo 2' },
-      { kind: 'straight', length: 514.3 },
+      { kind: 'turn', direction: 'right', radius: 54, angle: 73, name: 'Lesmo 2' },
+      { kind: 'straight', length: 452.81 },
       { kind: 'turn', direction: 'left', radius: 900, angle: 11.6, name: 'Serraglio' },
       { kind: 'straight', length: 262.9 },
-      { kind: 'turn', direction: 'left', radius: 80, angle: 42, name: 'Ascari' },
+      { kind: 'turn', direction: 'left', radius: 66, angle: 42, name: 'Ascari' },
       { kind: 'straight', length: 30 },
-      { kind: 'turn', direction: 'right', radius: 75, angle: 62, name: 'Ascari' },
+      { kind: 'turn', direction: 'right', radius: 58, angle: 62, name: 'Ascari' },
       { kind: 'straight', length: 40 },
-      { kind: 'turn', direction: 'left', radius: 95, angle: 36, name: 'Ascari' },
-      { kind: 'straight', length: 908.5 },
-      { kind: 'turn', direction: 'right', radius: 112.5, angle: 94.9, name: 'Parabolica' },
+      { kind: 'turn', direction: 'left', radius: 78, angle: 36, name: 'Ascari' },
+      { kind: 'straight', length: 1043.04 },
+      { kind: 'turn', direction: 'right', radius: 88, angle: 94.9, name: 'Parabolica' },
       { kind: 'turn', direction: 'right', radius: 251, angle: 72.3, name: 'Parabolica' },
     ],
   },
@@ -58,13 +59,13 @@ export const MONZA: TrackDefinition = {
   sectors: [2020, 4230],
   pits: { side: 'right', from: 150, to: 1080 },
   drsZones: [
-    { detection: 5050, start: 150, end: 1100 },
-    { detection: 3850, start: 4300, end: 5030 },
+    { detection: 4990, start: 150, end: 1100 },
+    { detection: 3760, start: 4080, end: 4960 },
   ],
   runoff: [
     // Grava por fuera de la Curva Grande y de la Parabolica.
     { from: 1420, to: 1880, side: 'left', kind: 'gravel', width: 30 },
-    { from: 5110, to: 5430, side: 'left', kind: 'gravel', width: 38 },
+    { from: 5060, to: 5420, side: 'left', kind: 'gravel', width: 38 },
   ],
   scenery: {
     grandstands: [

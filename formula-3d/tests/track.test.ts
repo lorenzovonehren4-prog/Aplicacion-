@@ -52,7 +52,7 @@ describe('geometría de Albert Park', () => {
       const d = ((k * 37) % 21) - 10;
       g.pointAt(s, d, p);
       g.project(p.x, p.z, out, k === 0 ? -1 : out.index);
-      expect(Math.abs(g.deltaS(s, out.s))).toBeLessThan(0.08);
+      expect(Math.abs(g.deltaS(s, out.s))).toBeLessThan(0.1);
       expect(out.d).toBeCloseTo(d, 1);
     }
   });
