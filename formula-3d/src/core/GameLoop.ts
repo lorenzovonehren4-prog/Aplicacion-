@@ -39,6 +39,9 @@ export class GameLoop {
   private handle: number | null = null;
   private lastTime: number | null = null;
   private lastFrameTime: number | null = null;
+  /** Último rAF (dibujado o no) y período medido del monitor (ms). */
+  private lastRafTime: number | null = null;
+  private refreshMs = 0;
   private accumulator = 0;
   private minFrameMs = 0;
   /**
@@ -81,6 +84,7 @@ export class GameLoop {
     if (this.handle !== null) return;
     this.lastTime = null;
     this.lastFrameTime = null;
+    this.lastRafTime = null;
     this.handle = this.scheduler.request(this.onFrame);
   }
 
@@ -96,13 +100,22 @@ export class GameLoop {
 
   /** Procesa un fotograma con el timestamp de rAF (ms). Público para las pruebas. */
   frame(time: number): void {
-    // Límite de FPS: si todavía no toca dibujar, se espera al próximo rAF.
+    // Período del monitor: promedio suave del tiempo entre rAF (sin los saltos
+    // de una pestaña oculta o un cuadro muy lento).
+    if (this.lastRafTime !== null) {
+      const delta = time - this.lastRafTime;
+      if (delta > 2 && delta < 50) this.refreshMs = this.refreshMs === 0 ? delta : this.refreshMs + (delta - this.refreshMs) * 0.05;
+    }
+    this.lastRafTime = time;
+    // Límite de FPS con ritmo parejo: se dibuja uno de cada N cuadros del
+    // monitor (N fijo), nunca una mezcla de 2 y 3 que se ve a saltos. Con
+    // 60 FPS pedidos: 60 Hz → todos, 120 Hz → 1 de 2, 144 Hz → 1 de 2 (72 FPS).
     if (this.minFrameMs > 0 && this.lastFrameTime !== null) {
+      const refresh = this.refreshMs > 0 ? this.refreshMs : this.minFrameMs;
+      const every = Math.max(1, Math.floor((this.minFrameMs + LIMIT_TOLERANCE_MS) / refresh));
       const sinceLast = time - this.lastFrameTime;
-      if (sinceLast < this.minFrameMs - LIMIT_TOLERANCE_MS) return;
-      // Se conserva lo que se pasó del intervalo para no derivar hacia menos FPS de los pedidos.
-      const overshoot = Math.min(Math.max(0, sinceLast - this.minFrameMs), this.minFrameMs * 0.5);
-      this.lastFrameTime = time - overshoot;
+      if (sinceLast < every * refresh - LIMIT_TOLERANCE_MS) return;
+      this.lastFrameTime = time;
     } else {
       this.lastFrameTime = time;
     }

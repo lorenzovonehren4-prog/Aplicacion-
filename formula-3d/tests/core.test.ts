@@ -224,6 +224,21 @@ describe('GameLoop', () => {
     expect(at144).toBeLessThanOrEqual(72);
   });
 
+  it('con límite de FPS el ritmo es parejo (sin mezclar saltos de 2 y 3 cuadros)', () => {
+    const times: number[] = [];
+    const loop = new GameLoop({ update: vi.fn(), render: () => times.push(now) }, manualScheduler());
+    loop.setFpsTarget(60);
+    let now = 0;
+    // 144 Hz con un poco de ruido en los tiempos de rAF.
+    for (let i = 0; i <= 288; i++) {
+      now = (i * 1000) / 144 + Math.sin(i * 1.7) * 0.3;
+      loop.frame(now);
+    }
+    const gaps = times.slice(20).map((t, i, list) => (i === 0 ? 0 : t - (list[i - 1] ?? t))).slice(1);
+    const spread = Math.max(...gaps) - Math.min(...gaps);
+    expect(spread).toBeLessThan(1.5);
+  });
+
   it('mide los FPS', () => {
     const loop = new GameLoop({ update: vi.fn(), render: vi.fn() }, manualScheduler());
     for (let i = 0; i <= 120; i++) loop.frame((i * 1000) / 60);

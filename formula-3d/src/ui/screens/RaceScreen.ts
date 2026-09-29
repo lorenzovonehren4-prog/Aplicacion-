@@ -74,6 +74,18 @@ const RADIO_IMPACT_GAP = 20_000;
 
 const QUALITY_LABELS = { low: 'Baja', medium: 'Media', high: 'Alta', ultra: 'Ultra' } as const;
 
+/** Espera `count` cuadros del navegador. */
+function waitFrames(count: number): Promise<void> {
+  return new Promise((resolve) => {
+    let left = count;
+    const tick = (): void => {
+      if (--left <= 0) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
 /** Los bots de la sesión, como los dibuja la flota de rivales. */
 function rivalCars(session: Session): RivalCar[] {
   return session.cars.flatMap((car) =>
@@ -129,6 +141,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private introShot: IntroShot | null = null;
   /** Inicio de la cámara lenta de la llegada (`performance.now()`, −1 = sin cámara lenta). */
   private slowMotionStart = -1;
+  /** Nivel de calidad más bajo que pidió el rendimiento automático (se aplica al salir de la pista). */
+  private pendingQuality: GovernorDecision | null = null;
   private introTimeline: gsap.core.Timeline | null = null;
   private cancelled = false;
   private lastRumble = 0;
@@ -290,6 +304,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.cancelled = true;
     this.phase = 'leaving';
     this.stopSlowMotion();
+    // El nivel de calidad que pidió el rendimiento automático se aplica al salir (sin tirones en pista).
+    if (this.pendingQuality) this.commitPerformance(this.pendingQuality);
+    this.pendingQuality = null;
     this.game.render.setView(null);
     this.stopRumble();
     this.driving?.dispose();
@@ -371,9 +388,18 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         for (const object of hidden) object.visible = false;
       }
       if (this.cancelled) return;
+      // Geometría y texturas de todo el circuito a la GPU (sin tirones cuando entran en cuadro).
+      this.loading?.setProgress(0.97, 'Subiendo el circuito a la GPU');
+      await waitFrames(2);
+      if (this.cancelled) return;
+      world.prewarm(renderer);
       this.loading?.setProgress(1, 'Listo');
       this.buildInterface(track, session);
       game.render.setView(world);
+      // Unos cuadros de verdad detrás de la pantalla de carga (el posprocesado
+      // se compila y los búferes se llenan) y recién ahí se descubre la pista.
+      await waitFrames(4);
+      if (this.cancelled) return;
       await this.loading?.hide();
       this.loading = null;
       if (this.cancelled) return;
@@ -991,12 +1017,25 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   /** Ajuste automático: si el equipo no llega a los FPS, baja resolución y luego calidad. */
   private governPerformance(dt: number): void {
     const graphics = this.game.settings.graphics;
-    if (!graphics.autoPerformance) return;
+    if (!graphics.autoPerformance || this.pendingQuality) return;
     const decision = this.governor.sample(dt, graphics);
     if (decision) this.applyPerformance(decision);
   }
 
   private applyPerformance(decision: GovernorDecision): void {
+    // Bajar el nivel de calidad recompila todos los sombreadores (un tirón de
+    // varios cientos de ms): en carrera sólo se toca la resolución y el nivel
+    // nuevo queda para la próxima sesión.
+    if (decision.kind === 'quality') {
+      if (this.pendingQuality) return;
+      this.pendingQuality = decision;
+      this.hud?.message('RENDIMIENTO', `Calidad ${QUALITY_LABELS[decision.quality]} desde la próxima sesión`, 'info');
+      return;
+    }
+    this.commitPerformance(decision);
+  }
+
+  private commitPerformance(decision: GovernorDecision): void {
     const lowered = decision.kind === 'quality' || decision.scale < this.game.settings.graphics.resolutionScale;
     this.game.updateSettings((s) => {
       s.graphics.resolutionScale = decision.scale;
@@ -1009,13 +1048,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       }
       if (!preset.postprocessing) s.graphics.postprocessing = false;
     });
-    if (lowered) {
-      this.hud?.message(
-        'RENDIMIENTO',
-        decision.kind === 'quality' ? `Calidad ajustada a ${QUALITY_LABELS[decision.quality]}` : `Resolución al ${Math.round(decision.scale * 100)} %`,
-        'info',
-      );
-    }
+    // El cambio de nivel (al salir de la pista) ya se avisó cuando se decidió.
+    if (lowered && decision.kind === 'resolution') this.hud?.message('RENDIMIENTO', `Resolución al ${Math.round(decision.scale * 100)} %`, 'info');
   }
 
   // ─── Pausa ─────────────────────────────────────────────────────────────

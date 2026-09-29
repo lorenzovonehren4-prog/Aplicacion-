@@ -20,11 +20,74 @@
   overflow: hidden;
 }
 
+/*
+ * Todo lo que se mueve en la pantalla de carga es transform u opacity con
+ * animaciones CSS: el navegador las anima en su propio hilo, así siguen fluidas
+ * aunque el juego esté ocupado armando el circuito o compilando sombreadores.
+ */
 .loading__glow {
   position: absolute;
-  inset: -20%;
-  background: repeating-linear-gradient(-20deg, transparent 0 60px, rgba(255, 255, 255, 0.015) 60px 61px);
+  inset: -20% -20% -20% -40%;
+  background: repeating-linear-gradient(-70deg, transparent 0 58px, rgba(255, 255, 255, 0.025) 58px 60px);
   pointer-events: none;
+  will-change: transform;
+  animation: loading-streaks 0.9s linear infinite;
+}
+
+/* Un período de las rayas (64 px en horizontal): el bucle no salta. */
+@keyframes loading-streaks {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-63.9px, 0, 0);
+  }
+}
+
+/* Destello rojo que respira detrás del trazado. */
+.loading::before {
+  content: '';
+  position: absolute;
+  right: 5%;
+  top: 12%;
+  width: 55vh;
+  height: 55vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 42, 60, 0.22), transparent 65%);
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: loading-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes loading-breathe {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.loading__spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 10px;
+  vertical-align: -2px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--c-accent);
+  border-radius: 50%;
+  will-change: transform;
+  animation: loading-spin 0.7s linear infinite;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading__content {
@@ -146,6 +209,7 @@
 }
 
 .loading__bar {
+  position: relative;
   height: 6px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.08);
@@ -159,6 +223,41 @@
   transform: scaleX(0);
   transform-origin: left;
   box-shadow: 0 0 12px var(--c-accent-glow);
+  /* La barra avanza con una transición CSS (fluida aunque el juego esté ocupado). */
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+/* Brillo que recorre la barra sin parar: se nota que sigue trabajando. */
+.loading__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  will-change: transform;
+  animation: loading-shine 1.3s ease-in-out infinite;
+}
+
+@keyframes loading-shine {
+  from {
+    transform: translate3d(-110%, 0, 0);
+  }
+  to {
+    transform: translate3d(360%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading__glow,
+  .loading::before,
+  .loading__bar::after {
+    animation: none;
+  }
+
+  .loading__spinner {
+    animation-duration: 2s;
+  }
 }
 
 .loading__meta {

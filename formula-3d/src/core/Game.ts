@@ -3,6 +3,7 @@
  * Ningún módulo usa variables globales: todo cuelga de la instancia de `Game`.
  */
 
+import { prewarm } from './render/prewarm';
 import { AudioManager } from '../audio/AudioManager';
 import { MenuMusic } from '../audio/MenuMusic';
 import type { UiSound } from '../audio/UiSounds';
@@ -200,6 +201,8 @@ export class Game {
       } else {
         renderer.compile(studio.scene, studio.camera);
       }
+      // Y sube su geometría y texturas: el menú aparece sin un primer cuadro lento.
+      prewarm(renderer, studio.scene, studio.camera);
       // Si se liberó mientras se creaba, `releaseStudio` se encarga de éste.
       if (this.studioGeneration === generation) this.studio = studio;
       return studio;

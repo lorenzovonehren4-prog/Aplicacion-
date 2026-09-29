@@ -4,7 +4,8 @@
  * `RenderHost` mientras la pantalla de carrera está activa.
  */
 
-import { MathUtils, Scene, Vector3 } from 'three';
+import { MathUtils, PerspectiveCamera, Scene, Vector3, type WebGLRenderer } from 'three';
+import { prewarm } from '../core/render/prewarm';
 import type { RenderView } from '../core/render/RenderHost';
 import { QUALITY_PRESETS, shadowMapSize } from '../core/render/quality';
 import { createSpeedFx, HAZE_POINTS } from '../core/render/SpeedPass';
@@ -146,6 +147,33 @@ export class RaceWorld implements RenderView {
 
   get introPlaying(): boolean {
     return this.introTime >= 0;
+  }
+
+  /**
+   * Sube a la GPU todo el circuito (geometría y texturas) dibujándolo una vez,
+   * oculto, desde arriba: después no hay tirones cuando algo entra en cuadro.
+   */
+  prewarm(renderer: WebGLRenderer): void {
+    const g = this.vehicle.track.geometry;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (let i = 0; i < g.count; i++) {
+      minX = Math.min(minX, g.x[i] ?? 0);
+      maxX = Math.max(maxX, g.x[i] ?? 0);
+      minZ = Math.min(minZ, g.z[i] ?? 0);
+      maxZ = Math.max(maxZ, g.z[i] ?? 0);
+    }
+    const radius = Math.hypot(maxX - minX, maxZ - minZ) / 2 + 400;
+    const height = radius / Math.tan(MathUtils.degToRad(35));
+    const overhead = new PerspectiveCamera(70, 1, 10, height + 2000);
+    overhead.position.set((minX + maxX) / 2, height, (minZ + maxZ) / 2);
+    overhead.lookAt((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
+    overhead.updateMatrixWorld();
+    prewarm(renderer, this.scene, overhead);
+    // Y desde la cámara de verdad (las sombras y los reflejos de su encuadre).
+    prewarm(renderer, this.scene, this.camera);
   }
 
   /** Duración total de la presentación (s): depende de si hay parrilla que mostrar. */

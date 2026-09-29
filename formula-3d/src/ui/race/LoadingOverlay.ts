@@ -19,7 +19,8 @@ export class LoadingOverlay {
   readonly root: HTMLDivElement;
   private readonly own = new Disposer();
   private readonly fill = h('span', { class: 'loading__fill' });
-  private readonly stage = h('span', { class: 'loading__stage', text: 'Preparando…' });
+  private readonly stageText = h('span', { text: 'Preparando…' });
+  private readonly stage = h('span', { class: 'loading__stage' }, h('i', { class: 'loading__spinner', attrs: { 'aria-hidden': 'true' } }), this.stageText);
   private readonly percent = h('span', { class: 'loading__percent', text: '0 %' });
   private readonly tip = h('p', { class: 'loading__tip-text' });
   private readonly outline: SVGPathElement;
@@ -102,9 +103,14 @@ export class LoadingOverlay {
     this.own.add(() => clearInterval(timer));
   }
 
-  /** Progreso real (0–1) y etapa en curso. La barra lo sigue con suavidad. */
+  /**
+   * Progreso real (0–1) y etapa en curso. La barra avanza con una transición
+   * CSS (no se traba con el hilo principal ocupado); el trazado y el número
+   * siguen con GSAP.
+   */
   setProgress(value: number, stage: string): void {
-    this.stage.textContent = stage;
+    this.stageText.textContent = stage;
+    this.fill.style.transform = `scaleX(${value.toFixed(3)})`;
     this.own.tween(
       gsap.to(this.progress, {
         value,
@@ -113,7 +119,6 @@ export class LoadingOverlay {
         overwrite: true,
         onUpdate: () => {
           const v = this.progress.value;
-          this.fill.style.transform = `scaleX(${v.toFixed(3)})`;
           this.outline.style.strokeDashoffset = String(1 - v);
           this.percent.textContent = `${Math.round(v * 100)} %`;
         },

@@ -12,6 +12,7 @@ import type { UiAction } from '../../core/input/actions';
 import type { ResultsParams } from '../../core/screens/params';
 import { getItem } from '../../progression/items';
 import type { CelebrationStyle } from '../../progression/items';
+import { prewarm } from '../../core/render/prewarm';
 import { PodiumScene } from '../../podium/PodiumScene';
 import { finished } from '../anim/finished';
 import { ControlHints } from '../components/ControlHints';
@@ -59,6 +60,7 @@ export class PodiumScreen extends BaseScreen<ResultsParams> {
       const renderer = game.render.renderer;
       if (renderer.extensions.has('KHR_parallel_shader_compile')) await renderer.compileAsync(scene.scene, scene.camera);
       else renderer.compile(scene.scene, scene.camera);
+      prewarm(renderer, scene.scene, scene.camera);
       this.scene = scene;
       game.render.setView(scene);
     } catch (error) {
