@@ -20,6 +20,7 @@ export const SCREEN_IDS = [
   'settings',
   'assistsManual',
   'raceSelect',
+  'championship',
   'trackIntro',
   'race',
   'results',
@@ -42,18 +43,19 @@ export const SCREEN_FLOW: FlowTable = {
   goTo: {
     splash: ['tutorial', 'menu'],
     tutorial: ['menu'],
-    // Práctica libre: directo del menú a la pista (Fase 2).
-    menu: ['garage', 'pass', 'profile', 'raceSelect', 'race'],
+    menu: ['garage', 'pass', 'profile', 'raceSelect', 'championship', 'race'],
     garage: ['menu'],
     pass: ['menu'],
     profile: ['menu'],
     // Ajustes y el Manual siempre se apilan y vuelven con `pop`.
     settings: [],
     assistsManual: [],
-    raceSelect: ['trackIntro', 'menu'],
+    // La presentación del circuito está dentro de la pantalla de carrera.
+    raceSelect: ['race', 'trackIntro', 'menu'],
+    championship: ['race', 'menu'],
     trackIntro: ['race'],
     // Reiniciar es ir de la carrera a una carrera nueva.
-    race: ['results', 'race', 'menu'],
+    race: ['results', 'race', 'menu', 'championship'],
     // Desde resultados: podio, menú o la siguiente carrera del campeonato.
     results: ['podium', 'menu', 'raceSelect'],
     podium: ['menu', 'raceSelect'],

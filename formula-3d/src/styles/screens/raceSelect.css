@@ -1,0 +1,601 @@
+/* ─── Selección de carrera y campeonato ─────────────────────────────────
+   Panel de opciones a la izquierda (tarjetas de circuito + filas + botón) y
+   el "escenario" a la derecha: mapa grande del circuito con sus datos o la
+   tabla del campeonato. En pantallas angostas todo va en una columna. */
+
+.screen--rsel {
+  --rsel-panel: min(520px, calc(100% - 2 * var(--gutter)));
+  --rsel-footer: 56px;
+  background: var(--c-bg);
+}
+
+.rsel__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 70% at 72% 45%, rgba(255, 42, 60, 0.1), transparent 70%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 22px),
+    linear-gradient(180deg, #0b0d12 0%, #050608 100%);
+}
+
+.rsel__panel,
+.champ__panel {
+  position: absolute;
+  top: var(--gutter);
+  bottom: calc(var(--gutter) + var(--rsel-footer));
+  left: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: var(--rsel-panel);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+.rsel__stage,
+.champ__side {
+  position: absolute;
+  top: var(--gutter);
+  bottom: calc(var(--gutter) + var(--rsel-footer));
+  left: calc(var(--rsel-panel) + var(--gutter) * 2);
+  right: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.rsel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+}
+
+.rsel__kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.rsel__title {
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.rsel__section {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+/* Tarjetas de circuito */
+
+.rsel__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 50px;
+  padding: 6px 16px 6px 12px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 -1px 0 var(--c-line);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.tcard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--c-accent);
+  transform: scaleY(0);
+  transition: transform 0.3s var(--ease-out);
+}
+
+.tcard.is-focused {
+  background: linear-gradient(90deg, rgba(255, 42, 60, 0.18), rgba(255, 255, 255, 0.04) 70%);
+}
+
+.tcard.is-selected::before,
+.tcard.is-focused::before {
+  transform: scaleY(1);
+}
+
+.tcard__code {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--c-text-2);
+  border: 1px solid var(--c-line-strong);
+  transform: skewX(var(--skew));
+}
+
+.tcard.is-selected .tcard__code {
+  color: #fff;
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+.tcard__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tcard__gp {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--c-text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tcard__name {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.tcard__km {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--c-text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filas y botón */
+
+.rsel__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rsel__rows .srow {
+  min-height: 42px;
+}
+
+.rsel__rows .srow.is-muted .srow__label,
+.rsel__rows .srow.is-muted .slider__value {
+  color: var(--c-text-3);
+}
+
+.rsel__start {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.rsel__help {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 58px;
+  padding: 4px 2px 0;
+}
+
+.rsel__help-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rsel__help-text {
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--c-text-2);
+}
+
+/* Escenario: circuito */
+
+.rsel__track {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.rsel__gp {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+}
+
+.rsel__name {
+  font-size: clamp(32px, 4.4vw, 60px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 0.95;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.rsel__place {
+  font-size: 14px;
+  color: var(--c-text-3);
+}
+
+.rsel__map {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.tmap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tmap__glow {
+  fill: none;
+  stroke: var(--c-accent);
+  stroke-opacity: 0.16;
+  stroke-width: 34;
+  stroke-linejoin: round;
+}
+
+.tmap__base {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: 0.65;
+  stroke-width: 20;
+  stroke-linejoin: round;
+}
+
+.tmap__line {
+  fill: none;
+  stroke: #f3f4f6;
+  stroke-width: 7;
+  stroke-linejoin: round;
+}
+
+.tmap__drs {
+  fill: none;
+  stroke: #27e06b;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.tmap__start {
+  stroke: var(--c-accent);
+  stroke-width: 7;
+}
+
+.tmap__arrow {
+  fill: none;
+  stroke: var(--c-accent);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rsel__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 2px;
+}
+
+.rsel__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.rsel__stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--c-text-3);
+}
+
+.rsel__stat-value {
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rsel__stat.is-mine .rsel__stat-value {
+  color: var(--c-gold);
+}
+
+.rsel__stat.is-ghost .rsel__stat-value {
+  color: #9fd4ff;
+}
+
+/* Pie */
+
+.rsel__footer {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--rsel-footer);
+  border-top: 1px solid var(--c-line);
+}
+
+.rsel__back {
+  padding: 8px 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  border: 1px solid var(--c-line-strong);
+  transform: skewX(var(--skew));
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.rsel__back:hover,
+.rsel__back:focus-visible {
+  color: #fff;
+  border-color: var(--c-accent);
+}
+
+/* ─── Campeonato ──────────────────────────────────────────────────────── */
+
+.champ__calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.champ__round {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 14px 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.champ__round-n {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-3);
+}
+
+.champ__round-name {
+  font-weight: 700;
+}
+
+.champ__round-status,
+.champ__round-code {
+  font-family: var(--font-num);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--c-text-2);
+}
+
+.champ__round.is-next {
+  background: linear-gradient(90deg, rgba(255, 42, 60, 0.2), rgba(255, 255, 255, 0.03) 70%);
+  box-shadow: inset 3px 0 0 var(--c-accent);
+}
+
+.champ__round.is-next .champ__round-status {
+  color: var(--c-accent-2);
+}
+
+.champ__round.is-done .champ__round-n {
+  color: var(--c-text-2);
+}
+
+.champ__help {
+  margin-top: auto;
+}
+
+.champ__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 56ch;
+  margin-top: auto;
+  margin-bottom: auto;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--c-text-2);
+}
+
+.champ__intro-title {
+  font-size: 28px;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--c-text);
+  text-transform: uppercase;
+}
+
+.champ__champion {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, rgba(245, 197, 66, 0.18), transparent 80%);
+  box-shadow: inset 4px 0 0 var(--c-gold);
+}
+
+.champ__champion-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: var(--c-gold);
+}
+
+.champ__champion-name {
+  font-size: clamp(26px, 3vw, 40px);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+.champ__champion-points {
+  font-family: var(--font-num);
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.ctable {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.ctable__row {
+  display: grid;
+  grid-template: auto / 30px 4px 1fr 44px 48px;
+  gap: 10px;
+  align-items: center;
+  min-height: 30px;
+  padding: 2px 12px 2px 0;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ctable__row--head {
+  min-height: 22px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--c-text-3);
+  background: none;
+}
+
+.ctable__pos {
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ctable__team {
+  width: 4px;
+  height: 18px;
+}
+
+.ctable__name {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ctable__teamname {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-3);
+  text-overflow: ellipsis;
+}
+
+.ctable__wins {
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--c-text-2);
+}
+
+.ctable__points {
+  text-align: right;
+  font-family: var(--font-num);
+  font-weight: 700;
+}
+
+.ctable__row.is-player {
+  background: linear-gradient(90deg, rgba(200, 16, 46, 0.55), rgba(200, 16, 46, 0.18));
+  box-shadow: inset 3px 0 0 var(--c-accent);
+}
+
+.ctable__row:nth-child(3) .ctable__points {
+  color: var(--c-gold);
+}
+
+/* ─── Pantallas angostas: una sola columna que se desplaza ────────────── */
+
+@media (max-width: 900px) {
+  .screen--rsel {
+    overflow-y: auto;
+  }
+
+  .rsel__panel,
+  .champ__panel,
+  .rsel__stage,
+  .champ__side {
+    position: relative;
+    inset: auto;
+    width: auto;
+    margin: var(--gutter);
+    overflow: visible;
+  }
+
+  .rsel__stage {
+    height: 620px;
+  }
+
+  .rsel__track {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .rsel__footer {
+    position: relative;
+    inset: auto;
+    margin: 0 var(--gutter) var(--gutter);
+  }
+
+  .srow__control {
+    min-width: 0;
+  }
+}

@@ -19,6 +19,8 @@ import {
   SAVE_VERSION,
   CAMERA_MODES,
   DIFFICULTY_LEVELS,
+  RACE_LAPS,
+  WEATHERS,
   RIVALS_MAX,
   RIVALS_MIN,
   SPEED_UNITS,
@@ -28,6 +30,7 @@ import {
   type ExperienceLevel,
   type GameSettings,
   type RaceSettings,
+  type ChampionshipState,
   type TrackRecord,
   type GraphicsSettings,
   type Profile,
@@ -155,7 +158,63 @@ function sanitizeRace(raw: unknown, defaults: RaceSettings): RaceSettings {
     difficulty: oneOf(r.difficulty, DIFFICULTY_LEVELS, defaults.difficulty),
     customDifficulty: num(r.customDifficulty, defaults.customDifficulty, 0, 100, true),
     rivals: num(r.rivals, defaults.rivals, RIVALS_MIN, RIVALS_MAX, true),
+    // El circuito se valida contra el catálogo al usarlo (uno desconocido vuelve al primero).
+    trackId: id(r.trackId, defaults.trackId),
+    laps: oneOf(r.laps, RACE_LAPS, defaults.laps),
+    weather: oneOf(r.weather, WEATHERS, defaults.weather),
   };
+}
+
+/**
+ * Campeonato guardado: se descarta entero si algo no cierra (mejor empezar
+ * otro que continuar uno corrupto).
+ */
+function sanitizeChampionship(raw: unknown): ChampionshipState | null {
+  if (!isRecord(raw)) return null;
+  const rivals = Array.isArray(raw.rivals) ? raw.rivals.filter((value): value is string => typeof value === 'string' && /^[a-z0-9_-]{1,32}$/.test(value)) : [];
+  const rounds = Array.isArray(raw.rounds) ? raw.rounds : [];
+  if (rivals.length < RIVALS_MIN || rivals.length > RIVALS_MAX || rounds.length === 0 || rounds.length > 30) return null;
+  const ids = new Set(['player', ...rivals]);
+  const parsed: Array<ChampionshipState['rounds'][number]> = [];
+  for (const round of rounds) {
+    const r = record(round);
+    const trackId = id(r.trackId, '');
+    if (!trackId) return null;
+    if (r.results === null) {
+      parsed.push({ trackId, results: null });
+      continue;
+    }
+    if (!Array.isArray(r.results)) return null;
+    const results: Array<{ id: string; position: number; points: number }> = [];
+    for (const entry of r.results) {
+      const e = record(entry);
+      if (typeof e.id !== 'string' || !ids.has(e.id)) return null;
+      results.push({
+        id: e.id,
+        position: num(e.position, results.length + 1, 1, 30, true),
+        points: num(e.points, 0, 0, 30, true),
+      });
+    }
+    parsed.push({ trackId, results });
+  }
+  return {
+    startedAt: num(raw.startedAt, 0, 0, Number.MAX_SAFE_INTEGER, true),
+    laps: oneOf(raw.laps, RACE_LAPS, 3),
+    difficulty: num(raw.difficulty, 50, 0, 100),
+    weather: oneOf(raw.weather, WEATHERS, 'sunny'),
+    rivals,
+    rounds: parsed,
+  };
+}
+
+/** Tiempo de vuelta plausible (10 s – 10 min). */
+function plausibleLap(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 10 && value <= 600;
+}
+
+/** Texto en base64 de tamaño razonable (fantasmas: hasta ~10 min de vuelta). */
+function base64(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 400_000 && /^[A-Za-z0-9+/]*={0,2}$/.test(value);
 }
 
 /** Récords por circuito: claves con forma de id y tiempos plausibles (10 s – 10 min). */
@@ -166,9 +225,14 @@ function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): R
     if (!/^[a-z0-9-]{1,32}$/.test(key)) continue;
     const r = record(value);
     const lap = r.bestLap;
-    records[key] = {
-      bestLap: typeof lap === 'number' && Number.isFinite(lap) && lap >= 10 && lap <= 600 ? lap : null,
+    const entry: TrackRecord = {
+      bestLap: plausibleLap(lap) ? lap : null,
     };
+    const ghost = record(r.ghost);
+    if (plausibleLap(ghost.time) && base64(ghost.poses) && base64(ghost.trace)) {
+      entry.ghost = { time: ghost.time, poses: ghost.poses, trace: ghost.trace };
+    }
+    records[key] = entry;
   }
   return records;
 }
@@ -196,5 +260,6 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
       race: sanitizeRace(settings.race, defaults.settings.race),
     },
     records: sanitizeRecords(r.records, defaults.records),
+    championship: sanitizeChampionship(r.championship),
   };
 }

@@ -17,11 +17,13 @@ import { finished } from '../anim/finished';
 import { createMenuButton } from '../components/MenuButton';
 import { FocusNavigator } from '../nav/FocusNavigator';
 
-export type FinishChoice = 'again' | 'exit';
+export type FinishChoice = 'again' | 'continue' | 'exit';
 
 export interface FinishPanelOptions {
   onChoice(choice: FinishChoice): void;
   onMove(): void;
+  /** Carrera de campeonato: en lugar de repetir, se sigue con la temporada. */
+  championship?: boolean;
 }
 
 export class FinishPanel {
@@ -49,10 +51,13 @@ export class FinishPanel {
   constructor(options: FinishPanelOptions) {
     this.nav = new FocusNavigator({ onMove: () => options.onMove() });
     this.own.add(() => this.nav.dispose());
-    const again = createMenuButton({ label: 'Repetir carrera', icon: 'reset' });
+    const championship = options.championship === true;
+    const again = championship
+      ? createMenuButton({ label: 'Continuar campeonato', icon: 'trophy' })
+      : createMenuButton({ label: 'Repetir carrera', icon: 'reset' });
     const exit = createMenuButton({ label: 'Salir al menú', icon: 'exit' });
     this.buttons.push(again, exit);
-    this.nav.add(again, { onConfirm: () => options.onChoice('again') });
+    this.nav.add(again, { onConfirm: () => options.onChoice(championship ? 'continue' : 'again') });
     this.nav.add(exit, { onConfirm: () => options.onChoice('exit') });
 
     this.panel = h(

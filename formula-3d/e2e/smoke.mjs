@@ -122,6 +122,7 @@ async function main() {
     // Desde Ajustes (último acceso), ↓ da la vuelta hasta el primero: Práctica libre.
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
+    await startFromSelection(page, 'práctica');
     await page.waitForSelector('.screen--race .loading', { state: 'attached' });
     // Sin GPU el barrido de la transición es lento: la carga puede terminar antes de verse.
     if (await page.locator('.loading').isVisible()) await page.screenshot({ path: `${shots}05-carga.png` });
@@ -158,6 +159,7 @@ async function main() {
     // Desde Práctica libre (primer acceso), ↓ va a Carrera rápida.
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
+    await startFromSelection(page, 'carrera');
     await page.waitForSelector('.screen--race .loading', { state: 'attached' });
     await waitForScreen(page, 'race');
     await page.waitForSelector('.loading', { state: 'detached' });
@@ -228,6 +230,21 @@ async function main() {
     await browser.close();
     await server.close();
   }
+}
+
+/**
+ * Selección de carrera: arranca con el circuito guardado enfocado; Enter pasa
+ * al botón de salida y Enter de nuevo va a pista.
+ */
+async function startFromSelection(page, label) {
+  await waitForScreen(page, 'rsel');
+  const maps = await page.locator('.tmap path').count();
+  if (maps < 3) throw new Error(`La selección de ${label} no dibujó el mapa del circuito.`);
+  await page.screenshot({ path: `${shots}seleccion-${label}.png` });
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('.rsel__start.is-focused');
+  await page.keyboard.press('Enter');
+  log(`selección de ${label}: circuito y opciones → a pista`);
 }
 
 /** Espera a que `id` sea la pantalla de arriba y la transición haya terminado. */

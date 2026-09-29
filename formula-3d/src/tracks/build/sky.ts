@@ -19,7 +19,7 @@ import {
   type WebGLRenderTarget,
 } from 'three';
 import { Sky } from 'three/addons/objects/Sky.js';
-import type { TrackEnvironment } from '../TrackDefinition';
+import type { WeatherLook } from '../weather';
 
 /** Tamaño de la zona con sombras alrededor del auto (m). */
 const SHADOW_EXTENT = 80;
@@ -48,10 +48,12 @@ export interface SkyEnvironment {
   /** Mueve la cámara de sombras para que siga al auto (sin parpadeo de texeles). */
   follow(x: number, z: number): void;
   setShadowMapSize(size: number): void;
+  /** Mueve las nubes (s). */
+  update(time: number): void;
   dispose(): void;
 }
 
-export function createSky(renderer: WebGLRenderer, env: TrackEnvironment): SkyEnvironment {
+export function createSky(renderer: WebGLRenderer, look: WeatherLook): SkyEnvironment {
   const sky = new Sky();
   sky.scale.setScalar(20000);
   dimSky(sky);
@@ -60,18 +62,20 @@ export function createSky(renderer: WebGLRenderer, env: TrackEnvironment): SkyEn
     const uniform = uniforms[name];
     if (uniform) uniform.value = value;
   };
-  set('turbidity', env.turbidity);
-  set('rayleigh', 1.2);
-  set('mieCoefficient', 0.004);
+  set('turbidity', look.turbidity);
+  set('rayleigh', look.rayleigh);
+  set('mieCoefficient', look.mieCoefficient);
   set('mieDirectionalG', 0.82);
+  set('cloudCoverage', look.cloudCoverage);
+  set('cloudDensity', look.cloudDensity);
   // Sin disco solar: su brillo (miles de veces el del cielo) inunda el bloom y
   // el mapa de entorno, y lava toda la escena.
   const disc = uniforms.showSunDisc;
   if (disc) disc.value = 0;
 
   // Dirección del sol: azimut desde el norte (−Z) hacia el este (+X).
-  const phi = MathUtils.degToRad(90 - env.sunElevation);
-  const theta = MathUtils.degToRad(env.sunAzimuth);
+  const phi = MathUtils.degToRad(90 - look.sunElevation);
+  const theta = MathUtils.degToRad(look.sunAzimuth);
   const sunDirection = new Vector3(Math.sin(phi) * Math.sin(theta), Math.cos(phi), -Math.sin(phi) * Math.cos(theta));
   (uniforms.sunPosition?.value as Vector3 | undefined)?.copy(sunDirection);
 
@@ -92,7 +96,7 @@ export function createSky(renderer: WebGLRenderer, env: TrackEnvironment): SkyEn
   envSky.geometry.dispose();
   envSky.material.dispose();
 
-  const sun = new DirectionalLight(new Color('#fff4e2'), 3.2);
+  const sun = new DirectionalLight(new Color(look.sunColor), look.sunIntensity);
   sun.castShadow = true;
   sun.shadow.bias = -0.0003;
   sun.shadow.normalBias = 0.04;
@@ -106,10 +110,10 @@ export function createSky(renderer: WebGLRenderer, env: TrackEnvironment): SkyEn
   camera.far = 600;
   camera.updateProjectionMatrix();
 
-  const hemisphere = new HemisphereLight(new Color('#bcd4ff'), new Color('#4a5a32'), 0.55);
+  const hemisphere = new HemisphereLight(new Color(look.skyLight), new Color(look.groundLight), look.ambientIntensity);
 
   // Niebla del color del horizonte.
-  const fog = new FogExp2(new Color('#c9d6e3'), env.fogDensity);
+  const fog = new FogExp2(new Color(look.fogColor), look.fogDensity);
 
   const offset = sunDirection.clone().multiplyScalar(250);
   let mapSize = 0;
@@ -135,6 +139,10 @@ export function createSky(renderer: WebGLRenderer, env: TrackEnvironment): SkyEn
         sun.shadow.map?.dispose();
         sun.shadow.map = null;
       }
+    },
+    update(time: number) {
+      const clock = uniforms.time;
+      if (clock) clock.value = time;
     },
     dispose() {
       target.dispose();

@@ -11,7 +11,7 @@
 /** Distancia (m) alrededor de la línea en la que se detecta el cruce. */
 const CROSSING_WINDOW = 60;
 /** Cada cuántos metros se guarda el tiempo de la vuelta para el delta en vivo. */
-const DELTA_STEP = 10;
+export const DELTA_STEP = 10;
 
 /** 'best' = mejor sector de la sesión (violeta en el HUD); 'slower' = más lento (amarillo). */
 export type SectorResult = 'best' | 'slower';
@@ -55,15 +55,18 @@ export class LapTimer {
   readonly bestSectors: [number | null, number | null, number | null] = [null, null, null];
 
   private lastDistance: number | null = null;
+  private completedTrace: number[] = [];
   /** Se completó la última vuelta de la carrera: el cronómetro no sigue. */
   finished = false;
   /** Largada detenida: el reloj corre pero la vuelta 1 empieza detrás de la línea. */
   private awaitingLine = false;
   private sectorStart = 0;
   private nextSector = 0;
-  /** Tiempo de vuelta en cada tramo de DELTA_STEP m (vuelta en curso y mejor vuelta). */
+  /** Tiempo de vuelta en cada tramo de DELTA_STEP m (vuelta en curso y vuelta de referencia). */
   private trace: number[] = [];
   private bestTrace: number[] | null = null;
+  /** Tiempo de la vuelta de referencia del delta (la mejor de la sesión o el fantasma). */
+  private bestTraceTime: number | null = null;
 
   constructor(private readonly options: LapTimerOptions) {
     this.personalBest = options.personalBest;
@@ -154,10 +157,24 @@ export class LapTimer {
     const position = distance / DELTA_STEP;
     const i = Math.floor(position);
     const a = this.bestTrace[i];
-    const b = this.bestTrace[i + 1] ?? this.bestLap?.time;
+    const b = this.bestTrace[i + 1] ?? this.bestTraceTime ?? undefined;
     if (a === undefined || b === undefined) return null;
     const reference = a + (b - a) * (position - i);
     return this.lapTime - reference;
+  }
+
+  /**
+   * Vuelta de referencia para el delta desde la primera vuelta (el fantasma de
+   * la contrarreloj). Una vuelta válida más rápida la reemplaza.
+   */
+  setReference(time: number, trace: readonly number[]): void {
+    this.bestTrace = [...trace];
+    this.bestTraceTime = time;
+  }
+
+  /** Traza de la última vuelta completada (tiempo cada `DELTA_STEP` m desde la línea). */
+  get lastTrace(): readonly number[] {
+    return this.completedTrace;
   }
 
   /** Anula la vuelta en curso (fuera de pista con las cuatro ruedas, reinicio…). */
@@ -203,11 +220,15 @@ export class LapTimer {
     let bestOfSession = false;
     let personalBest = false;
     const sector3 = this.rateSector(2, s3);
+    this.completedTrace = this.trace;
     if (lap.valid) {
       if (!this.bestLap || time < this.bestLap.time) {
         this.bestLap = lap;
-        this.bestTrace = this.trace;
         bestOfSession = true;
+      }
+      if (this.bestTraceTime === null || time < this.bestTraceTime) {
+        this.bestTrace = this.trace;
+        this.bestTraceTime = time;
       }
       if (this.personalBest === null || time < this.personalBest) {
         this.personalBest = time;

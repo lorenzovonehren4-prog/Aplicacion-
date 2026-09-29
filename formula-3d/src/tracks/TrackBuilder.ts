@@ -25,6 +25,8 @@ import {
   type StartGantry,
 } from './build/scenery';
 import { createSky, type SkyEnvironment } from './build/sky';
+import { weatherLook, type WeatherLook } from './weather';
+import type { Weather } from '../core/save/schema';
 import { buildAsphalt, buildGround, buildKerbs, buildPaint, buildPitLane, buildRunoff } from './build/surfaces';
 import type { Track } from './Track';
 
@@ -32,7 +34,9 @@ export interface TrackScene {
   readonly root: Group;
   readonly sky: SkyEnvironment;
   readonly gantry: StartGantry;
-  /** Anima lo que se mueve solo (ondas del lago). */
+  /** Luz y cielo del clima elegido. */
+  readonly look: WeatherLook;
+  /** Anima lo que se mueve solo (ondas del lago, nubes). */
   update(time: number): void;
   dispose(): void;
 }
@@ -41,6 +45,7 @@ export interface BuildOptions {
   renderer: WebGLRenderer;
   quality: QualityLevel;
   anisotropy: number;
+  weather: Weather;
   /** Progreso 0…1 y nombre de la etapa en curso. */
   onProgress?(progress: number, stage: string): void;
   /** Si devuelve true, se aborta la construcción (el jugador salió). */
@@ -87,9 +92,10 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
   let pitZone: StandZone | null = null;
   let gantry: StartGantry | null = null;
   let sky: SkyEnvironment | null = null;
+  const look = weatherLook(track.def.environment, options.weather);
 
   const stages: Array<[string, () => void]> = [
-    ['Cielo e iluminación', () => (sky = createSky(options.renderer, track.def.environment))],
+    ['Cielo e iluminación', () => (sky = createSky(options.renderer, look))],
     ['Terreno', () => buildGround(ctx)],
     ['Asfalto', () => buildAsphalt(ctx)],
     ['Pintura y parrilla', () => buildPaint(ctx)],
@@ -165,8 +171,10 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     root,
     sky: finalSky,
     gantry: finalGantry,
+    look,
     update(time: number) {
       if (normals) normals.offset.set(time * 0.011, time * 0.007);
+      finalSky.update(time);
     },
     dispose() {
       root.removeFromParent();

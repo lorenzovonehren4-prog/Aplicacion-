@@ -4,6 +4,8 @@
  * fase agrega las suyas.
  */
 
+import type { Weather } from '../save/schema';
+
 export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'assists' | 'game';
 
 /**
@@ -11,7 +13,10 @@ export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'assists' | 'game'
  * (Fase 3; con rivales desde la Fase 4). Contrarreloj y campeonato llegan en
  * la Fase 5.
  */
-export type SessionMode = 'practice' | 'race';
+export type SessionMode = 'practice' | 'race' | 'timeTrial';
+
+/** Modos que se eligen en la pantalla de selección de carrera. */
+export type RaceSelectMode = 'practice' | 'quickRace' | 'timeTrial';
 
 export interface RaceParams {
   trackId: string;
@@ -21,11 +26,17 @@ export interface RaceParams {
   /** Rivales y dificultad (0–100); si faltan, los de Ajustes → Juego. */
   rivals?: number;
   difficulty?: number;
+  /** Clima (soleado si no se indica). */
+  weather?: Weather;
+  /** Carrera del campeonato en curso (índice en el calendario). */
+  championshipRound?: number;
 }
 
 export interface ScreenParams {
   splash: undefined;
   menu: undefined;
   settings: { tab?: SettingsTab } | undefined;
+  raceSelect: { mode: RaceSelectMode };
+  championship: undefined;
   race: RaceParams;
 }

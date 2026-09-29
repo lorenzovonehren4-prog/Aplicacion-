@@ -70,15 +70,25 @@ export type DifficultyLevel = (typeof DIFFICULTY_LEVELS)[number];
 export const RIVALS_MIN = 9;
 export const RIVALS_MAX = 19;
 
+export const WEATHERS = ['sunny', 'cloudy', 'sunset'] as const;
+export type Weather = (typeof WEATHERS)[number];
+
+/** Vueltas que se pueden elegir para una carrera. */
+export const RACE_LAPS = [3, 5, 10] as const;
+export type RaceLaps = (typeof RACE_LAPS)[number];
+
 /**
- * Carrera rápida: dificultad y cantidad de rivales. La pantalla de selección
- * de carrera de la Fase 5 los usa como valores iniciales.
+ * Última configuración de carrera elegida (la pantalla de selección de
+ * carrera arranca con ella).
  */
 export interface RaceSettings {
   difficulty: DifficultyLevel;
   /** Dificultad Personalizada (0–100). */
   customDifficulty: number;
   rivals: number;
+  trackId: string;
+  laps: RaceLaps;
+  weather: Weather;
 }
 
 // ─── Ayudas (ver PLAN.md §5.4) ────────────────────────────────────────────
@@ -126,6 +136,11 @@ export interface Settings {
 export interface TrackRecord {
   /** Mejor vuelta (s) o null si todavía no completó ninguna. */
   bestLap: number | null;
+  /**
+   * Fantasma de la mejor vuelta de contrarreloj: tiempo y datos en base64
+   * (ver `race/session/Ghost.ts`).
+   */
+  ghost?: { time: number; poses: string; trace: string };
 }
 
 export interface Profile {
@@ -153,6 +168,28 @@ export interface SaveData {
   settings: Settings;
   /** Récords por circuito (clave = id del circuito). */
   records: Record<string, TrackRecord>;
+  /** Campeonato en curso (o terminado, hasta empezar otro). */
+  championship: ChampionshipState | null;
+}
+
+/** Resultado de un piloto en una carrera del campeonato. */
+export interface ChampionshipResult {
+  /** Id del piloto (`data/teams.ts`) o "player". */
+  id: string;
+  position: number;
+  points: number;
+}
+
+export interface ChampionshipState {
+  startedAt: number;
+  laps: RaceLaps;
+  /** Dificultad 0–100, fija para toda la temporada. */
+  difficulty: number;
+  weather: Weather;
+  /** Rivales (ids de pilotos), los mismos en todas las carreras. */
+  rivals: readonly string[];
+  /** Calendario: circuito y resultado (null = todavía no se corrió). */
+  rounds: ReadonlyArray<{ trackId: string; results: readonly ChampionshipResult[] | null }>;
 }
 
 export const PROFILE_NAME_MAX_LENGTH = 16;
@@ -192,7 +229,7 @@ export function createDefaultGame(): GameSettings {
 }
 
 export function createDefaultRace(): RaceSettings {
-  return { difficulty: 'amateur', customDifficulty: 50, rivals: 11 };
+  return { difficulty: 'amateur', customDifficulty: 50, rivals: 11, trackId: 'australia', laps: 3, weather: 'sunny' };
 }
 
 export function createDefaultSave(now: number, quality: QualityLevel): SaveData {
@@ -217,5 +254,6 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
       race: createDefaultRace(),
     },
     records: {},
+    championship: null,
   };
 }

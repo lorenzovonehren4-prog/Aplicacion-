@@ -23,8 +23,10 @@ import { BaseScreen } from './BaseScreen';
  * se muestra bloqueado con su fase. Cada fase agrega aquí los suyos.
  */
 const OPENERS: Partial<Record<MenuItemId, (game: Game) => Promise<boolean>>> = {
-  practice: (game) => game.screens.goTo('race', { trackId: 'australia', mode: 'practice' }),
-  quickRace: (game) => game.screens.goTo('race', { trackId: 'australia', mode: 'race', laps: 3 }),
+  practice: (game) => game.screens.goTo('raceSelect', { mode: 'practice' }),
+  quickRace: (game) => game.screens.goTo('raceSelect', { mode: 'quickRace' }),
+  timeTrial: (game) => game.screens.goTo('raceSelect', { mode: 'timeTrial' }),
+  championship: (game) => game.screens.goTo('championship', undefined),
   settings: (game) => game.screens.push('settings', undefined),
 };
 

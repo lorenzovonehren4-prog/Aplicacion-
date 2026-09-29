@@ -19,7 +19,8 @@ import type { RaceParams } from '../../core/screens/params';
 import { clamp } from '../../core/utils/math';
 import { formatLapTime } from '../../core/utils/format';
 import { ENGINEER_NAME, RADIO_LINES, type RadioMoment } from '../../data/radio';
-import { liveryOf, pickRivals, playerCode } from '../../data/teams';
+import { DRIVERS, liveryOf, pickRivals, playerCode, type DriverDef } from '../../data/teams';
+import { PLAYER_ID, recordRound } from '../../race/championship';
 import { PLAYER_DEFAULT_LIVERY } from '../../garage/livery';
 import { difficultyValue } from '../../race/ai/difficulty';
 import type { RivalCar } from '../../race/render/RivalFleet';
@@ -28,6 +29,7 @@ import { F1_SPEC } from '../../race/physics/CarSpec';
 import { Session, type RaceResult, type SessionEvent } from '../../race/Session';
 import { RaceAudio, type SurfaceMix } from '../../race/audio/RaceAudio';
 import type { Listener } from '../../race/audio/BotEngines';
+import { decodeGhost, encodeGhost, GhostPlayer, type GhostLap, type GhostPose } from '../../race/session/Ghost';
 import type { Vehicle } from '../../race/physics/Vehicle';
 import { CAMERA_LABELS } from '../../race/camera/RaceCamera';
 import { INTRO_DURATION, RaceWorld } from '../../race/RaceWorld';
@@ -124,6 +126,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private readonly listenerForward = new Vector3();
   private readonly listenerUp = new Vector3();
   private readonly listenerVelocity = { x: 0, z: 0 };
+  private ghostPlayer: GhostPlayer | null = null;
+  private readonly ghostPose: GhostPose = { x: 0, z: 0, heading: 0 };
 
   constructor(game: Game) {
     super(game, 'screen--race');
@@ -203,6 +207,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       }
     }
 
+    this.updateGhost();
     this.updateHud(dt);
     if (this.phase === 'running') this.governPerformance(dt);
     // Con el panel final abierto, la clasificación se completa a medida que llegan los demás.
@@ -274,8 +279,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       const laps = this.params.mode === 'race' ? (this.params.laps ?? DEFAULT_RACE_LAPS) : null;
       const assists = activeAssists(settings.assists);
       const race = settings.race;
-      const rivals = this.params.mode === 'race' ? pickRivals(this.params.rivals ?? race.rivals) : [];
+      const rivals = this.params.mode === 'race' ? this.rivalDrivers(this.params.rivals ?? race.rivals) : [];
       const pilot = game.save.data.profile.name;
+      const storedGhost = this.params.mode === 'timeTrial' ? game.save.data.records[track.def.id]?.ghost : undefined;
       const session = new Session(
         track,
         F1_SPEC,
@@ -285,13 +291,15 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           laps,
           rivals: { drivers: rivals, difficulty: this.params.difficulty ?? difficultyValue(race) },
           player: { name: pilot, code: playerCode(pilot), number: PLAYER_DEFAULT_LIVERY.number },
+          ghost: storedGhost ? decodeGhost(storedGhost) : null,
         },
         assists,
       );
-      const world = await RaceWorld.create(session.vehicle, rivalCars(session), settings.game.defaultCamera, {
+      const world = await RaceWorld.create(session.vehicle, { rivals: rivalCars(session), ghost: session.isTimeTrial }, settings.game.defaultCamera, {
         renderer: game.render.renderer,
         quality: settings.graphics.quality,
         anisotropy: game.render.maxAnisotropy,
+        weather: this.params.weather ?? 'sunny',
         onProgress: (progress, stage) => this.loading?.setProgress(progress * 0.9, stage),
         cancelled: () => this.cancelled,
       });
@@ -367,6 +375,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.finish = new FinishPanel({
       onChoice: (choice) => this.onFinishChoice(choice),
       onMove: () => this.game.playUi('move'),
+      championship: this.params.championshipRound !== undefined,
     });
     this.driving = new DrivingInput(
       this.game.input,
@@ -378,8 +387,16 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const def = track.def;
     const laps = session.config.laps;
     const grid = session.order ? ` · LARGAS P${session.position} DE ${session.cars.length}` : '';
+    const round = this.params.championshipRound;
+    const kicker = session.isTimeTrial
+      ? 'CONTRARRELOJ'
+      : laps === null
+        ? 'PRÁCTICA LIBRE'
+        : round !== undefined
+          ? `CAMPEONATO · RONDA ${round + 1} · ${laps} VUELTAS${grid}`
+          : `CARRERA · ${laps} VUELTAS${grid}`;
     this.introCard.replaceChildren(
-      h('span', { class: 'race__intro-kicker', text: laps === null ? 'PRÁCTICA LIBRE' : `CARRERA · ${laps} VUELTAS${grid}` }),
+      h('span', { class: 'race__intro-kicker', text: kicker }),
       h('span', { class: 'race__intro-title', text: def.grandPrix }),
       h('span', { class: 'race__intro-track', text: `${def.name} · ${def.lengthKm.toFixed(3)} km` }),
       h('span', {
@@ -468,6 +485,13 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     }
     if (this.session?.isRace) {
       this.hud.message('A LA PARRILLA', 'Acelera para subir las vueltas del motor y espera las luces', 'info');
+    } else if (this.session?.isTimeTrial) {
+      const ghost = this.session.ghost;
+      this.hud.message(
+        'CONTRARRELOJ',
+        ghost ? `Tu fantasma (${formatLapTime(ghost.time)}) sale contigo al cruzar la línea` : 'Marca una vuelta válida: será tu fantasma',
+        'info',
+      );
     } else {
       this.hud.message('A PISTA', 'Vuelta de salida: el cronómetro arranca en la línea de meta', 'info');
       this.own.timeout(() => this.radio('practiceStart'), 1500);
@@ -582,6 +606,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           }
           break;
         }
+        case 'ghostLap':
+          this.saveGhost(event.ghost);
+          hud.message('NUEVO FANTASMA', `${formatLapTime(event.ghost.time)} · la próxima vuelta corres contra él`, 'best');
+          break;
         case 'leaderFinished': {
           const winner = session.cars[event.index];
           if (winner && !winner.isPlayer && session.phase === 'running') {
@@ -679,9 +707,40 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.game.playUi('confirm');
     if (choice === 'again') {
       this.restartSession();
+    } else if (choice === 'continue') {
+      this.recordChampionshipRound();
+      void this.game.screens.goTo('championship', undefined);
     } else {
       void this.game.screens.goTo('menu', undefined);
     }
+  }
+
+  /**
+   * Rivales de la carrera: los de la temporada en el campeonato (siempre los
+   * mismos) o una parrilla nueva en la carrera rápida.
+   */
+  private rivalDrivers(count: number): DriverDef[] {
+    const round = this.params.championshipRound;
+    const season = this.game.save.data.championship;
+    if (round === undefined || !season) return pickRivals(count);
+    const byId = new Map(DRIVERS.map((driver) => [driver.id, driver]));
+    return season.rivals.flatMap((id) => byId.get(id) ?? []);
+  }
+
+  /** Anota la carrera en el campeonato con el orden de llegada (los que siguen en pista, por posición). */
+  private recordChampionshipRound(): void {
+    const round = this.params.championshipRound;
+    const session = this.session;
+    if (round === undefined || !session) return;
+    const order = session.standings().map((row) => {
+      const car = session.cars[row.index];
+      return car?.isPlayer ? PLAYER_ID : (car?.driver?.id ?? '');
+    });
+    this.game.save.update((data) => {
+      const season = data.championship;
+      if (!season || season.rounds[round]?.results !== null) return;
+      data.championship = recordRound(season, round, order.filter((id) => id !== ''));
+    });
   }
 
   /** Mensaje del ingeniero (sin repetir la misma frase dos veces seguidas). */
@@ -696,11 +755,36 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.audio.cue('radio');
   }
 
+  /** Guarda el fantasma de la contrarreloj (sólo si mejora el guardado). */
+  private saveGhost(ghost: GhostLap): void {
+    const id = this.params.trackId;
+    this.game.save.update((data) => {
+      const current = data.records[id] ?? { bestLap: null };
+      if (current.ghost && current.ghost.time <= ghost.time) return;
+      data.records[id] = { ...current, ghost: encodeGhost(ghost) };
+    });
+  }
+
+  /** Fantasma: repite su vuelta al ritmo del cronómetro de la vuelta en curso. */
+  private updateGhost(): void {
+    const session = this.session;
+    const car = this.world?.ghost;
+    if (!session || !car) return;
+    const lap = session.ghost;
+    if (lap && this.ghostPlayer?.lap !== lap) this.ghostPlayer = new GhostPlayer(lap);
+    const timer = session.timer;
+    const visible = this.ghostPlayer !== null && timer.lap > 0 && this.ghostPlayer.poseAt(timer.lapTime, this.ghostPose);
+    const pose = session.vehicle;
+    car.update(visible ? this.ghostPose : null, pose.x, pose.z);
+  }
+
   private saveRecord(time: number): void {
     const id = this.params.trackId;
     this.game.save.update((data) => {
-      const current = data.records[id]?.bestLap ?? null;
-      if (current === null || time < current) data.records[id] = { bestLap: time };
+      const record = data.records[id];
+      const current = record?.bestLap ?? null;
+      // Conserva el fantasma guardado (si lo hay).
+      if (current === null || time < current) data.records[id] = { ...record, bestLap: time };
     });
   }
 

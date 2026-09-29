@@ -19,6 +19,7 @@ import { resolveCarCollisions, type CarContact } from './physics/CarCollisions';
 import { performanceModel, type CarSpec } from './physics/CarSpec';
 import { Vehicle, type DriverInput } from './physics/Vehicle';
 import { LapTimer, type LapEvent, type LapRecord } from './session/LapTimer';
+import { GhostRecorder, type GhostLap } from './session/Ghost';
 import { RaceOrder, type OrderEvent } from './session/RaceOrder';
 import { StartLights } from './session/StartLights';
 
@@ -47,6 +48,8 @@ export interface SessionConfig {
   /** Rivales (sólo en carrera). */
   rivals?: RivalsConfig;
   player?: PlayerIdentity;
+  /** Contrarreloj: fantasma guardado (la referencia a batir). */
+  ghost?: GhostLap | null;
 }
 
 /** Un auto en pista: el jugador o un bot. */
@@ -117,6 +120,7 @@ export type SessionEvent =
   | { kind: 'position'; from: number; to: number }
   | { kind: 'fastestLap'; index: number; time: number }
   | { kind: 'leaderFinished'; index: number }
+  | { kind: 'ghostLap'; ghost: GhostLap }
   | { kind: 'finished'; result: RaceResult };
 
 /** Velocidad mínima para avisar "sentido contrario" (m/s). */
@@ -149,6 +153,8 @@ export class Session {
   result: RaceResult | null = null;
   /** Orden de carrera (null en práctica o sin rivales). */
   order: RaceOrder | null = null;
+  /** Contrarreloj: el fantasma que se muestra (el guardado o la mejor vuelta de hoy). */
+  ghost: GhostLap | null;
   /** Ayuda de frenado (su `active` ilumina el ícono del HUD). */
   readonly brakingAssist: BrakingAssist;
   private assists: ActiveAssists;
@@ -160,6 +166,7 @@ export class Session {
   private playerContacts = 0;
   private lastPosition = 0;
   private readonly cooldown: BotDriver;
+  private readonly recorder = new GhostRecorder();
   private readonly vehicles: Vehicle[];
   /** Autos que chocan en este paso (los fantasmas no) y los que ven los bots. */
   private readonly solid: boolean[];
@@ -184,6 +191,7 @@ export class Session {
     private readonly random: () => number = Math.random,
   ) {
     const model = performanceModel(spec);
+    this.ghost = config.ghost ?? null;
     const identity = config.player ?? { name: 'PILOTO', code: 'PIL', number: 7 };
     this.vehicle = new Vehicle(spec, track);
     const playerTeam = teamOf({ teamId: PLAYER_TEAM_ID });
@@ -252,6 +260,10 @@ export class Session {
 
   get isRace(): boolean {
     return this.config.mode === 'race';
+  }
+
+  get isTimeTrial(): boolean {
+    return this.config.mode === 'timeTrial';
   }
 
   /** ¿Hay rivales en pista? */
@@ -404,6 +416,7 @@ export class Session {
         events.push(event);
         this.onLapEvent(event, events);
       }
+      if (this.isTimeTrial && this.timer.lap > 0) this.recorder.record(this.timer.lapTime, v.x, v.z, v.heading);
       // Límites de pista: las cuatro ruedas fuera anulan la vuelta.
       if (v.telemetry.wheelsOff >= 4) {
         const event = this.timer.invalidate('trackLimits');
@@ -600,6 +613,10 @@ export class Session {
   }
 
   private onLapEvent(event: LapEvent, events: SessionEvent[]): void {
+    if (this.isTimeTrial) {
+      this.onTimeTrialLap(event, events);
+      return;
+    }
     const laps = this.config.laps;
     if (!this.isRace || laps === null) return;
     if (event.kind === 'lapStarted') {
@@ -608,6 +625,16 @@ export class Session {
     } else if (event.kind === 'lapCompleted' && event.lap.number === laps && !this.order) {
       // Sin rivales, la carrera termina al completar las vueltas; con rivales decide la bandera.
       this.finish(events);
+    }
+  }
+
+  /** Contrarreloj: se graba cada vuelta; una válida más rápida que el fantasma pasa a serlo. */
+  private onTimeTrialLap(event: LapEvent, events: SessionEvent[]): void {
+    if (event.kind === 'lapStarted') {
+      this.recorder.start();
+    } else if (event.kind === 'lapCompleted' && event.lap.valid && (this.ghost === null || event.lap.time < this.ghost.time)) {
+      this.ghost = this.recorder.finish(event.lap.time, this.timer.lastTrace);
+      events.push({ kind: 'ghostLap', ghost: this.ghost });
     }
   }
 
@@ -639,7 +666,7 @@ export class Session {
 
   private createTimer(personalBest: number | null): LapTimer {
     const g = this.track.geometry;
-    return new LapTimer({
+    const timer = new LapTimer({
       length: this.track.length,
       sectorEnds: [
         g.wrapS(this.track.sectorEnds[0] - this.track.startS),
@@ -648,5 +675,8 @@ export class Session {
       personalBest,
       lapLimit: this.isRace ? this.config.laps : null,
     });
+    // En la contrarreloj el delta se mide contra el fantasma desde la primera vuelta.
+    if (this.isTimeTrial && this.ghost) timer.setReference(this.ghost.time, this.ghost.trace);
+    return timer;
   }
 }

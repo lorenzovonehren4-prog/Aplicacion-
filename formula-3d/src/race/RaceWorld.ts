@@ -16,6 +16,7 @@ import { RaceCamera } from './camera/RaceCamera';
 import { performanceModel } from './physics/CarSpec';
 import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
+import { GhostCar } from './render/GhostCar';
 import { RivalFleet, type RivalCar } from './render/RivalFleet';
 
 /** Duración de la vuelta de cámara de presentación (s). */
@@ -23,8 +24,8 @@ export const INTRO_DURATION = 4.2;
 
 export class RaceWorld implements RenderView {
   readonly scene = new Scene();
-  /** Exposición a pleno sol (un poco por debajo de la del estudio). */
-  readonly exposure = 1;
+  /** Exposición según el clima (a pleno sol, 1). */
+  readonly exposure: number;
   /** A cielo abierto sólo brillan los reflejos intensos del sol. */
   readonly bloomThreshold = 1.2;
   /** En pausa la imagen se congela (el renderer no vuelve a dibujar). */
@@ -35,6 +36,8 @@ export class RaceWorld implements RenderView {
   readonly racingLine: RacingLineMesh;
   /** Autos rivales (null en práctica libre). */
   readonly rivals: RivalFleet | null;
+  /** Auto fantasma (sólo en contrarreloj). */
+  readonly ghost: GhostCar | null;
   private introTime = -1;
   private time = 0;
 
@@ -44,7 +47,9 @@ export class RaceWorld implements RenderView {
     anisotropy: number,
     cameraMode: CameraMode,
     rivals: readonly RivalCar[],
+    ghost: boolean,
   ) {
+    this.exposure = trackScene.look.exposure;
     this.scene.add(trackScene.root);
     this.scene.environment = trackScene.sky.environment;
     this.scene.environmentIntensity = 1;
@@ -56,6 +61,8 @@ export class RaceWorld implements RenderView {
     this.scene.add(this.racingLine.mesh);
     this.rivals = rivals.length > 0 ? new RivalFleet(rivals, anisotropy) : null;
     if (this.rivals) this.scene.add(this.rivals.root);
+    this.ghost = ghost ? new GhostCar(anisotropy) : null;
+    if (this.ghost) this.scene.add(this.ghost.root);
   }
 
   /** Muestra la línea de trazada según la ayuda elegida. */
@@ -74,12 +81,12 @@ export class RaceWorld implements RenderView {
   /** Construye el circuito por etapas y arma el mundo. */
   static async create(
     vehicle: Vehicle,
-    rivals: readonly RivalCar[],
+    extras: { rivals: readonly RivalCar[]; ghost: boolean },
     cameraMode: CameraMode,
     options: BuildOptions,
   ): Promise<RaceWorld> {
     const trackScene = await buildTrackScene(vehicle.track, options);
-    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, rivals);
+    return new RaceWorld(trackScene, vehicle, options.anisotropy, cameraMode, extras.rivals, extras.ghost);
   }
 
   get camera(): RaceCamera['camera'] {
@@ -145,6 +152,7 @@ export class RaceWorld implements RenderView {
   }
 
   dispose(): void {
+    this.ghost?.dispose();
     this.rivals?.dispose();
     this.racingLine.dispose();
     this.rig.dispose();
