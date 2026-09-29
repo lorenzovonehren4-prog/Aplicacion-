@@ -429,6 +429,7 @@
 }
 
 .champ__help {
+  flex-shrink: 0;
   margin-top: auto;
 }
 
@@ -482,6 +483,7 @@
 }
 
 .ctable {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;

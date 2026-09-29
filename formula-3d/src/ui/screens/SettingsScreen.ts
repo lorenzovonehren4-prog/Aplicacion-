@@ -305,7 +305,7 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
       }),
       sliderRow(ctx, {
         label: 'Motor',
-        help: 'Tu motor y, desde la Fase 4, los de los rivales. Al moverlo se escucha una muestra.',
+        help: 'Tu motor y los de los rivales. Al moverlo se escucha una muestra.',
         min: 0,
         max: 1,
         step: 0.05,

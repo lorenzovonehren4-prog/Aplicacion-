@@ -3,9 +3,9 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '0.4.0';
+export const GAME_VERSION = '0.5.0';
 /** Fase de desarrollo actual (se muestra junto a la versión). */
-export const DEV_PHASE = 4;
+export const DEV_PHASE = 5;
 
 /** Títulos del piloto (el pase de temporada agrega más en la Fase 6). */
 export const PLAYER_TITLES: Readonly<Record<string, string>> = {

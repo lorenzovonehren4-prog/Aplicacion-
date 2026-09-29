@@ -34,7 +34,7 @@ import {
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addChunkedInstances, addMesh, type BuildContext, type InstanceItem } from './context';
+import { addChunkedInstances, addMerged, addMesh, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
 import { createDistanceBoards, createSpectator, createWaterNormals, createWindows } from './textures';
 
@@ -714,8 +714,7 @@ export function buildBridges(ctx: BuildContext): StandZone[] {
         group.add(pillar);
       }
     }
-    group.updateMatrixWorld(true);
-    ctx.root.add(group);
+    addMerged(ctx, group, 'puente');
     // Sin árboles bajo el puente ni junto a los pilares.
     const reach = BANKING_WIDTH / 2 + span * Math.sin(BANKING_SKEW) * 0.5 + 6;
     for (const side of ['left', 'right'] as const) {

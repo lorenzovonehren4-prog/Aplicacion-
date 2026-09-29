@@ -62,10 +62,12 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Fase 4 de 9: práctica libre y carrera rápida (3 vueltas con semáforo) en
-Albert Park contra 9–19 rivales con IA (5 dificultades), choques entre autos,
-rebufo, DRS con detección, posiciones e intervalos en vivo y clasificación
-final. Física de monoplaza, tres cámaras, sonido (motores rivales en 3D), HUD
-completo con radio del equipo, sistema de ayudas por niveles, línea de
-trazada fija o dinámica y rendimiento automático. Ver la sección **Fases** de
-`PLAN.md`.
+Fase 5 de 9: Albert Park y Monza, con pantalla de selección de carrera.
+Modos: práctica libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales
+con IA de 5 dificultades), contrarreloj con fantasma de tu mejor vuelta y
+campeonato con puntos y tabla que se guarda entre sesiones. Clima soleado,
+nublado o atardecer. Choques entre autos, rebufo, DRS con detección,
+posiciones e intervalos en vivo, física de monoplaza, tres cámaras, sonido
+(motores rivales en 3D), HUD completo con radio del equipo, sistema de ayudas
+por niveles, línea de trazada y rendimiento automático. Ver la sección
+**Fases** de `PLAN.md`.

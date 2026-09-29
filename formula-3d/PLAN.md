@@ -516,7 +516,7 @@ Implementado en la Fase 4 (`race/ai/BotDriver.ts`, `race/ai/difficulty.ts`).
 - **Carrera rápida**: circuito, vueltas (3/5/10), dificultad, rivales (9–19),
   ayudas, clima (soleado / nublado / atardecer).
 - **Contrarreloj**: sin rivales; fantasma de tu mejor vuelta (posición y rumbo a
-  20 Hz, ~20 KB por vuelta) guardado por circuito.
+  20 Hz en `Float32`, unos 30 KB por vuelta en base64) guardado por circuito.
 - **Campeonato**: calendario de circuitos, puntos 25-18-15-12-10-8-6-4-2-1,
   tabla de pilotos entre carreras; se puede continuar otro día.
 
@@ -589,6 +589,16 @@ cruzar la meta.
 - Pantalla del volante a 10 Hz como máximo (marcha y DRS al instante); la
   trazada se precompila en la carga aunque esté apagada.
 - Torre de posiciones a 4 Hz y rivales del minimapa a 20 Hz (con `transform`).
+- Fase 5, medido en Monza con 20 autos en calidad Media: ~250 llamadas y
+  ~520 k triángulos; la simulación de los 20 autos cuesta ~0,3 ms por paso
+  (0,6 ms por cuadro a 60 FPS). La física ya no crea objetos por paso (tabla
+  de potencia, contorno y entradas de la caja reutilizados): de ~120 MB a
+  ~34 MB de basura cada 10 s de carrera, menos pausas del recolector.
+- En la carga se precompilan también los sombreadores de lo que arranca oculto
+  (trazada apagada, fantasma, rivales lejanos): nada da un tirón al aparecer.
+- El volante (13 llamadas y su pantalla) sólo se dibuja con la cámara cockpit.
+- Piezas fijas armadas con varias mallas (el puente de Monza) se fusionan por
+  material (`addMerged`): de 15 llamadas a 4.
 
 ---
 
@@ -728,13 +738,33 @@ revisión propia del código + resumen y espera de confirmación.
 - [x] Radio: posición ganada/perdida, líder, vuelta rápida, DRS disponible,
       victoria/podio/puntos.
 
-### Fase 5 — Monza, selección de carrera y modos
+### Fase 5 — Monza, selección de carrera y modos ✅
 
-- [ ] Monza (rectas largas, chicanes, arboleda).
-- [ ] Pantalla de selección de carrera (circuito, vueltas, dificultad, rivales,
-      ayudas, clima) — reemplaza el acceso temporal de la Fase 2.
-- [ ] Clima: soleado, nublado, atardecer.
-- [ ] Contrarreloj con fantasma guardado; Campeonato con puntos y tabla.
+- [x] Monza (`tracks/data/monza.ts`): 5,793 km y 11 curvas calibradas contra el
+      trazado real (Rettifilo, Curva Grande, Roggia, Lesmo 1 y 2, Ascari,
+      Parabólica), rectas largas, grava en Curva Grande y Parabólica, arboleda
+      densa, 6 tribunas y el puente peraltado de la vieja *Sopraelevata*
+      (`scenery.bridges`). Dos zonas de DRS.
+- [x] Pantalla de selección de carrera (`RaceSelectScreen.ts`): tarjetas de
+      circuito con mapa SVG que se dibuja (zonas de DRS, meta y sentido),
+      datos (longitud, curvas, récord, fantasma) y opciones según el modo
+      (vueltas, dificultad, rivales, ayudas, clima). Recuerda la última
+      elección. Práctica, Carrera rápida y Contrarreloj entran por acá.
+- [x] Clima (`tracks/weather.ts`): soleado, nublado (nubes del cielo de
+      Three.js, luz difusa y más niebla) y atardecer (sol bajo, luz cálida).
+      Ajusta sol, cielo, niebla y exposición de cada circuito.
+- [x] Contrarreloj: sin rivales ni semáforo; la mejor vuelta válida queda como
+      fantasma translúcido (`race/session/Ghost.ts`) guardado por circuito, y
+      el delta en vivo se mide contra ella.
+- [x] Campeonato (`race/championship.ts`, `ChampionshipScreen.ts`): todos los
+      circuitos con los mismos rivales, puntos 25-18-15-12-10-8-6-4-2-1, tabla
+      con desempate por victorias, podios y mejor resultado; al terminar cada
+      carrera "Continuar campeonato" anota la ronda. Se guarda (se puede
+      seguir otro día), se abandona con doble confirmación y al final muestra
+      al campeón.
+- [x] Ronda de rendimiento: simulación sin basura en el bucle caliente,
+      sombreadores precompilados también de lo que arranca oculto, volante
+      sólo en la cámara cockpit, puente fusionado por material (§5.10).
 
 ### Fase 6 — Progresión
 
@@ -773,8 +803,8 @@ revisión propia del código + resumen y espera de confirmación.
 
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
-| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 5, 6, 7, 8 |
-| Carrera rápida configurable | Fija: Albert Park, 3 vueltas (`OPENERS.quickRace`); `RaceParams` ya acepta `laps`, `rivals` y `difficulty`; dificultad y rivales se eligen en Ajustes → Juego | 5 |
+| Accesos del menú a pantallas futuras | Bloqueados con "FASE N"; se habilitan agregando su entrada en `OPENERS` (`MainMenuScreen.ts`) | 6, 7, 8 |
+| Puntos del campeonato como XP y recompensas de fin de temporada | La temporada guarda posiciones y puntos de cada ronda (`SaveData.championship`) | 6 |
 | Pantalla de resultados con XP y recompensas | Por ahora el panel de fin de carrera (`FinishPanel`) | 6 |
 | Volumen de Música | No se muestra hasta que haya música | 8 |
 | Manual de ayudas | Los textos de cada ayuda ya están en `assists/presets.ts` | 8 |
@@ -803,6 +833,9 @@ revisión propia del código + resumen y espera de confirmación.
   2 vueltas con 11 bots y el jugador manejado por un `BotDriver`, comprobando
   que todos reciben la bandera, la tabla y los intervalos, y que casi no hay
   choques fuertes. La prueba de humo verifica la torre y el minimapa.
+- Los modos se prueban sin navegador (`tests/modes.test.ts`): fantasma
+  (grabar, codificar y reproducir), contrarreloj, campeonato (puntos, tabla y
+  desempates), clima y saneo de los ajustes de carrera guardados.
 - Para jugar sin instalar nada: `npm run build:artifact` arma un solo HTML
   (JS, CSS y fuentes incrustados) en `dist-artifact/`, que se publica como
   página de claude.ai.
@@ -826,4 +859,5 @@ revisión propia del código + resumen y espera de confirmación.
 - **Fase 2**: completa.
 - **Fase 3**: completa.
 - **Fase 4**: completa (incluye la ronda de rendimiento).
-- **Fase 5**: en curso (el usuario pidió seguir sin esperar confirmación).
+- **Fase 5**: completa (el usuario pidió seguir sin esperar confirmación entre
+  la 4 y la 5; ahora se espera su confirmación para la Fase 6).

@@ -22,6 +22,7 @@ import type { TrackProjection } from '../../tracks/TrackGeometry';
 import type { CarSpec } from './CarSpec';
 import { powerCurve } from './CarSpec';
 import { Gearbox } from './Gearbox';
+import type { GearboxInputs } from './Gearbox';
 
 export interface DriverInput {
   /** 0–1 */
@@ -102,18 +103,18 @@ const WALL_FRICTION = 0.32;
 const MAX_IMPACT_SPIN = 2.2;
 /** Rapidez (1/s) con la que el control de estabilidad corrige la guiñada. */
 const STABILITY_GAIN = 7;
-/** Puntos del contorno del auto relativos al CG (x adelante, y izquierda). */
-const HULL: ReadonlyArray<readonly [number, number]> = [
-  [3.1, 0.95],
-  [3.1, -0.95],
-  [1.95, 1.0],
-  [1.95, -1.0],
-  [0, 0.78],
-  [0, -0.78],
-  [-1.62, 0.98],
-  [-1.62, -0.98],
-  [-2.5, 0.5],
-  [-2.5, -0.5],
+/** Puntos del contorno del auto relativos al CG, en pares (x adelante, y izquierda). */
+const HULL: readonly number[] = [
+  3.1, 0.95,
+  3.1, -0.95,
+  1.95, 1.0,
+  1.95, -1.0,
+  0, 0.78,
+  0, -0.78,
+  -1.62, 0.98,
+  -1.62, -0.98,
+  -2.5, 0.5,
+  -2.5, -0.5,
 ];
 
 export class Vehicle {
@@ -140,6 +141,10 @@ export class Vehicle {
   wheelSpinRear = 0;
   /** Proyección del CG sobre la pista. */
   readonly projection: TrackProjection = { index: -1, s: 0, d: 0 };
+  /** Proyección auxiliar del contorno contra los muros (reutilizada). */
+  private readonly probe: TrackProjection = { index: 0, s: 0, d: 0 };
+  /** Entradas de la caja automática (reutilizadas en cada paso). */
+  private readonly shiftInputs: GearboxInputs = { speed: 0, throttle: 0, brake: 0, wheelspin: false };
   readonly wheels: WheelState[];
   readonly gearbox: Gearbox;
   readonly telemetry: Telemetry = {
@@ -319,10 +324,6 @@ export class Vehicle {
     this.updateProjections();
     let rumble = 0;
     let wheelsOff = 0;
-    const gripOf = (i: number): number => {
-      const wheel = this.wheels[i];
-      return wheel ? SURFACES[wheel.surface].grip : 1;
-    };
     for (let i = 0; i < 4; i++) {
       const wheel = this.wheels[i];
       if (!wheel) continue;
@@ -330,8 +331,8 @@ export class Vehicle {
       rumble = Math.max(rumble, SURFACES[wheel.surface].rumble);
       if (wheel.surface !== 'asphalt' && wheel.surface !== 'kerb') wheelsOff++;
     }
-    const muFront = spec.grip * spec.frontGripBias * (gripOf(0) + gripOf(1)) * 0.5;
-    const muRear = spec.grip * (gripOf(2) + gripOf(3)) * 0.5;
+    const muFront = spec.grip * spec.frontGripBias * (this.gripAt(0) + this.gripAt(1)) * 0.5;
+    const muRear = spec.grip * (this.gripAt(2) + this.gripAt(3)) * 0.5;
     const capFront = muFront * loadFront;
     const capRear = muRear * loadRear;
     // Capacidad longitudinal (tracción y frenada): algo mayor que la lateral.
@@ -466,7 +467,12 @@ export class Vehicle {
 
     // ─── Estado para el resto del juego ───
     this.smoothedAx += (fx / spec.mass - this.smoothedAx) * Math.min(1, dt * 10);
-    this.gearbox.update(dt, { speed: this.vx, throttle, brake, wheelspin: wheelspin > 0.2 });
+    const shift = this.shiftInputs;
+    shift.speed = this.vx;
+    shift.throttle = throttle;
+    shift.brake = brake;
+    shift.wheelspin = wheelspin > 0.2;
+    this.gearbox.update(dt, shift);
     const shiftedRpm = Math.max(wheelRpm, launchRpm) + wheelspin * 2500;
     this.rpm += (Math.min(spec.limiterRpm, Math.max(spec.idleRpm * 0.95, shiftedRpm)) - this.rpm) * Math.min(1, dt * 25);
     this.wheelSpinFront += (this.vx / spec.wheelRadius) * dt * (1 - lockFront);
@@ -542,6 +548,12 @@ export class Vehicle {
     }
   }
 
+  /** Agarre de la superficie bajo una rueda. */
+  private gripAt(i: number): number {
+    const wheel = this.wheels[i];
+    return wheel ? SURFACES[wheel.surface].grip : 1;
+  }
+
   private updateWheelPositions(): void {
     const spec = this.spec;
     const sinH = Math.sin(this.heading);
@@ -551,25 +563,23 @@ export class Vehicle {
     const lx = -cosH;
     const lz = sinH;
     const half = spec.track / 2;
-    const offsets: ReadonlyArray<readonly [number, number]> = [
-      [spec.cgToFront, half],
-      [spec.cgToFront, -half],
-      [-spec.cgToRear, half],
-      [-spec.cgToRear, -half],
-    ];
     for (let i = 0; i < 4; i++) {
       const wheel = this.wheels[i];
-      const offset = offsets[i];
-      if (!wheel || !offset) continue;
-      wheel.x = this.x + fx * offset[0] + lx * offset[1];
-      wheel.z = this.z + fz * offset[0] + lz * offset[1];
+      if (!wheel) continue;
+      // 0 = del. izq., 1 = del. der., 2 = tras. izq., 3 = tras. der.
+      const along = i < 2 ? spec.cgToFront : -spec.cgToRear;
+      const side = i % 2 === 0 ? half : -half;
+      wheel.x = this.x + fx * along + lx * side;
+      wheel.z = this.z + fz * along + lz * side;
     }
   }
 
   private updateProjections(): void {
     const geometry = this.track.geometry;
     geometry.project(this.x, this.z, this.projection, this.projection.index);
-    for (const wheel of this.wheels) {
+    for (let i = 0; i < 4; i++) {
+      const wheel = this.wheels[i];
+      if (!wheel) continue;
       geometry.project(wheel.x, wheel.z, wheel.projection, wheel.projection.index >= 0 ? wheel.projection.index : this.projection.index);
       wheel.surface = this.track.surfaceAt(wheel.projection.index, wheel.projection.d);
     }
@@ -586,8 +596,10 @@ export class Vehicle {
     let contactY = 0;
     let normalX = 0;
     let normalZ = 0;
-    const probe: TrackProjection = { index: 0, s: 0, d: 0 };
-    for (const [px, py] of HULL) {
+    const probe = this.probe;
+    for (let i = 0; i < HULL.length; i += 2) {
+      const px = HULL[i] ?? 0;
+      const py = HULL[i + 1] ?? 0;
       const wx = this.x - sinH * px - cosH * py;
       const wz = this.z - cosH * px + sinH * py;
       geometry.project(wx, wz, probe, this.projection.index);

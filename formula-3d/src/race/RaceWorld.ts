@@ -135,8 +135,14 @@ export class RaceWorld implements RenderView {
       this.raceCamera.update(dt, telemetry);
     }
     this.rivals?.update(dt, alpha, this.camera.position);
-    const shift = this.vehicle.spec.shiftRpm;
-    this.rig.wheel.update(this.vehicle.steerAngle, (telemetry.rpm - (shift - 3200)) / 3200, telemetry.limiter, this.time);
+    // El volante sólo se ve desde el cockpit (y en la presentación, que gira alrededor del
+    // auto): con las otras cámaras se ahorran sus llamadas de dibujo y los redibujos de la pantalla.
+    const wheel = this.rig.wheel;
+    wheel.root.visible = this.introTime >= 0 || this.raceCamera.currentMode === 'cockpit';
+    if (wheel.root.visible) {
+      const shift = this.vehicle.spec.shiftRpm;
+      wheel.update(this.vehicle.steerAngle, (telemetry.rpm - (shift - 3200)) / 3200, telemetry.limiter, this.time);
+    }
     this.racingLine.update(dt, this.time, this.vehicle.projection.s, Math.max(0, this.vehicle.vx));
     this.trackScene.sky.follow(this.rig.pose.x, this.rig.pose.z);
     this.trackScene.update(this.time);

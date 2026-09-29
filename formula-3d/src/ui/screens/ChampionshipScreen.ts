@@ -142,7 +142,7 @@ export class ChampionshipScreen extends BaseScreen {
           { class: 'champ__champion' },
           h('span', { class: 'champ__champion-label', text: 'CAMPEÓN' }),
           h('span', { class: 'champ__champion-name', text: champion ? this.nameOf(champion.id) : '' }),
-          h('span', { class: 'champ__champion-points', text: champion ? `${champion.points} puntos · ${champion.wins} victorias` : '' }),
+          h('span', { class: 'champ__champion-points', text: champion ? `${champion.points} puntos · ${champion.wins} ${champion.wins === 1 ? 'victoria' : 'victorias'}` : '' }),
         ),
         this.table(previous),
         this.help(),
@@ -244,13 +244,21 @@ export class ChampionshipScreen extends BaseScreen {
         h('span', { class: 'ctable__points', text: String(row.points) }),
       );
     });
-    return h(
+    const table = h(
       'div',
       { class: 'ctable' },
       h('h3', { class: 'rsel__section', text: 'Pilotos' }),
       h('div', { class: 'ctable__row ctable__row--head' }, h('span', { text: 'POS' }), h('span'), h('span', { text: 'PILOTO' }), h('span'), h('span', { text: 'PTS' })),
       ...rows,
     );
+    // Con muchos autos la tabla se desplaza: la fila del jugador queda a la vista.
+    const player = rows.find((row) => row.classList.contains('is-player'));
+    requestAnimationFrame(() => {
+      if (!player || !table.isConnected) return;
+      const bottom = player.offsetTop + player.offsetHeight;
+      if (bottom > table.clientHeight) table.scrollTop = bottom - table.clientHeight / 2;
+    });
+    return table;
   }
 
   private setupRows(ctx: RowContext): SettingRow[] {

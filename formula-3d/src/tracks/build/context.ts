@@ -1,6 +1,7 @@
 /** Contexto compartido por las etapas de construcción del escenario del circuito. */
 
-import { InstancedMesh, Matrix4, Mesh, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material } from 'three';
+import { InstancedMesh, Matrix4, Mesh, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material, type Object3D } from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Disposer } from '../../core/utils/Disposer';
 import type { Random } from '../../core/utils/random';
 import type { Track } from '../Track';
@@ -35,6 +36,36 @@ export function addMesh(
   mesh.updateMatrix();
   ctx.root.add(mesh);
   return mesh;
+}
+
+/**
+ * Agrega al circuito una pieza fija armada con varias mallas (un puente…) como
+ * una sola malla por material: menos llamadas de dibujo (y de sombras) que
+ * dibujar cada pieza. Las geometrías de `object` quedan transformadas en
+ * coordenadas del circuito y se liberan las originales.
+ */
+export function addMerged(ctx: BuildContext, object: Object3D, name: string): void {
+  object.updateMatrixWorld(true);
+  const parts = new Map<Material, { geometries: BufferGeometry[]; cast: boolean; receive: boolean }>();
+  object.traverse((child) => {
+    if (!(child instanceof Mesh) || Array.isArray(child.material)) return;
+    const material = child.material as Material;
+    const entry = parts.get(material) ?? { geometries: [], cast: false, receive: false };
+    // Sin índices: las piezas pueden venir de geometrías con y sin índice.
+    const source = child.geometry as BufferGeometry;
+    const geometry = source.index ? source.toNonIndexed() : source.clone();
+    geometry.applyMatrix4(child.matrixWorld);
+    entry.geometries.push(geometry);
+    entry.cast ||= child.castShadow;
+    entry.receive ||= child.receiveShadow;
+    parts.set(material, entry);
+  });
+  for (const [material, entry] of parts) {
+    const merged = mergeGeometries(entry.geometries);
+    for (const geometry of entry.geometries) geometry.dispose();
+    if (!merged) continue;
+    addMesh(ctx, merged, material, { cast: entry.cast, receive: entry.receive, name });
+  }
 }
 
 /** Una instancia de un objeto repetido (árbol, persona…). */

@@ -10,6 +10,7 @@
 
 import gsap from 'gsap';
 import { Vector3 } from 'three';
+import type { Object3D } from 'three';
 import { activeAssists, type ActiveAssists } from '../../assists/presets';
 import type { Game } from '../../core/Game';
 import { PerformanceGovernor, type GovernorDecision } from '../../core/render/PerformanceGovernor';
@@ -316,17 +317,25 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.loading?.setProgress(0.95, 'Preparando sombreadores');
       world.startIntro();
       world.update(0, 1, session.vehicle.telemetry);
-      // La trazada se compila aunque esté apagada: activarla en la pausa no debe dar un tirón.
-      const lineMesh = world.racingLine.mesh;
-      const lineVisible = lineMesh.visible;
-      lineMesh.visible = true;
+      // También lo que ahora está oculto (trazada apagada, fantasma, rivales lejanos…):
+      // que aparezca más tarde no debe dar un tirón por compilar su sombreador.
+      const hidden: Object3D[] = [];
+      world.scene.traverse((object) => {
+        if (!object.visible) {
+          hidden.push(object);
+          object.visible = true;
+        }
+      });
       const renderer = game.render.renderer;
-      if (renderer.extensions.has('KHR_parallel_shader_compile')) {
-        await renderer.compileAsync(world.scene, world.camera);
-      } else {
-        renderer.compile(world.scene, world.camera);
+      try {
+        if (renderer.extensions.has('KHR_parallel_shader_compile')) {
+          await renderer.compileAsync(world.scene, world.camera);
+        } else {
+          renderer.compile(world.scene, world.camera);
+        }
+      } finally {
+        for (const object of hidden) object.visible = false;
       }
-      lineMesh.visible = lineVisible;
       if (this.cancelled) return;
       this.loading?.setProgress(1, 'Listo');
       this.buildInterface(track, session);
@@ -985,6 +994,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       slipstream: session.player.slipstream,
     });
     this.updateRivals(dt);
+    // La pantalla del volante sólo se redibuja si el volante está a la vista.
+    if (!world.rig.wheel.root.visible) return;
     const units = this.game.settings.game.units;
     world.rig.wheel.setDisplay({
       gear: tel.gear,

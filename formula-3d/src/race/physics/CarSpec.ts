@@ -123,25 +123,22 @@ export const F1_SPEC: Readonly<CarSpec> = {
  * Potencia disponible (0–1) según las rpm: sube desde el ralentí, pico cerca de
  * 11 000 rpm y cae un poco al llegar al corte.
  */
+const POWER_RPM = [3000, 4000, 6000, 8000, 10000, 11000, 12000, 12500] as const;
+const POWER_LEVEL = [0.2, 0.3, 0.56, 0.79, 0.95, 1, 0.97, 0.9] as const;
+
 export function powerCurve(rpm: number): number {
-  const points: ReadonlyArray<readonly [number, number]> = [
-    [3000, 0.2],
-    [4000, 0.3],
-    [6000, 0.56],
-    [8000, 0.79],
-    [10000, 0.95],
-    [11000, 1],
-    [12000, 0.97],
-    [12500, 0.9],
-  ];
-  const first = points[0] ?? [0, 0];
-  if (rpm <= first[0]) return first[1];
-  for (let i = 1; i < points.length; i++) {
-    const [r1, p1] = points[i] ?? [0, 0];
-    const [r0, p0] = points[i - 1] ?? [0, 0];
-    if (rpm <= r1) return p0 + ((p1 - p0) * (rpm - r0)) / (r1 - r0);
+  // Tablas fijas a nivel de módulo: se llama en cada paso de cada auto y no debe crear basura.
+  if (rpm <= POWER_RPM[0]) return POWER_LEVEL[0];
+  for (let i = 1; i < POWER_RPM.length; i++) {
+    const r1 = POWER_RPM[i] ?? 0;
+    if (rpm <= r1) {
+      const r0 = POWER_RPM[i - 1] ?? 0;
+      const p0 = POWER_LEVEL[i - 1] ?? 0;
+      const p1 = POWER_LEVEL[i] ?? 0;
+      return p0 + ((p1 - p0) * (rpm - r0)) / (r1 - r0);
+    }
   }
-  return (points[points.length - 1] ?? [0, 0])[1];
+  return POWER_LEVEL[POWER_LEVEL.length - 1] ?? 0;
 }
 
 /** Modelo simplificado de prestaciones (para el análisis de curvas y los bots). */

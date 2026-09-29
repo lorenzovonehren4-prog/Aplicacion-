@@ -9,9 +9,9 @@ import type { Weather } from '../save/schema';
 export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'assists' | 'game';
 
 /**
- * Modos de sesión en pista: práctica libre (Fase 2, sin rivales) y carrera
- * (Fase 3; con rivales desde la Fase 4). Contrarreloj y campeonato llegan en
- * la Fase 5.
+ * Modos de sesión en pista: práctica libre (sin rivales), carrera (con
+ * rivales; también cada ronda del campeonato) y contrarreloj (sin rivales,
+ * con fantasma).
  */
 export type SessionMode = 'practice' | 'race' | 'timeTrial';
 
