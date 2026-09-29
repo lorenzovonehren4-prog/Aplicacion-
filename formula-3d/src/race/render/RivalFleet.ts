@@ -62,6 +62,11 @@ const GHOST_BLINK = 7;
 const NUMBER_COLUMNS = 5;
 const NUMBER_ROWS = 4;
 const NUMBER_CELL = 192;
+/** Atlas de logos de equipo: celdas de 512 × 128 (la proporción del logo del modelo). */
+const WORD_COLUMNS = 2;
+const WORD_ROWS = 10;
+const WORD_CELL_W = 512;
+const WORD_CELL_H = 128;
 
 /** Livery "máscara": cada canal marca dónde va cada color del equipo. */
 const MASK_LIVERY: LiveryConfig = { primary: '#ff0000', secondary: '#00ff00', accent: '#0000ff', number: 0, tireStripe: '#ff2a3c' };
@@ -91,6 +96,8 @@ const PART_STYLE: Readonly<Record<string, { zone: Zone; base?: string; roughness
 export interface RivalCar {
   readonly vehicle: Vehicle;
   readonly livery: LiveryConfig;
+  /** Logo del equipo que va en el auto (texto corto, ficticio). */
+  readonly wordmark: string;
   /** Segundos como fantasma (parpadea). */
   readonly ghost: number;
 }
@@ -171,8 +178,11 @@ function teamMaterial(mask: Texture): MeshStandardMaterial {
   return material;
 }
 
-/** Material de los números: celda del atlas por instancia, relleno de acento y borde secundario. */
-function numberMaterial(atlas: Texture): MeshStandardMaterial {
+/**
+ * Calcomanías por instancia (números y logos): la celda del atlas sale de
+ * `iCell`; el blanco del atlas se pinta del acento del equipo y el borde, del secundario.
+ */
+function decalMaterial(atlas: Texture, columns: number, rows: number, key: string): MeshStandardMaterial {
   const material = new MeshStandardMaterial({
     map: atlas,
     transparent: true,
@@ -190,20 +200,20 @@ function numberMaterial(atlas: Texture): MeshStandardMaterial {
       )
       .replace(
         '#include <uv_vertex>',
-        `#include <uv_vertex>\nvMapUv = ( vMapUv + iCell ) / vec2( ${NUMBER_COLUMNS}.0, ${NUMBER_ROWS}.0 );\nvSecondary = iSecondary;\nvAccent = iAccent;`,
+        `#include <uv_vertex>\nvMapUv = ( vMapUv + iCell ) / vec2( ${columns}.0, ${rows}.0 );\nvSecondary = iSecondary;\nvAccent = iAccent;`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec3 vSecondary;\nvarying vec3 vAccent;`)
       .replace(
         '#include <map_fragment>',
         /* glsl */ `
-        vec4 numberTexel = texture2D( map, vMapUv );
-        diffuseColor.rgb = mix( vSecondary, vAccent, numberTexel.r );
-        diffuseColor.a *= numberTexel.a;
+        vec4 decalTexel = texture2D( map, vMapUv );
+        diffuseColor.rgb = mix( vSecondary, vAccent, decalTexel.r );
+        diffuseColor.a *= decalTexel.a;
         `,
       );
   };
-  material.customProgramCacheKey = () => 'rival-number';
+  material.customProgramCacheKey = () => key;
   return material;
 }
 
@@ -227,6 +237,33 @@ function createNumberAtlas(numbers: readonly number[], anisotropy: number): Canv
     ctx.strokeText(text, cx, cy);
     ctx.fillStyle = '#ffffff';
     ctx.fillText(text, cx, cy);
+  });
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = NoColorSpace;
+  texture.anisotropy = anisotropy;
+  return texture;
+}
+
+/** Atlas con los logos de equipo de los rivales (uno por auto, en el orden de la flota). */
+function createWordmarkAtlas(words: readonly string[], anisotropy: number): CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = WORD_COLUMNS * WORD_CELL_W;
+  canvas.height = WORD_ROWS * WORD_CELL_H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo crear el atlas de logos.');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  words.slice(0, WORD_COLUMNS * WORD_ROWS).forEach((word, i) => {
+    const cx = (i % WORD_COLUMNS) * WORD_CELL_W + WORD_CELL_W / 2;
+    const cy = Math.floor(i / WORD_COLUMNS) * WORD_CELL_H + WORD_CELL_H / 2 + 4;
+    // Igual que el logo del auto del jugador: cursiva gruesa con borde.
+    ctx.font = `italic 900 ${word.length > 7 ? 74 : 92}px "Titillium Web", "Segoe UI", system-ui, sans-serif`;
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(word, cx, cy, WORD_CELL_W - 24);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(word, cx, cy, WORD_CELL_W - 24);
   });
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = NoColorSpace;
@@ -298,6 +335,7 @@ function meshesOf(root: Object3D): Mesh[] {
 interface Template {
   body: BufferGeometry;
   numbers: BufferGeometry | null;
+  wordmarks: BufferGeometry | null;
   flap: BufferGeometry | null;
   flapPivot: Vector3;
   tire: BufferGeometry | null;
@@ -325,9 +363,14 @@ function buildTemplate(detail: number, separate: boolean): Template {
 
     const body: BufferGeometry[] = [];
     const numbers: BufferGeometry[] = [];
+    const wordmarks: BufferGeometry[] = [];
     for (const mesh of meshesOf(model.root)) {
       const key = helmetKeys.get(mesh) ?? partKey(mesh, materials);
-      if (key === 'wordmark') continue;
+      if (key === 'wordmark') {
+        // Los logos sólo se ven de cerca.
+        if (separate) wordmarks.push(bake(mesh));
+        continue;
+      }
       if (separate && (wheelMeshes.has(mesh) || flapMeshes.has(mesh))) continue;
       if (key === 'number') {
         if (separate) numbers.push(bake(mesh));
@@ -344,12 +387,14 @@ function buildTemplate(detail: number, separate: boolean): Template {
     const template: Template = {
       body: merged,
       numbers: separate ? mergeGeometries(numbers, false) : null,
+      wordmarks: separate && wordmarks.length > 0 ? mergeGeometries(wordmarks, false) : null,
       flap: null,
       flapPivot: model.drsPivot.position.clone(),
       tire: null,
       cover: null,
     };
     for (const g of numbers) g.dispose();
+    for (const g of wordmarks) g.dispose();
 
     if (separate) {
       // Flap en coordenadas de su pivote.
@@ -410,6 +455,7 @@ export class RivalFleet {
   private readonly nearBody: InstancedMesh;
   private readonly nearFlap: InstancedMesh | null;
   private readonly nearNumbers: InstancedMesh | null;
+  private readonly nearWordmarks: InstancedMesh | null;
   private readonly tires: InstancedMesh | null;
   private readonly covers: InstancedMesh | null;
   private readonly farBody: InstancedMesh;
@@ -454,7 +500,9 @@ export class RivalFleet {
     this.nearBody = this.instanced(near.body, bodyMaterial, count, true, 'rivales-cerca');
     this.nearFlap = near.flap ? this.instanced(near.flap, bodyMaterial, count, true, 'rivales-flap') : null;
     const atlas = this.own.own(createNumberAtlas(cars.map((car) => car.livery.number), anisotropy));
-    this.nearNumbers = near.numbers ? this.instanced(near.numbers, this.own.own(numberMaterial(atlas)), count, false, 'rivales-numeros') : null;
+    this.nearNumbers = near.numbers ? this.instanced(near.numbers, this.own.own(decalMaterial(atlas, NUMBER_COLUMNS, NUMBER_ROWS, 'rival-number')), count, false, 'rivales-numeros') : null;
+    const words = this.own.own(createWordmarkAtlas(cars.map((car) => car.wordmark), anisotropy));
+    this.nearWordmarks = near.wordmarks ? this.instanced(near.wordmarks, this.own.own(decalMaterial(words, WORD_COLUMNS, WORD_ROWS, 'rival-wordmark')), count, false, 'rivales-logos') : null;
     const tireTexture = this.own.own(createTireTexture(MASK_LIVERY.tireStripe, 'VELTRA', anisotropy));
     const tireMaterial = this.own.own(new MeshStandardMaterial({ map: tireTexture, roughness: 0.82, metalness: 0 }));
     this.tires = near.tire ? this.instanced(near.tire, tireMaterial, count * 4, true, 'rivales-neumaticos') : null;
@@ -468,7 +516,7 @@ export class RivalFleet {
     this.farBody.castShadow = false;
 
     // Colores por instancia de la carrocería (se reescriben al cambiar de nivel).
-    for (const mesh of [this.nearBody, this.nearFlap, this.farBody, this.nearNumbers]) {
+    for (const mesh of [this.nearBody, this.nearFlap, this.farBody, this.nearNumbers, this.nearWordmarks]) {
       if (!mesh) continue;
       const geometry = mesh.geometry;
       geometry.setAttribute('iPrimary', new InstancedBufferAttribute(new Float32Array(count * 3), 3));
@@ -476,6 +524,7 @@ export class RivalFleet {
       geometry.setAttribute('iAccent', new InstancedBufferAttribute(new Float32Array(count * 3), 3));
     }
     this.nearNumbers?.geometry.setAttribute('iCell', new InstancedBufferAttribute(new Float32Array(count * 2), 2));
+    this.nearWordmarks?.geometry.setAttribute('iCell', new InstancedBufferAttribute(new Float32Array(count * 2), 2));
     this.update(0, 1, new Vector3());
   }
 
@@ -553,6 +602,12 @@ export class RivalFleet {
           const cell = this.nearNumbers.geometry.getAttribute('iCell') as InstancedBufferAttribute;
           cell.setXY(slot, state.numberCell % NUMBER_COLUMNS, NUMBER_ROWS - 1 - Math.floor(state.numberCell / NUMBER_COLUMNS));
         }
+        if (this.nearWordmarks) {
+          this.nearWordmarks.setMatrixAt(slot, this.carMatrix);
+          this.writeColors(this.nearWordmarks, slot, state);
+          const cell = this.nearWordmarks.geometry.getAttribute('iCell') as InstancedBufferAttribute;
+          cell.setXY(slot, index % WORD_COLUMNS, WORD_ROWS - 1 - Math.floor(index / WORD_COLUMNS));
+        }
         this.writeWheels(slot, v);
       } else {
         const slot = farCount++;
@@ -561,7 +616,7 @@ export class RivalFleet {
       }
     }
 
-    for (const mesh of [this.nearBody, this.nearFlap, this.nearNumbers]) this.flushInstances(mesh, nearCount);
+    for (const mesh of [this.nearBody, this.nearFlap, this.nearNumbers, this.nearWordmarks]) this.flushInstances(mesh, nearCount);
     this.flushInstances(this.tires, nearCount * 4);
     this.flushInstances(this.covers, nearCount * 4);
     this.flushInstances(this.farBody, farCount);

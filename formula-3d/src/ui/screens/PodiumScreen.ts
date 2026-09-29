@@ -148,9 +148,9 @@ export class PodiumScreen extends BaseScreen<ResultsParams> {
   }
 
   override onAction(action: UiAction): void {
-    // Mientras suben los escalones, ENTER los deja en su lugar.
-    if (!this.actionsShown && action === 'confirm') {
-      this.scene?.skipIntro();
+    // Mientras suben los escalones, ENTER los deja en su lugar (y las flechas no mueven nada todavía).
+    if (!this.actionsShown && action !== 'back') {
+      if (action === 'confirm') this.scene?.skipIntro();
       return;
     }
     super.onAction(action);

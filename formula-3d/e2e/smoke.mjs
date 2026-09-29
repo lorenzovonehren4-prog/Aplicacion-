@@ -139,7 +139,13 @@ async function main() {
     await page.mouse.move(2, 2);
     const paints = await page.locator('.gcard').count();
     if (paints < 10) throw new Error(`El garaje muestra ${paints} pinturas.`);
-    // Pestaña Número (Q da la vuelta hasta la última) y un número nuevo.
+    // Pestaña Festejo (Q da la vuelta hasta la última): las serpentinas de fábrica, equipadas.
+    await page.keyboard.press('KeyQ');
+    await page.waitForSelector('.tab.is-active >> text=Festejo');
+    const celebrations = await page.locator('.gcard').count();
+    if (celebrations !== 4) throw new Error(`El garaje muestra ${celebrations} festejos.`);
+    await expectText(page, '.gcard.is-equipped .gcard__name', 'Serpentinas');
+    // Pestaña Número y un número nuevo.
     await page.keyboard.press('KeyQ');
     await page.waitForSelector('.tab.is-active >> text=Número');
     await page.keyboard.press('ArrowRight');
@@ -148,7 +154,7 @@ async function main() {
     await page.keyboard.press('Escape');
     await waitForScreen(page, 'menu');
     await page.mouse.move(2, 2);
-    log('garaje: pinturas, pestañas con Q / E y número 7 → 8 guardado');
+    log('garaje: pinturas, festejo de fábrica, pestañas con Q / E y número 7 → 8 guardado');
 
     // ─── Perfil y manual de ayudas ───
     step = 'perfil';

@@ -562,12 +562,29 @@ Implementado en la Fase 4 (`race/ai/BotDriver.ts`, `race/ai/difficulty.ts`).
 
 ### 5.9 Efectos visuales (fase 9, algunos antes)
 
-Partículas instanciadas con pool (sin crear objetos por fotograma): chispas bajo
-el auto a alta velocidad y en pianos, humo al bloquear o derrapar, confeti,
-champán y fuegos artificiales en el podio. Distorsión de calor detrás de los
-autos (pase de postprocesado con máscara), motion blur de cámara, zoom de FOV,
-sacudidas, bandera a cuadros ondeando (shader de vértices), cámara lenta al
-cruzar la meta.
+- Partículas sin crear objetos por fotograma (`race/render/Particles.ts`): cada
+  sistema es un `Points` con búfer de capacidad fija (las vivas al principio;
+  al morir una, la última ocupa su lugar) y se dibuja con una llamada. La
+  capacidad se multiplica por la calidad (0,3 Baja … 1,3 Ultra).
+- En pista (`race/render/TrackEffects.ts`): humo de neumáticos al derrapar,
+  bloquear o patinar; tierra y pasto fuera de la pista; chispas del fondo
+  plano a más de ~225 km/h y sobre los pianos; ráfaga de chispas y humo en
+  los golpes contra muros y entre autos (`Session.takeContacts`). Los autos a
+  más de 140 m de la cámara no emiten.
+- Pasada de velocidad (`core/render/SpeedPass.ts`, entre el bloom y la salida):
+  desenfoque radial desde el punto de fuga (8 muestras, el centro queda
+  nítido) y aire caliente detrás de los escapes de los 4 autos más cercanos
+  (ondas en pantalla alrededor de puntos proyectados; sólo en Alta y Ultra).
+  Si no hay nada que hacer, la pasada se apaga; se compila al entrar a la
+  pista. El FOV se abre hasta 5° con el DRS abierto o en el rebufo. Con
+  "reducir movimiento" no hay desenfoque ni FOV; en Baja no hay posprocesado.
+- Bandera a cuadros (`race/render/CheckeredFlag.ts`) sobre la meta que flamea
+  con un sombreador de vértices (normales recalculadas) cuando el jugador
+  termina, y cámara lenta de la llegada (`GameLoop.timeScale`: 30 % durante
+  1,3 s y vuelta gradual).
+- Podio (`podium/`): escalones que suben, festejos instanciados (confeti y
+  serpentinas en `InstancedMesh`, champán y fuegos artificiales con el mismo
+  sistema de puntos).
 
 ### 5.10 Rendimiento
 
@@ -850,13 +867,32 @@ revisión propia del código + resumen y espera de confirmación.
 - [x] Tutorial inicial (`TutorialScreen.ts`): nombre, experiencia → nivel de
       ayudas recomendado (se aplica) y los controles con las teclas elegidas.
 
-### Fase 9 — Pulido final
+### Fase 9 — Pulido final ✅
 
-- [ ] Presentación del circuito completa (vuelo por el trazado, parrilla con
-      rivales); la Fase 2 ya tiene la vuelta de cámara alrededor del auto.
-- [ ] Podio 3D (confeti, champán, fuegos artificiales, cámara girando).
-- [ ] Postprocesado completo (motion blur, calor, FOV), partículas.
-- [ ] Optimización y revisión general de bugs.
+- [x] Presentación del circuito en tres tomas: vuelo sobre la pista hasta la
+      recta, paneo a ras del suelo por la parrilla (con rivales) y la vuelta
+      alrededor del auto. Cartel con bandera del país (SVG), longitud, curvas,
+      récord del circuito y el tuyo, y un rótulo por toma (lugar, parrilla,
+      piloto). Saltar desde el vuelo corta directo a la cámara de carrera.
+- [x] Bandera a cuadros que flamea sobre la meta y cámara lenta al cruzar la
+      línea.
+- [x] Partículas en pista: humo, tierra, chispas del fondo plano y de los
+      pianos, y choques (muros y entre autos).
+- [x] Postprocesado: desenfoque radial de velocidad, aire caliente de los
+      escapes y FOV con DRS / rebufo.
+- [x] Podio 3D (`PodiumScreen.ts`, desde "Ver el podio" en los resultados de
+      una carrera con rivales): los escalones suben 3.º, 2.º y 1.º con cada
+      auto, carteles que siguen a cada auto, grúa de cámara y vaivén,
+      ovación, confeti, serpentinas, champán y fuegos artificiales.
+- [x] Festejo equipable: pestaña Festejo en el garaje con las Serpentinas de
+      fábrica y los tres del pase; el equipado es el protagonista (más
+      cantidad, todo el tiempo) y el resto aparece un poco.
+- [x] Logos de equipo en los rivales: atlas de logos (una celda por auto) con
+      el mismo material por instancia que los números.
+- [x] Revisión y rendimiento: el aire caliente queda en Alta / Ultra (es una
+      pasada casi siempre activa), las partículas escalan con la calidad, la
+      pasada de velocidad se precompila, y pruebas nuevas (cámara lenta,
+      partículas, festejo en el guardado). Versión 1.0.0.
 
 ---
 
@@ -864,12 +900,10 @@ revisión propia del código + resumen y espera de confirmación.
 
 | Qué | Dónde queda hoy | Llega en |
 |---|---|---|
-| Celebraciones de podio ganadas | En el catálogo (confeti, champán, fuegos artificiales); se ven en el podio 3D | 9 |
 | Poles en las estadísticas | El documento las pide, pero el juego no tiene sesión de clasificación (la parrilla se arma sola): el perfil muestra victorias, podios, vueltas rápidas y demás. Si se agrega una clasificación, `CareerStats` suma el campo | Fuera del alcance de las 9 fases |
 | Otros idiomas | Ajustes → Juego → Idioma existe con Español (el documento pide español por defecto); traducir todos los textos queda fuera del alcance | Fuera del alcance de las 9 fases |
-| Logos del equipo en los pontones de los rivales | Los rivales llevan colores y número; el logo (decal) sólo el auto del jugador. Con los rivales instanciados hace falta un atlas de logos por equipo: se deja para el pulido (la Fase 7 se dedicó al garaje y al manejo pedido por el usuario) | 9 |
-| Patrones y acabados en los rivales | Los rivales usan su color de equipo con el acabado brillante (instanciados, un solo material) | 9 |
-| Humo y chispas en los choques entre autos | Suenan y sacuden la cámara; las partículas llegan con el resto de efectos | 9 |
+| Patrones y acabados en los rivales | Decisión de la Fase 9: los rivales llevan la librea de su equipo (colores, número y logo) con acabado brillante. Patrones por equipo pedirían una máscara por patrón (más texturas y variantes del sombreador) para 20 autos instanciados; la identidad de cada equipo ya se lee por colores y logo | Fuera del alcance de las 9 fases |
+| Pilotos en el podio | El podio muestra los autos sobre los escalones (el modelo no tiene piloto de cuerpo entero); el champán sale de la cabina | Fuera del alcance de las 9 fases |
 
 ### Notas de pruebas
 
@@ -897,6 +931,11 @@ revisión propia del código + resumen y espera de confirmación.
 - La progresión se prueba sin navegador (`tests/progression.test.ts`):
   catálogo, XP de cada modo, subidas de nivel, pase y saneo de lo equipado.
   La prueba de humo abre el pase de temporada desde el menú.
+- Los efectos se prueban sin navegador donde se puede (`tests/effects.test.ts`:
+  capacidad, vida y movimiento de las partículas; `tests/core.test.ts`: cámara
+  lenta del bucle). La presentación, el podio y los festejos se revisaron con
+  capturas del navegador (a 1–2 FPS por software se fuerza el tiempo de cada
+  toma).
 - Para publicar como página se usa `dist-artifact/web/` (página chica + JS y
   CSS aparte): el HTML único de 1,4 MB lo rechaza el validador de páginas.
 - Los modos se prueban sin navegador (`tests/modes.test.ts`): fantasma
@@ -930,4 +969,5 @@ revisión propia del código + resumen y espera de confirmación.
 - **Fase 6**: completa.
 - **Fase 7**: completa (incluye el ajuste de curvas rápidas que pidió el
   usuario).
-- **Fase 8**: completa; se espera la confirmación del usuario para la Fase 9.
+- **Fase 8**: completa.
+- **Fase 9**: completa. Versión 1.0.0: las 9 fases del documento están hechas.

@@ -53,6 +53,8 @@ export class RaceWorld implements RenderView {
   readonly speedFx = createSpeedFx();
   /** Con "reducir movimiento" no hay desenfoque ni apertura del FOV. */
   motionEffects = true;
+  /** Aire caliente de los escapes: sólo en calidad Alta y Ultra (es una pasada más casi siempre activa). */
+  private hazeEnabled = false;
   private introTime = -1;
   private time = 0;
   private readonly flag = new CheckeredFlag();
@@ -265,6 +267,7 @@ export class RaceWorld implements RenderView {
     const distances = this.hazeDistance;
     distances.fill(Infinity);
     for (const point of fx.haze) point.set(0, 0, 0, 0);
+    if (!this.hazeEnabled) return;
     const focal = 1 / Math.tan((camera.fov * Math.PI) / 360);
     const cockpit = mode === 'cockpit' || mode === 'tcam';
     for (const car of cars) {
@@ -297,6 +300,7 @@ export class RaceWorld implements RenderView {
   }
 
   onGraphicsChanged(graphics: GraphicsSettings): void {
+    this.hazeEnabled = graphics.quality === 'high' || graphics.quality === 'ultra';
     // Sin mapa de sombras el sol deja de proyectarlas (auto y escenario).
     this.trackScene.sky.setShadowMapSize(shadowMapSize(graphics.shadows, graphics.quality));
   }

@@ -23,7 +23,7 @@ import type { PodiumEntry, RaceParams, ResultsParams } from '../../core/screens/
 import { clamp } from '../../core/utils/math';
 import { formatLapTime } from '../../core/utils/format';
 import { ENGINEER_NAME, RADIO_LINES, type RadioMoment } from '../../data/radio';
-import { DRIVERS, liveryOf, pickRivals, playerCode, type DriverDef } from '../../data/teams';
+import { DRIVERS, liveryOf, pickRivals, playerCode, wordmarkOf, type DriverDef } from '../../data/teams';
 import { isFinished, PLAYER_ID, pointsFor, recordRound, standings as championshipStandings } from '../../race/championship';
 import { liveryFromSetup } from '../../garage/setup';
 import { difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
@@ -82,6 +82,7 @@ function rivalCars(session: Session): RivalCar[] {
           {
             vehicle: car.vehicle,
             livery: liveryOf(car.driver),
+            wordmark: wordmarkOf(car.team),
             get ghost() {
               return car.ghost;
             },

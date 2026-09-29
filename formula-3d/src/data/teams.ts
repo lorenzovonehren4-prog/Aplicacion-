@@ -95,6 +95,11 @@ export function liveryOf(driver: DriverDef): LiveryConfig {
   };
 }
 
+/** Logo de texto del equipo en el auto: la primera palabra del nombre ("Vortex Racing" → "VORTEX"). */
+export function wordmarkOf(team: Pick<TeamDef, 'name'>): string {
+  return (team.name.split(' ')[0] ?? team.name).toUpperCase();
+}
+
 /**
  * Elige `count` rivales. Siempre está el compañero de equipo del jugador; el
  * resto se toma alternando entre los más y los menos talentosos, así una

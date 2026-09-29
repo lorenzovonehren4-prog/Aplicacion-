@@ -64,13 +64,21 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Fase 8 de 9: Albert Park y Monza, con pantalla de selección de carrera.
-Modos: práctica libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales
-con IA de 5 dificultades), contrarreloj con fantasma y campeonato con puntos.
-XP y niveles 1–100, pase de temporada de 50 niveles, garaje con vista previa
-en vivo, perfil con estadísticas, récords, vitrina de trofeos y 21 logros.
-Tutorial la primera vez (nombre y nivel de ayudas recomendado), manual de
-ayudas con demos animadas, teclas reasignables y música de menú generativa.
-Clima, choques, rebufo, DRS, física estable en curvas rápidas, tres cámaras,
-sonido 3D, HUD con radio, ayudas por niveles y rendimiento automático. Ver la
-sección **Fases** de `PLAN.md`.
+Versión 1.0.0: las 9 fases del documento de diseño están completas.
+Albert Park y Monza, con pantalla de selección de carrera. Modos: práctica
+libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales con IA de 5
+dificultades), contrarreloj con fantasma y campeonato con puntos. XP y
+niveles 1–100, pase de temporada de 50 niveles, garaje con vista previa en
+vivo (pintura, material, llantas, alerón, casco, número y festejo), perfil con
+estadísticas, récords, vitrina de trofeos y 21 logros. Tutorial la primera
+vez, manual de ayudas con demos animadas, teclas reasignables y música de
+menú generativa.
+
+En pista: presentación del circuito en tres tomas (vuelo, parrilla y órbita),
+clima, choques con chispas y humo, humo de neumáticos, tierra fuera de la
+pista, rebufo y DRS (el campo visual se abre), desenfoque de velocidad y aire
+caliente de los escapes, bandera a cuadros y cámara lenta en la llegada,
+tres cámaras, sonido 3D, HUD con radio, ayudas por niveles y rendimiento
+automático. Después de una carrera con rivales, el podio 3D con confeti,
+serpentinas, champán y fuegos artificiales (el festejo equipado se luce más).
+Ver la sección **Fases** de `PLAN.md`.

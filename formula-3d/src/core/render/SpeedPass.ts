@@ -111,7 +111,9 @@ export class SpeedPass extends Pass {
     // al entrar a la pista y no a 300 km/h (un tirón).
     const warmup = allowed && fx !== undefined && !this.warmed;
     if (warmup) this.warmed = true;
-    const active = warmup || (allowed && fx !== undefined && (fx.blur > 0.002 || fx.haze.some((h) => h.z > 0)));
+    let heat = false;
+    if (fx) for (const point of fx.haze) heat ||= point.z > 0;
+    const active = warmup || (allowed && fx !== undefined && (fx.blur > 0.002 || heat));
     this.enabled = active;
     if (!active || !fx) return;
     const u = this.material.uniforms;
