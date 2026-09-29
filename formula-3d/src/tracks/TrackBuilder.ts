@@ -24,6 +24,7 @@ import {
   type StandZone,
   type StartGantry,
 } from './build/scenery';
+import { buildContactShadows, buildEdgeWear } from './build/groundDetail';
 import { buildHorizon } from './build/horizon';
 import { createSky, type SkyEnvironment } from './build/sky';
 import { weatherLook, type WeatherLook } from './weather';
@@ -105,6 +106,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     ['Pintura y parrilla', () => buildPaint(ctx)],
     ['Pianos', () => buildKerbs(ctx)],
     ['Escapatorias y grava', () => buildRunoff(ctx)],
+    ['Bordes del pasto', () => buildEdgeWear(ctx)],
     [
       'Lago',
       () => {
@@ -114,6 +116,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
       },
     ],
     ['Muros de contención', () => buildWalls(ctx)],
+    ['Sombras de contacto', () => buildContactShadows(ctx)],
     ['Alambrados', () => buildFences(ctx)],
     ['Calle de boxes', () => (pitZone = buildPitBuilding(ctx, buildPitLane(ctx)))],
     ['Tribunas y público', () => (stands = buildGrandstands(ctx))],

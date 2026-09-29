@@ -51,8 +51,9 @@ export function buildGround(ctx: BuildContext): void {
       Math.sin(x * 0.011 + Math.sin(z * 0.007) * 2) * 0.5 +
       Math.sin(z * 0.013 + Math.cos(x * 0.005) * 2) * 0.35 +
       ctx.rng.range(-0.15, 0.15);
-    color.setHSL(0.26 + n * 0.015, 0.42 + n * 0.08, 0.5 + n * 0.08);
-    colors.push(color.r * 1.35, color.g * 1.35, color.b * 1.35);
+    // Verde de césped real: menos saturado y algo más oscuro (antes parecía plástico).
+    color.setHSL(0.25 + n * 0.018, 0.34 + n * 0.07, 0.44 + n * 0.07);
+    colors.push(color.r * 1.25, color.g * 1.25, color.b * 1.25);
   }
   plane.setAttribute('color', new Float32BufferAttribute(colors, 3));
 
@@ -71,9 +72,16 @@ export function buildGround(ctx: BuildContext): void {
         '#include <map_fragment>',
         `#include <map_fragment>
         ${detailLayer(4.3, 0.45)}
-        float mow = step(0.5, fract(dot(vGroundXZ, vec2(0.0786, 0.0786)) ));
+        // Franjas del corte con el borde algo suave (el césped se inclina, no es un escalón).
+        float mowPhase = fract(dot(vGroundXZ, vec2(0.0786, 0.0786)));
+        float mow = smoothstep(0.44, 0.56, mowPhase) - smoothstep(0.94, 1.0, mowPhase);
         float checker = step(0.5, fract(dot(vGroundXZ, vec2(-0.0262, 0.0262))));
-        diffuseColor.rgb *= 0.86 + 0.2 * mow + 0.04 * checker;`,
+        diffuseColor.rgb *= 0.82 + 0.26 * mow + 0.04 * checker;
+        // Manchas de pasto más seco (amarillento) a gran escala.
+        float dry = sin(vGroundXZ.x * 0.017 + sin(vGroundXZ.y * 0.011) * 2.3) * sin(vGroundXZ.y * 0.015 - sin(vGroundXZ.x * 0.009) * 1.9);
+        dry = smoothstep(0.35, 0.95, dry);
+        float luma = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma * 1.25, luma * 1.12, luma * 0.55), dry * 0.45);`,
       );
   };
   material.customProgramCacheKey = () => 'cesped-cortado';

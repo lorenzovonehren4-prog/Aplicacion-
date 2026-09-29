@@ -144,8 +144,13 @@ function merge(parts: BufferGeometry[]): BufferGeometry {
   return merged;
 }
 
-/** Eucalipto, árbol de copa redonda y ciprés (en ese orden). */
-export function treeSpecies(): BufferGeometry[] {
+/**
+ * Eucalipto, árbol de copa redonda y ciprés (en ese orden).
+ * @param detailed calidades altas: los bultos chicos del follaje también se
+ *   subdividen (80 caras en vez de 20), así la copa no se ve facetada de cerca
+ */
+export function treeSpecies(detailed = false): BufferGeometry[] {
+  const lump = (l: Lump): Lump => (detailed ? { ...l, detail: Math.max(l.detail, 1) } : l);
   const bark = new Color('#a39a88');
   const darkBark = new Color('#5b4636');
 
@@ -155,12 +160,12 @@ export function treeSpecies(): BufferGeometry[] {
     wood(0.08, 0.16, 3.6, bark, 0.55, 0.4, [0, 6.2, 0]),
     wood(0.07, 0.14, 3.2, bark, -0.6, -0.8, [0, 7, 0]),
     foliage(
-      [
+      ([
         { center: [0, 10.6, 0], radius: 3, detail: 1, squash: 0.8 },
         { center: [2.4, 9.3, 0.9], radius: 2.2, detail: 0, squash: 0.8 },
         { center: [-2, 11.4, -0.7], radius: 2.1, detail: 0, squash: 0.85 },
         { center: [0.6, 12.4, -1.4], radius: 1.7, detail: 0 },
-      ],
+      ] satisfies Lump[]).map(lump),
       new Color('#6c8452'),
       11,
     ),
@@ -170,11 +175,11 @@ export function treeSpecies(): BufferGeometry[] {
   const round = merge([
     wood(0.24, 0.36, 4.4, darkBark),
     foliage(
-      [
+      ([
         { center: [0, 6.3, 0], radius: 3.6, detail: 1, squash: 0.85 },
         { center: [1.8, 7.5, 0.6], radius: 2.3, detail: 0 },
         { center: [-1.5, 7.2, -0.9], radius: 2.1, detail: 0 },
-      ],
+      ] satisfies Lump[]).map(lump),
       new Color('#3e6630'),
       23,
     ),
@@ -184,10 +189,10 @@ export function treeSpecies(): BufferGeometry[] {
   const cypress = merge([
     wood(0.16, 0.24, 2.2, darkBark),
     foliage(
-      [
+      ([
         { center: [0, 5, 0], radius: 1.9, detail: 1, squash: 2.1 },
         { center: [0, 9.2, 0], radius: 1.3, detail: 0, squash: 2 },
-      ],
+      ] satisfies Lump[]).map(lump),
       new Color('#2b4a27'),
       31,
     ),

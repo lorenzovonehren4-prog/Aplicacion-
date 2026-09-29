@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BrakingAssist } from '../src/assists/BrakingAssist';
-import { RacingLineMesh, excessToState } from '../src/assists/RacingLineMesh';
+import { RacingLineMesh, marginToState } from '../src/assists/RacingLineMesh';
 import { SteeringAssist } from '../src/assists/SteeringAssist';
 import { ASSIST_PRESETS, activeAssists, customXpMultiplier, xpMultiplier } from '../src/assists/presets';
 import { createDefaultAssists } from '../src/core/save/schema';
@@ -248,39 +248,67 @@ describe('ayuda de dirección y anti-derrape', () => {
 });
 
 describe('línea dinámica', () => {
-  it('interpola verde → amarillo → rojo según el porcentaje de exceso de velocidad', () => {
-    expect(excessToState(-0.2)).toBe(LINE_GREEN);
-    expect(excessToState(0)).toBe(LINE_GREEN);
-    expect(excessToState(0.03)).toBeCloseTo((LINE_GREEN + LINE_YELLOW) / 2, 5);
-    expect(excessToState(0.06)).toBeCloseTo(LINE_YELLOW, 5);
-    expect(excessToState(0.105)).toBeCloseTo((LINE_YELLOW + LINE_RED) / 2, 5);
-    expect(excessToState(0.15)).toBeCloseTo(LINE_RED, 5);
-    expect(excessToState(0.5)).toBe(LINE_RED);
+  it('verde con margen de sobra, amarillo al acercarse y rojo en el punto de frenada', () => {
+    expect(marginToState(5)).toBe(LINE_GREEN);
+    expect(marginToState(1.6)).toBe(LINE_GREEN);
+    expect(marginToState(1.15)).toBeCloseTo((LINE_GREEN + LINE_YELLOW) / 2, 5);
+    expect(marginToState(0.7)).toBeCloseTo(LINE_YELLOW, 5);
+    expect(marginToState(0.35)).toBeCloseTo((LINE_YELLOW + LINE_RED) / 2, 5);
+    expect(marginToState(0)).toBe(LINE_RED);
+    expect(marginToState(-1)).toBe(LINE_RED);
   });
 
-  it('el color depende de TU velocidad, no del tramo: lento, verde; pasado, rojo antes de la curva', () => {
+  it('el color depende de TU velocidad: a la velocidad de la curva es verde, pasado se pone rojo', () => {
     const mesh = new RacingLineMesh(line, performanceModel(F1_SPEC));
     const c1 = track.analysis.corners[0];
     if (!c1) throw new Error('Falta la curva 1.');
     const s = c1.apex - 80;
-    const apex = line.indexAt(c1.apex);
-    // A la velocidad de la curva: todo verde, también el ápice.
-    const slow = mesh.computeTargets(s, line.speedAt(c1.apex));
-    expect(slow[apex]).toBe(LINE_GREEN);
-    expect(slow[line.indexAt(s)]).toBe(LINE_GREEN);
-    // A fondo (85 m/s) a 80 m del ápice ya no se llega: rojo desde donde estás.
-    const fast = mesh.computeTargets(s, 85);
-    expect(fast[line.indexAt(s)]).toBe(LINE_RED);
-    // Subiendo la velocidad de a poco el color nunca retrocede y pasa por el amarillo.
-    let previous = LINE_GREEN;
-    let sawYellow = false;
-    for (let speed = line.speedAt(c1.apex); speed <= 85; speed += 0.5) {
-      const state = mesh.computeTargets(s, speed)[line.indexAt(s)] ?? 0;
-      expect(state).toBeGreaterThanOrEqual(previous - 1e-6);
-      if (state > 0.6 && state < 1.4) sawYellow = true;
-      previous = state;
+    expect(mesh.computeTargets(s, line.speedAt(c1.apex))[line.indexAt(c1.apex)]).toBe(LINE_GREEN);
+    expect(mesh.computeTargets(s, 85)[line.indexAt(s)]).toBe(LINE_RED);
+    mesh.dispose();
+  });
+
+  it('el rojo aparece con tiempo: frenando suave desde ahí, todavía se llega a la velocidad de la curva', () => {
+    const mesh = new RacingLineMesh(line, performanceModel(F1_SPEC));
+    /** Metros que usa el auto real para bajar de `from` a `to` frenando al 50 % en una recta. */
+    const brakingDistance = (from: number, to: number): number => {
+      const car = new Vehicle(F1_SPEC, track);
+      car.placeAt(track.startS - 900, 0);
+      car.gearbox.reset(7);
+      car.vx = from;
+      const input: DriverInput = { throttle: 0, brake: 0.5, steer: 0, drs: false };
+      const start = car.projection.s;
+      for (let t = 0; t < 10 && car.vx > to; t += STEP) car.step(STEP, input);
+      return track.geometry.deltaS(start, car.projection.s);
+    };
+    // Las frenadas más fuertes (desde una recta).
+    const all = track.analysis.corners;
+    const hard = all.filter((c) => c.entrySpeed - c.safeSpeed > 28);
+    expect(hard.length).toBeGreaterThanOrEqual(3);
+    for (const corner of hard) {
+      const speed = corner.entrySpeed;
+      // Desde la salida de la curva anterior (si no, el rojo sería de esa otra curva).
+      const previous = all[(all.indexOf(corner) - 1 + all.length) % all.length];
+      const room = previous ? track.geometry.deltaS(previous.end, corner.apex) : 600;
+      let red = -1;
+      let yellow = -1;
+      for (let d = Math.min(600, room); d > 0; d -= 2) {
+        const state = mesh.computeTargets(corner.apex - d, speed)[line.indexAt(corner.apex - d)] ?? 0;
+        if (yellow < 0 && state >= LINE_YELLOW - 0.05) yellow = d;
+        if (state >= LINE_RED - 0.01) {
+          red = d;
+          break;
+        }
+      }
+      expect(red, `curva ${corner.number}: se pone roja`).toBeGreaterThan(0);
+      // El amarillo avisa al menos medio segundo antes que el rojo (si la curva
+      // anterior está tan cerca que ya se sale amarillo, no hay más lugar).
+      const scanned = Math.min(600, room);
+      if (yellow < scanned - 2) expect(yellow - red, `curva ${corner.number}: aviso amarillo`).toBeGreaterThan(speed * 0.5);
+      // Reacción de 0,3 s + frenada suave: cabe en lo que queda hasta el ápice.
+      const needed = speed * 0.3 + brakingDistance(speed, line.speedAt(corner.apex));
+      expect(red, `curva ${corner.number}: rojo a ${red} m, hacen falta ${needed.toFixed(0)} m`).toBeGreaterThan(needed);
     }
-    expect(sawYellow).toBe(true);
     mesh.dispose();
   });
 });

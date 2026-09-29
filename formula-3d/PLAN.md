@@ -451,11 +451,11 @@ Nada más cambia.
   (`BufferGeometry` con color por vértice + shader propio: brillo suave,
   transparencia, bordes difuminados y chevrones animados). Fija = color por
   tramo desde el perfil (verde acelerar / amarillo levantar / rojo frenar).
-  Dinámica = cada fotograma, para los 260 m de adelante, la velocidad máxima
-  permitida ahora para llegar a cada punto (√(v_curva² + 2·a·d)) contra la
-  tuya: el porcentaje de exceso da el color (verde 0 %, amarillo 6 %, rojo
-  15 % o más) y cada punto muestra lo peor que tiene adelante, con
-  transición suave de colores (v1.4; antes, fracción de la frenada).
+  Dinámica = cada fotograma, para los 480 m de adelante, el punto donde
+  habría que empezar a frenar (reacción + frenada tranquila hasta el límite
+  de agarre de cada curva) y cuántos segundos faltan para llegar a él: verde
+  ≥ 1,6 s, amarillo 0,7 s, rojo al llegar ("frena ya", todavía da tiempo);
+  cada punto muestra lo peor que tiene adelante, con transición suave (v1.5).
 - **Trazada ideal** (`tracks/RacingLine.ts`): desplazamiento lateral d(s) que
   minimiza la suma de segundas diferencias al cuadrado (≈ curvatura²) con
   descenso por coordenadas, de grueso a fino (puntos cada 32 → 16 → 8 → 4 m),
@@ -993,6 +993,27 @@ revisión propia del código + resumen y espera de confirmación.
       niveles predefinidos (la fija queda en Personalizado); en la XP, fija y
       dinámica valen lo mismo y "sólo curvas" suma 0,15.
 
+### Versión 1.5 — Aviso con tiempo en la línea y gráficos de pista ✅
+
+- [x] Línea dinámica rehecha: el rojo aparecía cuando ya era tarde (a 330
+      km/h, a ~54 m de la curva 1 cuando frenar con calma pide ~77 m). Ahora
+      cada punto se compara con el límite de agarre de esa curva (no con el
+      perfil de aceleración: en recta no marca nada) y se calcula el punto de
+      frenada con reacción de 0,45 s y una frenada tranquila (55 % de la
+      máxima, deja agarre para doblar a la vez). El margen en segundos hasta
+      ese punto da el color: verde ≥ 1,6 s, amarillo 0,7 s, rojo al llegar.
+      Curva 1 a 330 km/h: verde hasta ~350 m, amarillo ~250 m, rojo ~180 m
+      (la frenada límite empieza a ~140 m). Prueba: en las 5 frenadas fuertes
+      de Albert Park, al ponerse rojo quedan más metros que los que usa el
+      auto real para frenar al 50 % con 0,3 s de reacción.
+- [x] Resolución de render: tope de densidad de píxeles 1,5 en Media (antes
+      1,25) y 2 en Alta (antes 1,5): menos serrucho y texturas más finas en
+      pantallas de alta densidad.
+- [x] Sombra de contacto al pie de muros y barreras y pasto gastado junto al
+      asfalto (`tracks/build/groundDetail.ts`); pasto con un verde más real,
+      franjas de corte suaves y manchas de pasto seco.
+- [x] Árboles con copas subdivididas en Alta y Ultra (no se ven facetadas).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1074,3 +1095,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.2**: gráficos y calidad de las pistas (pedido del usuario).
 - **Versión 1.3**: menús y su calidad (pedido del usuario).
 - **Versión 1.4**: texturas, ayudas de frenado/dirección y línea dinámica (pedido del usuario).
+- **Versión 1.5**: rojo con tiempo en la línea dinámica y gráficos de pista (pedido del usuario).

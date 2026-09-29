@@ -140,7 +140,7 @@ export interface KeepOut {
 
 export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
   const g = ctx.track.geometry;
-  const species = treeSpecies();
+  const species = treeSpecies(ctx.detailShadows);
   const perHectare = ctx.track.def.scenery.treeDensity * 0.55 * ctx.density;
   const cell = Math.sqrt(10000 / Math.max(0.5, perHectare));
   const reach = 420;

@@ -54,7 +54,7 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     rivalLod: { nearDistance: 60, maxNear: 5, nearDetail: 0.3 },
   },
   medium: {
-    maxPixelRatio: 1.25,
+    maxPixelRatio: 1.5,
     msaaSamples: 2,
     shadows: 'low',
     postprocessing: true,
@@ -65,7 +65,7 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     rivalLod: { nearDistance: 90, maxNear: 8, nearDetail: 0.36 },
   },
   high: {
-    maxPixelRatio: 1.5,
+    maxPixelRatio: 2,
     msaaSamples: 4,
     shadows: 'high',
     postprocessing: true,
