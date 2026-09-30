@@ -145,59 +145,77 @@ function merge(parts: BufferGeometry[]): BufferGeometry {
 }
 
 /**
- * Eucalipto, árbol de copa redonda y ciprés (en ese orden).
- * @param detailed calidades altas: los bultos chicos del follaje también se
- *   subdividen (80 caras en vez de 20), así la copa no se ve facetada de cerca
+ * Nivel de detalle de un árbol según la distancia a la cámara:
+ * - `near`: todos los bultos del follaje subdivididos (80 caras): la copa no
+ *   se ve facetada ni de cerca.
+ * - `mid`: sólo el bulto principal subdividido.
+ * - `far`: un único bulto que cubre la copa y el tronco principal (a cientos
+ *   de metros se ve igual y cuesta una décima parte).
  */
-export function treeSpecies(detailed = false): BufferGeometry[] {
-  const lump = (l: Lump): Lump => (detailed ? { ...l, detail: Math.max(l.detail, 1) } : l);
+export type TreeDetail = 'near' | 'mid' | 'far';
+
+interface SpeciesDef {
+  /** Partes de madera: la primera es el tronco (la única que queda en `far`). */
+  wood: Array<() => BufferGeometry>;
+  lumps: Lump[];
+  color: string;
+  seed: number;
+}
+
+function buildSpecies(def: SpeciesDef, level: TreeDetail): BufferGeometry {
+  const first = def.lumps[0];
+  let lumps: Lump[];
+  if (level === 'far' && first) lumps = [{ ...first, radius: first.radius * 1.35, detail: 0 }];
+  else if (level === 'near') lumps = def.lumps.map((l) => ({ ...l, detail: Math.max(l.detail, 1) }));
+  else lumps = def.lumps;
+  const woods = level === 'far' ? def.wood.slice(0, 1) : def.wood;
+  return merge([...woods.map((make) => make()), foliage(lumps, new Color(def.color), def.seed)]);
+}
+
+/** Eucalipto, árbol de copa redonda y ciprés (en ese orden), con el detalle pedido. */
+export function treeSpecies(level: TreeDetail = 'mid'): BufferGeometry[] {
   const bark = new Color('#a39a88');
   const darkBark = new Color('#5b4636');
-
-  // Eucalipto: tronco claro alto con dos ramas y una copa rala en varios bultos.
-  const eucalyptus = merge([
-    wood(0.2, 0.38, 8.5, bark),
-    wood(0.08, 0.16, 3.6, bark, 0.55, 0.4, [0, 6.2, 0]),
-    wood(0.07, 0.14, 3.2, bark, -0.6, -0.8, [0, 7, 0]),
-    foliage(
-      ([
+  const species: SpeciesDef[] = [
+    // Eucalipto: tronco claro alto con dos ramas y una copa rala en varios bultos.
+    {
+      wood: [
+        () => wood(0.2, 0.38, 8.5, bark),
+        () => wood(0.08, 0.16, 3.6, bark, 0.55, 0.4, [0, 6.2, 0]),
+        () => wood(0.07, 0.14, 3.2, bark, -0.6, -0.8, [0, 7, 0]),
+      ],
+      lumps: [
         { center: [0, 10.6, 0], radius: 3, detail: 1, squash: 0.8 },
         { center: [2.4, 9.3, 0.9], radius: 2.2, detail: 0, squash: 0.8 },
         { center: [-2, 11.4, -0.7], radius: 2.1, detail: 0, squash: 0.85 },
         { center: [0.6, 12.4, -1.4], radius: 1.7, detail: 0 },
-      ] satisfies Lump[]).map(lump),
-      new Color('#6c8452'),
-      11,
-    ),
-  ]);
-
-  // Copa redonda: tronco corto y oscuro, copa densa.
-  const round = merge([
-    wood(0.24, 0.36, 4.4, darkBark),
-    foliage(
-      ([
+      ],
+      color: '#6c8452',
+      seed: 11,
+    },
+    // Copa redonda: tronco corto y oscuro, copa densa.
+    {
+      wood: [() => wood(0.24, 0.36, 4.4, darkBark)],
+      lumps: [
         { center: [0, 6.3, 0], radius: 3.6, detail: 1, squash: 0.85 },
         { center: [1.8, 7.5, 0.6], radius: 2.3, detail: 0 },
         { center: [-1.5, 7.2, -0.9], radius: 2.1, detail: 0 },
-      ] satisfies Lump[]).map(lump),
-      new Color('#3e6630'),
-      23,
-    ),
-  ]);
-
-  // Ciprés: columna alargada de dos bultos estirados.
-  const cypress = merge([
-    wood(0.16, 0.24, 2.2, darkBark),
-    foliage(
-      ([
+      ],
+      color: '#3e6630',
+      seed: 23,
+    },
+    // Ciprés: columna alargada de dos bultos estirados.
+    {
+      wood: [() => wood(0.16, 0.24, 2.2, darkBark)],
+      lumps: [
         { center: [0, 5, 0], radius: 1.9, detail: 1, squash: 2.1 },
         { center: [0, 9.2, 0], radius: 1.3, detail: 0, squash: 2 },
-      ] satisfies Lump[]).map(lump),
-      new Color('#2b4a27'),
-      31,
-    ),
-  ]);
-  return [eucalyptus, round, cypress];
+      ],
+      color: '#2b4a27',
+      seed: 31,
+    },
+  ];
+  return species.map((def) => buildSpecies(def, level));
 }
 
 /**
@@ -215,7 +233,7 @@ export function createTreeMaterial(time: IUniform<number>): MeshStandardMaterial
         '#include <begin_vertex>',
         `#include <begin_vertex>
         #ifdef USE_INSTANCING
-          vec2 treeAt = vec2(instanceMatrix[3].x, instanceMatrix[3].z);
+          vec2 treeAt = (modelMatrix * instanceMatrix[3]).xz;
         #else
           vec2 treeAt = vec2(0.0);
         #endif

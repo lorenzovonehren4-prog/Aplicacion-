@@ -10,8 +10,7 @@
  * - Filtrado anisotrópico (8× o 16× según la calidad, ver
  *   `core/render/quality.ts`): el asfalto visto en ángulo rasante sigue nítido.
  * - Las superficies grandes (asfalto, pasto, grava, pianos, muros) se generan
- *   al doble de resolución en calidad Media o más (`size`: 512 o 1024 px por
- *   repetición). Son procedurales (canvas), así que no hay archivos ni
+ *   a 1024 px por repetición en todos los niveles gráficos. Son procedurales (canvas), así que no hay archivos ni
  *   compresión con pérdida: se suben a la GPU tal cual (RGBA de 8 bits).
  */
 
@@ -34,7 +33,9 @@ function canvas(width: number, height: number): [HTMLCanvasElement, CanvasRender
   const element = document.createElement('canvas');
   element.width = width;
   element.height = height;
-  const ctx = element.getContext('2d');
+  // Se leen y escriben los píxeles varias veces (ruido, piedritas, hojas): con
+  // `willReadFrequently` el lienzo vive en memoria y esas lecturas son rápidas.
+  const ctx = element.getContext('2d', { willReadFrequently: true });
   if (!ctx) throw new Error('No se pudo crear un contexto 2D para las texturas del circuito.');
   return [element, ctx];
 }
@@ -52,6 +53,52 @@ function finish(element: HTMLCanvasElement, anisotropy: number, color = true, re
   }
   texture.needsUpdate = true;
   return texture;
+}
+
+/**
+ * Imagen en memoria para pintar píxel a píxel: miles de piedritas o hojas con
+ * llamadas de dibujo del canvas tardaban segundos (la grava, ~8 s en equipos
+ * lentos); escribiendo los píxeles directo tarda milisegundos. Los bordes dan
+ * la vuelta, así la textura repite sin costuras.
+ */
+class Pixels {
+  readonly image: ImageData;
+  private readonly data: Uint8ClampedArray;
+  private readonly width: number;
+  private readonly height: number;
+
+  constructor(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    this.image = ctx.getImageData(0, 0, width, height);
+    this.data = this.image.data;
+    this.width = width;
+    this.height = height;
+  }
+
+  /** Mezcla el color (0–255) con opacidad `alpha` (0–1) en el píxel (x, y). */
+  blend(x: number, y: number, r: number, g: number, b: number, alpha: number): void {
+    const px = ((Math.floor(x) % this.width) + this.width) % this.width;
+    const py = ((Math.floor(y) % this.height) + this.height) % this.height;
+    const i = (py * this.width + px) * 4;
+    const d = this.data;
+    d[i] = (d[i] ?? 0) + (r - (d[i] ?? 0)) * alpha;
+    d[i + 1] = (d[i + 1] ?? 0) + (g - (d[i + 1] ?? 0)) * alpha;
+    d[i + 2] = (d[i + 2] ?? 0) + (b - (d[i + 2] ?? 0)) * alpha;
+  }
+}
+
+/**
+ * Las texturas generadas se guardan (el dibujo, no la textura de la GPU): la
+ * segunda carrera no las vuelve a pintar.
+ */
+const generated = new Map<string, HTMLCanvasElement[]>();
+
+function remember(key: string, paint: () => HTMLCanvasElement[]): HTMLCanvasElement[] {
+  let canvases = generated.get(key);
+  if (!canvases) {
+    canvases = paint();
+    generated.set(key, canvases);
+  }
+  return canvases;
 }
 
 /** Ruido de píxeles sobre un color base (`amount` en niveles de 0–255). */
@@ -93,82 +140,135 @@ export interface AsphaltTextures {
   bump: Texture;
 }
 
-/** Tamaño de la textura de las superficies grandes según la calidad (px por repetición). */
-export function surfaceTextureSize(quality: 'low' | 'medium' | 'high' | 'ultra'): number {
-  return quality === 'low' ? 512 : 1024;
-}
+/**
+ * Tamaño de la textura de las superficies grandes (px por repetición): el
+ * circuito se arma siempre en calidad alta, en cualquier nivel gráfico.
+ */
+export const SURFACE_TEXTURE_SIZE = 1024;
 
 /**
  * Asfalto: grano fino, áridos claros y oscuros, manchas; con mapa de relieve.
  * @param size px por repetición (512 o 1024): los áridos mantienen su tamaño real
  */
 export function createAsphalt(anisotropy: number, size = 512): AsphaltTextures {
-  const S = size;
-  const k = S / 512;
-  const rng = new Random(11);
-  const [color, ctx] = canvas(S, S);
-  ctx.fillStyle = '#3b3c3f';
-  ctx.fillRect(0, 0, S, S);
-  blotches(ctx, S, 26, '#2c2d30', 0.35, rng);
-  blotches(ctx, S, 18, '#4a4b4e', 0.25, rng);
-  // Áridos: puntitos claros y oscuros.
-  for (let i = 0; i < 9000 * k * k; i++) {
-    const light = rng.next() < 0.45;
-    ctx.fillStyle = light ? `rgba(160,160,165,${rng.range(0.15, 0.45)})` : `rgba(10,10,12,${rng.range(0.2, 0.5)})`;
-    const r = rng.range(0.4, 1.4) * k;
-    ctx.fillRect(rng.range(0, S), rng.range(0, S), r, r);
-  }
-  speckle(ctx, S, S, 22, rng);
+  const [color, bump] = remember(`asfalto:${size}`, () => {
+    const S = size;
+    const k = S / 512;
+    const rng = new Random(11);
+    const [colorCanvas, ctx] = canvas(S, S);
+    ctx.fillStyle = '#3b3c3f';
+    ctx.fillRect(0, 0, S, S);
+    blotches(ctx, S, 26, '#2c2d30', 0.35, rng);
+    blotches(ctx, S, 18, '#4a4b4e', 0.25, rng);
+    // Áridos: puntitos claros y oscuros.
+    const pixels = new Pixels(ctx, S, S);
+    for (let i = 0; i < 9000 * k * k; i++) {
+      const light = rng.next() < 0.45;
+      const alpha = light ? rng.range(0.15, 0.45) : rng.range(0.2, 0.5);
+      const side = Math.max(1, Math.round(rng.range(0.4, 1.4) * k));
+      const x = rng.range(0, S);
+      const y = rng.range(0, S);
+      for (let dy = 0; dy < side; dy++) {
+        for (let dx = 0; dx < side; dx++) {
+          if (light) pixels.blend(x + dx, y + dy, 160, 160, 165, alpha);
+          else pixels.blend(x + dx, y + dy, 10, 10, 12, alpha);
+        }
+      }
+    }
+    ctx.putImageData(pixels.image, 0, 0);
+    speckle(ctx, S, S, 22, rng);
 
-  const [bump, btx] = canvas(S, S);
-  btx.fillStyle = '#808080';
-  btx.fillRect(0, 0, S, S);
-  speckle(btx, S, S, 90, rng);
+    const [bumpCanvas, btx] = canvas(S, S);
+    btx.fillStyle = '#808080';
+    btx.fillRect(0, 0, S, S);
+    speckle(btx, S, S, 90, rng);
+    return [colorCanvas, bumpCanvas];
+  });
+  if (!color || !bump) throw new Error('No se pudo pintar el asfalto.');
   return { map: finish(color, anisotropy), bump: finish(bump, anisotropy, false) };
 }
 
 /** Pasto: hojas finas y variación de verde. */
 export function createGrass(anisotropy: number, size = 512): Texture {
-  const S = size;
-  const k = S / 512;
-  const rng = new Random(23);
-  const [element, ctx] = canvas(S, S);
-  ctx.fillStyle = '#4b7a31';
-  ctx.fillRect(0, 0, S, S);
-  blotches(ctx, S, 30, '#3a6526', 0.45, rng);
-  blotches(ctx, S, 20, '#5f8c3a', 0.35, rng);
-  for (let i = 0; i < 14000 * k * k; i++) {
-    const shade = rng.range(0, 1);
-    ctx.strokeStyle = shade < 0.5 ? `rgba(40,80,25,${rng.range(0.2, 0.6)})` : `rgba(120,160,70,${rng.range(0.15, 0.45)})`;
-    ctx.lineWidth = rng.range(0.6, 1.2) * k;
-    const x = rng.range(0, S);
-    const y = rng.range(0, S);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + rng.range(-1.5, 1.5) * k, y - rng.range(2, 5) * k);
-    ctx.stroke();
-  }
-  speckle(ctx, S, S, 14, rng);
+  const [element] = remember(`pasto:${size}`, () => {
+    const S = size;
+    const k = S / 512;
+    const rng = new Random(23);
+    const [grass, ctx] = canvas(S, S);
+    ctx.fillStyle = '#4b7a31';
+    ctx.fillRect(0, 0, S, S);
+    blotches(ctx, S, 30, '#3a6526', 0.45, rng);
+    blotches(ctx, S, 20, '#5f8c3a', 0.35, rng);
+    // Hojas: trazos cortos casi verticales, oscuros o claros.
+    const pixels = new Pixels(ctx, S, S);
+    for (let i = 0; i < 14000 * k * k; i++) {
+      const dark = rng.range(0, 1) < 0.5;
+      const alpha = dark ? rng.range(0.2, 0.6) : rng.range(0.15, 0.45);
+      const wide = rng.range(0.6, 1.2) * k > 1.3;
+      const x = rng.range(0, S);
+      const y = rng.range(0, S);
+      const lean = rng.range(-1.5, 1.5) * k;
+      const length = rng.range(2, 5) * k;
+      const steps = Math.ceil(length * 1.4);
+      for (let t = 0; t <= steps; t++) {
+        const f = t / steps;
+        const px = x + lean * f;
+        const py = y - length * f;
+        if (dark) pixels.blend(px, py, 40, 80, 25, alpha);
+        else pixels.blend(px, py, 120, 160, 70, alpha);
+        if (wide) {
+          if (dark) pixels.blend(px + 1, py, 40, 80, 25, alpha * 0.6);
+          else pixels.blend(px + 1, py, 120, 160, 70, alpha * 0.6);
+        }
+      }
+    }
+    ctx.putImageData(pixels.image, 0, 0);
+    speckle(ctx, S, S, 14, rng);
+    return [grass];
+  });
+  if (!element) throw new Error('No se pudo pintar el pasto.');
   return finish(element, anisotropy);
 }
 
-/** Grava: piedritas beige de varios tonos. */
+/** Grava: piedritas beige de varios tonos, con luz de arriba a la izquierda. */
 export function createGravel(anisotropy: number, size = 512): Texture {
-  const S = size;
-  const k = S / 512;
-  const rng = new Random(37);
-  const [element, ctx] = canvas(S, S);
-  ctx.fillStyle = '#b8a07a';
-  ctx.fillRect(0, 0, S, S);
-  for (let i = 0; i < 16000 * k * k; i++) {
-    const tone = rng.range(120, 225);
-    ctx.fillStyle = `rgb(${tone},${tone * 0.9},${tone * 0.72})`;
-    const r = rng.range(0.8, 2.6) * k;
-    ctx.beginPath();
-    ctx.ellipse(rng.range(0, S), rng.range(0, S), r, r * rng.range(0.6, 1), rng.range(0, Math.PI), 0, Math.PI * 2);
-    ctx.fill();
-  }
-  speckle(ctx, S, S, 18, rng);
+  const [element] = remember(`grava:${size}`, () => {
+    const S = size;
+    const k = S / 512;
+    const rng = new Random(37);
+    const [gravel, ctx] = canvas(S, S);
+    ctx.fillStyle = '#b8a07a';
+    ctx.fillRect(0, 0, S, S);
+    const pixels = new Pixels(ctx, S, S);
+    for (let i = 0; i < 16000 * k * k; i++) {
+      const tone = rng.range(120, 225);
+      const r = rng.range(0.8, 2.6) * k;
+      const flat = rng.range(0.6, 1);
+      const angle = rng.range(0, Math.PI);
+      const cx = rng.range(0, S);
+      const cy = rng.range(0, S);
+      const c = Math.cos(angle);
+      const sn = Math.sin(angle);
+      const reach = Math.ceil(r) + 1;
+      for (let dy = -reach; dy <= reach; dy++) {
+        for (let dx = -reach; dx <= reach; dx++) {
+          // Elipse girada: u a lo largo, v a lo ancho.
+          const u = (dx * c + dy * sn) / r;
+          const v = (-dx * sn + dy * c) / (r * flat);
+          const q = u * u + v * v;
+          if (q > 1) continue;
+          // Cara iluminada arriba a la izquierda, borde más oscuro y apenas suavizado.
+          const shade = (1 - 0.2 * ((dx + dy) / (r * 1.41))) * (q > 0.7 ? 0.86 : 1);
+          const alpha = q > 0.85 ? (1 - q) / 0.15 : 1;
+          pixels.blend(cx + dx, cy + dy, tone * shade, tone * 0.9 * shade, tone * 0.72 * shade, alpha);
+        }
+      }
+    }
+    ctx.putImageData(pixels.image, 0, 0);
+    speckle(ctx, S, S, 18, rng);
+    return [gravel];
+  });
+  if (!element) throw new Error('No se pudo pintar la grava.');
   return finish(element, anisotropy);
 }
 

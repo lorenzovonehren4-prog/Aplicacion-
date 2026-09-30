@@ -28,6 +28,9 @@ const GRID_OFFSET = 2.6;
 /** Distancia de la pole a la línea de meta (m). */
 const POLE_BEHIND_LINE = 6;
 
+/** Circuitos ya armados, por definición y por auto. */
+const LOADED = new WeakMap<TrackDefinition, WeakMap<CarSpec, Track>>();
+
 export class Track {
   readonly geometry: TrackGeometry;
   readonly analysis: TrackAnalysis;
@@ -61,8 +64,23 @@ export class Track {
     this.pits = { side: def.pits.side, from: g.designToS(def.pits.from), to: g.designToS(def.pits.to) };
   }
 
+  /**
+   * Arma el circuito (geometría, análisis, trazada ideal…). Es de sólo
+   * lectura y cuesta ~1–2 s de cálculo, así que se guarda: volver a correr en
+   * el mismo circuito no lo recalcula.
+   */
   static load(def: TrackDefinition, spec: CarSpec = F1_SPEC): Track {
-    return new Track(def, spec);
+    let bySpec = LOADED.get(def);
+    if (!bySpec) {
+      bySpec = new WeakMap();
+      LOADED.set(def, bySpec);
+    }
+    let track = bySpec.get(spec);
+    if (!track) {
+      track = new Track(def, spec);
+      bySpec.set(spec, track);
+    }
+    return track;
   }
 
   get length(): number {

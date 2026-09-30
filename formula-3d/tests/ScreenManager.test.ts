@@ -201,6 +201,32 @@ describe('ScreenManager', () => {
     expect(onAction).toHaveBeenCalledWith('confirm');
   });
 
+  it('mientras se arma la pantalla nueva ignora las teclas, pero ya las recibe durante el barrido final', async () => {
+    let finishReveal: () => void = () => undefined;
+    let finishCover: () => void = () => undefined;
+    const transition: TransitionPlayer = {
+      cover: () => new Promise<void>((resolve) => (finishCover = resolve)),
+      reveal: () => new Promise<void>((resolve) => (finishReveal = resolve)),
+    };
+    const { manager } = setup(transition);
+    await manager.goTo('splash', undefined);
+    const splashAction = vi.fn();
+    (manager.top as { onAction?: (a: string) => void }).onAction = splashAction;
+    const going = manager.goTo('menu', undefined);
+    // Tapando la pantalla (todavía no existe el menú): se ignora.
+    manager.dispatch('confirm');
+    expect(splashAction).not.toHaveBeenCalled();
+    finishCover();
+    await vi.waitFor(() => expect(manager.currentId).toBe('menu'));
+    // El menú ya está a la vista y el barrido todavía destapa: la tecla llega.
+    const menuAction = vi.fn();
+    (manager.top as { onAction?: (a: string) => void }).onAction = menuAction;
+    manager.dispatch('confirm');
+    expect(menuAction).toHaveBeenCalledWith('confirm');
+    finishReveal();
+    await going;
+  });
+
   it('si una pantalla falla al entrar, cae a la de rescate y destapa igual', async () => {
     const reveal = vi.fn(() => Promise.resolve());
     const transition: TransitionPlayer = { cover: () => Promise.resolve(), reveal };

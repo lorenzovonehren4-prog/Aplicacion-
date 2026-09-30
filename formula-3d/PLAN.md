@@ -1059,6 +1059,33 @@ revisión propia del código + resumen y espera de confirmación.
       Novato 71 %, Amateur 77 %, Profesional 85 %, Leyenda 94 % de la
       trazada ideal (antes 79/84/90/95 %), y frenan antes en los niveles bajos.
 
+### Versión 1.8 — Errores, circuito siempre en calidad alta y carga ✅
+
+- [x] Superficies plegadas en curvas cerradas (cuñas negras sobre la pista):
+      en una S la escapatoria de afuera de una curva queda adentro de la
+      siguiente y el muro pasaba el centro de giro. El límite del muro
+      interior ahora mira la curva más cerrada de los 30 m alrededor, y toda
+      cinta del circuito tiene una protección: un punto que no avanza respecto
+      de la fila anterior se queda donde estaba (`build/ribbon.ts`). Revisado
+      con vistas aéreas de los dos circuitos.
+- [x] Teclas perdidas al cambiar de pantalla: el gestor descartaba toda
+      acción hasta que terminaba el barrido; en equipos lentos un ENTER en el
+      tutorial no hacía nada. Ahora la pantalla nueva recibe teclas en cuanto
+      está armada y a la vista (prueba en `ScreenManager.test.ts`).
+- [x] Circuito siempre en calidad alta: texturas de 1024 px, densidad
+      completa de árboles y público y árboles detallados en todos los niveles
+      gráficos; el nivel sólo cambia lo que cuesta dibujar (resolución,
+      sombras, efectos). Árboles con tres niveles de detalle por distancia
+      (`LOD` por celda de 200 m: completo, medio desde 380 m y un solo bulto
+      desde 900 m), así la calidad Media dibuja lo mismo que antes (~0,5–0,65 M
+      triángulos). El precalentamiento sube a la GPU los tres niveles.
+- [x] Carga más rápida: grava, pasto y asfalto se pintan píxel a píxel en
+      memoria (grava de 7,9 s a 0,2 s; pasto de 1,7 s a 0,2 s; asfalto de 1,5
+      a 0,7 s en Chromium sin GPU), se guardan para la próxima carrera y el
+      circuito calculado (trazada ideal, análisis) también se guarda.
+- [x] Paquete publicado probado de punta a punta (portada, tutorial, menú,
+      selección, carga y largada) sin errores en la consola.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1143,3 +1170,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.5**: rojo con tiempo en la línea dinámica y gráficos de pista (pedido del usuario).
 - **Versión 1.6**: trazados reales, pistas más anchas y dirección progresiva (pedido del usuario).
 - **Versión 1.7**: árboles fuera de la pista, guardián de bordes y bots más justos (pedido del usuario).
+- **Versión 1.8**: errores, circuito siempre en calidad alta y carga (pedido del usuario).

@@ -43,6 +43,8 @@ const KERB_OUTSIDE = 1.7;
 const KERB_MAX_RADIUS = 360;
 /** Ventana de suavizado de los muros (m a cada lado). */
 const WALL_SMOOTHING = 24;
+/** Tramo (m, a cada lado) donde se busca la curva más cerrada para limitar el muro interior. */
+const INSIDE_REACH = 30;
 
 export function planTrackside(def: TrackDefinition, geometry: TrackGeometry, analysis: TrackAnalysis): Trackside {
   const n = geometry.count;
@@ -151,6 +153,17 @@ function smoothWalls(geometry: TrackGeometry, runoff: Float32Array, kerb: Float3
     }
     dilated[i] = max;
   }
+  // Curvatura hacia este lado más cerrada en los alrededores: en una S (curva
+  // a un lado pegada a otra al otro) la escapatoria de afuera de una queda
+  // adentro de la siguiente, y mirar sólo el punto dejaba el muro más allá
+  // del centro de giro unos metros más adelante (la cinta se plegaba).
+  const reach = Math.max(1, Math.round(INSIDE_REACH / geometry.ds));
+  const inside = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let max = 0;
+    for (let k = -reach; k <= reach; k++) max = Math.max(max, (geometry.curvature[geometry.wrapIndex(i + k)] ?? 0) * side);
+    inside[i] = max;
+  }
   // …y luego un promedio para que las transiciones sean curvas suaves.
   const wall = new Float32Array(n);
   for (let i = 0; i < n; i++) {
@@ -158,8 +171,8 @@ function smoothWalls(geometry: TrackGeometry, runoff: Float32Array, kerb: Float3
     for (let k = -window; k <= window; k++) sum += dilated[geometry.wrapIndex(i + k)] ?? 0;
     let distance = hw + sum / (2 * window + 1);
     // En el interior de una curva el muro no puede pasar el centro de giro.
-    const k = (geometry.curvature[i] ?? 0) * side;
-    if (k > 0) distance = Math.min(distance, Math.max(hw + 2.5, 0.75 / k));
+    const k = inside[i] ?? 0;
+    if (k > 0) distance = Math.min(distance, Math.max(hw + 2.5, 0.7 / k));
     wall[i] = distance;
   }
   return wall;

@@ -84,6 +84,12 @@ export class ScreenManager<Params extends object> {
   private readonly flow: FlowTable;
   private readonly animationTimeout: number;
   private busy = false;
+  /**
+   * La pantalla nueva ya está armada y a la vista (sólo falta que termine el
+   * barrido): ya recibe teclas. Antes se descartaban hasta el final de la
+   * animación, y en equipos lentos un ENTER se perdía.
+   */
+  private inputOpen = false;
   private pending: Request | null = null;
 
   constructor(private readonly options: ScreenManagerOptions) {
@@ -154,9 +160,9 @@ export class ScreenManager<Params extends object> {
     for (const screen of this.stack) screen.fixedUpdate?.(step);
   }
 
-  /** Entrega una acción de UI a la pantalla de arriba (se ignora durante un cambio). */
+  /** Entrega una acción de UI a la pantalla de arriba (se ignora mientras se arma la pantalla nueva). */
   dispatch(action: UiAction): void {
-    if (this.busy) return;
+    if (this.busy && !this.inputOpen) return;
     this.top?.onAction?.(action);
   }
 
@@ -187,6 +193,7 @@ export class ScreenManager<Params extends object> {
 
   private async run(request: Request): Promise<void> {
     this.busy = true;
+    this.inputOpen = false;
     let ok = false;
     try {
       ok = await this.execute(request);
@@ -194,6 +201,7 @@ export class ScreenManager<Params extends object> {
       this.options.onError?.(error);
     } finally {
       this.busy = false;
+      this.inputOpen = false;
       request.resolve(ok);
       const next = this.pending;
       this.pending = null;
@@ -245,6 +253,7 @@ export class ScreenManager<Params extends object> {
       }
       this.options.onChange?.({ from, to: id, kind: 'goTo', stack: this.stackIds });
       this.top?.reveal?.();
+      this.inputOpen = true;
       return true;
     } finally {
       // Pase lo que pase, la pantalla no queda tapada.

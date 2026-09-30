@@ -30,7 +30,7 @@ import { createSky, type SkyEnvironment } from './build/sky';
 import { weatherLook, type WeatherLook } from './weather';
 import type { Weather } from '../core/save/schema';
 import { buildAsphalt, buildGround, buildKerbs, buildPaint, buildPitLane, buildRunoff } from './build/surfaces';
-import { surfaceTextureSize } from './build/textures';
+import { SURFACE_TEXTURE_SIZE } from './build/textures';
 import type { Track } from './Track';
 
 export interface TrackScene {
@@ -83,9 +83,13 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     root,
     own,
     rng: new Random(seedFrom(track.def.id)),
+    // El contenido del circuito (texturas, árboles, público) es siempre el de
+    // calidad alta: el nivel gráfico sólo cambia lo que cuesta dibujar
+    // (resolución, sombras, efectos). Los árboles lejanos usan versiones más
+    // simples por distancia, así que la densidad completa no pesa.
     anisotropy: options.anisotropy,
-    textureSize: surfaceTextureSize(options.quality),
-    density: preset.sceneryDensity,
+    textureSize: SURFACE_TEXTURE_SIZE,
+    density: Math.max(1, preset.sceneryDensity),
     detailShadows: options.quality === 'high' || options.quality === 'ultra',
     tickers: [],
   };

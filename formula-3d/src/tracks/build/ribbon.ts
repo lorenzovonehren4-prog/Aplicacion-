@@ -47,8 +47,11 @@ export function buildRibbon(geometry: TrackGeometry, options: RibbonOptions): Bu
   const colors: number[] = [];
   const indices: number[] = [];
   const point = { x: 0, z: 0 };
+  const tangent = { x: 0, z: 0 };
   let columns = -1;
   let hasColor = false;
+  /** Posición (x, z) de cada columna en la fila anterior (para no plegar la cinta). */
+  const previous: number[] = [];
 
   for (let k = 0; k <= rows; k++) {
     const along = Math.min(span, k * options.step);
@@ -72,7 +75,19 @@ export function buildRibbon(geometry: TrackGeometry, options: RibbonOptions): Bu
         const prev = profile[j - 1];
         if (prev) travelled += Math.hypot(p[0] - prev[0], p[1] - prev[1]);
       }
-      geometry.pointAt(s, p[0], point);
+      geometry.pointAt(s, p[0], point, tangent);
+      // Protección contra pliegues: en el lado de adentro de una curva muy
+      // cerrada, un punto lejos del centro puede quedar "detrás" del de la
+      // fila anterior y los triángulos se dan vuelta y tapan la pista. Si el
+      // punto no avanza, se queda donde estaba (el borde se aplana ahí).
+      const px = previous[j * 2];
+      const pz = previous[j * 2 + 1];
+      if (px !== undefined && pz !== undefined && (point.x - px) * tangent.x + (point.z - pz) * tangent.z < 0) {
+        point.x = px;
+        point.z = pz;
+      }
+      previous[j * 2] = point.x;
+      previous[j * 2 + 1] = point.z;
       positions.push(point.x, p[1], point.z);
       const u =
         options.u === 'meters' ? travelled / (options.uLength ?? 1) : total > 0 ? travelled / total : j / (profile.length - 1);

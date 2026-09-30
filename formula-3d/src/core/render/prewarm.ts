@@ -11,6 +11,7 @@
 import {
   Mesh,
   type InstancedMesh,
+  type LOD,
   WebGLRenderTarget,
   type Camera,
   type Material,
@@ -40,8 +41,18 @@ function texturesOf(material: Material, out: Set<Texture>): void {
 export function prewarm(renderer: WebGLRenderer, scene: Scene, camera: Camera): void {
   const hidden: Object3D[] = [];
   const emptyInstances: InstancedMesh[] = [];
+  const lods: LOD[] = [];
   const textures = new Set<Texture>();
   scene.traverse((object) => {
+    // Niveles de detalle: se dibujan todos (si no, el LOD elige uno solo y
+    // los otros subirían su geometría recién al aparecer: un tirón).
+    if ((object as Partial<LOD>).isLOD === true) {
+      const lod = object as LOD;
+      if (lod.autoUpdate) {
+        lods.push(lod);
+        lod.autoUpdate = false;
+      }
+    }
     if (!object.visible) {
       hidden.push(object);
       object.visible = true;
@@ -69,5 +80,6 @@ export function prewarm(renderer: WebGLRenderer, scene: Scene, camera: Camera): 
     target.dispose();
     for (const object of hidden) object.visible = false;
     for (const mesh of emptyInstances) mesh.count = 0;
+    for (const lod of lods) lod.autoUpdate = true;
   }
 }

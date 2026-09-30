@@ -1,6 +1,6 @@
 /** Contexto compartido por las etapas de construcción del escenario del circuito. */
 
-import { InstancedMesh, Matrix4, Mesh, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material, type Object3D, type Texture } from 'three';
+import { InstancedMesh, LOD, Matrix4, Mesh, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material, type Object3D, type Texture } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Disposer } from '../../core/utils/Disposer';
 import type { Random } from '../../core/utils/random';
@@ -130,5 +130,66 @@ export function addChunkedInstances(
     mesh.matrixAutoUpdate = false;
     mesh.computeBoundingSphere();
     ctx.root.add(mesh);
+  }
+}
+
+/**
+ * Como `addChunkedInstances`, pero cada celda es un `LOD` con una versión del
+ * objeto por distancia (la cámara elige sola cuál dibujar en cada cuadro):
+ * cerca, la geometría completa; lejos, versiones más simples que a esa
+ * distancia se ven igual. Las instancias se guardan relativas al centro de
+ * la celda, que es desde donde el LOD mide la distancia.
+ * @param levels geometría de cada nivel y la distancia (m) desde la que se usa
+ */
+export function addChunkedLodInstances(
+  ctx: BuildContext,
+  levels: ReadonlyArray<{ geometry: BufferGeometry; distance: number }>,
+  material: Material,
+  items: readonly InstanceItem[],
+  options: { cell: number; name: string; cast: boolean; receive: boolean },
+): void {
+  const cells = new Map<string, InstanceItem[]>();
+  for (const item of items) {
+    const key = `${Math.floor(item.x / options.cell)}:${Math.floor(item.z / options.cell)}`;
+    let list = cells.get(key);
+    if (!list) {
+      list = [];
+      cells.set(key, list);
+    }
+    list.push(item);
+  }
+  const matrix = new Matrix4();
+  const q = new Quaternion();
+  const up = new Vector3(0, 1, 0);
+  const position = new Vector3();
+  const scale = new Vector3();
+  for (const list of cells.values()) {
+    let cx = 0;
+    let cz = 0;
+    for (const item of list) {
+      cx += item.x / list.length;
+      cz += item.z / list.length;
+    }
+    const lod = new LOD();
+    lod.name = options.name;
+    lod.position.set(cx, 0, cz);
+    lod.matrixAutoUpdate = false;
+    lod.updateMatrix();
+    for (const level of levels) {
+      const mesh = new InstancedMesh(level.geometry, material, list.length);
+      list.forEach((item, i) => {
+        q.setFromAxisAngle(up, item.yaw);
+        matrix.compose(position.set(item.x - cx, item.y, item.z - cz), q, scale.set(item.sx, item.sy, item.sz));
+        mesh.setMatrixAt(i, matrix);
+        mesh.setColorAt(i, item.color);
+      });
+      mesh.castShadow = options.cast;
+      mesh.receiveShadow = options.receive;
+      mesh.name = options.name;
+      mesh.matrixAutoUpdate = false;
+      mesh.computeBoundingSphere();
+      lod.addLevel(mesh, level.distance, level.distance * 0.05);
+    }
+    ctx.root.add(lod);
   }
 }

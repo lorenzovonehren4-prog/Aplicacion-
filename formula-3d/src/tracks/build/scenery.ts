@@ -31,7 +31,7 @@ import {
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addChunkedInstances, addMerged, addMesh, type BuildContext, type InstanceItem } from './context';
+import { addChunkedInstances, addChunkedLodInstances, addMerged, addMesh, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
 import { createDistanceBoards, createSpectator, createWaterNormals, createWindows } from './textures';
 import { createTreeMaterial, treeSpecies } from './trees';
@@ -130,7 +130,13 @@ export function insidePolygon(x: number, z: number, polygon: ReadonlyArray<reado
 // ─── Árboles ─────────────────────────────────────────────────────────────
 
 /** Tamaño de las celdas en que se agrupan árboles y público (m). */
-const TREE_CELL = 320;
+const TREE_CELL = 200;
+/**
+ * Distancia (m, desde el centro de cada celda de árboles) a la que se pasa al
+ * detalle medio y al lejano. Con celdas de 200 m, todo árbol a menos de
+ * ~240 m de la cámara se dibuja con el detalle completo.
+ */
+const TREE_LOD_DISTANCES = [0, 380, 900] as const;
 const CROWD_CELL = 120;
 
 export interface KeepOut {
@@ -140,7 +146,10 @@ export interface KeepOut {
 
 export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
   const g = ctx.track.geometry;
-  const species = treeSpecies(ctx.detailShadows);
+  // Tres niveles de detalle por distancia (siempre la calidad más alta de cerca).
+  const near = treeSpecies('near');
+  const mid = treeSpecies('mid');
+  const far = treeSpecies('far');
   const perHectare = ctx.track.def.scenery.treeDensity * 0.55 * ctx.density;
   const cell = Math.sqrt(10000 / Math.max(0.5, perHectare));
   const reach = 420;
@@ -191,17 +200,19 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
   const time = { value: 0 };
   ctx.tickers.push((seconds) => (time.value = seconds));
   const material = ctx.own.own(createTreeMaterial(time));
-  species.forEach((geometry, kind) => {
-    ctx.own.own(geometry);
+  for (const geometry of [...near, ...mid, ...far]) ctx.own.own(geometry);
+  for (let kind = 0; kind < 3; kind++) {
     const list = placements[kind] ?? [];
-    if (list.length === 0) return;
-    addChunkedInstances(ctx, geometry, material, list, {
-      cell: TREE_CELL,
-      name: `arboles-${kind}`,
-      cast: ctx.detailShadows,
-      receive: false,
-    });
-  });
+    const levels = [near[kind], mid[kind], far[kind]];
+    if (list.length === 0 || levels.some((level) => !level)) continue;
+    addChunkedLodInstances(
+      ctx,
+      levels.map((geometry, i) => ({ geometry: geometry as BufferGeometry, distance: TREE_LOD_DISTANCES[i] ?? 0 })),
+      material,
+      list,
+      { cell: TREE_CELL, name: `arboles-${kind}`, cast: ctx.detailShadows, receive: false },
+    );
+  }
 }
 
 // ─── Tribunas ────────────────────────────────────────────────────────────
