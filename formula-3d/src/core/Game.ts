@@ -3,7 +3,7 @@
  * Ningún módulo usa variables globales: todo cuelga de la instancia de `Game`.
  */
 
-import { prewarm } from './render/prewarm';
+import { compileScene, prewarm } from './render/prewarm';
 import { AudioManager } from '../audio/AudioManager';
 import { MenuMusic } from '../audio/MenuMusic';
 import type { UiSound } from '../audio/UiSounds';
@@ -199,14 +199,12 @@ export class Game {
       studio.onGraphicsChanged(this.render.currentGraphics);
       // Con compilación paralela de shaders se espera sin trabar la animación;
       // sin ella, se compila de una vez (evita el tirón del primer fotograma).
+      // Siempre para el destino real (lienzo o búfer): si no, se compila dos veces.
       const renderer = this.render.renderer;
-      if (renderer.extensions.has('KHR_parallel_shader_compile')) {
-        await renderer.compileAsync(studio.scene, studio.camera);
-      } else {
-        renderer.compile(studio.scene, studio.camera);
-      }
+      const toCanvas = this.render.drawsToCanvas;
+      await compileScene(renderer, studio.scene, studio.camera, toCanvas);
       // Y sube su geometría y texturas: el menú aparece sin un primer cuadro lento.
-      prewarm(renderer, studio.scene, studio.camera);
+      prewarm(renderer, studio.scene, studio.camera, toCanvas);
       // Si se liberó mientras se creaba, `releaseStudio` se encarga de éste.
       if (this.studioGeneration === generation) this.studio = studio;
       return studio;

@@ -1,10 +1,17 @@
 /**
  * Ajuste automático de rendimiento: mide los FPS reales en carrera y, si el
- * equipo no llega al objetivo, baja primero la resolución interna y después
- * el nivel de calidad (sombras, posprocesado, MSAA). Si el objetivo se cumple
- * con holgura durante un buen rato, vuelve a subir la resolución de a poco
- * (nunca la calidad: eso lo decide el jugador en Ajustes). Si una subida hace
- * caer los FPS otra vez, no vuelve a intentarlo: así no oscila.
+ * equipo no llega al objetivo:
+ * 1. Baja el nivel de calidad (sombras, posprocesado, MSAA), un escalón por
+ *    vez. Cambiar de nivel recompila los sombreadores, así que el nivel nuevo
+ *    rige desde la próxima sesión; en ésta la pantalla de carrera alivia al
+ *    instante lo que no recompila nada (ver `RenderHost.lighten`).
+ * 2. Ya en Baja, recién ahí baja la resolución interna, y nunca de
+ *    `MIN_SCALE`: la imagen tiene que seguir nítida (antes bajaba primero la
+ *    resolución, hasta 60 %, y el juego quedaba borroso).
+ * Si el objetivo se cumple con holgura durante un buen rato, vuelve a subir la
+ * resolución de a poco (nunca la calidad: eso lo decide el jugador en
+ * Ajustes). Si una subida hace caer los FPS otra vez, no vuelve a intentarlo:
+ * así no oscila.
  *
  * Lógica pura: recibe la duración de cada cuadro y devuelve una decisión. La
  * pantalla de carrera la aplica en los Ajustes (queda guardada).
@@ -35,9 +42,10 @@ const UP_AT = 0.97;
 const UP_AFTER = 20;
 /** Si los FPS caen antes de este tiempo tras una subida, la subida falló (s). */
 const UP_PROBATION = 15;
-const MIN_SCALE = 0.6;
+/** Resolución mínima: más abajo la imagen se ve borrosa. */
+const MIN_SCALE = 0.8;
 /** Escalón de resolución al bajar y al subir (se sube más despacio). */
-const SCALE_STEP = 0.15;
+const SCALE_STEP = 0.1;
 const UP_STEP = 0.05;
 
 export class PerformanceGovernor {
@@ -101,14 +109,14 @@ export class PerformanceGovernor {
   }
 
   private stepDown(state: GovernorState): GovernorDecision | null {
-    if (state.resolutionScale - SCALE_STEP >= MIN_SCALE - 1e-6) {
-      return { kind: 'resolution', scale: round(state.resolutionScale - SCALE_STEP) };
-    }
+    // Primero el nivel de calidad, con la resolución entera (nítida).
     const index = QUALITY_LEVELS.indexOf(state.quality);
     const lower = QUALITY_LEVELS[index - 1];
-    if (!lower) return null;
-    // Al bajar de nivel, la resolución vuelve a un punto intermedio.
-    return { kind: 'quality', quality: lower, scale: 0.85 };
+    if (lower) return { kind: 'quality', quality: lower, scale: 1 };
+    // En Baja: la resolución, sin pasar del mínimo.
+    const scale = round(Math.max(MIN_SCALE, state.resolutionScale - SCALE_STEP));
+    if (scale < state.resolutionScale - 1e-6) return { kind: 'resolution', scale };
+    return null;
   }
 }
 

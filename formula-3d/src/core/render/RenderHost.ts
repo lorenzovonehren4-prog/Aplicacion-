@@ -1,10 +1,11 @@
 /**
  * Renderer único del juego. Ver PLAN.md §4.4.
  *
- * Siempre dibuja a través de un `EffectComposer` (RenderPass con MSAA → bloom →
- * OutputPass con tone mapping y sRGB): así el antialiasing y el color son iguales
- * con y sin postprocesado, y la calidad cambia en caliente sin recrear el
- * contexto WebGL.
+ * Con posprocesado o MSAA dibuja a través de un `EffectComposer` (RenderPass
+ * con MSAA → bloom → OutputPass con tone mapping y sRGB). En calidad Baja dibuja
+ * directo al lienzo, que tiene su propio antialiasing (el del contexto WebGL,
+ * barato): así hasta en Baja los bordes se ven limpios. La calidad cambia en
+ * caliente sin recrear el contexto.
  */
 
 import {
@@ -48,6 +49,8 @@ export interface RenderView {
   onGraphicsChanged?(graphics: GraphicsSettings): void;
   /** Tamaño nuevo del lienzo en píxeles CSS y densidad de píxeles efectiva. */
   onResize?(width: number, height: number, pixelRatio: number): void;
+  /** Alivio inmediato sin recompilar sombreadores (ver `RenderHost.lighten`). */
+  onLighten?(): void;
 }
 
 export interface RenderStats {
@@ -75,6 +78,8 @@ export class RenderHost {
   private directRender = false;
   /** Ya se dibujó el cuadro congelado de la vista actual. */
   private frozenFrameDrawn = false;
+  /** Alivio en curso (ver `lighten`): hasta el próximo cambio de ajustes. */
+  private lightened = false;
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -83,7 +88,8 @@ export class RenderHost {
     this.graphics = graphics;
     this.renderer = new WebGLRenderer({
       canvas,
-      antialias: false,
+      // Antialiasing del lienzo: lo usa la calidad Baja (dibujo directo, sin composer).
+      antialias: true,
       alpha: false,
       stencil: false,
       powerPreference: 'high-performance',
@@ -143,6 +149,14 @@ export class RenderHost {
     return this.graphics;
   }
 
+  /**
+   * ¿La escena se dibuja directo al lienzo (sin composer)? Los sombreadores se
+   * compilan distinto según el destino: hay que precompilar para éste.
+   */
+  get drawsToCanvas(): boolean {
+    return this.directRender;
+  }
+
   /** Vista a dibujar (null = pantalla negra). */
   setView(view: RenderView | null): void {
     this.view = view;
@@ -161,6 +175,7 @@ export class RenderHost {
 
   applyGraphics(graphics: GraphicsSettings): void {
     this.graphics = graphics;
+    this.lightened = false;
     const preset = QUALITY_PRESETS[graphics.quality];
 
     const shadows = graphics.shadows !== 'off';
@@ -184,13 +199,32 @@ export class RenderHost {
     this.view?.onGraphicsChanged?.(graphics);
   }
 
+  /**
+   * Alivio inmediato cuando faltan FPS en carrera, sin tocar nada que recompile
+   * sombreadores (eso queda para la próxima sesión): sin bloom, sin MSAA (el
+   * composer sigue: los sombreadores no cambian), densidad de píxeles 1 y la
+   * vista achica sus sombras. Dura hasta el próximo cambio de ajustes.
+   */
+  lighten(): void {
+    if (this.lightened) return;
+    this.lightened = true;
+    this.bloomPass.enabled = false;
+    if (this.msaaSamples > 0) {
+      this.composer.dispose();
+      this.composer = this.createComposer(0);
+    }
+    this.resize(this.width, this.height);
+    this.view?.onLighten?.();
+  }
+
   /** Tamaño del lienzo en píxeles CSS. */
   resize(width: number, height: number): void {
     this.width = Math.max(1, Math.floor(width));
     this.height = Math.max(1, Math.floor(height));
     const preset = QUALITY_PRESETS[this.graphics.quality];
     const deviceRatio = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
-    const pixelRatio = Math.max(0.5, Math.min(deviceRatio, preset.maxPixelRatio) * this.graphics.resolutionScale);
+    const maxRatio = this.lightened ? 1 : preset.maxPixelRatio;
+    const pixelRatio = Math.max(0.5, Math.min(deviceRatio, maxRatio) * this.graphics.resolutionScale);
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(this.width, this.height, false);
     this.composer.setPixelRatio(pixelRatio);

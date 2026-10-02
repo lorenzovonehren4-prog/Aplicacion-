@@ -48,6 +48,8 @@ export interface SkyEnvironment {
   /** Mueve la cámara de sombras para que siga al auto (sin parpadeo de texeles). */
   follow(x: number, z: number): void;
   setShadowMapSize(size: number): void;
+  /** Sombras más livianas (mapa de 512) sin apagarlas: no recompila sombreadores. */
+  lightenShadows(): void;
   /** Mueve las nubes (s). */
   update(time: number): void;
   dispose(): void;
@@ -130,6 +132,10 @@ export function createSky(renderer: WebGLRenderer, look: WeatherLook): SkyEnviro
       const sz = Math.round(z / texel) * texel;
       sun.target.position.set(sx, 0, sz);
       sun.position.set(sx + offset.x, offset.y, sz + offset.z);
+    },
+    lightenShadows() {
+      // Mapa más chico, pero sin apagarlas (apagarlas recompilaría todo).
+      if (mapSize > 512) this.setShadowMapSize(512);
     },
     setShadowMapSize(size: number) {
       mapSize = size;

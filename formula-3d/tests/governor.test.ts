@@ -33,15 +33,16 @@ describe('PerformanceGovernor', () => {
     expect(run(new PerformanceGovernor(), state, 20, 2.5)).toEqual([]);
   });
 
-  it('baja primero la resolución y después la calidad', () => {
+  it('baja primero la calidad (con la resolución entera) y la resolución sólo en Baja, hasta 80 %', () => {
     const state: GovernorState = { quality: 'high', resolutionScale: 1, fpsTarget: 60 };
     const decisions = run(new PerformanceGovernor(), state, 25, 60);
-    expect(decisions[0]).toEqual({ kind: 'resolution', scale: 0.85 });
-    expect(decisions[1]).toEqual({ kind: 'resolution', scale: 0.7 });
-    expect(decisions[2]).toEqual({ kind: 'quality', quality: 'medium', scale: 0.85 });
-    // Termina en el mínimo: calidad Baja y resolución mínima, sin seguir pidiendo cambios.
+    expect(decisions[0]).toEqual({ kind: 'quality', quality: 'medium', scale: 1 });
+    expect(decisions[1]).toEqual({ kind: 'quality', quality: 'low', scale: 1 });
+    expect(decisions[2]).toEqual({ kind: 'resolution', scale: 0.9 });
+    expect(decisions[3]).toEqual({ kind: 'resolution', scale: 0.8 });
+    // Termina en el mínimo: calidad Baja y 80 %, sin seguir pidiendo cambios (nunca borroso).
     expect(state.quality).toBe('low');
-    expect(state.resolutionScale).toBeCloseTo(0.7);
+    expect(state.resolutionScale).toBeCloseTo(0.8);
     expect(run(new PerformanceGovernor(), state, 25, 30)).toEqual([]);
   });
 
@@ -52,14 +53,13 @@ describe('PerformanceGovernor', () => {
 
   it('recupera resolución si sobra y no oscila si la subida falla', () => {
     const governor = new PerformanceGovernor();
-    const state: GovernorState = { quality: 'medium', resolutionScale: 0.7, fpsTarget: 60 };
+    const state: GovernorState = { quality: 'low', resolutionScale: 0.8, fpsTarget: 60 };
     const up = run(governor, state, 60, 40, true);
-    expect(up).toEqual([{ kind: 'resolution', scale: 0.75 }]);
-    // A la resolución nueva no llega: baja y ya no vuelve a subir.
+    expect(up).toEqual([{ kind: 'resolution', scale: 0.85 }]);
+    // A la resolución nueva no llega: vuelve a bajar y ya no vuelve a subir.
     const down = run(governor, state, 40, 8);
-    expect(down.length).toBeGreaterThan(0);
-    const after = state.resolutionScale;
+    expect(down).toEqual([{ kind: 'resolution', scale: 0.8 }]);
     expect(run(governor, state, 60, 120)).toEqual([]);
-    expect(state.resolutionScale).toBe(after);
+    expect(state.resolutionScale).toBe(0.8);
   });
 });

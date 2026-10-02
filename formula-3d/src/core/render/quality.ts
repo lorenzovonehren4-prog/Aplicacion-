@@ -109,9 +109,10 @@ export function classifyGpu(name: string | undefined): GpuClass {
   if (!name) return 'unknown';
   const gpu = name.toLowerCase();
   if (/swiftshader|llvmpipe|softpipe|microsoft basic render|software/.test(gpu)) return 'software';
-  if (/apple m\d/.test(gpu)) return 'apple';
+  // Safari oculta el modelo ("Apple GPU"): en una Mac actual es un chip M.
+  if (/apple m\d|apple gpu/.test(gpu)) return 'apple';
   if (/geforce|nvidia|quadro|rtx|gtx|radeon rx|radeon pro|arc a\d/.test(gpu)) return 'discrete';
-  if (/intel|iris|uhd|hd graphics|mali|adreno|powervr|apple gpu|radeon\(tm\) graphics|radeon graphics|vega \d/.test(gpu)) {
+  if (/intel|iris|uhd|hd graphics|mali|adreno|powervr|radeon\(tm\) graphics|radeon graphics|vega \d/.test(gpu)) {
     return 'integrated';
   }
   return 'unknown';
@@ -119,15 +120,16 @@ export function classifyGpu(name: string | undefined): GpuClass {
 
 /**
  * Calidad inicial según el equipo. Sólo se usa cuando todavía no hay
- * guardado; después el ajuste automático de rendimiento corrige en carrera.
- * - GPU por software o móvil → Baja.
- * - GPU integrada (la mayoría de las notebooks) o desconocida → Media.
- * - GPU dedicada o Apple M, con 6 núcleos o más → Alta.
+ * guardado (o cuando una migración reajusta los gráficos); después el ajuste
+ * automático de rendimiento corrige en carrera. Ante la duda, Baja: que el
+ * juego vaya fluido y nítido importa más que las sombras y el brillo.
+ * - GPU por software, móvil, integrada (la mayoría de las notebooks) o
+ *   desconocida → Baja.
+ * - GPU dedicada o Apple M → Media; con 6 núcleos o más → Alta.
  */
 export function detectQuality(hints: DeviceHints): QualityLevel {
   const gpu = classifyGpu(hints.gpu);
-  if (gpu === 'software' || hints.isMobile) return 'low';
+  if (hints.isMobile || (gpu !== 'discrete' && gpu !== 'apple')) return 'low';
   const cores = hints.hardwareConcurrency ?? 4;
-  if ((gpu === 'discrete' || gpu === 'apple') && cores >= 6) return 'high';
-  return 'medium';
+  return cores >= 6 ? 'high' : 'medium';
 }

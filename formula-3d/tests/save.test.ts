@@ -118,6 +118,18 @@ describe('sanitizeSave', () => {
 });
 
 describe('migrateSave', () => {
+  it('1 → 2: los ajustes gráficos vuelven a los del equipo (el resto queda igual)', () => {
+    const result = migrateSave({ version: 1, profile: { name: 'Ana' }, settings: { graphics: { quality: 'medium', resolutionScale: 0.6 }, audio: { master: 0.5 } } });
+    expect(result.data.version).toBe(SAVE_VERSION);
+    const settings = result.data.settings as Record<string, unknown>;
+    expect(settings.graphics).toBeUndefined();
+    expect(settings.audio).toEqual({ master: 0.5 });
+    expect(result.data.profile).toEqual({ name: 'Ana' });
+    const data = sanitizeSave(result.data, createDefaultSave(NOW, 'low'));
+    expect(data.settings.graphics.quality).toBe('low');
+    expect(data.settings.graphics.resolutionScale).toBe(1);
+  });
+
   it('aplica las migraciones en cadena hasta la versión objetivo', () => {
     const migrations = {
       1: (d: Record<string, unknown>) => ({ ...d, a: 1 }),

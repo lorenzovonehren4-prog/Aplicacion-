@@ -130,12 +130,14 @@ describe('curva de niveles', () => {
 
 describe('calidad gráfica', () => {
   it('detecta la calidad inicial', () => {
-    // Sin datos de la GPU: Media (el ajuste automático corrige en carrera).
-    expect(detectQuality({ hardwareConcurrency: 16 })).toBe('medium');
+    // Sin datos de la GPU: Baja (fluido y nítido ante la duda).
+    expect(detectQuality({ hardwareConcurrency: 16 })).toBe('low');
     expect(detectQuality({ hardwareConcurrency: 12, isMobile: true })).toBe('low');
     expect(detectQuality({ hardwareConcurrency: 16, gpu: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11)' })).toBe('high');
     expect(detectQuality({ hardwareConcurrency: 4, gpu: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1050)' })).toBe('medium');
-    expect(detectQuality({ hardwareConcurrency: 8, gpu: 'ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11)' })).toBe('medium');
+    // GPU integrada (la mayoría de las notebooks): Baja.
+    expect(detectQuality({ hardwareConcurrency: 8, gpu: 'ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11)' })).toBe('low');
+    expect(detectQuality({ hardwareConcurrency: 8, gpu: 'Apple GPU' })).toBe('high');
     expect(detectQuality({ hardwareConcurrency: 8, gpu: 'ANGLE (Apple, ANGLE Metal Renderer: Apple M2)' })).toBe('high');
     expect(detectQuality({ hardwareConcurrency: 8, gpu: 'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device))' })).toBe('low');
   });

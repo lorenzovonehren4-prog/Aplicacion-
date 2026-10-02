@@ -300,7 +300,7 @@ async function main() {
     await page2.waitForSelector('.screen--splash .splash__prompt');
     await page2.waitForTimeout(700);
     const stored = await page2.evaluate(() => localStorage.getItem('apice-gp:save'));
-    if (!stored?.includes('"version":1')) throw new Error('No se escribió el guardado en localStorage.');
+    if (!stored?.includes('"version":')) throw new Error('No se escribió el guardado en localStorage.');
     log('sin IndexedDB, el guardado se escribe en localStorage');
     await fallback.close();
   } finally {

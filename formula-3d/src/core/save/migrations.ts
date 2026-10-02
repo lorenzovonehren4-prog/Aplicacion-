@@ -1,8 +1,12 @@
 /**
  * Migraciones del guardado entre versiones. La migración con clave `n` lleva un
  * guardado de la versión `n` a la `n+1`. Se aplican en cadena hasta llegar a
- * `SAVE_VERSION`. Hoy el esquema está en su versión 1, así que no hay ninguna:
- * la primera se agregará cuando un campo cambie de significado o de nombre.
+ * `SAVE_VERSION`.
+ *
+ * - 1 → 2: los ajustes gráficos vuelven a los del equipo. El ajuste automático
+ *   viejo bajaba primero la resolución (hasta 60 %) y lo dejaba guardado: el
+ *   juego quedaba borroso para siempre. Sin `graphics`, el saneo usa la calidad
+ *   detectada para el equipo, con la resolución entera.
  */
 
 import { isRecord } from './sanitize';
@@ -10,7 +14,13 @@ import { SAVE_VERSION } from './schema';
 
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {};
+export const MIGRATIONS: Readonly<Record<number, Migration>> = {
+  1: (data) => {
+    const settings = isRecord(data.settings) ? { ...data.settings } : {};
+    delete settings.graphics;
+    return { ...data, settings };
+  },
+};
 
 export interface MigrationResult {
   data: Record<string, unknown>;

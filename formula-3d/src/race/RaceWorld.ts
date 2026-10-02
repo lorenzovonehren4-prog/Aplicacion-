@@ -152,8 +152,9 @@ export class RaceWorld implements RenderView {
   /**
    * Sube a la GPU todo el circuito (geometría y texturas) dibujándolo una vez,
    * oculto, desde arriba: después no hay tirones cuando algo entra en cuadro.
+   * @param toCanvas el mismo destino donde se dibuja la carrera (ver `prewarm`)
    */
-  prewarm(renderer: WebGLRenderer): void {
+  prewarm(renderer: WebGLRenderer, toCanvas: boolean): void {
     const g = this.vehicle.track.geometry;
     let minX = Infinity;
     let maxX = -Infinity;
@@ -171,9 +172,9 @@ export class RaceWorld implements RenderView {
     overhead.position.set((minX + maxX) / 2, height, (minZ + maxZ) / 2);
     overhead.lookAt((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
     overhead.updateMatrixWorld();
-    prewarm(renderer, this.scene, overhead);
+    prewarm(renderer, this.scene, overhead, toCanvas);
     // Y desde la cámara de verdad (las sombras y los reflejos de su encuadre).
-    prewarm(renderer, this.scene, this.camera);
+    prewarm(renderer, this.scene, this.camera, toCanvas);
   }
 
   /** Duración total de la presentación (s): depende de si hay parrilla que mostrar. */
@@ -333,6 +334,11 @@ export class RaceWorld implements RenderView {
     this.speedFx.grade = graphics.postprocessing ? 1 : 0;
     // Sin mapa de sombras el sol deja de proyectarlas (auto y escenario).
     this.trackScene.sky.setShadowMapSize(shadowMapSize(graphics.shadows, graphics.quality));
+  }
+
+  /** Alivio sin recompilar: sombras más chicas (el sol las sigue proyectando). */
+  onLighten(): void {
+    this.trackScene.sky.lightenShadows();
   }
 
   onResize(width: number, height: number, pixelRatio: number): void {

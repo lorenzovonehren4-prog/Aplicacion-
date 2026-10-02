@@ -16,7 +16,7 @@ import { createDefaultGarage, type GarageSetup } from '../../garage/setup';
 import { createDefaultStats, type CareerStats } from '../../progression/career';
 import { createDefaultBindings, type KeyBindings } from '../input/bindings';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** Clave del guardado principal en el almacenamiento. */
 export const SAVE_KEY = 'save';

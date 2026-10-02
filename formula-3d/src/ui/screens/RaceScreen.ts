@@ -15,6 +15,7 @@ import { Vector3 } from 'three';
 import type { Object3D } from 'three';
 import { activeAssists, LEVEL_INFO, xpMultiplier, type ActiveAssists } from '../../assists/presets';
 import type { Game } from '../../core/Game';
+import { compileScene } from '../../core/render/prewarm';
 import { PerformanceGovernor, type GovernorDecision } from '../../core/render/PerformanceGovernor';
 import { QUALITY_PRESETS } from '../../core/render/quality';
 import type { UiAction } from '../../core/input/actions';
@@ -366,6 +367,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
       // Precompila los shaders con la cámara de presentación (evita tirones al arrancar).
       this.loading?.setProgress(0.95, 'Preparando sombreadores');
+      // Primero los ajustes gráficos (p. ej. si el sol proyecta sombras): cambian
+      // los sombreadores; aplicados después, todo se volvería a compilar.
+      world.onGraphicsChanged(game.render.currentGraphics);
       world.startIntro(this.effectCars);
       world.update(0, 1, session.vehicle.telemetry);
       // También lo que ahora está oculto (trazada apagada, fantasma, rivales lejanos…):
@@ -378,12 +382,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         }
       });
       const renderer = game.render.renderer;
+      // Para el destino real (lienzo o búfer del posprocesado): si no, cada sombreador se compila dos veces.
+      const toCanvas = game.render.drawsToCanvas;
       try {
-        if (renderer.extensions.has('KHR_parallel_shader_compile')) {
-          await renderer.compileAsync(world.scene, world.camera);
-        } else {
-          renderer.compile(world.scene, world.camera);
-        }
+        await compileScene(renderer, world.scene, world.camera, toCanvas);
       } finally {
         for (const object of hidden) object.visible = false;
       }
@@ -392,7 +394,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.loading?.setProgress(0.97, 'Subiendo el circuito a la GPU');
       await waitFrames(2);
       if (this.cancelled) return;
-      world.prewarm(renderer);
+      world.prewarm(renderer, toCanvas);
       this.loading?.setProgress(1, 'Listo');
       this.buildInterface(track, session);
       game.render.setView(world);
@@ -1024,12 +1026,14 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
   private applyPerformance(decision: GovernorDecision): void {
     // Bajar el nivel de calidad recompila todos los sombreadores (un tirón de
-    // varios cientos de ms): en carrera sólo se toca la resolución y el nivel
-    // nuevo queda para la próxima sesión.
+    // varios cientos de ms): el nivel nuevo queda para la próxima sesión y en
+    // ésta se alivia al instante lo que no recompila nada (sin bloom ni MSAA,
+    // sombras más chicas), con la imagen igual de nítida.
     if (decision.kind === 'quality') {
       if (this.pendingQuality) return;
       this.pendingQuality = decision;
-      this.hud?.message('RENDIMIENTO', `Calidad ${QUALITY_LABELS[decision.quality]} desde la próxima sesión`, 'info');
+      this.game.render.lighten();
+      this.hud?.message('RENDIMIENTO', `Efectos aliviados · calidad ${QUALITY_LABELS[decision.quality]} desde la próxima sesión`, 'info');
       return;
     }
     this.commitPerformance(decision);
