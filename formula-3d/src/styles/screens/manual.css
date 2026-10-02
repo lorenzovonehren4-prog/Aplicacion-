@@ -205,7 +205,7 @@
   border-top: 1px solid var(--c-line);
 }
 
-@media (max-width: 900px) {
+@container ui (max-width: 900px) {
   .manual__panel {
     overflow-y: auto;
   }

@@ -31,6 +31,7 @@ import { itemPreview } from '../components/ItemPreview';
 import { h, prefersReducedMotion, svg } from '../dom';
 import { ICONS } from '../icons';
 import { BaseScreen } from './BaseScreen';
+import { uiWidth } from '../scale';
 
 type GarageTab = 'paint' | 'material' | 'rims' | 'wing' | 'helmet' | 'number' | 'celebration';
 
@@ -177,7 +178,7 @@ export class GarageScreen extends BaseScreen {
   }
 
   private frameShift(): number {
-    return window.innerWidth < 900 ? 0 : 0.16;
+    return uiWidth() < 900 ? 0 : 0.16;
   }
 
   /** Guarda un cambio y lo muestra en el auto. */

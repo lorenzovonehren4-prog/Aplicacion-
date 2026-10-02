@@ -1107,6 +1107,34 @@ revisión propia del código + resumen y espera de confirmación.
       bastante menos que la versión por tiempo (4–17 s por vuelta contra
       11–35 s).
 
+### Versión 1.10 — La interfaz en ventanas chicas y otra ronda de errores ✅
+
+- [x] **Interfaz que se achica en proporción** (`ui/scale.ts`): en el panel de
+      claude.ai (~720×560) el menú se encimaba (logo sobre "Competir",
+      descripción sobre "Ajustes"), la selección de carrera quedaba cortada sin
+      el botón de salida y el garaje tapaba el auto. Ahora, por debajo de
+      1060×660, toda la interfaz (`#ui` y los avisos de logro) se achica con
+      `zoom` (mínimo 0,6) y mantiene la distribución de escritorio; el 3D sigue
+      usando la ventana entera. Las reglas por tamaño de cada pantalla pasaron
+      de `@media` a `@container ui` (miden el tamaño de diseño, no la ventana),
+      y las medidas en px de pantalla (chispas de resultados, desplazamiento
+      de listas con el teclado, encuadre del auto en menú, garaje y tutorial)
+      tienen en cuenta la escala.
+- [x] **Fuga de memoria de video**: cada vuelta al menú creaba de nuevo las
+      tablas de las luces de área del estudio (`RectAreaLightUniformsLib.init`,
+      dos texturas de 64×64) sin liberar las anteriores: +2 texturas por
+      carrera. Ahora se crean una sola vez (14 texturas en el menú después de
+      tres carreras seguidas, igual que al arrancar).
+- [x] La portada dice "Haz clic o pulsa cualquier tecla": dentro del panel de
+      claude.ai las teclas no llegan al juego hasta hacer clic en él.
+- [x] Recorrido completo en Chromium con autopiloto y el dibujo apagado (para
+      ir rápido): carreras rápidas enteras en Monza y Albert Park (panel final,
+      resultados, podio), ronda 1 del campeonato hasta la tabla y la ronda 2,
+      dos contrarrelojes seguidas con fantasma, práctica con pausa, reinicio y
+      salida, y todas las pantallas a 720×560, 1024×640 y 1280×720: consola sin
+      errores ni advertencias. Costo de CPU por cuadro en carrera (sin dibujar):
+      0,5 ms con 12 autos y 0,9 ms con 20.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1193,3 +1221,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.7**: árboles fuera de la pista, guardián de bordes y bots más justos (pedido del usuario).
 - **Versión 1.8**: errores, circuito siempre en calidad alta y carga (pedido del usuario).
 - **Versión 1.9**: dirección con teclado intermedia entre la directa y la por tiempo (pedido del usuario).
+- **Versión 1.10**: interfaz en ventanas chicas (panel de claude.ai), fuga de texturas y recorrido completo sin errores (pedido del usuario).

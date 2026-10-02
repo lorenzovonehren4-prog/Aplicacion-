@@ -17,6 +17,7 @@ import { createLogo } from '../components/Logo';
 import { createMenuButton, denyFeedback } from '../components/MenuButton';
 import { PlayerCard } from '../components/PlayerCard';
 import { BaseScreen } from './BaseScreen';
+import { uiWidth } from '../scale';
 
 /**
  * Cómo se abre cada acceso del menú. Sólo figuran los que ya existen: el resto
@@ -69,7 +70,7 @@ export class MainMenuScreen extends BaseScreen {
       this.studio = null;
     }
     this.game.render.setView(this.studio);
-    this.studio?.setFrameShift(frameShiftFor(window.innerWidth));
+    this.studio?.setFrameShift(frameShiftFor(uiWidth()));
     this.studio?.playIntro();
 
     const { profile, progression } = this.game.save.data;
@@ -110,7 +111,7 @@ export class MainMenuScreen extends BaseScreen {
     this.own.listen(window, 'pointermove', (event) => {
       this.studio?.setPointer((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
     });
-    this.own.listen(window, 'resize', () => this.studio?.setFrameShift(frameShiftFor(window.innerWidth)));
+    this.own.listen(window, 'resize', () => this.studio?.setFrameShift(frameShiftFor(uiWidth())));
 
     const first = this.buttons.get(this.lastFocused);
     if (first) this.nav.focus(first);
@@ -164,7 +165,7 @@ export class MainMenuScreen extends BaseScreen {
         overwrite: 'auto',
       }),
     );
-    this.studio?.setFrameShift(frameShiftFor(window.innerWidth));
+    this.studio?.setFrameShift(frameShiftFor(uiWidth()));
   }
 
   /** En el menú raíz, "volver" regresa al primer acceso. */

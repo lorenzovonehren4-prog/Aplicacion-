@@ -169,7 +169,7 @@
 }
 
 /* Pantallas bajas: la descripción se achica para que el menú respire. */
-@media (max-height: 680px) {
+@container ui (max-height: 680px) {
   .menu__detail-text {
     font-size: 14px;
   }
@@ -179,7 +179,7 @@
 }
 
 /* Pantallas angostas: la tarjeta del piloto se oculta detrás del logo. */
-@media (max-width: 760px) {
+@container ui (max-width: 760px) {
   .menu__top .pcard {
     display: none;
   }

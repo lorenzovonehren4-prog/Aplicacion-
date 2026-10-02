@@ -20,6 +20,7 @@ import { createLogo } from '../components/Logo';
 import { createMenuButton } from '../components/MenuButton';
 import { h, prefersReducedMotion } from '../dom';
 import { BaseScreen } from './BaseScreen';
+import { uiWidth } from '../scale';
 
 const EXPERIENCE: ReadonlyArray<{ id: ExperienceLevel; label: string; detail: string; level: AssistLevel }> = [
   { id: 'none', label: 'Nunca jugué', detail: 'Es mi primer juego de autos de carrera.', level: 'beginner' },
@@ -49,7 +50,7 @@ export class TutorialScreen extends BaseScreen {
       this.studio = null;
     }
     this.game.render.setView(this.studio);
-    this.studio?.setFrameShift(window.innerWidth < 900 ? 0 : -0.14);
+    this.studio?.setFrameShift(uiWidth() < 900 ? 0 : -0.14);
     const hints = new ControlHints(
       [
         { keys: [{ keyboard: '↑↓', gamepad: '✚' }], label: 'Elegir' },

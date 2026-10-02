@@ -197,7 +197,7 @@
   border-top: 1px solid var(--c-line);
 }
 
-@media (max-width: 900px) {
+@container ui (max-width: 900px) {
   .tut__scrim {
     background: rgba(5, 6, 8, 0.85);
   }

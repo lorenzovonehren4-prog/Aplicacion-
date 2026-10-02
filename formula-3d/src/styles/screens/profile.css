@@ -331,7 +331,7 @@
   background: var(--c-accent);
 }
 
-@media (max-width: 900px) {
+@container ui (max-width: 900px) {
   .profile__panel,
   .profile__side {
     position: relative;

@@ -12,6 +12,7 @@ import { liveryFromSetup } from '../garage/setup';
 import { DiagonalWipe } from '../ui/anim/DiagonalWipe';
 import { AchievementToasts } from '../ui/components/AchievementToast';
 import { FpsMeter } from '../ui/components/FpsMeter';
+import { applyUiScale } from '../ui/scale';
 import { achievementContext, getAchievement, newAchievements } from '../progression/career';
 import { EventBus } from './EventBus';
 import type { GameEvents } from './events';
@@ -101,8 +102,11 @@ export class Game {
     this.own.add(save.onChange((data) => this.checkAchievements(data)));
     this.own.timeout(() => this.checkAchievements(save.data), 1500);
 
-    // Tamaño del lienzo.
-    const resize = (): void => this.render.resize(layers.stage.clientWidth, layers.stage.clientHeight);
+    // Tamaño del lienzo y escala de la interfaz (en ventanas chicas, todo se achica en proporción).
+    const resize = (): void => {
+      this.render.resize(layers.stage.clientWidth, layers.stage.clientHeight);
+      applyUiScale(layers.stage.clientWidth, layers.stage.clientHeight);
+    };
     const observer = new ResizeObserver(resize);
     observer.observe(layers.stage);
     this.own.add(() => observer.disconnect());

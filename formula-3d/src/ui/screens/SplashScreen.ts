@@ -43,7 +43,7 @@ export class SplashScreen extends BaseScreen {
   private readonly logo = createLogo('splash__logo');
   private readonly sheen = h('div', { class: 'splash__sheen' });
   private readonly tagline = h('p', { class: 'splash__tagline', text: 'Campeonato de monoplazas' });
-  private readonly prompt = h('p', { class: 'splash__prompt', text: 'Pulsa cualquier tecla' });
+  private readonly prompt = h('p', { class: 'splash__prompt', text: 'Haz clic o pulsa cualquier tecla' });
 
   constructor(game: Game) {
     super(game, 'screen--splash');
@@ -131,7 +131,7 @@ export class SplashScreen extends BaseScreen {
   private becomeReady(): void {
     if (this.phase !== 'intro') return;
     this.phase = 'ready';
-    // "Pulsa cualquier tecla" late suave y el brillo cruza el logo cada tanto.
+    // El aviso para empezar late suave y el brillo cruza el logo cada tanto.
     this.own.tween(gsap.to(this.prompt, { opacity: 0.35, duration: 0.9, repeat: -1, yoyo: true, ease: 'sine.inOut' }));
     this.own.tween(
       gsap.fromTo(

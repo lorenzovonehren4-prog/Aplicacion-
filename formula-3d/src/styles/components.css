@@ -700,6 +700,7 @@
   right: var(--gutter);
   z-index: 30;
   pointer-events: none;
+  zoom: var(--ui-zoom, 1);
 }
 
 .toast {

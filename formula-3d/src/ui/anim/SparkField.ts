@@ -5,6 +5,8 @@
  * objetos por cuadro) y el bucle se detiene solo cuando no queda ninguna.
  */
 
+import { renderedScale } from '../scale';
+
 const MAX_PARTICLES = 420;
 
 interface Particle {
@@ -91,7 +93,9 @@ export class SparkField {
   pointOf(element: Element, fx = 0.5, fy = 0.5): { x: number; y: number } {
     const box = element.getBoundingClientRect();
     const origin = this.host.getBoundingClientRect();
-    return { x: box.left - origin.left + box.width * fx, y: box.top - origin.top + box.height * fy };
+    // De px de pantalla a px del lienzo (la interfaz puede estar achicada).
+    const scale = renderedScale(this.host);
+    return { x: (box.left - origin.left + box.width * fx) / scale, y: (box.top - origin.top + box.height * fy) / scale };
   }
 
   /** Borra todas las chispas. */

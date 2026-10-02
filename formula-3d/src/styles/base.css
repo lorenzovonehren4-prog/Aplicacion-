@@ -112,6 +112,11 @@ p {
 #ui {
   position: absolute;
   inset: 0;
+  /* En ventanas chicas toda la interfaz se achica en proporción (ver ui/scale.ts).
+     Las reglas por tamaño de cada pantalla usan `@container ui`: miden este
+     tamaño "de diseño", no la ventana real. */
+  zoom: var(--ui-zoom, 1);
+  container: ui / size;
 }
 
 #overlay {

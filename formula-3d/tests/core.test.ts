@@ -8,6 +8,7 @@ import { Disposer } from '../src/core/utils/Disposer';
 import { formatDelta, formatInteger, formatLapTime, formatPercent } from '../src/core/utils/format';
 import { clamp, damp, lerp } from '../src/core/utils/math';
 import { levelProgress, MAX_LEVEL, xpToNextLevel } from '../src/progression/levels';
+import { UI_MIN_SCALE, uiScaleFor } from '../src/ui/scale';
 
 describe('matemáticas', () => {
   it('funciones básicas', () => {
@@ -330,5 +331,19 @@ describe('InputManager', () => {
     expect(actions).toEqual(['confirm', 'down', 'down', 'down']);
     expect(devices).toEqual(['gamepad']);
     expect(input.gamepadConnected).toBe(true);
+  });
+});
+
+describe('escala de la interfaz', () => {
+  it('en ventanas grandes no cambia; en chicas se achica en proporción, con un mínimo', () => {
+    expect(uiScaleFor(1920, 1080)).toBe(1);
+    expect(uiScaleFor(1280, 720)).toBe(1);
+    // Panel de claude.ai: lo que más aprieta es el ancho (720 / 1060).
+    expect(uiScaleFor(720, 560)).toBeCloseTo(720 / 1060, 5);
+    // Laptop con la ventana baja: lo que aprieta es el alto.
+    expect(uiScaleFor(1366, 600)).toBeCloseTo(600 / 660, 5);
+    // Nunca más chica que el mínimo (el texto seguiría legible), ni con tamaños inválidos.
+    expect(uiScaleFor(320, 240)).toBe(UI_MIN_SCALE);
+    expect(uiScaleFor(0, 0)).toBe(1);
   });
 });

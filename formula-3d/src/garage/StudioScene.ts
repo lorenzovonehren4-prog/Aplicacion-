@@ -186,6 +186,18 @@ const SHOTS: Readonly<Record<StudioShot, ShotDef>> = {
   helmet: { angle: -2.45, radius: 2.5, height: 1.35, look: [0, 0.74, -0.2] },
 };
 
+/**
+ * Tablas de las luces de área (dos texturas de 64×64). `init()` crea tablas
+ * nuevas cada vez sin liberar las anteriores: se llama una sola vez por página
+ * (si no, cada vuelta al menú dejaba dos texturas más en la GPU).
+ */
+let rectAreaLightsReady = false;
+function initRectAreaLights(): void {
+  if (rectAreaLightsReady) return;
+  RectAreaLightUniformsLib.init();
+  rectAreaLightsReady = true;
+}
+
 export class StudioScene implements RenderView {
   readonly scene = new Scene();
   readonly camera = new PerspectiveCamera(30, 16 / 9, 0.1, 80);
@@ -225,7 +237,7 @@ export class StudioScene implements RenderView {
     options: StudioOptions,
     anisotropy: number,
   ) {
-    RectAreaLightUniformsLib.init();
+    initRectAreaLights();
     this.scene.background = BACKGROUND;
     this.scene.fog = new FogExp2(BACKGROUND, 0.045);
 

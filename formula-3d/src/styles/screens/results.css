@@ -672,7 +672,7 @@
 
 /* ─── Pantallas angostas: una columna que se desplaza ─────────────────── */
 
-@media (max-width: 900px) {
+@container ui (max-width: 900px) {
   .screen--results {
     overflow-y: auto;
   }

@@ -10,6 +10,7 @@
 
 import type { UiAction } from '../../core/input/actions';
 import { Disposer } from '../../core/utils/Disposer';
+import { renderedScale } from '../scale';
 
 export interface NavItemOptions {
   onConfirm?(): void;
@@ -201,9 +202,11 @@ function revealInScrollParent(element: HTMLElement): void {
   if (!parent) return;
   const box = parent.getBoundingClientRect();
   const rect = element.getBoundingClientRect();
-  const margin = 8;
-  if (rect.top < box.top + margin) parent.scrollTop -= box.top + margin - rect.top;
-  else if (rect.bottom > box.bottom - margin) parent.scrollTop += rect.bottom - (box.bottom - margin);
+  // Las medidas vienen en px de pantalla; `scrollTop`, en px de CSS (la interfaz puede estar achicada).
+  const scale = renderedScale(parent);
+  const margin = 8 * scale;
+  if (rect.top < box.top + margin) parent.scrollTop -= (box.top + margin - rect.top) / scale;
+  else if (rect.bottom > box.bottom - margin) parent.scrollTop += (rect.bottom - (box.bottom - margin)) / scale;
 }
 
 function center(rect: DOMRect): { x: number; y: number } {

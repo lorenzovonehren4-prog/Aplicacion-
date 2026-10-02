@@ -602,7 +602,7 @@
 
 /* ─── Pantallas angostas: una sola columna que se desplaza ────────────── */
 
-@media (max-width: 900px) {
+@container ui (max-width: 900px) {
   .screen--rsel {
     overflow-y: auto;
   }

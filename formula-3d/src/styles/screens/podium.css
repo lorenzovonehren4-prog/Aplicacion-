@@ -147,7 +147,7 @@
   justify-content: center;
 }
 
-@media (max-width: 700px) {
+@container ui (max-width: 700px) {
   .podium__card {
     min-width: 0;
     padding: 6px 10px 6px 8px;

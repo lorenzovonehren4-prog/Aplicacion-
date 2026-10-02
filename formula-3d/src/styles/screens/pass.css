@@ -354,7 +354,7 @@
 
 /* ─── Pantallas angostas ──────────────────────────────────────────────── */
 
-@media (max-width: 900px) {
+@container ui (max-width: 900px) {
   .screen--pass {
     overflow-y: auto;
   }

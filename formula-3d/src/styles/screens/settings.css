@@ -103,7 +103,7 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-@media (max-width: 640px) {
+@container ui (max-width: 640px) {
   .srow__control {
     min-width: 0;
   }
@@ -224,7 +224,7 @@
   text-align: right;
 }
 
-@media (max-width: 760px) {
+@container ui (max-width: 760px) {
   .acards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
