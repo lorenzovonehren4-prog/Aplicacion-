@@ -2,12 +2,14 @@
  * Mandos de manejo a partir del teclado y el gamepad. Ver PLAN.md §4.7.
  *
  * Teclado: los mandos son digitales, así que se suavizan con rampas (el
- * acelerador sube en ~0,17 s). La dirección es progresiva según cuánto
- * tiempo mantienes la flecha: un toque corto gira apenas y mantenerla gira
- * cada vez más (curva que arranca suave: giro = (tiempo / T)^1,6), hasta el
- * tope en T segundos. T crece con la velocidad (a fondo en una recta, un
- * toque no mueve el auto) y es más largo con la dirección asistida. Al
- * soltar vuelve al centro más rápido de lo que gira.
+ * acelerador sube en ~0,17 s). La dirección crece con el tiempo que
+ * mantienes la flecha, a mitad de camino entre la dirección directa (un
+ * toque giraba de golpe) y una lenta por tiempo (había que esperar para que
+ * doblara): giro = (tiempo / T)^1,25, casi lineal, así responde enseguida
+ * pero un toque corto gira poco. T va de 0,28 s despacio a 0,75 s a fondo
+ * (×1,2 con la dirección asistida). A 180 km/h en Principiante, un toque de
+ * 0,1 s da ~0,4 g y mantenerla 0,3 s ya dobla a 2 g. Al soltar vuelve al
+ * centro más rápido de lo que gira.
  * Gamepad: gatillos analógicos y stick con zona muerta y curva de respuesta.
  *
  * Teclas (reasignables en Ajustes → Controles, `core/input/bindings.ts`): por
@@ -45,8 +47,13 @@ const THROTTLE_DOWN = 9;
 const BRAKE_UP = 7;
 const BRAKE_DOWN = 10;
 const STEER_RETURN = 5.5;
-/** Exponente de la curva de giro progresivo del teclado (1 = lineal; más, arranque más suave). */
-const STEER_CURVE = 1.6;
+/** Exponente de la curva de giro del teclado (1 = lineal; más, arranque más suave). */
+const STEER_CURVE = 1.25;
+/** Segundos de flecha pulsada hasta el tope: despacio, y cuánto se suma a fondo (80 m/s). */
+const STEER_TIME_SLOW = 0.28;
+const STEER_TIME_FAST = 0.47;
+/** Con la dirección asistida (Principiante) llega al tope un poco más tarde. */
+const STEER_TIME_ASSISTED = 1.2;
 
 export class DrivingInput {
   readonly controls: DrivingControls = { throttle: 0, brake: 0, steer: 0 };
@@ -124,7 +131,8 @@ export class DrivingInput {
         // Segundos de flecha pulsada hasta el tope: pocos para maniobrar
         // despacio, más a alta velocidad y con la dirección asistida.
         const fullLock =
-          ((0.35 + 0.65 * clamp(speed / 80, 0, 1)) / Math.max(0.3, settings.steeringSensitivity)) * (assisted ? 1.4 : 1);
+          ((STEER_TIME_SLOW + STEER_TIME_FAST * clamp(speed / 80, 0, 1)) / Math.max(0.3, settings.steeringSensitivity)) *
+          (assisted ? STEER_TIME_ASSISTED : 1);
         // Sin guardar el tiempo: se deduce del giro actual (así un toque suelto
         // y vuelto a pulsar sigue desde donde quedó).
         const held = Math.pow(Math.abs(c.steer), 1 / STEER_CURVE) * fullLock + dt;

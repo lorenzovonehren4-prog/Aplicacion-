@@ -432,8 +432,8 @@ Nada más cambia.
   frena hasta 50 %; Baja usa la ideal sin anticipación (sólo cuando ya no se
   llega ni frenando a fondo) y frena hasta 25 %. Prueba: con Completa, un
   piloto que nunca suelta el acelerador da la vuelta sin salirse.
-- **Dirección asistida** (sólo Principiante): volante más suave (teclado ×0,8,
-  stick más filtrado) y **control de estabilidad** en la física: si la cola
+- **Dirección asistida** (sólo Principiante): volante más suave (con teclado
+  tarda ×1,2 en llegar al tope, stick más filtrado) y **control de estabilidad** en la física: si la cola
   desliza más que el tren delantero, un momento de guiñada la endereza (sin él,
   un sobreviraje a fondo en 3.ª termina en trompo de 80°; con él, 13°).
 - **Control de tracción**: limita el acelerador cuando el deslizamiento de las
@@ -1033,7 +1033,7 @@ revisión propia del código + resumen y espera de confirmación.
 - [x] Dirección con teclado progresiva: el giro sale del tiempo que mantienes
       la flecha, giro = (t / T)^1,6, con T de 0,35 s (despacio) a 1 s (a
       fondo) y ×1,4 con la dirección asistida: un toque de 0,15 s a 250 km/h
-      gira ~3 %. La ayuda de dirección ayuda en proporción a lo que pides (un
+      gira ~3 % (en la 1.9 pasó a una curva intermedia, ver abajo). La ayuda de dirección ayuda en proporción a lo que pides (un
       toque ya no se convierte en volantazo).
 - [x] Pruebas adaptadas a los trazados reales (quiebres rápidos cuentan como
       curvas del análisis; el piloto de prueba por el centro es más lento).
@@ -1085,6 +1085,27 @@ revisión propia del código + resumen y espera de confirmación.
       circuito calculado (trazada ideal, análisis) también se guarda.
 - [x] Paquete publicado probado de punta a punta (portada, tutorial, menú,
       selección, carga y largada) sin errores en la consola.
+
+### Versión 1.9 — Dirección con teclado intermedia ✅
+
+- [x] La dirección por tiempo de la 1.6 respondía tarde (había que mantener
+      la flecha medio segundo para que el auto doblara) y la directa de antes
+      era demasiado sensible (un toque y el auto se iba). Ahora queda a mitad
+      de camino: giro = (t / T)^1,25, casi lineal, con T de 0,28 s despacio a
+      0,75 s a fondo (×1,2 con la dirección asistida).
+- [x] Medido en la física, a 180 km/h en Principiante (g laterales):
+
+| Mantener la flecha | 0,1 s | 0,2 s | 0,3 s | llega a 2 g en |
+|---|---|---|---|---|
+| Directa (hasta 1.5) | 0,9 | 2,0 | 2,7 | 0,20 s |
+| Por tiempo (1.6–1.8) | 0,1 | 0,4 | 0,9 | 0,49 s |
+| Intermedia (1.9) | 0,4 | 1,2 | 2,0 | 0,29 s |
+
+- [x] Con un piloto simulado de teclado (reacción de 0,12–0,2 s, cada
+      pulsación dura al menos 0,1 s), en Principiante la intermedia se sale de
+      la pista igual o menos que la directa con ~40 % menos pulsaciones, y
+      bastante menos que la versión por tiempo (4–17 s por vuelta contra
+      11–35 s).
 
 ---
 
@@ -1171,3 +1192,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.6**: trazados reales, pistas más anchas y dirección progresiva (pedido del usuario).
 - **Versión 1.7**: árboles fuera de la pista, guardián de bordes y bots más justos (pedido del usuario).
 - **Versión 1.8**: errores, circuito siempre en calidad alta y carga (pedido del usuario).
+- **Versión 1.9**: dirección con teclado intermedia entre la directa y la por tiempo (pedido del usuario).

@@ -274,7 +274,7 @@ describe('mandos de manejo', () => {
     expect(shapeStick(0.55, { ...base, steeringSensitivity: 1.5 })).toBeGreaterThan(shapeStick(0.55, base));
   });
 
-  it('teclado: el giro crece con el tiempo que mantienes la flecha (un toque gira poco)', async () => {
+  it('teclado: el giro crece con el tiempo que mantienes la flecha, sin demora (un toque gira un poco)', async () => {
     const { DrivingInput } = await import('../src/race/input/DrivingInput');
     const keys = new Set<string>();
     const fake = {
@@ -292,12 +292,14 @@ describe('mandos de manejo', () => {
       keys.clear();
       return input.controls.steer;
     };
-    // A 250 km/h con la dirección asistida: un toque de 0,15 s casi no gira…
-    expect(hold(0.15, 70, true)).toBeLessThan(0.05);
-    // …medio segundo gira algo, y mantenerla llega al tope.
-    expect(hold(0.5, 70, true)).toBeGreaterThan(0.1);
-    expect(hold(0.5, 70, true)).toBeLessThan(0.3);
-    expect(hold(1.5, 70, true)).toBe(1);
+    // A 250 km/h con la dirección asistida: un toque de 0,15 s gira un poco
+    // (ni un volantazo ni nada)…
+    expect(hold(0.15, 70, true)).toBeGreaterThan(0.06);
+    expect(hold(0.15, 70, true)).toBeLessThan(0.2);
+    // …medio segundo ya dobla bastante, y en un segundo llega al tope.
+    expect(hold(0.5, 70, true)).toBeGreaterThan(0.35);
+    expect(hold(0.5, 70, true)).toBeLessThan(0.75);
+    expect(hold(1, 70, true)).toBe(1);
     // Despacio (maniobrar) llega al tope enseguida.
     expect(hold(0.4, 3, false)).toBe(1);
     // Más tiempo pulsada = más giro, siempre.
