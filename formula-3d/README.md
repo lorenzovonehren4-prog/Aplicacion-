@@ -64,7 +64,19 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 1.12.0: las 9 fases del documento de diseño están completas, con
+Versión 2.0.0: las 24 pistas del calendario 2026 con su trazado real (de
+Melbourne a Yas Marina, con las urbanas entre muros y edificios, el cruce
+de Suzuka y el desierto de Sakhir), cada una clasificada como Fácil, Media o
+Difícil después de analizar su trazado y medirla con el propio juego, y 5
+campeonatos: Copa Iniciación (las 8 fáciles), Copa Desafío (las 8 medias),
+Copa Élite (las 8 difíciles), Temporada Completa (las 24, de la más fácil a
+la más difícil) y Gran Gira (10 carreras elegidas por el autor). El menú
+principal es nuevo: el auto sobre un podio con luces LED y focos, una ficha
+a la izquierda con los datos del acceso elegido, el botón "Continuar" y una
+fila de tarjetas grandes abajo. La justificación pista por pista está en
+`PLAN.md` (Versión 2.0).
+
+Desde antes: las 9 fases del documento de diseño están completas, con
 más tracción en curvas, carga y carrera más fluidas, pistas más anchas,
 gráficos mejorados, circuitos con más detalle (asfalto con goma y marcas,
 árboles con viento, barreras de neumáticos, horizonte y público animado) y
@@ -84,7 +96,7 @@ copas de hojas, cada auto apoya una sombra en el piso, los autos tienen
 alerón delantero de carbono de varios elementos, morro ancho y calcomanías de
 patrocinadores ficticios, y la cabina tiene retrovisores con la pista de atrás
 (Alta y Ultra), volante con pantalla completa y fibra de carbono.
-Albert Park y Monza, con pantalla de selección de carrera. Modos: práctica
+24 circuitos, con pantalla de selección de carrera. Modos: práctica
 libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales con IA de 5
 dificultades), contrarreloj con fantasma y campeonato con puntos. XP y
 niveles 1–100, pase de temporada de 50 niveles, garaje con vista previa en
@@ -107,5 +119,8 @@ Ver la sección **Fases** de `PLAN.md`.
 Los trazados de Albert Park y Monza vienen de la
 [TUMFTM racetrack-database](https://github.com/TUMFTM/racetrack-database)
 (Universidad Técnica de Múnich), derivada de OpenStreetMap (© colaboradores
-de OpenStreetMap), bajo licencia LGPL-3.0. Los archivos convertidos y la
-licencia están en `src/tracks/data/real/`.
+de OpenStreetMap), bajo licencia LGPL-3.0. Los otros 22 vienen de
+[bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (licencia
+MIT). Los archivos convertidos y las licencias están en
+`src/tracks/data/real/`. Los nombres de los circuitos y ciudades son
+geográficos; equipos, pilotos, patrocinadores y récords son ficticios.

@@ -1,9 +1,12 @@
-/* Tres filas: logo y tarjeta arriba, accesos al centro, descripción y pie abajo. */
+/* ─── Menú principal ─────────────────────────────────────────────────────
+   Como la presentación de un equipo: título arriba a la izquierda, botón
+   "Continuar" arriba a la derecha, panel con los datos del acceso enfocado a
+   la izquierda, el auto en el podio al centro y una fila de tarjetas grandes
+   abajo. */
+
 .screen--menu {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: clamp(10px, 2vh, 24px);
-  padding: var(--gutter);
+  --menu-info: clamp(300px, 28vw, 380px);
+  --menu-tile-h: clamp(84px, 13vh, 118px);
   pointer-events: none;
 }
 
@@ -11,129 +14,332 @@
   pointer-events: auto;
 }
 
-/* Oscurece la izquierda (menú) y abajo (descripción) sin tapar el auto. */
+/* Oscurece la izquierda (panel) y abajo (tarjetas) sin tapar el auto. */
 .menu__scrim {
   position: absolute;
   inset: 0;
   pointer-events: none !important;
   background:
-    linear-gradient(90deg, rgba(5, 6, 8, 0.9) 0%, rgba(5, 6, 8, 0.55) 26%, rgba(5, 6, 8, 0) 52%),
-    linear-gradient(0deg, rgba(5, 6, 8, 0.85) 0%, rgba(5, 6, 8, 0) 26%),
-    linear-gradient(180deg, rgba(5, 6, 8, 0.6) 0%, rgba(5, 6, 8, 0) 18%);
+    radial-gradient(ellipse 70% 60% at 62% 48%, rgba(30, 20, 60, 0) 0%, rgba(8, 6, 18, 0.35) 70%),
+    linear-gradient(90deg, rgba(5, 6, 12, 0.82) 0%, rgba(5, 6, 12, 0.35) 30%, rgba(5, 6, 12, 0) 50%),
+    linear-gradient(0deg, rgba(5, 6, 10, 0.9) 0%, rgba(5, 6, 10, 0) 30%);
 }
 
-.menu__top {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  pointer-events: none;
-}
-
-.menu__top > * {
-  pointer-events: auto;
-}
-
-/* La tarjeta del piloto no ocupa alto en la grilla: deja más lugar a los accesos. */
-.menu__top .pcard {
+.menu__head {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: var(--gutter);
+  left: var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
 .menu__logo {
-  --logo-size: clamp(30px, 3vw, 44px);
+  --logo-size: clamp(28px, 2.8vw, 40px);
 }
 
-.menu__nav {
-  position: relative;
-  align-self: center;
-  justify-self: start;
-  margin-left: 8px;
+.menu__heading {
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.8vh, 22px);
+  gap: 2px;
+  padding-left: 18px;
+  border-left: 1px solid var(--c-line-strong);
 }
 
-.menu__group {
+.menu__title {
+  font-size: clamp(20px, 2.2vw, 30px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+}
+
+.menu__subtitle {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+/* Botón principal (arriba a la derecha): flecha, título y bajada, y chevrones. */
+.menu__continue {
+  position: absolute;
+  top: var(--gutter);
+  right: var(--gutter);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 54px;
+  align-items: center;
+  gap: 16px;
+  width: clamp(280px, 30vw, 440px);
+  min-height: 72px;
+  padding: 10px 0 10px 18px;
+  text-align: left;
+  background: linear-gradient(100deg, rgba(20, 26, 46, 0.92), rgba(28, 38, 66, 0.86));
+  box-shadow:
+    inset 0 0 0 1px rgba(150, 175, 255, 0.18),
+    0 12px 30px rgba(0, 0, 0, 0.45);
+  transition:
+    box-shadow 0.25s,
+    translate 0.25s var(--ease-out);
+}
+
+.menu__continue-arrow {
+  width: 34px;
+  height: 34px;
+  color: #3ee0ff;
+}
+
+.menu__continue-text {
   display: flex;
   flex-direction: column;
-  gap: clamp(4px, 0.8vh, 8px);
+  min-width: 0;
 }
 
-.menu__group-title {
+.menu__continue-title {
+  font-size: clamp(18px, 1.8vw, 26px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.menu__continue-detail {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--c-text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__continue-chevrons {
+  align-self: stretch;
+  background:
+    linear-gradient(115deg, transparent 0 30%, rgba(62, 224, 255, 0.55) 30% 44%, transparent 44% 58%, rgba(62, 224, 255, 0.3) 58% 72%, transparent 72%),
+    linear-gradient(90deg, rgba(62, 224, 255, 0.05), rgba(62, 224, 255, 0.18));
+  clip-path: polygon(30% 0, 100% 0, 100% 100%, 30% 100%, 60% 50%);
+}
+
+.menu__continue.is-focused {
+  translate: -4px 0;
+  box-shadow:
+    inset 0 0 0 2px #3ee0ff,
+    0 0 28px rgba(62, 224, 255, 0.28),
+    0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* Panel de datos (izquierda), como la ficha de un equipo. */
+.menu__info {
+  position: absolute;
+  top: calc(var(--gutter) + 84px);
+  left: var(--gutter);
+  bottom: calc(var(--gutter) + var(--menu-tile-h) + 56px);
+  width: var(--menu-info);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(22, 26, 52, 0.88), rgba(12, 14, 30, 0.9));
+  box-shadow:
+    inset 0 3px 0 var(--c-accent),
+    inset 0 0 0 1px rgba(150, 165, 255, 0.12),
+    0 18px 40px rgba(0, 0, 0, 0.5);
+}
+
+.menu__info-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-left: 4px;
-  margin-bottom: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.34em;
+  gap: 14px;
+}
+
+.menu__info-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  color: #fff;
+  background: rgba(255, 42, 60, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 42, 60, 0.45);
+}
+
+.menu__info-icon .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.menu__info-title {
+  font-size: clamp(20px, 1.9vw, 28px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.05;
   text-transform: uppercase;
-  color: var(--c-text-3);
 }
 
-.menu__group-title::before {
-  content: '';
-  width: 14px;
-  height: 3px;
-  background: var(--c-accent);
-  transform: skewX(var(--skew));
+.menu__info-text {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--c-text-2);
 }
 
-.menu__bottom {
-  position: relative;
+.menu__info-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.menu__info-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 24px;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 12px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.menu__bottom-left {
-  display: grid;
-  gap: 16px;
+.menu__info-row span {
+  color: var(--c-text-2);
 }
 
-.menu__detail {
-  max-width: 460px;
-  min-height: 64px;
-  padding-left: 14px;
-  border-left: 3px solid var(--c-accent);
-}
-
-.menu__detail-title {
-  font-family: var(--font-num);
-  font-size: 13px;
+.menu__info-row b {
   font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--c-accent-2);
-  margin-bottom: 6px;
+  color: #3ee0ff;
+  text-align: right;
 }
 
-.menu__detail-text {
-  font-size: 16px;
-  line-height: 1.45;
-  color: var(--c-text);
-}
-
-.menu__detail-note {
-  margin-top: 4px;
+.menu__info-note {
   font-size: 13px;
+  color: var(--c-gold);
+}
+
+/* La tarjeta del piloto, al pie del panel. */
+.menu__info .pcard {
+  position: relative;
+  flex: none;
+  margin-top: auto;
+  width: 100%;
+  min-width: 0;
+  transform: none;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: none;
+}
+
+/* Fila de tarjetas (abajo). */
+.menu__tiles {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: calc(var(--gutter) + 40px);
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: clamp(4px, 0.6vw, 10px);
+  height: var(--menu-tile-h);
+}
+
+.mtile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 6px;
+  color: rgba(243, 244, 246, 0.78);
+  background: linear-gradient(180deg, rgba(36, 40, 56, 0.9), rgba(20, 22, 32, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  /* La elevación usa `translate` y no `transform`: así no choca con la entrada animada por GSAP. */
+  transition:
+    background 0.25s,
+    box-shadow 0.25s,
+    translate 0.25s var(--ease-out),
+    color 0.25s;
+}
+
+.mtile__icon {
+  width: clamp(26px, 3.2vw, 42px);
+  height: clamp(26px, 3.2vw, 42px);
+}
+
+/* Hasta dos renglones: "Pase de temporada" y "Manual de ayudas" entran enteros. */
+.mtile__label {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(11px, 1vw, 14px);
+  font-weight: 700;
+  line-height: 1.15;
   letter-spacing: 0.04em;
-  color: var(--c-text-3);
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* Marca de "elegido" arriba a la izquierda (como la tarjeta del equipo elegido). */
+.mtile__check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.mtile.is-focused {
+  color: #fff;
+  translate: 0 -6px;
+  background: linear-gradient(180deg, rgba(120, 18, 32, 0.92), rgba(60, 10, 20, 0.95));
+  box-shadow:
+    inset 0 0 0 2px var(--c-accent),
+    0 0 26px rgba(255, 42, 60, 0.35),
+    0 14px 28px rgba(0, 0, 0, 0.5);
+}
+
+.mtile.is-focused .mtile__check {
+  background:
+    no-repeat center / 10px 10px
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.2l2.2 2.2 4.8-4.8' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E"),
+    var(--c-accent);
+  box-shadow: none;
+}
+
+.mtile.is-locked {
+  opacity: 0.45;
+}
+
+.mtile.is-denied {
+  animation: tile-deny 0.35s;
+}
+
+@keyframes tile-deny {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.menu__foot {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: calc(var(--gutter) - 4px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  height: 32px;
 }
 
 .menu__meta {
-  display: grid;
-  justify-items: end;
-  gap: 6px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--c-text-3);
-  text-align: right;
 }
 
 .menu__save {
@@ -168,97 +374,45 @@
   letter-spacing: 0.16em;
 }
 
-/* Accesos del menú principal: texto grande y limpio, sin caja; el elegido
-   lleva un marco fino y una barra roja (estilo de los menús de los juegos de
-   carreras modernos). Los otros botones del juego conservan su estilo. */
-.menu__nav .mbtn {
-  width: auto;
-  min-width: clamp(240px, 26vw, 340px);
-  height: clamp(34px, 5vh, 48px);
-  padding: 0 18px 0 14px;
-  transform: none;
-  color: rgba(243, 244, 246, 0.62);
-}
-
-.menu__nav .mbtn__bg,
-.menu__nav .mbtn__shine {
-  display: none;
-}
-
-.menu__nav .mbtn__fill {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 85%);
-  border-left: 4px solid var(--c-accent);
-  transform: none;
-  opacity: 0;
-  transition: opacity 0.25s;
-}
-
-.menu__nav .mbtn__border {
-  padding: 1px;
-  background: rgba(255, 255, 255, 0.85);
-}
-
-.menu__nav .mbtn__content {
-  transform: none;
-}
-
-.menu__nav .mbtn__icon {
-  display: none;
-}
-
-.menu__nav .mbtn__label {
-  font-size: clamp(18px, 1.9vw, 26px);
-  font-weight: 800;
-  letter-spacing: 0.05em;
-}
-
-.menu__nav .mbtn.is-focused {
-  color: #fff;
-  transform: translateX(6px);
-}
-
-.menu__nav .mbtn.is-focused .mbtn__fill {
-  opacity: 1;
-}
-
-.menu__nav .mbtn.is-focused .mbtn__border {
-  animation: none;
-}
-
-/* Lema vertical en el borde izquierdo. */
-.menu__tagline {
-  position: absolute;
-  top: 50%;
-  left: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--c-accent-2);
-  opacity: 0.75;
-  /* Se lee de abajo hacia arriba, pegado al borde. */
-  writing-mode: vertical-rl;
-  transform: translateY(-50%) rotate(180deg);
-  pointer-events: none !important;
-}
-
-/* Pantallas bajas: la descripción se achica para que el menú respire. */
-@container ui (max-height: 680px) {
-  .menu__detail-text {
+/* Pantallas medianas: texto más chico para que la tarjeta del piloto entre. */
+@container ui (max-height: 780px) {
+  .menu__info-text {
     font-size: 14px;
+    line-height: 1.4;
   }
-  .menu__detail {
-    min-height: 0;
+  .menu__info-row {
+    padding-block: 5px;
+    font-size: 13px;
   }
 }
 
-/* Pantallas angostas: la tarjeta del piloto se oculta detrás del logo. */
-@container ui (max-width: 760px) {
-  .menu__top .pcard {
+/* Pantallas bajas: el panel muestra menos. */
+@container ui (max-height: 640px) {
+  .menu__info-text {
+    font-size: 13px;
+  }
+  .menu__info .pcard {
     display: none;
   }
+}
+
+/* Pantallas angostas: tarjetas en dos filas, sin subtítulo ni datos guardados. */
+@container ui (max-width: 820px) {
+  .screen--menu {
+    --menu-tile-h: 150px;
+  }
+  .menu__tiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .mtile {
+    padding: 6px 4px;
+    gap: 4px;
+  }
+  .menu__subtitle,
   .menu__meta {
     display: none;
+  }
+  .menu__continue {
+    width: 46%;
   }
 }

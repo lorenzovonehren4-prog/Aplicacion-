@@ -23,6 +23,6 @@ export const SKIDPAD = {
     tx: new Float32Array([0]),
     tz: new Float32Array([-1]),
   },
-  trackside: { wallLeft: new Float32Array([1e9]), wallRight: new Float32Array([1e9]) },
+  trackside: { wallLeft: new Float32Array([1e9]), wallRight: new Float32Array([1e9]), gapLeft: new Uint8Array(1), gapRight: new Uint8Array(1) },
   surfaceAt: () => 'asphalt',
 } as unknown as Track;

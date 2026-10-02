@@ -10,6 +10,7 @@
 import { Track } from '../../tracks/Track';
 import type { Corner } from '../../tracks/TrackAnalysis';
 import { TrackGeometry } from '../../tracks/TrackGeometry';
+import { traceLayout } from '../../tracks/layout';
 import type { TrackDefinition } from '../../tracks/TrackDefinition';
 import { prefersReducedMotion } from '../dom';
 
@@ -143,15 +144,46 @@ function outline(def: TrackDefinition): Outline {
   return result;
 }
 
-/** Contorno del circuito (trazado SVG en un lienzo de 1000 × 1000) para miniaturas. */
+const thumbCache = new Map<string, string>();
+
+/**
+ * Contorno del circuito (trazado SVG en un lienzo de 1000 × 1000) para
+ * miniaturas: sale directo de los puntos del trazado, sin armar el circuito
+ * (eso cuesta décimas de segundo por pista y hay pantallas con las 24).
+ */
 export function trackOutlinePath(def: TrackDefinition): string {
-  return outline(def).path;
+  const cached = thumbCache.get(def.id);
+  if (cached) return cached;
+  const { points } = traceLayout(def.layout, 8);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const [x, z] of points) {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
+  }
+  const scale = (SIZE - PAD * 2) / Math.max(maxX - minX, maxZ - minZ, 1);
+  const ox = PAD + (SIZE - PAD * 2 - (maxX - minX) * scale) / 2;
+  const oz = PAD + (SIZE - PAD * 2 - (maxZ - minZ) * scale) / 2;
+  const step = Math.max(1, Math.floor(points.length / 260));
+  const parts: string[] = [];
+  for (let i = 0; i < points.length; i += step) {
+    const [x, z] = points[i] ?? [0, 0];
+    parts.push(`${parts.length === 0 ? 'M' : 'L'}${(ox + (x - minX) * scale).toFixed(1)} ${(oz + (z - minZ) * scale).toFixed(1)}`);
+  }
+  const path = `${parts.join('')}Z`;
+  thumbCache.set(def.id, path);
+  return path;
 }
 
 /** Miniatura del circuito: el contorno en un SVG que se escala con su caja. */
 export function createTrackThumb(def: TrackDefinition, className: string): SVGSVGElement {
   const svg = el('svg', { viewBox: `0 0 ${SIZE} ${SIZE}`, class: className, 'aria-hidden': 'true' });
-  svg.append(el('path', { d: outline(def).path, class: `${className}-glow` }), el('path', { d: outline(def).path, class: `${className}-line` }));
+  const path = trackOutlinePath(def);
+  svg.append(el('path', { d: path, class: `${className}-glow` }), el('path', { d: path, class: `${className}-line` }));
   return svg;
 }
 

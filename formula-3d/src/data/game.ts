@@ -3,7 +3,7 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '1.12.0';
+export const GAME_VERSION = '2.0.0';
 
 export type MenuItemId =
   | 'practice'
@@ -45,7 +45,7 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'quickRace',
         label: 'Carrera rápida',
         icon: 'flag',
-        description: 'Elige circuito, vueltas, rivales y clima, y larga con semáforo contra hasta 19 autos.',
+        description: 'Elige uno de los 24 circuitos, vueltas, rivales y clima, y larga con semáforo contra hasta 19 autos.',
         phase: 3,
       },
       {
@@ -59,7 +59,7 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'championship',
         label: 'Campeonato',
         icon: 'trophy',
-        description: 'Temporada completa con puntos y tabla de clasificación.',
+        description: 'Cinco campeonatos (Fácil, Media, Difícil, Total y la Gran Gira) con puntos y tabla de pilotos.',
         phase: 5,
       },
     ],

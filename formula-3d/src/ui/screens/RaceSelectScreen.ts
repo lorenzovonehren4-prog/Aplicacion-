@@ -23,12 +23,14 @@ import {
 } from '../../core/save/schema';
 import type { RaceSelectMode, ScreenParams } from '../../core/screens/params';
 import { formatLapTime } from '../../core/utils/format';
+import { LEVEL_LABEL, TRACK_DIFFICULTY } from '../../data/championships';
 import { DIFFICULTY_INFO, difficultyValue } from '../../race/ai/difficulty';
 import { TRACKS } from '../../tracks/registry';
 import type { TrackDefinition } from '../../tracks/TrackDefinition';
 import { WEATHER_INFO } from '../../tracks/weather';
 import { finished } from '../anim/finished';
 import { ControlHints } from '../components/ControlHints';
+import { createCountryFlag } from '../components/CountryFlag';
 import { createMenuButton } from '../components/MenuButton';
 import { actionRow, selectorRow, sliderRow, type RowContext, type SettingRow } from '../components/SettingRows';
 import { TrackMap } from '../components/TrackMap';
@@ -61,6 +63,8 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
   private readonly helpText = h('p', { class: 'rsel__help-text' });
   private startButton: HTMLButtonElement | null = null;
   private hints: ControlHints | null = null;
+  /** El mapa grande se actualiza cuando el foco se queda quieto (armarlo cuesta). */
+  private mapTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(game: Game) {
     super(game, 'screen--rsel');
@@ -72,22 +76,30 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
     this.track = savedTrack(race.trackId);
     const info = MODE_INFO[this.mode];
 
-    // Tarjetas de circuito.
+    // Fichas de circuito (las 24 del calendario, en grilla).
+    this.own.add(() => {
+      if (this.mapTimer) clearTimeout(this.mapTimer);
+    });
     const cardsHost = h('div', { class: 'rsel__cards', attrs: { role: 'listbox', 'aria-label': 'Circuito' } });
     for (const def of TRACKS) {
+      const level = TRACK_DIFFICULTY[def.id]?.level ?? 'medium';
       const card = h(
         'button',
-        { class: 'tcard', attrs: { type: 'button', role: 'option' } },
-        h('span', { class: 'tcard__code', text: def.countryCode }),
-        h('span', { class: 'tcard__text' }, h('span', { class: 'tcard__gp', text: def.grandPrix }), h('span', { class: 'tcard__name', text: def.name })),
-        h('span', { class: 'tcard__km', text: `${def.lengthKm.toFixed(3)} km` }),
+        { class: `tcard tcard--${level}`, attrs: { type: 'button', role: 'option', title: def.grandPrix } },
+        createCountryFlag(def.countryCode, 'tcard__flag'),
+        h('span', { class: 'tcard__name', text: def.short }),
+        h('span', { class: 'tcard__level', attrs: { 'aria-label': `Dificultad ${LEVEL_LABEL[level]}` } }),
       );
       this.cards.set(def.id, card);
       cardsHost.append(card);
       this.nav.add(card, {
         onFocus: () => {
           this.selectTrack(def);
-          this.showHelp(def.name, `${def.grandPrix} · ${def.city}, ${def.country}. ${def.turns} curvas y ${def.drsZones.length} zonas de DRS.`);
+          const info = TRACK_DIFFICULTY[def.id];
+          this.showHelp(
+            `${def.grandPrix} · ${LEVEL_LABEL[level]}`,
+            `${def.city}, ${def.country}. ${def.turns} curvas y ${def.drsZones.length} ${def.drsZones.length === 1 ? 'zona' : 'zonas'} de DRS. ${info?.reason ?? ''}`,
+          );
         },
         onConfirm: () => {
           this.game.playUi('confirm');
@@ -180,7 +192,13 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
   private selectTrack(def: TrackDefinition): void {
     this.track = def;
     for (const [id, card] of this.cards) card.classList.toggle('is-selected', id === def.id);
-    this.map.show(def);
+    // El mapa (curvas numeradas, sectores) necesita armar el circuito: se espera a que
+    // el foco se quede quieto, así recorrer la grilla con las flechas no se traba.
+    if (this.mapTimer) clearTimeout(this.mapTimer);
+    this.mapTimer = setTimeout(() => {
+      this.mapTimer = null;
+      if (this.track === def) this.map.show(def);
+    }, 160);
     const record = this.game.save.data.records[def.id];
     this.trackTitle.replaceChildren(
       h('span', { class: 'rsel__gp', text: def.grandPrix }),
@@ -189,12 +207,14 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
     );
     const stat = (label: string, value: string, tone = ''): HTMLDivElement =>
       h('div', { class: `rsel__stat ${tone}`.trim() }, h('span', { class: 'rsel__stat-label', text: label }), h('span', { class: 'rsel__stat-value', text: value }));
+    const level = TRACK_DIFFICULTY[def.id]?.level ?? 'medium';
     const items = [
+      stat('DIFICULTAD', LEVEL_LABEL[level], `is-${level}`),
       stat('LONGITUD', `${def.lengthKm.toFixed(3)} km`),
       stat('CURVAS', String(def.turns)),
       stat('ZONAS DRS', String(def.drsZones.length)),
       stat('RÉCORD', formatLapTime(def.lapRecord.seconds)),
-      stat('TU MEJOR VUELTA', record?.bestLap ? formatLapTime(record.bestLap) : '—', record?.bestLap ? 'is-mine' : ''),
+      stat('TU RÉCORD', record?.bestLap ? formatLapTime(record.bestLap) : '—', record?.bestLap ? 'is-mine' : ''),
     ];
     if (this.mode === 'timeTrial') {
       items.push(stat('TU FANTASMA', record?.ghost ? formatLapTime(record.ghost.time) : 'Sin grabar', record?.ghost ? 'is-ghost' : ''));

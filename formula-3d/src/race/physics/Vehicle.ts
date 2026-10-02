@@ -236,6 +236,9 @@ export class Vehicle {
     this.gearbox.reset(1);
     this.projection.index = -1;
     for (const wheel of this.wheels) wheel.projection.index = -1;
+    // Las ruedas, en la posición nueva: si no, se proyectaban desde donde estaba
+    // el auto antes y la búsqueda podía quedar trabada en otro tramo de la pista.
+    this.updateWheelPositions();
     this.updateProjections();
   }
 
@@ -662,6 +665,8 @@ export class Vehicle {
       const wz = this.z - cosH * px + sinH * py;
       geometry.project(wx, wz, probe, this.projection.index);
       const right = probe.d > 0;
+      // Donde otro tramo cruza la pista no hay muro.
+      if ((right ? trackside.gapRight : trackside.gapLeft)[probe.index] === 1) continue;
       const wall = (right ? trackside.wallRight : trackside.wallLeft)[probe.index] ?? Infinity;
       const penetration = Math.abs(probe.d) - wall;
       if (penetration > deepest) {

@@ -13,6 +13,7 @@ import { buildFences, buildWalls } from './build/barriers';
 import type { BuildContext } from './build/context';
 import {
   buildBridges,
+  buildCityBlocks,
   buildDistanceBoards,
   buildGantry,
   buildGrandstands,
@@ -21,6 +22,7 @@ import {
   buildSkyline,
   buildTrees,
   insidePolygon,
+  type Footprint,
   type StandZone,
   type StartGantry,
 } from './build/scenery';
@@ -99,6 +101,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
   let stands: StandZone[] = [];
   let bridges: StandZone[] = [];
   let pitZone: StandZone | null = null;
+  let buildings: Footprint[] = [];
   let gantry: StartGantry | null = null;
   let sky: SkyEnvironment | null = null;
   const look = weatherLook(track.def.environment, options.weather);
@@ -127,6 +130,10 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
     ['Pórtico de largada', () => (gantry = buildGantry(ctx))],
     ['Carteles de frenada', () => buildDistanceBoards(ctx)],
     ['Puentes', () => (bridges = buildBridges(ctx))],
+    [
+      'Edificios',
+      () => (buildings = buildCityBlocks(ctx, pitZone ? [...stands, ...bridges, pitZone] : [...stands, ...bridges])),
+    ],
     ['Ciudad', () => buildSkyline(ctx)],
     ['Horizonte', () => buildHorizon(ctx, look.fogColor)],
     [
@@ -138,6 +145,7 @@ export async function buildTrackScene(track: Track, options: BuildOptions): Prom
         const zones = pitZone ? [...stands, ...bridges, pitZone] : [...stands, ...bridges];
         buildTrees(ctx, (x, z) => {
           if (lakePolygon && insidePolygon(x, z, lakePolygon)) return false;
+          for (const b of buildings) if (Math.hypot(x - b.x, z - b.z) < b.radius + 4) return false;
           // Búsqueda completa (ver buildTrees): el tramo más cercano de verdad.
           g.project(x, z, projection);
           const side = projection.d < 0 ? 'left' : 'right';

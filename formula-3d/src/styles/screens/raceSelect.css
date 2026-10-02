@@ -80,25 +80,25 @@
   color: var(--c-text-3);
 }
 
-/* Tarjetas de circuito */
+/* Fichas de circuito: grilla de las 24 pistas (bandera, nombre y nivel). */
 
 .rsel__cards {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .tcard {
   position: relative;
   display: grid;
-  grid-template-columns: 44px 1fr auto;
-  gap: 14px;
+  grid-template-columns: 22px minmax(0, 1fr) 8px;
+  gap: 8px;
   align-items: center;
-  min-height: 50px;
-  padding: 6px 16px 6px 12px;
+  min-height: 36px;
+  padding: 4px 9px;
   text-align: left;
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: inset 0 -1px 0 var(--c-line);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--c-line);
   transition:
     background 0.2s,
     box-shadow 0.2s;
@@ -110,14 +110,18 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 3px;
   background: var(--c-accent);
   transform: scaleY(0);
   transition: transform 0.3s var(--ease-out);
 }
 
 .tcard.is-focused {
-  background: linear-gradient(90deg, rgba(255, 42, 60, 0.18), rgba(255, 255, 255, 0.04) 70%);
+  background: linear-gradient(90deg, rgba(255, 42, 60, 0.22), rgba(255, 255, 255, 0.05) 80%);
+}
+
+.tcard.is-selected {
+  box-shadow: inset 0 0 0 1px rgba(255, 42, 60, 0.7);
 }
 
 .tcard.is-selected::before,
@@ -125,52 +129,66 @@
   transform: scaleY(1);
 }
 
-.tcard__code {
-  display: grid;
-  place-items: center;
-  height: 30px;
-  font-family: var(--font-num);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--c-text-2);
-  border: 1px solid var(--c-line-strong);
-  transform: skewX(var(--skew));
-}
-
-.tcard.is-selected .tcard__code {
-  color: #fff;
-  background: var(--c-accent);
-  border-color: var(--c-accent);
-}
-
-.tcard__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.tcard__gp {
+.tcard__flag {
+  display: block;
+  width: 22px;
+  height: 15px;
   overflow: hidden;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--c-text-3);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.tcard__flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tcard__flag-code {
+  font-family: var(--font-num);
+  font-size: 9px;
+  color: var(--c-text-2);
+}
+
+.tcard__name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tcard__name {
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.15;
+/* Punto de dificultad: verde, amarillo o rojo. */
+.tcard__level {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lvl, #f5c542);
+  box-shadow: 0 0 8px var(--lvl, #f5c542);
 }
 
-.tcard__km {
-  font-family: var(--font-num);
-  font-size: 12px;
-  color: var(--c-text-2);
-  font-variant-numeric: tabular-nums;
+.tcard--easy {
+  --lvl: #2fd27a;
+}
+
+.tcard--medium {
+  --lvl: #f5c542;
+}
+
+.tcard--hard {
+  --lvl: #ff3b4a;
+}
+
+.rsel__stat.is-easy .rsel__stat-value {
+  color: #2fd27a;
+}
+
+.rsel__stat.is-medium .rsel__stat-value {
+  color: #f5c542;
+}
+
+.rsel__stat.is-hard .rsel__stat-value {
+  color: #ff3b4a;
 }
 
 /* Filas y botón */
@@ -385,24 +403,28 @@
   stroke-width: 9;
 }
 
+/* Una sola fila con todos los datos; si no entran, el último renglón se estira. */
 .rsel__stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 2px;
 }
 
 .rsel__stat {
   display: flex;
+  flex: 1 1 104px;
   flex-direction: column;
   gap: 4px;
-  padding: 10px 14px;
+  min-width: 0;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.035);
 }
 
 .rsel__stat-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
   color: var(--c-text-3);
 }
 
@@ -681,39 +703,115 @@
   }
 }
 
-/* Vista previa de la temporada: tarjetas del calendario y reparto de puntos. */
+/* Póster del calendario: marco rojo, fondo gris oscuro y cada carrera con su
+   trazado en rojo, la ciudad y la fecha (como los pósters de temporada). */
 
+.champ__poster-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.champ__poster-tag {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--c-accent);
+  transform: skewX(var(--skew));
+}
+
+.champ__poster-name {
+  font-size: 24px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+.champ__poster-count {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--c-text-3);
+}
+
+.champ__cup-info {
+  margin: 4px 0 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--c-text-2);
+}
+
+/* Columnas según la cantidad de carreras (4 para 8, 5 para 10, 6 para 24) y
+   filas centradas en el marco: un campeonato corto no deja un hueco abajo. */
 .champ__cards {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(var(--poster-cols, 4), minmax(0, 1fr));
+  align-content: safe center;
+  gap: 4px 6px;
+  padding: 14px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: #2b2c30;
+  box-shadow:
+    inset 0 0 0 6px #d6403a,
+    0 18px 40px rgba(0, 0, 0, 0.45);
 }
 
 .champ__card {
   position: relative;
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px 12px 12px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
-  box-shadow: inset 0 0 0 1px var(--c-line);
-  overflow: hidden;
+  gap: 1px;
+  padding: 4px 4px 8px;
+  text-align: center;
+}
+
+.champ__card-round {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-family: var(--font-num);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .champ__card::after {
   content: '';
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--c-accent);
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lvl, #f5c542);
+}
+
+.champ__card--easy {
+  --lvl: #2fd27a;
+}
+
+.champ__card--medium {
+  --lvl: #f5c542;
+}
+
+.champ__card--hard {
+  --lvl: #ff3b4a;
 }
 
 .champ__thumb {
-  width: 84px;
-  height: 84px;
+  width: 100%;
+  max-width: 120px;
+  aspect-ratio: 1.45;
+  height: auto;
 }
 
 .champ__thumb-glow,
@@ -723,51 +821,44 @@
 }
 
 .champ__thumb-glow {
-  stroke: var(--c-accent);
-  stroke-opacity: 0.25;
-  stroke-width: 60;
+  stroke: #ff3b3b;
+  stroke-opacity: 0.18;
+  stroke-width: 70;
 }
 
 .champ__thumb-line {
-  stroke: #f3f4f6;
-  stroke-width: 26;
-}
-
-.champ__card-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.champ__card-round {
-  font-family: var(--font-num);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--c-accent-2);
+  stroke: #e8433f;
+  stroke-width: 30;
 }
 
 .champ__card-name {
-  font-size: 19px;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
   font-weight: 900;
-  font-style: italic;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #f4f4f4;
 }
 
-.champ__card-gp {
+.champ__card-date {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--c-text-3);
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #e8433f;
 }
 
 .champ__card-flag {
-  width: 22px;
+  width: 16px;
+  height: 11px;
   flex: none;
+  overflow: hidden;
 }
 
 .champ__points {

@@ -40,6 +40,7 @@ export function buildGround(ctx: BuildContext): void {
   plane.rotateX(-Math.PI / 2);
   plane.translate((minX + maxX) / 2, Y.ground, (minZ + maxZ) / 2);
 
+  const sand = ctx.track.def.scenery.ground === 'sand';
   // Parches de tono (rompen la repetición de la textura a gran escala).
   const colors: number[] = [];
   const position = plane.getAttribute('position');
@@ -51,8 +52,10 @@ export function buildGround(ctx: BuildContext): void {
       Math.sin(x * 0.011 + Math.sin(z * 0.007) * 2) * 0.5 +
       Math.sin(z * 0.013 + Math.cos(x * 0.005) * 2) * 0.35 +
       ctx.rng.range(-0.15, 0.15);
-    // Verde de césped real: menos saturado y algo más oscuro (antes parecía plástico).
-    color.setHSL(0.25 + n * 0.018, 0.34 + n * 0.07, 0.44 + n * 0.07);
+    // Verde de césped real: menos saturado y algo más oscuro (antes parecía plástico);
+    // en el desierto, arena clara con manchas más tostadas.
+    if (sand) color.setHSL(0.095 + n * 0.012, 0.42 + n * 0.08, 0.6 + n * 0.06);
+    else color.setHSL(0.25 + n * 0.018, 0.34 + n * 0.07, 0.44 + n * 0.07);
     colors.push(color.r * 1.25, color.g * 1.25, color.b * 1.25);
   }
   plane.setAttribute('color', new Float32BufferAttribute(colors, 3));
@@ -66,6 +69,23 @@ export function buildGround(ctx: BuildContext): void {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGroundXZ = (modelMatrix * vec4(position, 1.0)).xz;');
+    if (sand) {
+      // Arena: el grano de la textura de pasto en gris (el color lo pone el vértice) y
+      // ondulaciones del viento a dos escalas.
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>\nvarying vec2 vGroundXZ;\n${DETAIL_PARS}`)
+        .replace(
+          '#include <map_fragment>',
+          `#include <map_fragment>
+          ${detailLayer(4.3, 0.35)}
+          float grain = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+          diffuseColor.rgb = vec3(0.55 + grain * 1.15);
+          float ripple = sin(dot(vGroundXZ, vec2(0.83, 0.31)) + sin(vGroundXZ.y * 0.07) * 2.6);
+          float dune = sin(vGroundXZ.x * 0.006 + sin(vGroundXZ.y * 0.004) * 2.0) * sin(vGroundXZ.y * 0.008 - vGroundXZ.x * 0.003);
+          diffuseColor.rgb *= 0.95 + 0.05 * ripple + 0.08 * dune;`,
+        );
+      return;
+    }
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec2 vGroundXZ;\n${DETAIL_PARS}`)
       .replace(
@@ -84,7 +104,7 @@ export function buildGround(ctx: BuildContext): void {
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma * 1.25, luma * 1.12, luma * 0.55), dry * 0.45);`,
       );
   };
-  material.customProgramCacheKey = () => 'cesped-cortado';
+  material.customProgramCacheKey = () => (sand ? 'arena' : 'cesped-cortado');
   addMesh(ctx, plane, material, { name: 'suelo' });
 }
 

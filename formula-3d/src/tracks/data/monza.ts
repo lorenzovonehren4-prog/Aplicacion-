@@ -17,6 +17,7 @@ import { MONZA_POINTS } from './real/monza';
 export const MONZA: TrackDefinition = {
   id: 'monza',
   name: 'Monza',
+  short: 'Monza',
   grandPrix: 'Gran Premio de Italia',
   city: 'Monza',
   country: 'Italia',

@@ -21,7 +21,7 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { addChunkedInstances, addMesh, type BuildContext, type InstanceItem } from './context';
-import { buildRibbon, mirrorLeftSideUV, fullLap, spansWhere, type ProfilePoint } from './ribbon';
+import { buildRibbon, mirrorLeftSideUV, spansWhere, wallSpans, type ProfilePoint } from './ribbon';
 import { createFence, createWall } from './textures';
 
 const WALL_HEIGHT = 1.05;
@@ -79,9 +79,10 @@ export function buildWalls(ctx: BuildContext): void {
   for (const side of ['left', 'right'] as const) {
     const walls = side === 'left' ? t.wallLeft : t.wallRight;
     const runoff = side === 'left' ? t.runoffLeft : t.runoffRight;
+    const gaps = side === 'left' ? t.gapLeft : t.gapRight;
     const sign = side === 'left' ? -1 : 1;
     // Cara interior (mira a la pista): hormigón donde no hay grava; frente a la grava, neumáticos.
-    for (const [from, to] of spansWhere(g, (i) => runoff[i] === 1, 1)) {
+    for (const [from, to] of spansWhere(g, (i) => runoff[i] === 1 && gaps[i] !== 1, 1)) {
       const length = g.wrapS(to - from);
       const spacing = TYRE_RADIUS * 2.02;
       for (let along = spacing / 2, k = 0; along < length; along += spacing, k++) {
@@ -95,7 +96,7 @@ export function buildWalls(ctx: BuildContext): void {
       }
     }
     for (const tyres of [false]) {
-      for (const [from, to] of spansWhere(g, (i) => (runoff[i] === 1) === tyres, 1)) {
+      for (const [from, to] of spansWhere(g, (i) => (runoff[i] === 1) === tyres && gaps[i] !== 1, 1)) {
         const face = buildRibbon(g, {
           from,
           to,
@@ -120,10 +121,12 @@ export function buildWalls(ctx: BuildContext): void {
         faces.concrete.push(face);
       }
     }
-    // Tapa superior.
+    // Tapa superior (donde hay muro).
+    for (const [from, to] of wallSpans(g, gaps)) {
     caps.push(
       buildRibbon(g, {
-        ...fullLap(g),
+        from,
+        to,
         step: 2,
         profile: (i): ProfilePoint[] => {
           const inner = (walls[i] ?? 10) * sign;
@@ -141,6 +144,7 @@ export function buildWalls(ctx: BuildContext): void {
         vLength: 8,
       }),
     );
+    }
   }
 
   const concrete = mergeGeometries(faces.concrete);
@@ -169,10 +173,13 @@ export function buildFences(ctx: BuildContext): void {
   const pieces: BufferGeometry[] = [];
   for (const side of ['left', 'right'] as const) {
     const walls = side === 'left' ? t.wallLeft : t.wallRight;
+    const gaps = side === 'left' ? t.gapLeft : t.gapRight;
     const sign = side === 'left' ? -1 : 1;
+    for (const [from, to] of wallSpans(g, gaps)) {
     pieces.push(
       buildRibbon(g, {
-        ...fullLap(g),
+        from,
+        to,
         step: 2,
         profile: (i): ProfilePoint[] => {
           const d = ((walls[i] ?? 10) + WALL_THICKNESS * 0.5) * sign;
@@ -187,6 +194,7 @@ export function buildFences(ctx: BuildContext): void {
         uLength: 0.3,
       }),
     );
+    }
   }
   const fence = mergeGeometries(pieces);
   for (const piece of pieces) piece.dispose();
@@ -222,6 +230,7 @@ export function buildFences(ctx: BuildContext): void {
   for (let s = 0; s < g.length - POST_SPACING / 2 && n < count - 1; s += POST_SPACING) {
     const i = g.indexAt(s);
     for (const sign of [-1, 1]) {
+      if ((sign < 0 ? t.gapLeft : t.gapRight)[i] === 1) continue;
       const wall = (sign < 0 ? t.wallLeft : t.wallRight)[i] ?? 10;
       g.pointAt(s, (wall + WALL_THICKNESS * 0.5) * sign, point, tangent);
       // Misma inclinación que el alambrado: hacia la pista (−derecha × lado).

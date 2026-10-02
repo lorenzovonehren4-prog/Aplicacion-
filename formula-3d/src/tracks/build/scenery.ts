@@ -625,6 +625,95 @@ export function buildSkyline(ctx: BuildContext): void {
   ctx.root.add(mesh);
 }
 
+// ─── Edificios junto a la pista (circuitos urbanos) ─────────────────────
+
+/** Edificio colocado (para que los árboles no caigan adentro). */
+export interface Footprint {
+  x: number;
+  z: number;
+  radius: number;
+}
+
+/**
+ * Manzanas a ambos lados de un circuito urbano: bloques con ventanas detrás
+ * de los muros (con una vereda de por medio), alineados con la calle, de
+ * alturas variadas. Ninguno pisa la pista ni otro tramo del trazado, ni las
+ * tribunas o los boxes (`zones`).
+ */
+export function buildCityBlocks(ctx: BuildContext, zones: readonly StandZone[]): Footprint[] {
+  const track = ctx.track;
+  if (track.def.scenery.street !== 'city') return [];
+  const g = track.geometry;
+  const t = track.trackside;
+  const [minHeight, maxHeight] = track.def.scenery.buildingHeight ?? [14, 48];
+  const rng = ctx.rng;
+  const items: InstanceItem[] = [];
+  const footprints: Footprint[] = [];
+  const projection = { index: -1, s: 0, d: 0 };
+  const point = { x: 0, z: 0 };
+  const tangent = { x: 0, z: 0 };
+  const tones = ['#d9d3c7', '#c9cdd3', '#e3dccf', '#b9c2cc', '#d6c9b5', '#a9b4bf'].map((hex) => new Color(hex));
+  /** ¿El punto está lejos de cualquier tramo de pista (más allá de su muro)? */
+  const clear = (x: number, z: number): boolean => {
+    g.project(x, z, projection);
+    const wall = (projection.d < 0 ? t.wallLeft : t.wallRight)[projection.index] ?? g.halfWidth + 3;
+    return Math.abs(projection.d) > wall + 3;
+  };
+  for (const side of ['left', 'right'] as const) {
+    const sign = side === 'left' ? -1 : 1;
+    const walls = side === 'left' ? t.wallLeft : t.wallRight;
+    const gaps = side === 'left' ? t.gapLeft : t.gapRight;
+    for (let s = rng.range(0, 10); s < g.length; ) {
+      const width = rng.range(16, 30);
+      const center = s + width / 2;
+      s += width + rng.range(1.5, 5);
+      const i = g.indexAt(center);
+      if (gaps[i] === 1) continue;
+      if (zones.some((zone) => zone.side === side && track.inRange(center, zone.from - 15, zone.to + 15))) continue;
+      const depth = rng.range(14, 26);
+      const offset = (walls[i] ?? g.halfWidth + 3) + rng.range(5, 10) + depth / 2;
+      g.pointAt(center, offset * sign, point, tangent);
+      // Esquinas (y el centro) fuera de la pista: en las curvas cerradas o junto a otro tramo, no va.
+      const ax = tangent.x * (width / 2);
+      const az = tangent.z * (width / 2);
+      const bx = -tangent.z * (depth / 2);
+      const bz = tangent.x * (depth / 2);
+      const corners: Array<[number, number]> = [
+        [point.x, point.z],
+        [point.x + ax + bx, point.z + az + bz],
+        [point.x + ax - bx, point.z + az - bz],
+        [point.x - ax + bx, point.z - az + bz],
+        [point.x - ax - bx, point.z - az - bz],
+      ];
+      if (!corners.every(([x, z]) => clear(x, z))) continue;
+      // Algunas torres más altas entre edificios bajos.
+      const tall = rng.next() < 0.18;
+      const height = tall ? rng.range(maxHeight * 0.8, maxHeight * 1.6) : rng.range(minHeight, maxHeight);
+      items.push({
+        x: point.x,
+        y: -0.05,
+        z: point.z,
+        // El +X local a lo largo de la calle.
+        yaw: Math.atan2(-tangent.z, tangent.x),
+        sx: width,
+        sy: height,
+        sz: depth,
+        color: (tones[Math.floor(rng.next() * tones.length)] ?? new Color('#d0d0d0')).clone(),
+      });
+      footprints.push({ x: point.x, z: point.z, radius: Math.hypot(width, depth) / 2 });
+    }
+  }
+  if (items.length === 0) return footprints;
+  const box = ctx.own.own(new BoxGeometry(1, 1, 1));
+  box.translate(0, 0.5, 0);
+  const texture = ctx.own.own(createWindows(ctx.anisotropy));
+  const material = ctx.own.own(
+    new MeshStandardMaterial({ map: texture, roughness: 0.55, metalness: 0.25, emissive: '#2a2418', emissiveIntensity: 0.35 }),
+  );
+  addChunkedInstances(ctx, box, material, items, { cell: 220, name: 'edificios', cast: ctx.detailShadows, receive: true });
+  return footprints;
+}
+
 // ─── Puentes sobre la pista ─────────────────────────────────────────────
 
 /** Altura libre bajo el puente del peraltado (m). */

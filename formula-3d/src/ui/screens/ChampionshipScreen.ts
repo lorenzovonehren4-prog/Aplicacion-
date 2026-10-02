@@ -1,7 +1,8 @@
 /**
  * Campeonato: la temporada completa en una pantalla.
- * - Sin temporada en curso: opciones (vueltas, dificultad, rivales, ayudas,
- *   clima) y el calendario, para empezar una.
+ * - Sin temporada en curso: cuál de los cinco campeonatos (Fácil, Media,
+ *   Difícil, Total o el de autor), opciones (vueltas, dificultad, rivales,
+ *   ayudas, clima) y su calendario como un póster, para empezar uno.
  * - En curso: calendario con cada resultado, tabla de pilotos y la próxima
  *   carrera. Se puede abandonar (con confirmación).
  * - Terminada: el campeón, la tabla final y la opción de empezar otra.
@@ -23,10 +24,11 @@ import {
   type RaceLaps,
   type Weather,
 } from '../../core/save/schema';
+import { CHAMPIONSHIPS, getChampionship, LEVEL_LABEL, TRACK_DIFFICULTY, type Championship } from '../../data/championships';
 import { DRIVERS, PLAYER_TEAM_ID, TEAMS, pickRivals, teamOf } from '../../data/teams';
 import { DIFFICULTY_INFO, difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
 import { createChampionship, isFinished, nextRound, PLAYER_ID, POINTS, standings } from '../../race/championship';
-import { getTrack, TRACKS } from '../../tracks/registry';
+import { getTrack } from '../../tracks/registry';
 import { WEATHER_INFO } from '../../tracks/weather';
 import { finished } from '../anim/finished';
 import { ControlHints } from '../components/ControlHints';
@@ -49,6 +51,11 @@ export class ChampionshipScreen extends BaseScreen {
   private readonly helpText = h('p', { class: 'rsel__help-text' });
   private hints: ControlHints | null = null;
   private confirmAbandon = false;
+  /** Campeonato elegido para la próxima temporada. */
+  private cup: Championship = CHAMPIONSHIPS[0] as Championship;
+  private readonly cupInfo = h('p', { class: 'champ__cup-info' });
+  private readonly poster = h('div', { class: 'champ__cards' });
+  private readonly posterTitle = h('div', { class: 'champ__poster-title' });
 
   constructor(game: Game) {
     super(game, 'screen--rsel screen--champ');
@@ -116,24 +123,18 @@ export class ChampionshipScreen extends BaseScreen {
     const start = createMenuButton({ label: 'Empezar temporada', icon: 'trophy' });
     start.classList.add('rsel__start');
     this.nav.add(start, {
-      onFocus: () => this.showHelp('Empezar temporada', `${TRACKS.length} carreras con los mismos rivales. Puntos del 1.º al 10.º: ${POINTS.join('-')}.`),
+      onFocus: () =>
+        this.showHelp('Empezar temporada', `${this.cup.name}: ${this.cup.tracks.length} carreras con los mismos rivales. Puntos del 1.º al 10.º: ${POINTS.join('-')}.`),
       onConfirm: () => this.startSeason(),
     });
-    const calendar = h(
-      'ol',
-      { class: 'champ__calendar' },
-      ...TRACKS.map((track, i) =>
-        h('li', { class: 'champ__round' }, h('span', { class: 'champ__round-n', text: `R${i + 1}` }), h('span', { class: 'champ__round-name', text: track.grandPrix }), h('span', { class: 'champ__round-code', text: track.countryCode })),
-      ),
-    );
     this.panel.replaceChildren(
       h('header', { class: 'rsel__header' }, h('span', { class: 'rsel__kicker', text: previous ? 'Temporada terminada' : 'Nueva temporada' }), h('h2', { class: 'rsel__title', text: 'Campeonato' })),
-      h('h3', { class: 'rsel__section', text: 'Calendario' }),
-      calendar,
       h('h3', { class: 'rsel__section', text: 'Opciones' }),
       h('div', { class: 'rsel__rows' }, ...this.rows.map((row) => row.element)),
+      this.cupInfo,
       start,
     );
+    this.renderPoster();
     this.refreshRows();
     if (previous) {
       const table = standings(previous);
@@ -150,19 +151,7 @@ export class ChampionshipScreen extends BaseScreen {
         this.help(),
       );
     } else {
-      this.side.replaceChildren(
-        h(
-          'div',
-          { class: 'champ__intro' },
-          h('h3', { class: 'champ__intro-title', text: 'La temporada' }),
-          h('p', {
-            text: `Corres todo el calendario contra los mismos rivales. Cada carrera reparte ${POINTS.join('-')} puntos del 1.º al 10.º; gana el título quien sume más. Puedes dejarla y seguir otro día: queda guardada.`,
-          }),
-        ),
-        this.previewCalendar(),
-        this.pointsChart(),
-        this.help(),
-      );
+      this.side.replaceChildren(this.posterTitle, this.poster, this.pointsChart(), this.help());
     }
     this.nav.focus(start);
   }
@@ -221,7 +210,7 @@ export class ChampionshipScreen extends BaseScreen {
       h(
         'header',
         { class: 'rsel__header' },
-        h('span', { class: 'rsel__kicker', text: `Temporada en curso · ${done} de ${state.rounds.length} carreras` }),
+        h('span', { class: 'rsel__kicker', text: `${state.cup ? getChampionship(state.cup).name : 'Temporada en curso'} · ${done} de ${state.rounds.length} carreras` }),
         h('h2', { class: 'rsel__title', text: 'Campeonato' }),
       ),
       h('h3', { class: 'rsel__section', text: 'Calendario' }),
@@ -268,6 +257,16 @@ export class ChampionshipScreen extends BaseScreen {
   private setupRows(ctx: RowContext): SettingRow[] {
     const race = (): Game['settings']['race'] => this.game.settings.race;
     return [
+      selectorRow<string>(ctx, {
+        label: 'Campeonato',
+        help: 'Fácil, Media y Difícil: las 8 pistas de cada nivel. Total: las 24, de la más fácil a la más difícil. Gran Gira: 10 carreras elegidas para que la emoción suba.',
+        options: CHAMPIONSHIPS.map((cup) => ({ value: cup.id, label: cup.name })),
+        get: () => this.cup.id,
+        set: (value) => {
+          this.cup = getChampionship(value);
+          this.renderPoster();
+        },
+      }),
       selectorRow<RaceLaps>(ctx, {
         label: 'Vueltas por carrera',
         help: 'Largo de cada carrera de la temporada.',
@@ -321,29 +320,38 @@ export class ChampionshipScreen extends BaseScreen {
 
   private refreshRows(): void {
     for (const row of this.rows) row.refresh?.();
-    this.rows[2]?.element.classList.toggle('is-muted', this.game.settings.race.difficulty !== 'custom');
+    this.rows[3]?.element.classList.toggle('is-muted', this.game.settings.race.difficulty !== 'custom');
   }
 
-  /** Ayuda de la opción enfocada (abajo, del lado derecho). */
-  /** Calendario de la temporada: una tarjeta por carrera con el trazado y la bandera. */
-  private previewCalendar(): HTMLElement {
-    return h(
-      'div',
-      { class: 'champ__cards' },
-      ...TRACKS.map((track, i) =>
-        h(
+  /**
+   * Calendario del campeonato elegido como un póster de temporada: cada
+   * carrera con su trazado en rojo sobre fondo oscuro, el nombre, la fecha del
+   * Gran Premio y un punto con su dificultad.
+   */
+  private renderPoster(): void {
+    const cup = this.cup;
+    this.cupInfo.textContent = cup.description;
+    this.posterTitle.replaceChildren(
+      h('span', { class: 'champ__poster-tag', text: cup.tag }),
+      h('b', { class: 'champ__poster-name', text: cup.name }),
+      h('span', { class: 'champ__poster-count', text: `${cup.tracks.length} carreras` }),
+    );
+    const count = cup.tracks.length;
+    this.poster.style.setProperty('--poster-cols', String(count <= 8 ? 4 : count <= 10 ? 5 : 6));
+    this.poster.replaceChildren(
+      ...cup.tracks.map((id, i) => {
+        const track = getTrack(id);
+        const info = TRACK_DIFFICULTY[id];
+        const level = info?.level ?? 'medium';
+        return h(
           'div',
-          { class: 'champ__card' },
+          { class: `champ__card champ__card--${level}`, attrs: { title: `${track.grandPrix} · ${LEVEL_LABEL[level]}` } },
+          h('span', { class: 'champ__card-round', text: `R${i + 1}` }),
           createTrackThumb(track, 'champ__thumb'),
-          h(
-            'div',
-            { class: 'champ__card-info' },
-            h('span', { class: 'champ__card-round', text: `Ronda ${i + 1}` }),
-            h('b', { class: 'champ__card-name', text: track.name }),
-            h('span', { class: 'champ__card-gp' }, createCountryFlag(track.countryCode, 'champ__card-flag'), track.grandPrix),
-          ),
-        ),
-      ),
+          h('b', { class: 'champ__card-name', text: track.short }),
+          h('span', { class: 'champ__card-date' }, createCountryFlag(track.countryCode, 'champ__card-flag'), info?.date ?? ''),
+        );
+      }),
     );
   }
 
@@ -382,7 +390,8 @@ export class ChampionshipScreen extends BaseScreen {
         difficulty: difficultyValue(race),
         weather: race.weather,
         rivals: pickRivals(race.rivals).map((driver) => driver.id),
-        calendar: TRACKS.map((track) => track.id),
+        cup: this.cup.id,
+        calendar: this.cup.tracks,
       },
       Date.now(),
     );

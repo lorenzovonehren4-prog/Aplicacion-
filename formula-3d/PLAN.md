@@ -1218,6 +1218,140 @@ autos que flotan en Baja y la cabina (espejos blancos, volante chico).
 - [x] **Fuga en Alta**: cada vuelta al menú dejaba vivo el mapa de sombras
       (2048²) de la luz del estudio; se libera con el estudio.
 
+### Versión 2.0 — Las 24 pistas del calendario, 5 campeonatos y menú nuevo ✅
+
+Pedido: tomar el póster del calendario 2026 (24 trazados), analizar cada
+pista como diseñador de juegos de carreras, clasificarlas en Fácil, Media y
+Difícil, armar 5 competencias (Fácil, Media, Difícil, Total ordenada de menor
+a mayor dificultad y una Personalizada del autor), revisar la clasificación
+(control de calidad obligatorio) y hacer un menú principal mucho mejor,
+tomando como referencia la pantalla "elegir equipo" de un juego oficial
+(sólo estilo: todo sigue siendo ficticio).
+
+**Pistas (las 22 nuevas más Melbourne y Monza)**
+
+- [x] Trazados reales de [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits)
+      (MIT): la línea central se proyecta a metros, se densifica a 1 m, se
+      suaviza (gaussiana de σ = 10 m) y se vuelve a muestrear cada 6 m. La
+      longitud queda a ±15 m de la oficial (lo comprueba
+      `tests/calendar.test.ts`).
+- [x] Cada pista tiene meta, tres sectores, boxes, zonas de DRS, tribunas,
+      récord (de pilotos ficticios), bandera de su país y escenario propio:
+      arena en Sakhir, Yeda, Las Vegas, Lusail y Yas Marina; muros de
+      hormigón y escapatorias de asfalto en las semiurbanas (Yeda, Miami,
+      Montreal, Madrid, Yas Marina); manzanas de edificios con ventanas en
+      las urbanas (Mónaco, Bakú, Singapur, Las Vegas, con alturas propias:
+      hasta 110 m en Las Vegas).
+- [x] **Tramos vecinos**: cuando dos partes de la pista pasan cerca, el muro
+      de cada una se calcula mirando a la otra (grilla de 20 m). Si van en
+      paralelo, un muro al medio las separa (no hay atajo posible); si se
+      cruzan (sólo el puente de Suzuka), el muro se abre en el cruce y la
+      física y los choques entre autos ignoran el otro nivel.
+- [x] Los autos se ubican con las ruedas proyectadas antes del primer
+      cuadro (en Spa y Las Vegas una vuelta podía invalidarse por eso).
+- [x] El piloto automático completa una vuelta válida en las 24 pistas
+      (prueba), con tiempos teóricos cerca de los reales (Spa 1:43.9,
+      Suzuka 1:31.3, Mónaco 1:08.9).
+
+**Fase 1 y 2: análisis y clasificación**
+
+Cada trazado se miró en el póster (curvas, rectas, horquillas, secuencias
+técnicas, desnivel, muros) y se midió con el propio juego (`TrackAnalysis` y
+`RacingLine`): curvas lentas (se toman a menos de 120 km/h), frenadas fuertes
+(se pierden más de 80 km/h), radio mínimo, vuelta teórica, velocidad media,
+% de la vuelta con el muro a menos de 4 m y % de la vuelta en curva.
+`rating` va de 1 a 10: Fácil ≤ 4, Media de 4 a 6, Difícil > 6.
+
+| # | Pista | Nivel | Nota | Curvas | Lentas | Frenadas fuertes | Radio mín. | Vuelta | km/h medio | Muro cerca | En curva | Por qué |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Monza | Fácil | 1.5 | 11 | 7 | 6 | 19 m | 1:17.8 | 268 | 17 % | 21 % | Pocas curvas, rectas larguísimas, chicanas claras y escapatorias amplias. |
+| 2 | Spielberg | Fácil | 2 | 10 | 4 | 5 | 12 m | 1:06.9 | 232 | 13 % | 29 % | 10 curvas y la vuelta más corta: tres rectas con frenadas evidentes. |
+| 3 | Sakhir | Fácil | 2.5 | 15 | 10 | 9 | 11 m | 1:30.0 | 216 | 15 % | 29 % | Frenadas fuertes pero muy marcadas al final de rectas; escapatorias de asfalto enormes. |
+| 4 | Barcelona | Fácil | 3 | 14 | 7 | 5 | 27 m | 1:17.0 | 218 | 12 % | 43 % | Curvas medias y rápidas conocidas, buena visibilidad, espacio. |
+| 5 | Lusail | Fácil | 3.2 | 16 | 12 | 7 | 28 m | 1:29.3 | 219 | 11 % | 35 % | Curvas abiertas que se encadenan con fluidez; el radio mínimo más grande. |
+| 6 | Melbourne | Fácil | 3.4 | 14 | 10 | 11 | 18 m | 1:21.2 | 234 | 12 % | 33 % | Fluido alrededor del lago, rápido y con espacio; pocas trampas. |
+| 7 | Shanghái | Fácil | 3.6 | 16 | 9 | 8 | 12 m | 1:35.2 | 206 | 9 % | 38 % | El caracol de la 1 se cierra, pero las escapatorias perdonan. |
+| 8 | São Paulo | Fácil | 3.9 | 15 | 7 | 5 | 20 m | 1:11.4 | 217 | 8 % | 45 % | Corto y fluido; sólo 7 curvas lentas. La S do Senna en bajada es lo más delicado. |
+| 9 | México | Media | 4.3 | 17 | 13 | 11 | 12 m | 1:15.6 | 205 | 12 % | 29 % | La recta más larga, pero 13 curvas lentas y 11 frenadas fuertes. |
+| 10 | Silverstone | Media | 4.6 | 18 | 9 | 7 | 21 m | 1:33.7 | 226 | 4 % | 37 % | Curvas muy rápidas encadenadas (Maggotts-Becketts) que piden precisión. |
+| 11 | Austin | Media | 4.9 | 20 | 13 | 12 | 10 m | 1:38.1 | 202 | 14 % | 35 % | 20 curvas: la subida a la 1, eses rápidas y un estadio lento. |
+| 12 | Budapest | Media | 5.1 | 14 | 13 | 8 | 22 m | 1:20.5 | 196 | 12 % | 38 % | Muy trabado, casi sin rectas: cuesta mantener el ritmo. |
+| 13 | Yas Marina | Media | 5.3 | 16 | 11 | 11 | 12 m | 1:28.0 | 216 | 77 % | 31 % | Frenadas fuertes y un último sector lento entre muros. |
+| 14 | Miami | Media | 5.5 | 19 | 10 | 7 | 14 m | 1:27.6 | 222 | 74 % | 36 % | Semiurbano, muros cerca casi siempre y una chicana muy cerrada. |
+| 15 | Las Vegas | Media | 5.7 | 17 | 10 | 9 | 17 m | 1:31.7 | 243 | 77 % | 24 % | Pocas curvas y rectas enormes, pero de noche y entre muros a más de 340 km/h. |
+| 16 | Montreal | Media | 6 | 14 | 11 | 6 | 15 m | 1:10.2 | 224 | 69 % | 28 % | Chicanas rápidas con pianos altos y muros pegados. |
+| 17 | Madrid | Difícil | 6.6 | 22 | 18 | 13 | 14 m | 1:36.0 | 205 | 58 % | 44 % | Nuevo y mitad urbano: 22 curvas, 18 lentas, muros en más de la mitad. |
+| 18 | Zandvoort | Difícil | 7 | 14 | 8 | 9 | 18 m | 1:15.7 | 202 | 12 % | 49 % | Angosto, peraltes, subidas y bajadas; casi no hay lugar para errores. |
+| 19 | Spa | Difícil | 7.3 | 19 | 10 | 6 | 13 m | 1:43.9 | 243 | 8 % | 30 % | El más largo (7 km): Eau Rouge, Pouhon y la Parada de Autobús, con mucho desnivel. |
+| 20 | Suzuka | Difícil | 7.8 | 18 | 8 | 6 | 19 m | 1:31.3 | 229 | 12 % | 41 % | El "ocho": eses encadenadas (un error se arrastra), Degner y 130R. |
+| 21 | Bakú | Difícil | 8.2 | 20 | 13 | 13 | 18 m | 1:35.3 | 227 | 77 % | 20 % | Ángulos rectos entre muros, el paso angosto del castillo y 2 km a fondo. |
+| 22 | Yeda | Difícil | 8.6 | 27 | 10 | 8 | 17 m | 1:32.8 | 239 | 72 % | 39 % | El urbano más rápido: 27 curvas ciegas entre muros a casi 240 km/h de media. |
+| 23 | Singapur | Difícil | 9 | 19 | 15 | 11 | 12 m | 1:30.4 | 197 | 75 % | 32 % | 19 curvas, 15 lentas, entre muros, de noche y larga: no da respiro. |
+| 24 | Mónaco | Difícil | 9.6 | 19 | 18 | 13 | 8 m | 1:08.9 | 174 | 47 % (\*) | 49 % | La más lenta y angosta: la horquilla más cerrada y muros en todas partes. |
+
+(\*) En Mónaco el muro está a menos de 4 m en el 47 % de la vuelta, pero su
+margen medio (4.2 m) es el de una calle angosta: el resto también está cerca.
+
+Criterios: los urbanos y semiurbanos (muro cerca en más del 45 % de la vuelta)
+empiezan en Media; las curvas lentas y las frenadas fuertes suben la nota
+porque cada una es un punto de frenada para acertar; el radio mínimo marca la
+horquilla más cerrada; la vuelta en curva mide qué tan técnica es; y el
+desnivel y las secuencias encadenadas (Suzuka, Spa, Zandvoort) suben la nota
+aunque los números sean amables.
+
+**Fase 3: los 5 campeonatos** (`src/data/championships.ts`)
+
+| Campeonato | Etiqueta | Carreras | Orden |
+|---|---|---|---|
+| Copa Iniciación | Fácil | 8 | Monza → São Paulo, de la más simple a la más exigente |
+| Copa Desafío | Media | 8 | México → Montreal |
+| Copa Élite | Difícil | 8 | Madrid → Mónaco |
+| Temporada Completa | Total | 24 | Las 24 de menor a mayor dificultad: de Monza a Mónaco |
+| Gran Gira | Autor | 10 | Sakhir, Melbourne, Suzuka, Miami, Spa, Monza, Singapur, São Paulo, Las Vegas, Mónaco |
+
+La Gran Gira está pensada como una temporada corta con curva de emoción:
+arranca con dos pistas fáciles para entrar en ritmo, sube con Suzuka, baja un
+poco con Miami, vuelve a subir con Spa, da un respiro de velocidad pura en
+Monza, sorprende de noche en Singapur, recupera con São Paulo, prepara el
+cierre con Las Vegas (velocidad entre muros) y termina en Mónaco, la más
+difícil. Alterna permanentes y urbanas, día y noche, rápidas y técnicas.
+
+En la pantalla del campeonato, la primera fila elige el campeonato y a la
+derecha se ve como el póster: los trazados en rojo con la ronda, el nombre,
+la bandera, la fecha y un punto del color de su dificultad. El guardado
+recuerda el campeonato elegido (`cup`); los guardados viejos siguen
+funcionando.
+
+**Fase 4: control de calidad**
+
+- Se revisó la clasificación contra las métricas y se corrigió un error:
+  México estaba en Fácil (por su recta, la más larga del calendario) y São
+  Paulo en Media (por fama). Los números dicen lo contrario: México tiene 13
+  curvas lentas y 11 frenadas fuertes; São Paulo, 7 y 5. Se intercambiaron.
+- Se comprobó que cada copa tiene exactamente 8 pistas, que la Total tiene
+  las 24 sin repetir y ordenadas por nota, y que la Gran Gira no repite.
+- Mónaco y Bakú tenían huecos en el muro entre tramos paralelos (se podía
+  atajar); ahora sólo hay huecos donde la pista se cruza (Suzuka).
+
+**Fase 5: menú principal nuevo**
+
+- [x] Como la presentación de un equipo: el auto sobre un **podio** con
+      borde blanco y 18 luces LED, un **aro de focos** encima (10 lámparas),
+      tres **pantallas** con el logo "ÁPICE GP" y "TEMPORADA 2026" alrededor,
+      y la cámara girando despacio.
+- [x] A la izquierda, una **ficha** con el ícono, el nombre y la descripción
+      del acceso enfocado y sus datos (campeonato en curso, récords,
+      fantasmas, nivel del pase, estadísticas, calidad gráfica…), y la
+      tarjeta del piloto al pie.
+- [x] Arriba a la derecha, **Continuar**: sigue el campeonato en curso
+      (ronda y pista) o va a una carrera rápida con lo último que elegiste.
+- [x] Abajo, una **fila de 9 tarjetas grandes** con ícono y una marca de
+      elegida (como las de equipos), que se elevan al enfocarse. En ventanas
+      angostas pasan a dos filas.
+- [x] Selección de carrera: cuadrícula de 24 pistas con bandera y punto de
+      dificultad, el mapa del circuito y una fila de datos (dificultad,
+      longitud, curvas, DRS, récord, tu récord).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1307,3 +1441,4 @@ autos que flotan en Baja y la cabina (espejos blancos, volante chico).
 - **Versión 1.10**: interfaz en ventanas chicas (panel de claude.ai), fuga de texturas y recorrido completo sin errores (pedido del usuario).
 - **Versión 1.11**: carga más rápida, imagen nítida y diseño de transmisión según referencias (pedido del usuario).
 - **Versión 1.12**: árboles de hojas, sombras de los autos, cabina con espejos, volante y carbono, y autos con alerón, morro y patrocinadores según referencias (pedido del usuario).
+- **Versión 2.0**: las 24 pistas del calendario 2026, análisis y clasificación por dificultad, 5 campeonatos y menú principal nuevo (pedido del usuario).

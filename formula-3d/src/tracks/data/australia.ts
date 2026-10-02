@@ -17,6 +17,7 @@ import { MELBOURNE_LAKE, MELBOURNE_POINTS } from './real/melbourne';
 export const AUSTRALIA: TrackDefinition = {
   id: 'australia',
   name: 'Albert Park',
+  short: 'Melbourne',
   grandPrix: 'Gran Premio de Australia',
   city: 'Melbourne',
   country: 'Australia',

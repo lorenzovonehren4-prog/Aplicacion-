@@ -73,7 +73,7 @@ describe('geometría de Albert Park', () => {
         expect(Math.abs(out.d), `${def.id}: punto ${k}`).toBeLessThan(nearest + 1);
       }
     }
-  });
+  }, 60000);
 
   it('la búsqueda global encuentra el punto aunque no haya pista', () => {
     const p = { x: 0, z: 0 };

@@ -233,6 +233,7 @@ function sanitizeChampionship(raw: unknown): ChampionshipState | null {
     parsed.push({ trackId, results });
   }
   return {
+    ...(typeof raw.cup === 'string' && /^[a-z0-9_-]{1,32}$/.test(raw.cup) ? { cup: raw.cup } : {}),
     startedAt: num(raw.startedAt, 0, 0, Number.MAX_SAFE_INTEGER, true),
     laps: oneOf(raw.laps, RACE_LAPS, 3),
     difficulty: num(raw.difficulty, 50, 0, 100),

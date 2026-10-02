@@ -1,7 +1,9 @@
 /**
- * Estudio 3D del menú principal y del garaje: el monoplaza sobre
- * una plataforma giratoria, luces de estudio, piso oscuro con reflejos,
- * sombras suaves y tiras de luz al fondo que brillan con el bloom.
+ * Estudio 3D del menú principal y del garaje: el monoplaza sobre un podio
+ * con cajas de luces LED en el borde, un anillo de reflectores encima,
+ * pantallas con el logo del equipo al fondo, piso oscuro con reflejos,
+ * sombras suaves y tiras de luz que brillan con el bloom (como la
+ * presentación de un equipo).
  */
 
 import {
@@ -26,6 +28,7 @@ import {
   ShaderMaterial,
   SpotLight,
   SRGBColorSpace,
+  TorusGeometry,
   Vector3,
   type WebGLRenderer,
 } from 'three';
@@ -43,6 +46,10 @@ import type { LiveryConfig } from './livery';
 
 const FLOOR_RADIUS = 20;
 const PLATFORM_RADIUS = 3.4;
+/** Alto del podio (m): el auto está arriba. */
+const PODIUM_HEIGHT = 0.24;
+/** Distancia de la cámara en el giro lento del menú: el auto entero a la derecha del panel. */
+const MENU_RADIUS = 10.8;
 const BACKGROUND = new Color('#050608');
 
 /** Shader del piso: reflejo desenfocado, degradado hacia la oscuridad y surcos de la plataforma. */
@@ -154,6 +161,87 @@ function createBackdropTexture(): CanvasTexture {
   return texture;
 }
 
+/** Caja de luces LED: grilla de puntos blancos sobre negro, con un leve halo. */
+function createLedBoxTexture(): CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo crear la textura de las luces del podio.');
+  ctx.fillStyle = '#050506';
+  ctx.fillRect(0, 0, 128, 32);
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 12; col++) {
+      const x = 8 + col * 10.2;
+      const y = 6 + row * 10;
+      const halo = ctx.createRadialGradient(x, y, 0, x, y, 5);
+      halo.addColorStop(0, 'rgba(255,255,255,1)');
+      halo.addColorStop(0.45, 'rgba(235,240,255,0.85)');
+      halo.addColorStop(1, 'rgba(200,210,255,0)');
+      ctx.fillStyle = halo;
+      ctx.fillRect(x - 5, y - 5, 10, 10);
+    }
+  }
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+/** Pantalla del fondo: el logo del equipo grande, con un degradado azul noche y un marco. */
+function createLogoScreenTexture(): CanvasTexture {
+  const W = 1024;
+  const H = 384;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo crear la pantalla del estudio.');
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#0a0d1c');
+  bg.addColorStop(0.5, '#151a33');
+  bg.addColorStop(1, '#0a0c18');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  // Barrido de luz diagonal.
+  const sweep = ctx.createLinearGradient(0, 0, W, 0);
+  sweep.addColorStop(0, 'rgba(255,42,60,0)');
+  sweep.addColorStop(0.5, 'rgba(255,42,60,0.16)');
+  sweep.addColorStop(1, 'rgba(255,42,60,0)');
+  ctx.fillStyle = sweep;
+  ctx.beginPath();
+  ctx.moveTo(W * 0.3, 0);
+  ctx.lineTo(W * 0.62, 0);
+  ctx.lineTo(W * 0.48, H);
+  ctx.lineTo(W * 0.16, H);
+  ctx.fill();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'italic 900 170px "Titillium Web", "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#f4f5f8';
+  ctx.fillText('ÁPICE', W * 0.46, H * 0.46);
+  const width = ctx.measureText('ÁPICE').width;
+  ctx.fillStyle = '#e8203a';
+  ctx.beginPath();
+  const gx = W * 0.46 + width / 2 + 16;
+  ctx.moveTo(gx + 14, H * 0.3);
+  ctx.lineTo(gx + 132, H * 0.3);
+  ctx.lineTo(gx + 118, H * 0.62);
+  ctx.lineTo(gx, H * 0.62);
+  ctx.fill();
+  ctx.font = 'italic 900 78px "Titillium Web", "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('GP', gx + 66, H * 0.465);
+  ctx.font = '600 30px "Titillium Web", "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(220,226,240,0.7)';
+  ctx.fillText('T E M P O R A D A   2 0 2 6', W * 0.5, H * 0.8);
+  ctx.strokeStyle = 'rgba(160,175,220,0.35)';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, W - 6, H - 6);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
 export interface StudioOptions {
   livery: LiveryConfig;
 }
@@ -214,10 +302,10 @@ export class StudioScene implements RenderView {
   private readonly reflectorGeometry: CircleGeometry;
   private readonly platform = new Group();
 
-  private readonly orbit: Orbit = { angle: -0.6, radius: 9, height: 1.5 };
+  private readonly orbit: Orbit = { angle: -0.6, radius: MENU_RADIUS, height: 1.5 };
   /** Punto que mira la cámara (y el que se quiere mirar), para los encuadres del garaje. */
-  private readonly look = new Vector3(0, 0.42, 0);
-  private readonly lookTarget = new Vector3(0, 0.42, 0);
+  private readonly look = new Vector3(0, 0.42 + PODIUM_HEIGHT, 0);
+  private readonly lookTarget = new Vector3(0, 0.42 + PODIUM_HEIGHT, 0);
   private shot: StudioShot | null = null;
   private readonly orbitTarget: Orbit = { ...this.orbit };
   /** Velocidad de giro automático de la cámara (rad/s). */
@@ -304,7 +392,12 @@ export class StudioScene implements RenderView {
     this.platform.add(contact);
 
     this.buildPlatformRing();
+    this.buildPodium();
     this.buildBackdrop();
+    this.buildLightingRig();
+    this.buildLogoScreens();
+    // El auto (y su sombra de contacto) arriba del podio.
+    this.platform.position.y = PODIUM_HEIGHT;
     this.scene.add(this.platform);
 
     // ─── Auto ───
@@ -312,8 +405,8 @@ export class StudioScene implements RenderView {
     this.car.root.position.y = 0.001;
     this.car.setSteer(0.28);
     this.platform.add(this.car.root);
-    this.keyLight.target.position.set(0, 0.4, 0);
-    this.rimLight.target.position.set(0, 0.4, 0);
+    this.keyLight.target.position.set(0, 0.4 + PODIUM_HEIGHT, 0);
+    this.rimLight.target.position.set(0, 0.4 + PODIUM_HEIGHT, 0);
 
     this.applyOrbitToCamera();
   }
@@ -338,9 +431,9 @@ export class StudioScene implements RenderView {
     this.shot = shot;
     if (shot === null) {
       this.orbitSpeed = 0.07;
-      this.orbitTarget.radius = 9;
+      this.orbitTarget.radius = MENU_RADIUS;
       this.orbitTarget.height = 1.5;
-      this.lookTarget.set(0, 0.42, 0);
+      this.lookTarget.set(0, 0.42 + PODIUM_HEIGHT, 0);
       return;
     }
     const def = SHOTS[shot];
@@ -351,7 +444,7 @@ export class StudioScene implements RenderView {
     this.orbitTarget.angle = def.angle;
     this.orbitTarget.radius = def.radius;
     this.orbitTarget.height = def.height;
-    this.lookTarget.set(...def.look);
+    this.lookTarget.set(def.look[0], def.look[1] + PODIUM_HEIGHT, def.look[2]);
   }
 
   /** Acercamiento cinematográfico de entrada: arranca cerca y bajo y se abre. */
@@ -502,6 +595,92 @@ export class StudioScene implements RenderView {
     );
     bevel.position.y = 0.01;
     this.scene.add(bevel);
+  }
+
+  /**
+   * Podio: cilindro bajo de metal oscuro con la tapa satinada (recibe la
+   * sombra del auto), un filete luminoso en el borde y cajas de luces LED
+   * alrededor del costado, como los podios de presentación de los equipos.
+   */
+  private buildPodium(): void {
+    const side = this.own.own(new CylinderGeometry(PLATFORM_RADIUS, PLATFORM_RADIUS + 0.08, PODIUM_HEIGHT, 120, 1, true));
+    const sideMesh = new Mesh(side, this.own.own(new MeshStandardMaterial({ color: '#15171c', metalness: 0.85, roughness: 0.35, side: DoubleSide })));
+    sideMesh.position.y = PODIUM_HEIGHT / 2;
+    this.scene.add(sideMesh);
+
+    const top = this.own.own(new CircleGeometry(PLATFORM_RADIUS, 120));
+    top.rotateX(-Math.PI / 2);
+    const topMesh = new Mesh(top, this.own.own(new MeshStandardMaterial({ color: '#1b1d22', metalness: 0.55, roughness: 0.42 })));
+    topMesh.position.y = PODIUM_HEIGHT;
+    topMesh.receiveShadow = true;
+    this.scene.add(topMesh);
+
+    // Filete de luz blanca en el borde superior.
+    const lip = this.own.own(new RingGeometry(PLATFORM_RADIUS - 0.05, PLATFORM_RADIUS, 160));
+    lip.rotateX(-Math.PI / 2);
+    const lipMesh = new Mesh(lip, this.own.own(new MeshBasicMaterial({ color: new Color('#e8eefc').multiplyScalar(2.2) })));
+    lipMesh.position.y = PODIUM_HEIGHT + 0.002;
+    this.scene.add(lipMesh);
+
+    // Cajas de LED en el costado (grilla de puntos que brilla con el bloom).
+    const ledTexture = this.own.own(createLedBoxTexture());
+    const box = this.own.own(new PlaneGeometry(0.62, 0.16));
+    const ledMaterial = this.own.own(new MeshBasicMaterial({ map: ledTexture, color: new Color('#ffffff').multiplyScalar(2.4), fog: false }));
+    const count = 18;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const mesh = new Mesh(box, ledMaterial);
+      const r = PLATFORM_RADIUS + 0.045;
+      mesh.position.set(Math.sin(angle) * r, PODIUM_HEIGHT / 2, Math.cos(angle) * r);
+      mesh.lookAt(Math.sin(angle) * (r + 1), PODIUM_HEIGHT / 2, Math.cos(angle) * (r + 1));
+      this.scene.add(mesh);
+    }
+  }
+
+  /** Anillo de reflectores colgado sobre el podio: focos que brillan (con bloom) desde arriba. */
+  private buildLightingRig(): void {
+    const ringRadius = 5.4;
+    const height = 6.4;
+    const truss = this.own.own(new TorusGeometry(ringRadius, 0.06, 6, 96));
+    truss.rotateX(Math.PI / 2);
+    const trussMesh = new Mesh(truss, this.own.own(new MeshStandardMaterial({ color: '#22252b', metalness: 0.9, roughness: 0.4 })));
+    trussMesh.position.y = height;
+    this.scene.add(trussMesh);
+    const housing = this.own.own(new CylinderGeometry(0.2, 0.26, 0.42, 20));
+    const housingMaterial = this.own.own(new MeshStandardMaterial({ color: '#111216', metalness: 0.7, roughness: 0.45 }));
+    const lens = this.own.own(new CircleGeometry(0.19, 24));
+    lens.rotateX(Math.PI / 2);
+    const lensMaterial = this.own.own(new MeshBasicMaterial({ color: new Color('#f4f6ff').multiplyScalar(5), fog: false }));
+    const lamps = 10;
+    for (let i = 0; i < lamps; i++) {
+      const angle = (i / lamps) * Math.PI * 2 + 0.2;
+      const x = Math.sin(angle) * ringRadius;
+      const z = Math.cos(angle) * ringRadius;
+      const body = new Mesh(housing, housingMaterial);
+      body.position.set(x, height - 0.26, z);
+      // Apuntan al auto.
+      body.lookAt(0, PODIUM_HEIGHT, 0);
+      body.rotateX(Math.PI / 2);
+      this.scene.add(body);
+      const glass = new Mesh(lens, lensMaterial);
+      glass.position.set(0, -0.215, 0);
+      body.add(glass);
+    }
+  }
+
+  /** Pantallas LED con el logo del equipo, repartidas alrededor: siempre hay una detrás del auto. */
+  private buildLogoScreens(): void {
+    const texture = this.own.own(createLogoScreenTexture());
+    const panel = this.own.own(new PlaneGeometry(8.4, 3.15));
+    const material = this.own.own(new MeshBasicMaterial({ map: texture, color: new Color('#ffffff').multiplyScalar(1.15), fog: false }));
+    for (let i = 0; i < 3; i++) {
+      const angle = (i / 3) * Math.PI * 2 + Math.PI;
+      const mesh = new Mesh(panel, material);
+      mesh.position.set(Math.sin(angle) * 13.5, 3.1, Math.cos(angle) * 13.5);
+      mesh.lookAt(0, 3.1, 0);
+      mesh.renderOrder = 3;
+      this.scene.add(mesh);
+    }
   }
 
   private buildBackdrop(): void {

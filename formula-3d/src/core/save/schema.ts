@@ -206,6 +206,8 @@ export interface ChampionshipResult {
 }
 
 export interface ChampionshipState {
+  /** Campeonato elegido (`data/championships.ts`); sin él, la temporada completa. */
+  cup?: string;
   startedAt: number;
   laps: RaceLaps;
   /** Dificultad 0–100, fija para toda la temporada. */

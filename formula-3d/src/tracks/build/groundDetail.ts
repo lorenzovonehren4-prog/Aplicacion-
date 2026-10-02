@@ -15,7 +15,7 @@
 import { Float32BufferAttribute, MeshBasicMaterial, MeshLambertMaterial, type BufferGeometry } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { addMesh, type BuildContext } from './context';
-import { buildRibbon, fullLap, spansWhere, type ProfilePoint } from './ribbon';
+import { buildRibbon, spansWhere, wallSpans, type ProfilePoint } from './ribbon';
 
 /** Ancho (m) de la sombra de contacto al pie del muro. */
 const CONTACT_WIDTH = 1.8;
@@ -52,8 +52,10 @@ export function buildContactShadows(ctx: BuildContext): void {
   for (const side of ['left', 'right'] as const) {
     const walls = side === 'left' ? t.wallLeft : t.wallRight;
     const sign = side === 'left' ? -1 : 1;
+    for (const [from, to] of wallSpans(g, side === 'left' ? t.gapLeft : t.gapRight)) {
     const ribbon = buildRibbon(g, {
-      ...fullLap(g),
+      from,
+      to,
       step: 3,
       profile: (i): ProfilePoint[] => {
         const wall = (walls[i] ?? 10) - 0.02;
@@ -73,6 +75,7 @@ export function buildContactShadows(ctx: BuildContext): void {
     });
     // Oscuro pegado al muro y transparente hacia la pista (curva suave).
     pieces.push(paint(ribbon, [0, 0, 0], (u) => CONTACT_ALPHA * Math.pow(sign < 0 ? 1 - u : u, 1.6)));
+    }
   }
   const merged = mergeGeometries(pieces);
   for (const piece of pieces) piece.dispose();

@@ -84,6 +84,8 @@ export interface TrackDefinition {
   id: string;
   /** Nombre corto del circuito. */
   name: string;
+  /** Nombre para las fichas y el póster del calendario (la ciudad o como se lo conoce). */
+  short: string;
   /** Nombre del Gran Premio. */
   grandPrix: string;
   city: string;
@@ -108,6 +110,15 @@ export interface TrackDefinition {
   /** Escapatorias especiales; el resto se genera según las curvas. */
   runoff?: readonly RunoffOverride[];
   scenery: {
+    /**
+     * Circuito urbano: muros pegados a la pista con escapatorias de asfalto
+     * (`walls`) y, con `city`, además edificios a los costados.
+     */
+    street?: 'walls' | 'city';
+    /** Alto de los edificios de la ciudad junto a la pista (m, mínimo y máximo). */
+    buildingHeight?: readonly [number, number];
+    /** Suelo fuera de la pista: pasto (por defecto) o arena del desierto. */
+    ground?: 'grass' | 'sand';
     /** Lago (polígono en coordenadas de diseño). */
     lake?: ReadonlyArray<readonly [number, number]>;
     grandstands: readonly Grandstand[];

@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'vitest';
+import { ASSIST_PRESETS } from '../src/assists/presets';
+import { F1_SPEC } from '../src/race/physics/CarSpec';
+import { Session, type SessionEvent } from '../src/race/Session';
+import { TRACKS } from '../src/tracks/registry';
+import { Track } from '../src/tracks/Track';
+import { autopilot } from './helpers/autopilot';
+
+const STEP = 1 / 120;
+const NO_ASSISTS = { ...ASSIST_PRESETS.intermediate, braking: 'off' as const };
+
+describe('calendario de 24 circuitos', () => {
+  it('están todos, con id único y en el orden de la temporada', () => {
+    expect(TRACKS).toHaveLength(24);
+    expect(new Set(TRACKS.map((t) => t.id)).size).toBe(24);
+    expect(TRACKS[0]?.id).toBe('australia');
+    expect(TRACKS[23]?.id).toBe('yasmarina');
+  });
+
+  it('cada uno mide su longitud oficial, con los muros fuera del asfalto salvo en un cruce', () => {
+    for (const def of TRACKS) {
+      const track = Track.load(def);
+      const g = track.geometry;
+      expect(Math.abs(g.length - def.lengthKm * 1000), def.id).toBeLessThan(15);
+      const t = track.trackside;
+      for (let i = 0; i < g.count; i += 7) {
+        if (t.gapLeft[i] !== 1) expect(t.wallLeft[i] ?? 0, `${def.id} izq ${i}`).toBeGreaterThan(g.halfWidth * 0.7);
+        if (t.gapRight[i] !== 1) expect(t.wallRight[i] ?? 0, `${def.id} der ${i}`).toBeGreaterThan(g.halfWidth * 0.7);
+      }
+      // Sólo Suzuka (el "ocho") cruza sobre sí misma.
+      const gaps = t.gapLeft.some((v) => v === 1) || t.gapRight.some((v) => v === 1);
+      expect(gaps, def.id).toBe(def.id === 'suzuka');
+    }
+  }, 60000);
+
+  it('el piloto automático da una vuelta válida en todos', () => {
+    for (const def of TRACKS) {
+      const track = Track.load(def);
+      const session = new Session(track, F1_SPEC, null, { mode: 'practice', laps: null }, NO_ASSISTS);
+      const events: SessionEvent[] = [];
+      for (let t = 0; t < 260 && !events.some((e) => e.kind === 'lapCompleted'); t += STEP) {
+        const input = autopilot(session.vehicle, track);
+        events.push(...session.step(STEP, input, input.throttle > 0.9));
+      }
+      const lap = events.find((e) => e.kind === 'lapCompleted');
+      expect(lap?.kind, def.id).toBe('lapCompleted');
+      if (lap?.kind === 'lapCompleted') expect(lap.lap.valid, def.id).toBe(true);
+    }
+  }, 120000);
+});

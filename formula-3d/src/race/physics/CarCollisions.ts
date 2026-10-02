@@ -28,6 +28,8 @@ interface Point {
   z: number;
 }
 
+/** Más separados que esto a lo largo de la vuelta (m), dos autos van por tramos distintos. */
+const CROSSING_SPAN = 40;
 const circleA: Point = { x: 0, z: 0 };
 const circleB: Point = { x: 0, z: 0 };
 const velocityA: Point = { x: 0, z: 0 };
@@ -59,6 +61,9 @@ export function resolveCarCollisions(
       const dx = b.x - a.x;
       const dz = b.z - a.z;
       if (dx * dx + dz * dz > BROAD_PHASE * BROAD_PHASE) continue;
+      // En un cruce de la pista (Suzuka) dos autos pueden coincidir en el plano
+      // yendo por tramos distintos de la vuelta: ahí no se tocan.
+      if (Math.abs(a.track.geometry.deltaS(a.projection.s, b.projection.s)) > CROSSING_SPAN) continue;
       const speed = collide(a, b);
       if (speed > 0) contacts.push({ a: i, b: j, speed });
     }

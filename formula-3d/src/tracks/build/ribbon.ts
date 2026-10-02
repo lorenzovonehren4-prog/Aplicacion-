@@ -39,6 +39,15 @@ export function fullLap(geometry: TrackGeometry): { from: number; to: number } {
   return { from: 0, to: geometry.length };
 }
 
+/** Tramos con muro de un costado: la vuelta entera, o lo que queda entre los cruces de pista. */
+export function wallSpans(geometry: TrackGeometry, gaps: Uint8Array): Array<[number, number]> {
+  if (!gaps.includes(1)) {
+    const lap = fullLap(geometry);
+    return [[lap.from, lap.to]];
+  }
+  return spansWhere(geometry, (i) => gaps[i] !== 1, 1);
+}
+
 export function buildRibbon(geometry: TrackGeometry, options: RibbonOptions): BufferGeometry {
   const span = options.to >= options.from ? options.to - options.from : geometry.length - options.from + options.to;
   const rows = Math.max(1, Math.ceil(span / options.step));

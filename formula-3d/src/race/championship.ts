@@ -1,5 +1,5 @@
 /**
- * Campeonato: una temporada con todos los circuitos del catálogo, los mismos
+ * Campeonato: una temporada con los circuitos del campeonato elegido, los mismos
  * rivales en cada carrera y puntos estilo F1 (25-18-15-12-10-8-6-4-2-1 del
  * primero al décimo). Lógica pura sobre el estado guardado (ver
  * `SaveData.championship`): crear, anotar una carrera y calcular la tabla.
@@ -18,6 +18,8 @@ export function pointsFor(position: number): number {
 }
 
 export interface ChampionshipSetup {
+  /** Campeonato elegido (`data/championships.ts`). */
+  cup?: string;
   laps: ChampionshipState['laps'];
   difficulty: number;
   weather: ChampionshipState['weather'];
@@ -29,6 +31,7 @@ export interface ChampionshipSetup {
 
 export function createChampionship(setup: ChampionshipSetup, now: number): ChampionshipState {
   return {
+    ...(setup.cup ? { cup: setup.cup } : {}),
     startedAt: now,
     laps: setup.laps,
     difficulty: setup.difficulty,

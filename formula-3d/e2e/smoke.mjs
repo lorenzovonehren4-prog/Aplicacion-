@@ -88,13 +88,12 @@ async function main() {
     await waitForScreen(page, 'menu');
     await expectText(page, '.pcard__name', 'Smoke');
     await page.screenshot({ path: `${shots}02-menu.png` });
-    const locked = await page.locator('.mbtn.is-locked').count();
+    const locked = await page.locator('.mtile.is-locked').count();
     log(`menú visible (${locked} accesos bloqueados para fases futuras)`);
 
     step = 'ajustes';
-    // Desde el primer acceso, ↑ da la vuelta hasta el último: Ajustes.
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('Enter');
+    // Tarjetas del menú: clic en Ajustes (el clic confirma).
+    await page.locator('.mtile', { hasText: 'Ajustes' }).click();
     await waitForScreen(page, 'settings');
     // Calidad → Baja (más liviana para Chromium sin GPU). El selector da la vuelta.
     for (let i = 0; i < 4; i++) {
@@ -118,7 +117,7 @@ async function main() {
 
     // ─── Pase de temporada ───
     step = 'pase de temporada';
-    await page.locator('.mbtn', { hasText: 'Pase de temporada' }).click();
+    await page.locator('.mtile', { hasText: 'Pase de temporada' }).click();
     await waitForScreen(page, 'pass');
     const tiers = await page.locator('.ptier').count();
     if (tiers !== 50) throw new Error(`El pase muestra ${tiers} niveles (se esperaban 50).`);
@@ -134,7 +133,7 @@ async function main() {
 
     // ─── Garaje ───
     step = 'garaje';
-    await page.locator('.mbtn', { hasText: 'Garaje' }).click();
+    await page.locator('.mtile', { hasText: 'Garaje' }).click();
     await waitForScreen(page, 'garage');
     await page.mouse.move(2, 2);
     const paints = await page.locator('.gcard').count();
@@ -158,7 +157,7 @@ async function main() {
 
     // ─── Perfil y manual de ayudas ───
     step = 'perfil';
-    await page.locator('.mbtn', { hasText: 'Perfil' }).click();
+    await page.locator('.mtile', { hasText: 'Perfil' }).click();
     await waitForScreen(page, 'profile');
     await page.mouse.move(2, 2);
     const achievements = await page.locator('.ach').count();
@@ -167,7 +166,7 @@ async function main() {
     await page.keyboard.press('Escape');
     await waitForScreen(page, 'menu');
     step = 'manual';
-    await page.locator('.mbtn', { hasText: 'Manual de ayudas' }).click();
+    await page.locator('.mtile', { hasText: 'Manual de ayudas' }).click();
     await page.waitForSelector('.screen--manual .demo__canvas');
     await page.mouse.move(2, 2);
     await page.waitForTimeout(600);
@@ -184,8 +183,7 @@ async function main() {
     await page.waitForSelector('.screen--splash .splash__prompt');
     await page.keyboard.press('Enter');
     await waitForScreen(page, 'menu');
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('Enter');
+    await page.locator('.mtile', { hasText: 'Ajustes' }).click();
     await waitForScreen(page, 'settings');
     await expectText(page, '.srow.is-focused .selector__value', 'Baja');
     await page.keyboard.press('KeyE');
@@ -196,9 +194,7 @@ async function main() {
     step = 'práctica: carga';
     await page.keyboard.press('Escape');
     await waitForScreen(page, 'menu');
-    // Desde Ajustes (último acceso), ↓ da la vuelta hasta el primero: Práctica libre.
-    await page.keyboard.press('ArrowDown');
-    await page.keyboard.press('Enter');
+    await page.locator('.mtile', { hasText: 'Práctica libre' }).click();
     await startFromSelection(page, 'práctica');
     await page.waitForSelector('.screen--race .loading', { state: 'attached' });
     // Sin GPU el barrido de la transición es lento: la carga puede terminar antes de verse.
@@ -233,9 +229,7 @@ async function main() {
 
     // ─── Carrera rápida: semáforo, largada y pestaña Ayudas desde la pausa ───
     step = 'carrera: semáforo';
-    // Desde Práctica libre (primer acceso), ↓ va a Carrera rápida.
-    await page.keyboard.press('ArrowDown');
-    await page.keyboard.press('Enter');
+    await page.locator('.mtile', { hasText: 'Carrera rápida' }).click();
     await startFromSelection(page, 'carrera');
     await page.waitForSelector('.screen--race .loading', { state: 'attached' });
     await waitForScreen(page, 'race');
