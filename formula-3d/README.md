@@ -71,9 +71,11 @@ Difícil después de analizar su trazado y medirla con el propio juego, y 5
 campeonatos: Copa Iniciación (las 8 fáciles), Copa Desafío (las 8 medias),
 Copa Élite (las 8 difíciles), Temporada Completa (las 24, de la más fácil a
 la más difícil) y Gran Gira (10 carreras elegidas por el autor). El menú
-principal es nuevo: el auto sobre un podio con luces LED y focos, una ficha
-a la izquierda con los datos del acceso elegido, el botón "Continuar" y una
-fila de tarjetas grandes abajo. La justificación pista por pista está en
+principal es nuevo y animado: el auto sobre un podio con luces LED y focos,
+el acceso enfocado en grande a la izquierda (título que entra con máscara,
+datos que cuentan), un riel de tarjetas con color propio, borde de luz que
+gira y una barra que sigue al foco, y "Continuar" con el trazado de la
+próxima carrera. La justificación pista por pista está en
 `PLAN.md` (Versión 2.0).
 
 Desde antes: las 9 fases del documento de diseño están completas, con

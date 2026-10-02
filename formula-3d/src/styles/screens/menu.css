@@ -1,318 +1,737 @@
 /* ─── Menú principal ─────────────────────────────────────────────────────
-   Como la presentación de un equipo: título arriba a la izquierda, botón
-   "Continuar" arriba a la derecha, panel con los datos del acceso enfocado a
-   la izquierda, el auto en el podio al centro y una fila de tarjetas grandes
-   abajo. */
+   Centro de mando: marca y piloto arriba, el acceso enfocado en grande a la
+   izquierda, el auto en el podio a la derecha y un riel de tarjetas con color
+   propio abajo, con una barra de luz que sigue al foco. Todo lo que se mueve
+   anima transform u opacity (no recalcula la página ni traba el 3D). */
+
+/* Colores animables: el acento del menú cambia suave al cambiar de tarjeta y
+   el borde de la tarjeta enfocada gira. */
+@property --menu-accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ff2a3c;
+}
+
+@property --mcard-spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
 
 .screen--menu {
-  --menu-info: clamp(300px, 28vw, 380px);
-  --menu-tile-h: clamp(84px, 13vh, 118px);
+  --menu-accent: #ff2a3c;
+  --card-h: 124px;
+  /* Alto del riel con el rótulo de grupo (para que el panel grande no lo pise). */
+  --rail-h: calc(var(--card-h) + 20px);
+  --rail-bottom: calc(var(--gutter) + 46px);
   pointer-events: none;
+  transition: --menu-accent 0.6s var(--ease-out);
 }
 
 .screen--menu > * {
   pointer-events: auto;
 }
 
-/* Oscurece la izquierda (panel) y abajo (tarjetas) sin tapar el auto. */
+/* ─── Fondo: barrido de luz, líneas de velocidad y oscurecido ─── */
+
+.menu__fx,
 .menu__scrim {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   pointer-events: none !important;
-  background:
-    radial-gradient(ellipse 70% 60% at 62% 48%, rgba(30, 20, 60, 0) 0%, rgba(8, 6, 18, 0.35) 70%),
-    linear-gradient(90deg, rgba(5, 6, 12, 0.82) 0%, rgba(5, 6, 12, 0.35) 30%, rgba(5, 6, 12, 0) 50%),
-    linear-gradient(0deg, rgba(5, 6, 10, 0.9) 0%, rgba(5, 6, 10, 0) 30%);
 }
 
-.menu__head {
+.menu__sweep {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: -40%;
+  width: 60%;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.045) 45%, rgba(255, 255, 255, 0.07) 50%, rgba(255, 255, 255, 0.045) 55%, transparent 100%);
+  transform: translateX(-60%) skewX(-18deg);
+  animation: menu-sweep 11s var(--ease-in-out) infinite;
+  will-change: transform;
+}
+
+@keyframes menu-sweep {
+  0%,
+  15% {
+    transform: translateX(-60%) skewX(-18deg);
+  }
+  65%,
+  100% {
+    transform: translateX(330%) skewX(-18deg);
+  }
+}
+
+/* Líneas finas que cruzan de derecha a izquierda, como estelas a velocidad. */
+.menu__streak {
+  position: absolute;
+  left: 0;
+  top: calc(12% + var(--i) * 6.5%);
+  width: 26%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--menu-accent) 70%, white) 60%, transparent);
+  opacity: 0;
+  transform: translateX(420%);
+  animation: menu-streak 5.5s linear infinite;
+  animation-delay: calc(var(--i) * -0.95s);
+  will-change: transform, opacity;
+}
+
+.menu__streak:nth-child(odd) {
+  top: calc(64% + var(--i) * 3%);
+  width: 18%;
+  animation-duration: 4.2s;
+}
+
+@keyframes menu-streak {
+  0% {
+    opacity: 0;
+    transform: translateX(560%);
+  }
+  12% {
+    opacity: 0.32;
+  }
+  70% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+}
+
+.menu__scrim {
+  background:
+    radial-gradient(ellipse 55% 70% at 0% 100%, color-mix(in srgb, var(--menu-accent) 22%, transparent), transparent 70%),
+    linear-gradient(90deg, rgba(4, 5, 10, 0.92) 0%, rgba(4, 5, 10, 0.78) 26%, rgba(4, 5, 10, 0.4) 44%, rgba(4, 5, 10, 0) 62%),
+    linear-gradient(0deg, rgba(4, 5, 10, 0.96) 0%, rgba(4, 5, 10, 0.82) 22%, rgba(4, 5, 10, 0.45) 34%, rgba(4, 5, 10, 0) 48%),
+    linear-gradient(180deg, rgba(4, 5, 10, 0.7) 0%, rgba(4, 5, 10, 0) 18%);
+}
+
+/* ─── Barra de arriba: marca y piloto ─── */
+
+.menu__top {
   position: absolute;
   top: var(--gutter);
   left: var(--gutter);
+  right: var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.menu__brand {
   display: flex;
   align-items: center;
   gap: 18px;
+  min-width: 0;
 }
 
 .menu__logo {
   --logo-size: clamp(28px, 2.8vw, 40px);
 }
 
-.menu__heading {
+.menu__season {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   padding-left: 18px;
   border-left: 1px solid var(--c-line-strong);
 }
 
-.menu__title {
-  font-size: clamp(20px, 2.2vw, 30px);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.05;
+.menu__season b {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--menu-accent);
 }
 
-.menu__subtitle {
+.menu__season span {
   font-size: 13px;
   color: var(--c-text-2);
 }
 
-/* Botón principal (arriba a la derecha): flecha, título y bajada, y chevrones. */
-.menu__continue {
-  position: absolute;
-  top: var(--gutter);
-  right: var(--gutter);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 54px;
-  align-items: center;
-  gap: 16px;
-  width: clamp(280px, 30vw, 440px);
-  min-height: 72px;
-  padding: 10px 0 10px 18px;
-  text-align: left;
-  background: linear-gradient(100deg, rgba(20, 26, 46, 0.92), rgba(28, 38, 66, 0.86));
-  box-shadow:
-    inset 0 0 0 1px rgba(150, 175, 255, 0.18),
-    0 12px 30px rgba(0, 0, 0, 0.45);
-  transition:
-    box-shadow 0.25s,
-    translate 0.25s var(--ease-out);
-}
-
-.menu__continue-arrow {
-  width: 34px;
-  height: 34px;
-  color: #3ee0ff;
-}
-
-.menu__continue-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.menu__continue-title {
-  font-size: clamp(18px, 1.8vw, 26px);
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.menu__continue-detail {
-  overflow: hidden;
-  font-size: 13px;
-  color: var(--c-text-2);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.menu__continue-chevrons {
-  align-self: stretch;
-  background:
-    linear-gradient(115deg, transparent 0 30%, rgba(62, 224, 255, 0.55) 30% 44%, transparent 44% 58%, rgba(62, 224, 255, 0.3) 58% 72%, transparent 72%),
-    linear-gradient(90deg, rgba(62, 224, 255, 0.05), rgba(62, 224, 255, 0.18));
-  clip-path: polygon(30% 0, 100% 0, 100% 100%, 30% 100%, 60% 50%);
-}
-
-.menu__continue.is-focused {
-  translate: -4px 0;
-  box-shadow:
-    inset 0 0 0 2px #3ee0ff,
-    0 0 28px rgba(62, 224, 255, 0.28),
-    0 12px 30px rgba(0, 0, 0, 0.45);
-}
-
-/* Panel de datos (izquierda), como la ficha de un equipo. */
-.menu__info {
-  position: absolute;
-  top: calc(var(--gutter) + 84px);
-  left: var(--gutter);
-  bottom: calc(var(--gutter) + var(--menu-tile-h) + 56px);
-  width: var(--menu-info);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px 20px;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(22, 26, 52, 0.88), rgba(12, 14, 30, 0.9));
-  box-shadow:
-    inset 0 3px 0 var(--c-accent),
-    inset 0 0 0 1px rgba(150, 165, 255, 0.12),
-    0 18px 40px rgba(0, 0, 0, 0.5);
-}
-
-.menu__info-head {
+.menu__top-right {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.menu__info-icon {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  flex: none;
+.menu__chips {
+  display: flex;
+  gap: 8px;
+}
+
+/* Botones redondos de opciones (Manual, Ajustes). */
+.mchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px 0 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  background: linear-gradient(135deg, rgba(24, 27, 40, 0.86), rgba(12, 13, 20, 0.8));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition:
+    background 0.25s,
+    color 0.25s,
+    box-shadow 0.25s,
+    scale 0.3s var(--ease-out);
+}
+
+.mchip__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--card-accent);
+}
+
+.mchip.is-focused {
+  scale: 1.06;
   color: #fff;
-  background: rgba(255, 42, 60, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(255, 42, 60, 0.45);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 30%, rgba(24, 27, 40, 0.9)), rgba(12, 13, 20, 0.9));
+  box-shadow:
+    inset 0 0 0 1.5px var(--card-accent),
+    0 0 24px -6px var(--card-accent);
 }
 
-.menu__info-icon .icon {
-  width: 28px;
-  height: 28px;
+.mchip.is-focused .mchip__icon {
+  animation: mcard-pop 0.5s var(--ease-out);
 }
 
-.menu__info-title {
-  font-size: clamp(20px, 1.9vw, 28px);
-  font-weight: 900;
-  font-style: italic;
-  line-height: 1.05;
+.mchip.is-denied {
+  animation: mcard-deny 0.35s;
+}
+
+/* La tarjeta del piloto, compacta y redondeada. */
+.menu__player .pcard {
+  min-width: 0;
+  gap: 12px;
+  padding: 6px 16px 6px 6px;
+  border-radius: 999px;
+  transform: none;
+  background: linear-gradient(135deg, rgba(24, 27, 40, 0.86), rgba(12, 13, 20, 0.8));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.4);
+  backdrop-filter: none;
+}
+
+.menu__player .pcard > * {
+  transform: none;
+}
+
+.menu__player .pcard__avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 19px;
+}
+
+.menu__player .pcard__info {
+  width: 150px;
+}
+
+.menu__player .pcard__name {
+  font-size: 15px;
+}
+
+.menu__player .pcard__title {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.menu__player .pcard__bar {
+  height: 4px;
+  border-radius: 2px;
+  transform: none;
+}
+
+.menu__player .pcard__xp {
+  margin-top: 3px;
+  font-size: 9px;
+}
+
+.menu__player .pcard__level {
+  padding-left: 12px;
+}
+
+.menu__player .pcard__level small {
+  font-size: 8px;
+}
+
+.menu__player .pcard__level b {
+  font-size: 22px;
+}
+
+/* ─── El acceso enfocado, en grande ─── */
+
+.menu__hero {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(var(--gutter) + 64px);
+  bottom: calc(var(--rail-bottom) + var(--rail-h) + 28px);
+  width: min(46%, 560px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 14px;
+  pointer-events: none !important;
+}
+
+.menu__kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
 }
 
-.menu__info-text {
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--c-text-2);
+.menu__kicker-bar {
+  width: 34px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--menu-accent);
+  box-shadow: 0 0 14px var(--menu-accent);
+  transform-origin: left center;
 }
 
-.menu__info-rows {
+.menu__kicker-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: var(--menu-accent);
+  background: color-mix(in srgb, var(--menu-accent) 16%, transparent);
+}
+
+.menu__kicker-icon .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.menu__kicker-group {
+  color: var(--menu-accent);
+}
+
+.menu__kicker-count {
+  font-family: var(--font-num);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--c-text-3);
+}
+
+.menu__title {
+  font-size: clamp(38px, 4.6vw, 74px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-shadow: 0 6px 40px rgba(0, 0, 0, 0.6);
+  text-wrap: balance;
+}
+
+/* Cada palabra entra desde abajo de su propia máscara (con margen para la
+   cursiva y los acentos). */
+.menu__word {
+  display: inline-block;
+  overflow: hidden;
+  margin: -0.12em -0.04em -0.04em 0;
+  padding: 0.12em 0.3em 0.04em 0;
+  vertical-align: top;
+}
+
+.menu__word > span {
+  display: inline-block;
+  transform-origin: left bottom;
+}
+
+.menu__text {
+  max-width: 48ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--c-text-2);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.menu__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.menu__stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
+  min-width: 92px;
+  padding: 9px 14px 10px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
 }
 
-.menu__info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  padding: 6px 12px;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.menu__info-row span {
-  color: var(--c-text-2);
-}
-
-.menu__info-row b {
+.menu__stat span {
+  font-size: 10px;
   font-weight: 700;
-  color: #3ee0ff;
-  text-align: right;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
 }
 
-.menu__info-note {
+.menu__stat b {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Botón de acción: píldora con el color del acceso y un brillo que respira. */
+.menu__action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 11px 12px 11px 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--menu-accent) 92%, white), color-mix(in srgb, var(--menu-accent) 70%, black));
+  box-shadow:
+    0 10px 30px -8px color-mix(in srgb, var(--menu-accent) 80%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  pointer-events: auto;
+  isolation: isolate;
+}
+
+.menu__action::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--menu-accent);
+  filter: blur(14px);
+  opacity: 0.25;
+  animation: menu-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes menu-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.menu__action-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.menu__action-key {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--font-num);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.menu__action.is-locked {
+  color: var(--c-text-2);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.menu__action.is-locked::before {
+  display: none;
+}
+
+.menu__note {
+  min-height: 1em;
   font-size: 13px;
   color: var(--c-gold);
 }
 
-/* La tarjeta del piloto, al pie del panel. */
-.menu__info .pcard {
-  position: relative;
-  flex: none;
-  margin-top: auto;
-  width: 100%;
-  min-width: 0;
-  transform: none;
-  background: rgba(0, 0, 0, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-  backdrop-filter: none;
+.menu__note:empty {
+  display: none;
 }
 
-/* Fila de tarjetas (abajo). */
-.menu__tiles {
+/* ─── Riel de tarjetas ─── */
+
+.menu__rail {
   position: absolute;
   left: var(--gutter);
   right: var(--gutter);
-  bottom: calc(var(--gutter) + 40px);
-  display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
-  gap: clamp(4px, 0.6vw, 10px);
-  height: var(--menu-tile-h);
+  bottom: var(--rail-bottom);
+  display: flex;
+  gap: 18px;
 }
 
-.mtile {
-  position: relative;
+.menu__group {
   display: flex;
+  flex: var(--units) 1 0;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 8px;
   min-width: 0;
-  padding: 10px 6px;
-  color: rgba(243, 244, 246, 0.78);
-  background: linear-gradient(180deg, rgba(36, 40, 56, 0.9), rgba(20, 22, 32, 0.92));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-  /* La elevación usa `translate` y no `transform`: así no choca con la entrada animada por GSAP. */
-  transition:
-    background 0.25s,
-    box-shadow 0.25s,
-    translate 0.25s var(--ease-out),
-    color 0.25s;
 }
 
-.mtile__icon {
-  width: clamp(26px, 3.2vw, 42px);
-  height: clamp(26px, 3.2vw, 42px);
+.menu__group-label {
+  padding-left: 2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+.menu__group-cards {
+  display: flex;
+  gap: 8px;
+  height: var(--card-h);
+}
+
+/* Barra de luz debajo de la tarjeta enfocada (GSAP la desliza). */
+.menu__pill {
+  position: absolute;
+  left: 0;
+  bottom: -12px;
+  width: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--menu-accent) 18%, var(--menu-accent) 82%, transparent);
+  box-shadow: 0 0 16px var(--menu-accent);
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.menu__pill.is-off {
+  opacity: 0;
+}
+
+.mcard {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 12px 12px;
+  overflow: hidden;
+  border-radius: 14px;
+  text-align: left;
+  color: rgba(243, 244, 246, 0.82);
+  background: linear-gradient(165deg, rgba(30, 33, 48, 0.88), rgba(12, 13, 20, 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 24px rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+  /* La elevación usa `translate`/`scale` y no `transform`: no choca con la entrada de GSAP. */
+  transition:
+    translate 0.35s var(--ease-out),
+    scale 0.35s var(--ease-out),
+    background 0.3s,
+    box-shadow 0.3s,
+    color 0.3s;
+}
+
+/* Borde con luz que gira (sólo en la enfocada). */
+.mcard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--mcard-spin), var(--card-accent), transparent 22%, transparent 50%, var(--card-accent) 72%, transparent 88%, var(--card-accent));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+/* Destello que cruza la tarjeta al enfocarla. */
+.mcard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%);
+  translate: -110% 0;
+  pointer-events: none;
+}
+
+.mcard__mark {
+  position: absolute;
+  right: -14px;
+  bottom: -16px;
+  z-index: -1;
+  width: 86px;
+  height: 86px;
+  color: var(--card-accent);
+  opacity: 0.06;
+  rotate: -12deg;
+  transition:
+    opacity 0.35s,
+    scale 0.5s var(--ease-out),
+    rotate 0.5s var(--ease-out);
+}
+
+.mcard__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mcard__icon {
+  width: 30px;
+  height: 30px;
+  color: var(--card-accent);
+  filter: drop-shadow(0 0 0 transparent);
+  transition: filter 0.3s;
+}
+
+.mcard__lock {
+  width: 16px;
+  height: 16px;
+  color: var(--c-text-3);
 }
 
 /* Hasta dos renglones: "Pase de temporada" y "Manual de ayudas" entran enteros. */
-.mtile__label {
+.mcard__label {
   display: -webkit-box;
-  max-width: 100%;
   overflow: hidden;
-  font-size: clamp(11px, 1vw, 14px);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   line-height: 1.15;
-  letter-spacing: 0.04em;
-  text-align: center;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  text-wrap: balance;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
 }
 
-/* Marca de "elegido" arriba a la izquierda (como la tarjeta del equipo elegido). */
-.mtile__check {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+.mcard__sub {
+  margin-top: -2px;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--c-text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.mtile.is-focused {
+.mcard__head + .mcard__label {
+  margin-top: auto;
+}
+
+.mcard.is-focused {
+  z-index: 1;
+  translate: 0 -10px;
+  scale: 1.04;
   color: #fff;
-  translate: 0 -6px;
-  background: linear-gradient(180deg, rgba(120, 18, 32, 0.92), rgba(60, 10, 20, 0.95));
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--card-accent) 34%, transparent), transparent 60%),
+    linear-gradient(165deg, rgba(34, 37, 54, 0.95), rgba(12, 13, 20, 0.95));
   box-shadow:
-    inset 0 0 0 2px var(--c-accent),
-    0 0 26px rgba(255, 42, 60, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 22px 40px -14px color-mix(in srgb, var(--card-accent) 70%, transparent),
     0 14px 28px rgba(0, 0, 0, 0.5);
 }
 
-.mtile.is-focused .mtile__check {
-  background:
-    no-repeat center / 10px 10px
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.2l2.2 2.2 4.8-4.8' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E"),
-    var(--c-accent);
-  box-shadow: none;
+.mcard.is-focused::before {
+  opacity: 1;
+  animation: mcard-spin 3.2s linear infinite;
 }
 
-.mtile.is-locked {
-  opacity: 0.45;
+.mcard.is-focused::after {
+  animation: mcard-shine 0.9s var(--ease-out);
 }
 
-.mtile.is-denied {
-  animation: tile-deny 0.35s;
+.mcard.is-focused .mcard__mark {
+  opacity: 0.16;
+  scale: 1.15;
+  rotate: -4deg;
 }
 
-@keyframes tile-deny {
+.mcard.is-focused .mcard__icon {
+  filter: drop-shadow(0 0 10px var(--card-accent));
+  animation: mcard-pop 0.5s var(--ease-out);
+}
+
+.mcard.is-focused .mcard__sub {
+  color: var(--c-text-2);
+}
+
+@keyframes mcard-spin {
+  to {
+    --mcard-spin: 360deg;
+  }
+}
+
+@keyframes mcard-shine {
+  from {
+    translate: -110% 0;
+  }
+  to {
+    translate: 110% 0;
+  }
+}
+
+@keyframes mcard-pop {
+  0% {
+    scale: 0.8;
+  }
+  60% {
+    scale: 1.12;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+.mcard.is-locked {
+  color: var(--c-text-3);
+}
+
+.mcard.is-locked .mcard__icon {
+  color: var(--c-text-3);
+}
+
+.mcard.is-locked:not(.is-focused) {
+  opacity: 0.55;
+}
+
+.mcard.is-denied {
+  animation: mcard-deny 0.35s;
+}
+
+@keyframes mcard-deny {
   25% {
     transform: translateX(-5px);
   }
@@ -320,6 +739,140 @@
     transform: translateX(5px);
   }
 }
+
+/* Entrada: cada tarjeta sube escalonada (y los botones de arriba llegan desde
+   la derecha). Usa `transform`, que se suma al `translate`/`scale` del foco. */
+.screen--menu.is-entering .mcard {
+  animation: mcard-in 0.7s var(--ease-out) both;
+  animation-delay: calc(0.25s + var(--n) * 45ms);
+}
+
+.screen--menu.is-entering .mchip {
+  animation: mchip-in 0.5s var(--ease-out) both;
+  animation-delay: calc(0.1s + (var(--n) - 8) * 60ms);
+}
+
+@keyframes mcard-in {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+}
+
+@keyframes mchip-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+/* "Continuar": ancha, con el trazado de la carrera que sigue. */
+.mcard--hero {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 12px 14px 16px;
+  background:
+    radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--card-accent) 30%, transparent), transparent 60%),
+    linear-gradient(165deg, rgba(38, 30, 40, 0.92), rgba(14, 12, 20, 0.94));
+}
+
+.mcard__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mcard__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--card-accent);
+}
+
+.mcard__live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--card-accent);
+  box-shadow: 0 0 10px var(--card-accent);
+  animation: mcard-live 1.6s ease-in-out infinite;
+}
+
+@keyframes mcard-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.mcard--hero .mcard__label {
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.mcard__progress {
+  position: relative;
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mcard__progress i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--card-accent);
+  transform-origin: left center;
+  transform: scaleX(var(--p, 0));
+}
+
+.mcard__track {
+  flex: none;
+  align-self: center;
+  width: 74px;
+  height: 74px;
+  overflow: visible;
+}
+
+.mcard__track-glow,
+.mcard__track-line {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: mcard-draw 1.8s var(--ease-out) 0.6s forwards;
+}
+
+.mcard__track-glow {
+  stroke: var(--card-accent);
+  stroke-opacity: 0.35;
+  stroke-width: 14;
+}
+
+.mcard__track-line {
+  stroke: #fff;
+  stroke-width: 5;
+}
+
+@keyframes mcard-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ─── Pie ─── */
 
 .menu__foot {
   position: absolute;
@@ -374,45 +927,86 @@
   letter-spacing: 0.16em;
 }
 
-/* Pantallas medianas: texto más chico para que la tarjeta del piloto entre. */
-@container ui (max-height: 780px) {
-  .menu__info-text {
-    font-size: 14px;
-    line-height: 1.4;
-  }
-  .menu__info-row {
-    padding-block: 5px;
-    font-size: 13px;
-  }
-}
+/* ─── Tamaños ─── */
 
-/* Pantallas bajas: el panel muestra menos. */
+/* Pantallas bajas: tarjetas más bajas y sin descripción. */
 @container ui (max-height: 640px) {
-  .menu__info-text {
-    font-size: 13px;
+  .screen--menu {
+    --card-h: 112px;
   }
-  .menu__info .pcard {
+  .menu__text {
     display: none;
   }
+  .menu__title {
+    font-size: clamp(34px, 4.6vw, 60px);
+  }
 }
 
-/* Pantallas angostas: tarjetas en dos filas, sin subtítulo ni datos guardados. */
-@container ui (max-width: 820px) {
+/* Angostas: el riel pasa a dos filas llenas ("Continuar" y tres; después
+   cuatro) y sin rótulos de grupo. */
+@container ui (max-width: 900px) {
   .screen--menu {
-    --menu-tile-h: 150px;
+    --card-h: 104px;
+    --rail-h: calc(var(--card-h) * 2 + 8px);
   }
-  .menu__tiles {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+  .menu__rail {
+    flex-wrap: wrap;
+    gap: 8px;
   }
-  .mtile {
-    padding: 6px 4px;
-    gap: 4px;
+  .menu__group,
+  .menu__group-cards {
+    display: contents;
   }
-  .menu__subtitle,
+  .menu__group-label {
+    display: none;
+  }
+  .mcard {
+    flex: 1 1 calc(20% - 8px);
+    height: var(--card-h);
+  }
+  .mcard--hero {
+    flex: 2 1 calc(40% - 8px);
+  }
+  .menu__hero {
+    width: min(62%, 520px);
+    top: calc(var(--gutter) + 64px);
+    bottom: calc(var(--rail-bottom) + var(--rail-h) + 24px);
+  }
+  .menu__title {
+    font-size: 40px;
+  }
+  .menu__text,
+  .menu__season span,
   .menu__meta {
     display: none;
   }
-  .menu__continue {
-    width: 46%;
+  .menu__player .pcard__info {
+    width: 110px;
+  }
+  .mchip {
+    padding: 0 12px;
+  }
+  .mchip__label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__sweep,
+  .menu__streak,
+  .menu__action::before,
+  .mcard.is-focused::before,
+  .mcard.is-focused::after,
+  .mcard.is-focused .mcard__icon,
+  .mcard__live i {
+    animation: none;
+  }
+  .menu__streak {
+    display: none;
+  }
+  .mcard__track-glow,
+  .mcard__track-line {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }

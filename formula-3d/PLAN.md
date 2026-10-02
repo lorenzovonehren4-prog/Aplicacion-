@@ -1333,21 +1333,36 @@ funcionando.
 - Mónaco y Bakú tenían huecos en el muro entre tramos paralelos (se podía
   atajar); ahora sólo hay huecos donde la pista se cruza (Suzuka).
 
-**Fase 5: menú principal nuevo**
+**Fase 5: menú principal nuevo** (y una segunda vuelta: "se ve antiguo, tiene
+que ser moderno, con animaciones y fluido")
 
-- [x] Como la presentación de un equipo: el auto sobre un **podio** con
-      borde blanco y 18 luces LED, un **aro de focos** encima (10 lámparas),
-      tres **pantallas** con el logo "ÁPICE GP" y "TEMPORADA 2026" alrededor,
-      y la cámara girando despacio.
-- [x] A la izquierda, una **ficha** con el ícono, el nombre y la descripción
-      del acceso enfocado y sus datos (campeonato en curso, récords,
-      fantasmas, nivel del pase, estadísticas, calidad gráfica…), y la
-      tarjeta del piloto al pie.
-- [x] Arriba a la derecha, **Continuar**: sigue el campeonato en curso
-      (ronda y pista) o va a una carrera rápida con lo último que elegiste.
-- [x] Abajo, una **fila de 9 tarjetas grandes** con ícono y una marca de
-      elegida (como las de equipos), que se elevan al enfocarse. En ventanas
-      angostas pasan a dos filas.
+- [x] **Centro de mando**: el auto gira sobre un podio con borde blanco, 18
+      luces LED, un aro de focos y pantallas con el logo; el menú ya no es una
+      ficha en caja sino un panel grande sin marco a la izquierda: categoría
+      con su ícono y "03 / 10", el título en letras enormes que entra palabra
+      por palabra desde abajo de una máscara, la descripción, los datos en
+      fichas redondeadas que cuentan al aparecer y un botón de acción en
+      píldora con el color del acceso y un brillo que respira.
+- [x] **Riel de tarjetas** agrupadas (Ahora, Competir, Tu equipo), cada una
+      con su color (práctica celeste, carrera roja, contrarreloj violeta,
+      campeonato dorado, garaje naranja, pase rosa, perfil azul): al
+      enfocarla se eleva y agranda, un borde de luz gira alrededor, la cruza
+      un destello, el ícono rebota y una barra de luz se desliza debajo. Cada
+      tarjeta muestra un dato vivo (último circuito, fantasmas, carreras del
+      campeonato, nivel del pase…). El color del acceso tiñe suavemente el
+      fondo, la barra y el botón.
+- [x] **"Continuar"**, tarjeta ancha: sigue el campeonato en curso (copa,
+      ronda y barra de progreso) o "Correr ahora" con lo último elegido; el
+      trazado de esa carrera se dibuja solo.
+- [x] Arriba: marca, temporada, botones redondos de Manual y Ajustes y la
+      tarjeta del piloto compacta.
+- [x] Fondo vivo: un barrido de luz lento y estelas finas de velocidad.
+- [x] Fluido: todo anima transform u opacity (GSAP y CSS); cada cambio de
+      foco corta la animación anterior (navegar rápido no deja restos); la
+      entrada borra sus estilos al terminar para no pisar los del foco; con
+      "reducir movimiento" no hay animaciones continuas. En celular el riel
+      pasa a dos filas completas y los botones de arriba quedan sólo con
+      ícono.
 - [x] Selección de carrera: cuadrícula de 24 pistas con bandera y punto de
       dificultad, el mapa del circuito y una fila de datos (dificultad,
       longitud, curvas, DRS, récord, tu récord).
