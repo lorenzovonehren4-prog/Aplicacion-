@@ -198,10 +198,13 @@ export class RaceCamera {
     const speedKmh = telemetry.speed * 3.6;
     switch (mode) {
       case 'cockpit': {
-        // Ojos del piloto: bajo el arco del halo, detrás de la visera.
-        this.toWorld(this.headX, 0.765 - Math.abs(this.headZ) * 0.2, -0.17 + this.headZ, pose.position);
+        // Ojos del piloto: bajo el arco del halo, detrás de la visera. Un poco
+        // más atrás que la cabeza real y con algo más de campo visual (como la
+        // cámara de cabina de los juegos de F1): el volante queda más chico y
+        // abajo, y se ve más pista.
+        this.toWorld(this.headX, 0.75 - Math.abs(this.headZ) * 0.2, -0.04 + this.headZ, pose.position);
         this.toWorld(this.headX * 0.4, 0.62, -12, this.target);
-        pose.fov = 72 + clamp(speedKmh / 330, 0, 1) * 4;
+        pose.fov = 78 + clamp(speedKmh / 330, 0, 1) * 4;
         break;
       }
       case 'tcam': {

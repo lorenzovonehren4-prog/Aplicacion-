@@ -81,15 +81,20 @@ export class RenderHost {
   /** Alivio en curso (ver `lighten`): hasta el próximo cambio de ajustes. */
   private lightened = false;
 
+  /**
+   * @param antialias antialiasing del lienzo (lo usa la calidad Baja). Se apaga
+   *   con GPU por software: ahí cuesta tanto como dibujar la escena dos veces.
+   */
   constructor(
     readonly canvas: HTMLCanvasElement,
     graphics: GraphicsSettings,
+    antialias = true,
   ) {
     this.graphics = graphics;
     this.renderer = new WebGLRenderer({
       canvas,
       // Antialiasing del lienzo: lo usa la calidad Baja (dibujo directo, sin composer).
-      antialias: true,
+      antialias,
       alpha: false,
       stencil: false,
       powerPreference: 'high-performance',

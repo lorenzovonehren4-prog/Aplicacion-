@@ -1,10 +1,14 @@
 /**
- * Mapa grande de un circuito (SVG) para la selección de carrera: el trazado
- * se dibuja animado, con las zonas de DRS en verde, la línea de meta, una
- * flecha con el sentido de marcha y los tres sectores marcados. Después un
- * destello (el "auto") recorre la vuelta sin parar.
+ * Mapa grande de un circuito (SVG) para la selección de carrera, al estilo de
+ * los mapas oficiales: contorno oscuro con cada sector de un color (S1
+ * magenta, S2 amarillo, S3 azul), las curvas numeradas, las zonas de DRS
+ * punteadas por fuera, la línea de meta y una flecha con el sentido de marcha.
+ * El trazado se dibuja animado y después un destello (el "auto") recorre la
+ * vuelta sin parar.
  */
 
+import { Track } from '../../tracks/Track';
+import type { Corner } from '../../tracks/TrackAnalysis';
 import { TrackGeometry } from '../../tracks/TrackGeometry';
 import type { TrackDefinition } from '../../tracks/TrackDefinition';
 import { prefersReducedMotion } from '../dom';
@@ -13,9 +17,25 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const SIZE = 1000;
 const PAD = 70;
 
+/**
+ * Curvas "oficiales" a partir de las detectadas: las `count` más cerradas, en
+ * el orden de la vuelta. Así no llevan número los quiebres de recta (radios
+ * grandes) y la cuenta coincide con la del circuito (`turns`): en Monza son
+ * justo las once de verdad, con la Curva Grande incluida.
+ */
+export function numberedCorners(corners: readonly Corner[], count: number): Corner[] {
+  const keep = new Set([...corners].sort((a, b) => a.radius - b.radius).slice(0, count));
+  return corners.filter((corner) => keep.has(corner));
+}
+
 interface Outline {
   path: string;
+  /** Los tres sectores (meta → S1 → S2 → meta). */
+  sectors: string[];
+  /** Zonas de DRS, corridas hacia afuera del trazado. */
   drs: string[];
+  /** Curvas numeradas: posición del rótulo (afuera del trazado). */
+  turns: Array<{ x: number; y: number; n: number }>;
   start: [number, number, number, number];
   /** Flecha del sentido de marcha sobre la recta principal. */
   arrow: string;
@@ -48,12 +68,32 @@ function outline(def: TrackDefinition): Outline {
   const pz = (z: number): number => oz + (z - minZ) * scale;
   const point = { x: 0, z: 0 };
   const tangent = { x: 0, z: 0 };
-  const segment = (from: number, to: number): string => {
+  // Centro del dibujo: rótulos y zonas de DRS van del lado opuesto (afuera del trazado).
+  let cx = 0;
+  let cz = 0;
+  for (let i = 0; i < g.count; i++) {
+    cx += px(g.x[i] ?? 0) / g.count;
+    cz += pz(g.z[i] ?? 0) / g.count;
+  }
+  /** Punto del trazado y su normal hacia afuera (en el lienzo). */
+  const outward = (s: number): [number, number, number, number] => {
+    g.pointAt(s, 0, point, tangent);
+    const x = px(point.x);
+    const z = pz(point.z);
+    let ux = -tangent.z;
+    let uz = tangent.x;
+    if (ux * (x - cx) + uz * (z - cz) < 0) {
+      ux = -ux;
+      uz = -uz;
+    }
+    return [x, z, ux, uz];
+  };
+  const segment = (from: number, to: number, offset = 0): string => {
     const length = g.wrapS(to - from) || g.length;
     const parts: string[] = [];
-    for (let d = 0; d <= length; d += 16) {
-      g.pointAt(from + d, 0, point);
-      parts.push(`${parts.length === 0 ? 'M' : 'L'}${px(point.x).toFixed(1)} ${pz(point.z).toFixed(1)}`);
+    for (let d = 0; d <= length + 0.01; d = d >= length ? length + 1 : Math.min(length, d + 16)) {
+      const [x, z, ux, uz] = outward(from + d);
+      parts.push(`${parts.length === 0 ? 'M' : 'L'}${(x + ux * offset).toFixed(1)} ${(z + uz * offset).toFixed(1)}`);
     }
     return parts.join('');
   };
@@ -69,23 +109,8 @@ function outline(def: TrackDefinition): Outline {
   const fx = tangent.x;
   const fz = tangent.z;
   const arrow = `M${(ax - fx * 18 - fz * 12).toFixed(1)} ${(az - fz * 18 + fx * 12).toFixed(1)}L${ax.toFixed(1)} ${az.toFixed(1)}L${(ax - fx * 18 + fz * 12).toFixed(1)} ${(az - fz * 18 - fx * 12).toFixed(1)}`;
-  // Centro del dibujo: los rótulos van del lado opuesto (afuera del trazado).
-  let cx = 0;
-  let cz = 0;
-  for (let i = 0; i < g.count; i++) {
-    cx += px(g.x[i] ?? 0) / g.count;
-    cz += pz(g.z[i] ?? 0) / g.count;
-  }
   const across = (s: number, distance: number): [number, number, number, number] => {
-    g.pointAt(s, 0, point, tangent);
-    const x = px(point.x);
-    const z = pz(point.z);
-    let ux = -tangent.z;
-    let uz = tangent.x;
-    if (ux * (x - cx) + uz * (z - cz) < 0) {
-      ux = -ux;
-      uz = -uz;
-    }
+    const [x, z, ux, uz] = outward(s);
     return [x, z, x + ux * distance, z + uz * distance];
   };
   const bounds = [startS, g.designToS(def.sectors[0]), g.designToS(def.sectors[1])];
@@ -98,9 +123,17 @@ function outline(def: TrackDefinition): Outline {
     const [, , lx, lz] = across(from + (g.wrapS(to - from) || g.length) / 2, 54);
     return [lx, lz] as [number, number];
   });
+  // Curvas numeradas (las del análisis del circuito, sin quiebres de recta).
+  const track = Track.load(def);
+  const turns = numberedCorners(track.analysis.corners, def.turns).map((corner, i) => {
+    const [, , x, y] = across(corner.apex, 46);
+    return { x, y, n: i + 1 };
+  });
   const result: Outline = {
     path: `${segment(0, g.length)}Z`,
-    drs: def.drsZones.map((zone) => segment(g.designToS(zone.start), g.designToS(zone.end))),
+    sectors: bounds.map((from, i) => segment(from, bounds[i + 1] ?? startS)),
+    drs: def.drsZones.map((zone) => segment(g.designToS(zone.start), g.designToS(zone.end), 24)),
+    turns,
     start,
     arrow,
     sectorTicks,
@@ -144,8 +177,16 @@ export class TrackMap {
     const o = outline(def);
     const glow = el('path', { d: o.path, class: 'tmap__glow' });
     const base = el('path', { d: o.path, class: 'tmap__base' });
-    const line = el('path', { d: o.path, class: 'tmap__line' });
+    const sectors = o.sectors.map((d, i) => el('path', { d, class: `tmap__line tmap__line--s${i + 1}` }));
     const drs = o.drs.map((d) => el('path', { d, class: 'tmap__drs' }));
+    const turns = o.turns.map(({ x, y, n }) => {
+      const group = el('g', { class: 'tmap__turn' });
+      group.append(el('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: '23' }));
+      const label = el('text', { x: x.toFixed(1), y: (y + 1).toFixed(1) });
+      label.textContent = String(n);
+      group.append(label);
+      return group;
+    });
     const [x1, y1, x2, y2] = o.start;
     const start = el('line', { x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2), class: 'tmap__start' });
     const arrow = el('path', { d: o.arrow, class: 'tmap__arrow' });
@@ -153,16 +194,16 @@ export class TrackMap {
       el('line', { x1: ax.toFixed(1), y1: ay.toFixed(1), x2: bx.toFixed(1), y2: by.toFixed(1), class: 'tmap__tick' }),
     );
     const labels = o.sectorLabels.map(([lx, ly], i) => {
-      const label = el('text', { x: lx.toFixed(1), y: ly.toFixed(1), class: 'tmap__sector' });
+      const label = el('text', { x: lx.toFixed(1), y: ly.toFixed(1), class: `tmap__sector tmap__sector--s${i + 1}` });
       label.textContent = `S${i + 1}`;
       return label;
     });
     const tail = el('path', { d: o.path, class: 'tmap__comet-tail' });
     const head = el('path', { d: o.path, class: 'tmap__comet' });
-    this.element.replaceChildren(glow, base, line, ...drs, ...ticks, start, arrow, ...labels, tail, head);
+    this.element.replaceChildren(glow, base, ...sectors, ...drs, ...ticks, start, arrow, ...labels, ...turns, tail, head);
     for (const animation of this.comet) animation.cancel();
     this.comet = [];
-    const total = line.getTotalLength?.() ?? 0;
+    const total = base.getTotalLength?.() ?? 0;
     if (total > 0 && !prefersReducedMotion()) {
       // El destello: un tramo corto brillante y una estela más larga y tenue
       // que avanzan juntos por el trazado (una vuelta cada ~7 s).
@@ -179,13 +220,18 @@ export class TrackMap {
       tail.remove();
     }
     if (prefersReducedMotion()) return;
-    // Se "dibuja" el trazado: el trazo avanza desde la línea de meta.
-    const length = line.getTotalLength?.() ?? 0;
-    if (length <= 0) return;
-    line.style.strokeDasharray = `${length}`;
-    line.style.strokeDashoffset = `${length}`;
-    line.animate([{ strokeDashoffset: `${length}` }, { strokeDashoffset: '0' }], { duration: 900, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' });
-    for (const [i, part] of [...drs, ...ticks, start, arrow, ...labels].entries()) {
+    // Se "dibuja" el trazado: cada sector avanza después del anterior, desde la línea de meta.
+    let delay = 0;
+    for (const sector of sectors) {
+      const length = sector.getTotalLength?.() ?? 0;
+      if (length <= 0) continue;
+      const duration = 900 * (length / Math.max(1, total));
+      sector.style.strokeDasharray = `${length}`;
+      sector.style.strokeDashoffset = `${length}`;
+      sector.animate([{ strokeDashoffset: `${length}` }, { strokeDashoffset: '0' }], { duration, delay, easing: 'linear', fill: 'forwards' });
+      delay += duration;
+    }
+    for (const [i, part] of [...drs, ...ticks, start, arrow, ...labels, ...turns].entries()) {
       part.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 600 + i * 60, fill: 'backwards' });
     }
   }

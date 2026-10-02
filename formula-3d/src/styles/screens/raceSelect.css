@@ -272,24 +272,55 @@
 
 .tmap__base {
   fill: none;
-  stroke: #000;
-  stroke-opacity: 0.65;
-  stroke-width: 20;
+  stroke: #07080b;
+  stroke-opacity: 0.92;
+  stroke-width: 26;
   stroke-linejoin: round;
 }
 
+/* Cada sector de un color, como los mapas oficiales: S1 magenta, S2 amarillo, S3 azul. */
 .tmap__line {
   fill: none;
   stroke: #f3f4f6;
-  stroke-width: 7;
+  stroke-width: 9;
   stroke-linejoin: round;
 }
 
+.tmap__line--s1 {
+  stroke: #e8268a;
+}
+
+.tmap__line--s2 {
+  stroke: #f5c542;
+}
+
+.tmap__line--s3 {
+  stroke: #3d8bff;
+}
+
+/* Zonas de DRS: punteadas por fuera del trazado. */
 .tmap__drs {
   fill: none;
   stroke: #27e06b;
-  stroke-width: 7;
+  stroke-width: 6;
+  stroke-dasharray: 3 9;
   stroke-linecap: round;
+}
+
+/* Curvas numeradas. */
+.tmap__turn circle {
+  fill: rgba(10, 11, 15, 0.92);
+  stroke: rgba(243, 244, 246, 0.85);
+  stroke-width: 2.5;
+}
+
+.tmap__turn text {
+  font-family: var(--font-num);
+  font-size: 23px;
+  font-weight: 700;
+  fill: #f3f4f6;
+  text-anchor: middle;
+  dominant-baseline: middle;
 }
 
 .tmap__start {
@@ -306,7 +337,7 @@
 }
 
 .tmap__tick {
-  stroke: #f5c542;
+  stroke: #f3f4f6;
   stroke-width: 5;
   stroke-linecap: round;
 }
@@ -319,6 +350,18 @@
   fill: var(--c-text-3);
   text-anchor: middle;
   dominant-baseline: middle;
+}
+
+.tmap__sector--s1 {
+  fill: #e8268a;
+}
+
+.tmap__sector--s2 {
+  fill: #f5c542;
+}
+
+.tmap__sector--s3 {
+  fill: #3d8bff;
 }
 
 /* El "auto" que recorre la vuelta: cabeza brillante y estela tenue. */

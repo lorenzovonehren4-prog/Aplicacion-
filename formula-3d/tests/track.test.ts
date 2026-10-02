@@ -6,6 +6,7 @@ import { traceLayout } from '../src/tracks/layout';
 import { getTrack, TRACKS } from '../src/tracks/registry';
 import { cornerSpeed } from '../src/tracks/TrackAnalysis';
 import { Track } from '../src/tracks/Track';
+import { numberedCorners } from '../src/ui/components/TrackMap';
 
 const track = Track.load(AUSTRALIA);
 const g = track.geometry;
@@ -199,6 +200,20 @@ describe('Monza', () => {
     for (let i = 0; i < mg.count; i++) {
       expect(monza.trackside.wallLeft[i]).toBeGreaterThan(mg.halfWidth + 2);
       expect(monza.trackside.wallRight[i]).toBeGreaterThan(mg.halfWidth + 2);
+    }
+  });
+});
+
+describe('curvas numeradas del mapa', () => {
+  it('son las más cerradas, tantas como las oficiales y en el orden de la vuelta', () => {
+    for (const def of [AUSTRALIA, MONZA]) {
+      const all = Track.load(def).analysis.corners;
+      const corners = numberedCorners(all, def.turns);
+      expect(corners.length, def.id).toBe(def.turns);
+      // En orden y ninguna de las que quedan afuera es más cerrada que las elegidas.
+      for (let i = 1; i < corners.length; i++) expect(corners[i]!.number).toBeGreaterThan(corners[i - 1]!.number);
+      const widest = Math.max(...corners.map((c) => c.radius));
+      for (const corner of all) if (!corners.includes(corner)) expect(corner.radius).toBeGreaterThanOrEqual(widest);
     }
   });
 });

@@ -18,7 +18,7 @@ import { EventBus } from './EventBus';
 import type { GameEvents } from './events';
 import { GameLoop } from './GameLoop';
 import { InputManager } from './input/InputManager';
-import { detectQuality } from './render/quality';
+import { classifyGpu, detectQuality } from './render/quality';
 import { RenderHost } from './render/RenderHost';
 import { SaveManager } from './save/SaveManager';
 import type { SaveData, Settings } from './save/schema';
@@ -127,17 +127,18 @@ export class Game {
   /** Crea todos los servicios. Falla sólo si no hay WebGL 2. */
   static async boot(layers: GameLayers): Promise<Game> {
     const storage = await createBestStorage();
+    const gpu = RenderHost.probeGpu();
     const save = await SaveManager.load({
       storage,
       initialQuality: detectQuality({
-        gpu: RenderHost.probeGpu(),
+        gpu,
         hardwareConcurrency: navigator.hardwareConcurrency,
         isMobile: matchMedia('(pointer: coarse)').matches,
       }),
     });
     const audio = new AudioManager(save.data.settings.audio);
     const input = new InputManager(window);
-    const render = new RenderHost(layers.canvas, save.data.settings.graphics);
+    const render = new RenderHost(layers.canvas, save.data.settings.graphics, classifyGpu(gpu) !== 'software');
     return new Game(layers, save, audio, input, render);
   }
 

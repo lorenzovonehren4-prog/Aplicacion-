@@ -283,10 +283,20 @@ export class Hud {
     const row = (label: string, value: HTMLElement): HTMLDivElement =>
       h('div', { class: 'timing__row' }, h('span', { class: 'timing__label', text: label }), value);
 
+    // Distribución como la transmisión de una carrera: torre con las vueltas
+    // arriba a la izquierda, tiempos y sectores arriba a la derecha, minimapa
+    // abajo a la izquierda, tablero abajo al centro y ayudas abajo a la derecha.
+    const tower = h(
+      'div',
+      { class: 'hud__tower tower' },
+      h('div', { class: 'tower__head' }, h('span', { class: 'tower__brand', text: 'ÁPICE' }), this.lapLabel),
+      this.standings.element,
+    );
+
     const timing = h(
       'div',
       { class: 'hud__timing timing' },
-      h('div', { class: 'timing__head' }, this.place, this.lapLabel, this.invalid),
+      h('div', { class: 'timing__head' }, this.place, this.invalid),
       h('div', { class: 'timing__main' }, this.lapTime, this.delta),
       h('div', { class: 'timing__sectors' }, ...this.sectors),
       row('ÚLTIMA', this.lastValue),
@@ -310,6 +320,12 @@ export class Hud {
         this.gear,
         h('div', { class: 'dash__speedo' }, this.speed, this.unitLabel),
       ),
+    );
+
+    const assistsPanel = h(
+      'div',
+      { class: 'hud__mfd mfd' },
+      h('span', { class: 'mfd__title', text: 'AYUDAS' }),
       h('div', { class: 'dash__flags' }, this.drs, this.brakeAid, this.tc, this.abs, this.stability),
     );
 
@@ -327,11 +343,12 @@ export class Hud {
     this.root = h(
       'div',
       { class: 'hud' },
+      tower,
       timing,
-      this.standings.element,
       this.minimap.element,
       this.tow,
       dash,
+      assistsPanel,
       this.lights,
       this.messages,
       this.radioBox,
@@ -550,10 +567,11 @@ export class Hud {
   reveal(): void {
     const quick = prefersReducedMotion();
     const tl = gsap.timeline({ defaults: { ease: 'power3.out', duration: quick ? 0.01 : 0.6 } });
-    tl.from(this.root.querySelector('.hud__timing'), { x: -60, opacity: 0 }, 0);
-    tl.from(this.standings.element, { x: -60, opacity: 0 }, 0.05);
-    tl.from(this.minimap.element, { x: 60, opacity: 0 }, 0.08);
+    tl.from(this.root.querySelector('.hud__tower'), { x: -60, opacity: 0 }, 0);
+    tl.from(this.root.querySelector('.hud__timing'), { x: 60, opacity: 0 }, 0.05);
+    tl.from(this.minimap.element, { x: -60, opacity: 0 }, 0.08);
     tl.from(this.root.querySelector('.hud__dash'), { y: 60, opacity: 0 }, 0.12);
+    tl.from(this.root.querySelector('.hud__mfd'), { x: 60, opacity: 0 }, 0.14);
     this.own.tween(tl);
   }
 

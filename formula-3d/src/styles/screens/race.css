@@ -446,16 +446,58 @@
   opacity: 0;
 }
 
-/* Torre de tiempos */
+/* Torre (arriba a la izquierda): marca y vueltas, y debajo las posiciones,
+   como en la transmisión de una carrera. */
+
+.tower {
+  position: absolute;
+  top: var(--gutter);
+  left: var(--gutter);
+  width: 214px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+.tower__head {
+  display: flex;
+  align-items: stretch;
+  height: 30px;
+  background: rgba(10, 11, 15, 0.92);
+}
+
+.tower__brand {
+  display: grid;
+  place-items: center;
+  padding: 0 10px 0 8px;
+  font-size: 12px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: var(--c-accent);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+.tower__head .timing__lap {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+
+/* Tiempos (arriba a la derecha): posición, vuelta en curso, sectores y mejores. */
 
 .timing {
   position: absolute;
   top: var(--gutter);
-  left: var(--gutter);
-  width: 270px;
-  padding: 12px 16px 12px;
+  right: var(--gutter);
+  width: 250px;
+  padding: 10px 14px 10px;
   background: linear-gradient(180deg, rgba(10, 11, 15, 0.9), rgba(10, 11, 15, 0.8));
-  border-left: 3px solid var(--c-accent);
+  border-top: 3px solid var(--c-accent);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
@@ -525,12 +567,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  margin: 4px 0 8px;
+  margin: 2px 0 8px;
 }
 
 .timing__time {
   font-family: var(--font-num);
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -603,13 +645,13 @@
 
 .minimap {
   position: absolute;
-  top: var(--gutter);
-  right: var(--gutter);
-  width: clamp(140px, 16vw, 210px);
+  bottom: var(--gutter);
+  left: var(--gutter);
+  width: clamp(140px, 15vw, 200px);
   aspect-ratio: 1;
   padding: 6px;
-  background: radial-gradient(circle, rgba(10, 11, 15, 0.8) 40%, rgba(10, 11, 15, 0.5));
-  border-radius: 50%;
+  /* Sin caja: el trazado flota sobre la imagen, con una sombra suave para leerse. */
+  background: radial-gradient(closest-side, rgba(10, 11, 15, 0.55), rgba(10, 11, 15, 0));
 }
 
 .minimap__svg {
@@ -659,11 +701,9 @@
 /* Torre de posiciones */
 
 .standings {
-  position: absolute;
-  top: calc(var(--gutter) + 212px);
-  left: var(--gutter);
   display: none;
-  width: 190px;
+  width: 100%;
+  margin-top: 2px;
   font-family: var(--font-num);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -757,8 +797,9 @@
 
 .hud__tow {
   position: absolute;
-  right: var(--gutter);
-  bottom: calc(var(--gutter) + 158px);
+  left: 50%;
+  bottom: calc(var(--gutter) + 150px);
+  translate: -50% 0;
   padding: 3px 10px;
   font-family: var(--font-num);
   font-size: 11px;
@@ -775,17 +816,44 @@
   opacity: 1;
 }
 
-/* Tablero */
+/* Tablero (abajo al centro, como la pantalla del volante) */
 
 .dash {
   position: absolute;
+  left: 50%;
+  bottom: var(--gutter);
+  width: 280px;
+  padding: 10px 16px 10px;
+  translate: -50% 0;
+  background: linear-gradient(180deg, rgba(10, 11, 15, 0.82), rgba(10, 11, 15, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px 14px 4px 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* Ayudas (abajo a la derecha, como el panel de ajustes del auto) */
+
+.mfd {
+  position: absolute;
   right: var(--gutter);
   bottom: var(--gutter);
-  width: 300px;
-  padding: 12px 16px 12px;
-  background: linear-gradient(180deg, rgba(10, 11, 15, 0.86), rgba(10, 11, 15, 0.94));
-  border-bottom: 3px solid var(--c-accent);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  width: 150px;
+  padding: 8px 10px 10px;
+  background: rgba(10, 11, 15, 0.86);
+  border-left: 3px solid var(--c-accent);
+}
+
+.mfd__title {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--c-text-3);
+}
+
+.mfd .dash__flags {
+  margin-top: 0;
 }
 
 .dash__leds {
@@ -1053,7 +1121,7 @@
 
 .hud__camera {
   position: absolute;
-  bottom: var(--gutter);
+  bottom: calc(var(--gutter) + 150px);
   left: 50%;
   padding: 6px 18px;
   font-size: 14px;
@@ -1115,7 +1183,7 @@
 
 .radio {
   position: absolute;
-  bottom: var(--gutter);
+  bottom: calc(var(--gutter) + clamp(150px, 16vw, 212px));
   left: var(--gutter);
   width: min(320px, 70vw);
   padding: 10px 14px 12px;
@@ -1538,7 +1606,11 @@
   }
 
   .radio {
-    bottom: calc(var(--gutter) + 150px);
+    bottom: calc(var(--gutter) + 130px);
+  }
+
+  .mfd {
+    display: none;
   }
 
   .standings {

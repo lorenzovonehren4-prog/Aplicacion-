@@ -1,18 +1,40 @@
 .screen--splash {
   display: grid;
   place-items: center;
-  background: #000;
+  /* Pared oscura: el logo es un cartel retroiluminado colgado en ella. */
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 48%, #160406 0%, #070203 55%, #000 85%),
+    #000;
   overflow: hidden;
   cursor: pointer;
 }
 
+/* Luz roja detrás del cartel: se derrama sobre la pared y "respira" despacio. */
 .splash__glow {
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(ellipse 40% 26% at 50% 50%, rgba(255, 42, 60, 0.28), transparent 70%),
-    radial-gradient(ellipse 70% 50% at 50% 55%, rgba(120, 10, 20, 0.35), transparent 75%);
+    radial-gradient(ellipse 30% 20% at 50% 50%, rgba(255, 34, 52, 0.55), transparent 70%),
+    radial-gradient(ellipse 48% 34% at 50% 50%, rgba(220, 16, 34, 0.32), transparent 72%),
+    radial-gradient(ellipse 75% 55% at 50% 54%, rgba(110, 6, 16, 0.4), transparent 78%);
   pointer-events: none;
+  animation: splash-breathe 4.5s ease-in-out infinite;
+}
+
+@keyframes splash-breathe {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash__glow {
+    animation: none;
+  }
 }
 
 .splash__streak {
@@ -40,10 +62,23 @@
   position: relative;
   overflow: hidden;
   padding: 0.2em 0.4em;
+  /* Retroiluminación roja alrededor de las letras. */
+  filter: drop-shadow(0 0 10px rgba(255, 40, 56, 0.85)) drop-shadow(0 0 42px rgba(255, 24, 44, 0.55));
 }
 
 .splash__logo {
   --logo-size: clamp(56px, 10.5vw, 150px);
+}
+
+/* Letras rojo oscuro con el borde encendido, como un cartel de acrílico. */
+.splash__logo .logo__name {
+  color: #9c0d1b;
+  background: linear-gradient(180deg, #d81a2c 0%, #7d0914 55%, #4a040b 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: max(1px, calc(var(--logo-size) * 0.012)) rgba(255, 92, 104, 0.9);
+  text-shadow: none;
 }
 
 /* Destello que cruza el logo. */

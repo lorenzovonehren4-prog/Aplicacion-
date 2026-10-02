@@ -105,7 +105,13 @@ export class MainMenuScreen extends BaseScreen {
       ),
     );
 
-    this.root.append(h('div', { class: 'menu__scrim' }), this.top, this.navHost, this.bottom);
+    this.root.append(
+      h('div', { class: 'menu__scrim' }),
+      h('div', { class: 'menu__tagline', attrs: { 'aria-hidden': 'true' }, text: 'La temporada comienza' }),
+      this.top,
+      this.navHost,
+      this.bottom,
+    );
 
     // Paralaje de la cámara con el ratón y encuadre según el ancho.
     this.own.listen(window, 'pointermove', (event) => {

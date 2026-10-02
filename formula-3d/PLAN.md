@@ -1135,6 +1135,45 @@ revisión propia del código + resumen y espera de confirmación.
       errores ni advertencias. Costo de CPU por cuadro en carrera (sin dibujar):
       0,5 ms con 12 autos y 0,9 ms con 20.
 
+### Versión 1.11 — Carga más rápida, imagen nítida y diseño de transmisión ✅
+
+- [x] **Sombreadores compilados una sola vez**: el precalentamiento dibujaba en
+      un búfer (variante lineal) mientras la calidad Baja dibuja al lienzo
+      (variante con tono y sRGB), y el sol nacía proyectando sombras que se
+      apagaban recién después de compilar: casi todo se compilaba dos veces.
+      `compileScene`/`prewarm` usan el destino real (`RenderHost.drawsToCanvas`)
+      y los ajustes gráficos se aplican antes de compilar. Carrera: 85 → 32
+      programas; menú: 30 → 15. En Windows cada programa tarda décimas de
+      segundo: la carga se acorta mucho. En carrera no se compila nada nuevo.
+- [x] **Calidad inicial**: GPU integrada (la mayoría de las notebooks) o
+      desconocida → Baja, y con una GPU de verdad el lienzo tiene
+      antialiasing propio (la Baja ya no tiene bordes serruchados). Con GPU
+      por software se apaga: ahí costaba tanto como dibujar todo dos veces
+      (en Chromium sin GPU la carrera iba a 0,7 FPS en vez de 1,2).
+- [x] **Ajuste automático sin borronear**: antes bajaba primero la resolución
+      (hasta 60 %) y la dejaba guardada: el juego quedaba borroso. Ahora baja
+      el nivel de calidad (en carrera alivia al instante lo que no recompila:
+      sin bloom ni MSAA, sombras de 512 — `RenderHost.lighten`) y la resolución
+      sólo en Baja, nunca de 80 %. Guardado v2: una migración reajusta los
+      gráficos guardados al equipo.
+- [x] **HUD como la transmisión de una carrera**: torre con la marca y
+      "VUELTA x/y" y las posiciones arriba a la izquierda; posición, vuelta en
+      curso, sectores y mejores arriba a la derecha; minimapa sin caja abajo a
+      la izquierda; tablero abajo al centro; ayudas abajo a la derecha.
+- [x] **Cámara de cabina**: un poco más atrás y con más campo visual (78°):
+      el volante queda más chico y abajo, y se ve mucha más pista.
+- [x] **Mapa del circuito** (selección de carrera) al estilo de los mapas
+      oficiales: contorno oscuro con S1 magenta, S2 amarillo y S3 azul, curvas
+      numeradas (las `turns` más cerradas del análisis: 14 en Albert Park, 11
+      en Monza, la Curva Grande incluida) y zonas de DRS punteadas por fuera.
+- [x] **Portada**: el logo como cartel de acrílico retroiluminado en rojo
+      sobre una pared oscura, con la luz que "respira".
+- [x] **Menú principal**: accesos en texto grande sin caja, el elegido con
+      marco fino y barra roja, y un lema vertical en el borde.
+- [x] Referencias de estilo aportadas por el usuario (capturas de un juego de
+      F1 y un mapa oficial): sólo se tomó la distribución y el estilo; marcas,
+      logos y patrocinadores siguen siendo ficticios.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1222,3 +1261,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.8**: errores, circuito siempre en calidad alta y carga (pedido del usuario).
 - **Versión 1.9**: dirección con teclado intermedia entre la directa y la por tiempo (pedido del usuario).
 - **Versión 1.10**: interfaz en ventanas chicas (panel de claude.ai), fuga de texturas y recorrido completo sin errores (pedido del usuario).
+- **Versión 1.11**: carga más rápida, imagen nítida y diseño de transmisión según referencias (pedido del usuario).
