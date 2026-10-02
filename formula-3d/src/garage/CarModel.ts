@@ -13,10 +13,12 @@
 
 import {
   BoxGeometry,
+  BufferGeometry,
   CatmullRomCurve3,
   CircleGeometry,
   CylinderGeometry,
   ExtrudeGeometry,
+  Float32BufferAttribute,
   Group,
   LatheGeometry,
   Matrix4,
@@ -30,7 +32,6 @@ import {
   TubeGeometry,
   Vector2,
   Vector3,
-  type BufferGeometry,
   type Material,
   type Texture,
 } from 'three';
@@ -43,8 +44,10 @@ import {
   createLiveryTexture,
   createNumberTexture,
   createRimTexture,
+  createSponsorSheet,
   createTireTexture,
   createWordmarkTexture,
+  SPONSORS,
   TIRE_SIDEWALL_POINTS,
 } from './carTextures';
 import type { Finish, WingShape } from '../progression/items';
@@ -72,10 +75,11 @@ export const CAR_DIMENSIONS = {
 
 /** Monocasco + morro + cubierta del motor + caja de cambios. */
 const BODY_SECTIONS: LoftSection[] = [
-  { z: -2.92, halfWidth: 0.05, bottom: 0.12, top: 0.19, topRound: 2.2, bottomRound: 2.4 },
-  { z: -2.7, halfWidth: 0.08, bottom: 0.13, top: 0.25, topRound: 2.2, bottomRound: 2.6 },
-  { z: -2.4, halfWidth: 0.11, bottom: 0.14, top: 0.32, topRound: 2.3, bottomRound: 3 },
-  { z: -2.05, halfWidth: 0.135, bottom: 0.15, top: 0.39, topRound: 2.4, bottomRound: 3.2 },
+  // Morro ancho y bajo, apoyado sobre el plano principal del alerón (como los autos actuales).
+  { z: -2.96, halfWidth: 0.075, bottom: 0.095, top: 0.16, topRound: 2.2, bottomRound: 2.6 },
+  { z: -2.72, halfWidth: 0.1, bottom: 0.105, top: 0.22, topRound: 2.3, bottomRound: 2.8 },
+  { z: -2.4, halfWidth: 0.12, bottom: 0.12, top: 0.3, topRound: 2.4, bottomRound: 3 },
+  { z: -2.05, halfWidth: 0.14, bottom: 0.14, top: 0.385, topRound: 2.4, bottomRound: 3.2 },
   { z: -1.75, halfWidth: 0.16, bottom: 0.15, top: 0.45, topRound: 2.5, bottomRound: 3.5 },
   { z: -1.35, halfWidth: 0.2, bottom: 0.13, top: 0.52, topScale: 0.82 },
   { z: -0.95, halfWidth: 0.25, bottom: 0.1, top: 0.585, topScale: 0.76 },
@@ -138,6 +142,7 @@ type MaterialKey =
   | 'light'
   | 'number'
   | 'wordmark'
+  | 'sponsor'
   | 'endplate'
   | 'tire'
   | 'cover'
@@ -200,6 +205,7 @@ function createMaterials(own: Disposer): Record<MaterialKey, Material> {
     light: new MeshStandardMaterial({ color: '#300006', emissive: '#ff1a2e', emissiveIntensity: 4 }),
     number: new MeshPhysicalMaterial({ ...decal }),
     wordmark: new MeshPhysicalMaterial({ ...decal }),
+    sponsor: new MeshPhysicalMaterial({ ...decal }),
     endplate: new MeshPhysicalMaterial({ ...paint }),
     tire: new MeshStandardMaterial({ roughness: 0.82, metalness: 0 }),
     cover: new MeshStandardMaterial({ roughness: 0.3, metalness: 0.85 }),
@@ -230,6 +236,7 @@ function paintMaterials(materials: Record<MaterialKey, Material>, livery: Livery
   physical('secondary').color.set(livery.secondary);
   physical('number').map = tex(createNumberTexture(livery, anisotropy));
   physical('wordmark').map = tex(createWordmarkTexture(TEAM_WORDMARK, livery.accent, anisotropy, { outline: livery.secondary }));
+  physical('sponsor').map = tex(createSponsorSheet(livery.accent, livery.secondary, anisotropy));
   physical('endplate').map = tex(
     createWordmarkTexture(TEAM_WORDMARK, livery.accent, anisotropy, { background: livery.secondary, stripe: livery.primary, scale: 0.62 }),
   );
@@ -346,6 +353,12 @@ function box(w: number, h: number, d: number, x: number, y: number, z: number): 
   return new BoxGeometry(w, h, d).translate(x, y, z);
 }
 
+/** Escala las UV de una pieza (para ajustar la densidad de una textura que se repite). */
+function scaleUv(geometry: BufferGeometry, u: number, v: number): void {
+  const uv = geometry.getAttribute('uv');
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * u, uv.getY(i) * v);
+}
+
 /** Refleja una geometría en X (para piezas izquierda/derecha). */
 function mirrorX(geometry: BufferGeometry): BufferGeometry {
   const mirrored = geometry.clone();
@@ -380,6 +393,104 @@ function flipPlanarU(geometry: BufferGeometry): BufferGeometry {
   for (let i = 0; i < uv.count; i++) uv.setX(i, 1 - uv.getX(i));
   uv.needsUpdate = true;
   return geometry;
+}
+
+/** Contorno de un perfil de alerón (cuerda 1): borde de fuga por arriba → ataque → fuga por abajo. */
+function airfoilLoop(points: number): Vector2[] {
+  const shape = airfoilShape(1, 0.12, -0.06, 0.4, points);
+  const loop = shape.getPoints(1);
+  // `getPoints` repite el primer punto al cerrar: el borde de fuga queda abierto (aristas vivas).
+  const first = loop[0];
+  const last = loop[loop.length - 1];
+  if (first && last && first.distanceTo(last) < 1e-6) loop.pop();
+  return loop;
+}
+
+/** Estación de un elemento de alerón: en `x`, borde de ataque en (z, y), cuerda y ángulo (cola arriba, °). */
+interface WingStation {
+  x: number;
+  z: number;
+  y: number;
+  chord: number;
+  angle: number;
+}
+
+/**
+ * Elemento de alerón continuo que puede subir, girar y cambiar de cuerda a lo
+ * largo de la envergadura (las puntas de un alerón delantero actual se
+ * enroscan hacia arriba). Tapas opcionales en los extremos. UV: u a lo largo
+ * de la envergadura, v alrededor del perfil (escaladas al tamaño real para el carbono).
+ */
+function sweptWing(stations: readonly WingStation[], points: number, caps: { start: boolean; end: boolean }): BufferGeometry {
+  const loop = airfoilLoop(points);
+  const ring = loop.length;
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const first = stations[0];
+  const last = stations[stations.length - 1];
+  const span = Math.abs((last?.x ?? 0) - (first?.x ?? 0)) || 1;
+  const place = (station: WingStation, p: Vector2): [number, number, number] => {
+    const a = (station.angle * Math.PI) / 180;
+    const cz = p.x * station.chord;
+    const cy = p.y * station.chord;
+    return [station.x, station.y + cy * Math.cos(a) + cz * Math.sin(a), station.z + cz * Math.cos(a) - cy * Math.sin(a)];
+  };
+  // Densidad del tejido de carbono (≈ 0,47 unidades de UV por metro, ver el halo).
+  const uScale = span * 0.47;
+  stations.forEach((station) => {
+    loop.forEach((p, j) => {
+      positions.push(...place(station, p));
+      uvs.push((Math.abs(station.x - (first?.x ?? 0)) / span) * uScale, (j / (ring - 1)) * station.chord * 2 * 0.47);
+    });
+  });
+  for (let i = 0; i < stations.length - 1; i++) {
+    for (let j = 0; j < ring - 1; j++) {
+      const a = i * ring + j;
+      const b = a + ring;
+      indices.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+  }
+  /** Tapa plana del extremo; `facesPlusX` según hacia dónde mira (el contorno va antihorario en (z, y)). */
+  const capAt = (station: WingStation | undefined, facesPlusX: boolean): void => {
+    if (!station) return;
+    const base = positions.length / 3;
+    const center = place(station, new Vector2(0.4, -0.03));
+    positions.push(...center);
+    uvs.push(0, 0);
+    loop.forEach((p) => {
+      positions.push(...place(station, p));
+      uvs.push(0, 0);
+    });
+    for (let j = 0; j < ring - 1; j++) {
+      if (facesPlusX) indices.push(base, base + 2 + j, base + 1 + j);
+      else indices.push(base, base + 1 + j, base + 2 + j);
+    }
+  };
+  // El sentido de la tapa depende de hacia qué lado avanza la envergadura.
+  const increasing = (last?.x ?? 0) >= (first?.x ?? 0);
+  if (caps.start) capAt(first, !increasing);
+  if (caps.end) capAt(last, increasing);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/** Lleva las UV (0–1) de una calcomanía a la fila `row` de la hoja de patrocinadores. */
+function sponsorRow(geometry: BufferGeometry, row: number): BufferGeometry {
+  const uv = geometry.getAttribute('uv');
+  const rows = SPONSORS.length;
+  for (let i = 0; i < uv.count; i++) uv.setY(i, (rows - 1 - row + uv.getY(i)) / rows);
+  uv.needsUpdate = true;
+  return geometry;
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
 /**
@@ -584,7 +695,8 @@ export class CarModel {
   private applyShadowFlags(root: Group): void {
     root.traverse((object) => {
       if (object instanceof Mesh) {
-        const decal = object.material === this.materials.number || object.material === this.materials.wordmark;
+        const decal =
+          object.material === this.materials.number || object.material === this.materials.wordmark || object.material === this.materials.sponsor;
         object.castShadow = !decal;
         object.receiveShadow = true;
       }
@@ -638,8 +750,11 @@ export class CarModel {
       batch.add('dark', pod.buildCap((sections[0]?.z ?? 0) + 0.02, -1, 0.93));
     }
 
-    // Abertura del cockpit.
-    batch.add('dark', body.buildPatch({ zFrom: -0.56, zTo: 0.03, tFrom: 0.395, tTo: 0.605, offset: 0.003 }));
+    // Abertura del cockpit: carbono sin laca (es lo que el piloto ve delante del volante;
+    // laqueado, desde el ojo del piloto reflejaba el cielo como si fuera cromo).
+    const opening = body.buildPatch({ zFrom: -0.56, zTo: 0.03, tFrom: 0.395, tTo: 0.605, offset: 0.003 });
+    scaleUv(opening, 0.28, 0.22);
+    batch.add('carbonMatte', opening);
 
     // Números: sobre el morro y a los lados de la cubierta del motor.
     batch.add(
@@ -649,6 +764,16 @@ export class CarModel {
       spine.buildPatch({ zFrom: 0.52, zTo: 0.86, tFrom: 0.63, tTo: 0.83, flipV: true }),
     );
 
+    // Patrocinadores: costados del morro (detrás de la rueda delantera) y de la cubierta del motor.
+    // Lado derecho con U invertida y lado izquierdo con V invertida (como el logo de los pontones).
+    batch.add(
+      'sponsor',
+      sponsorRow(body.buildPatch({ zFrom: -1.38, zTo: -0.84, tFrom: 0.27, tTo: 0.37, flipU: true }), 0),
+      sponsorRow(body.buildPatch({ zFrom: -1.38, zTo: -0.84, tFrom: 0.63, tTo: 0.73, flipV: true }), 0),
+      sponsorRow(body.buildPatch({ zFrom: 0.98, zTo: 1.42, tFrom: 0.27, tTo: 0.36, flipU: true }), 1),
+      sponsorRow(body.buildPatch({ zFrom: 0.98, zTo: 1.42, tFrom: 0.64, tTo: 0.73, flipV: true }), 1),
+    );
+
     // Logo del equipo en los pontones.
     const rightPod = new LoftSurface(SIDEPOD_SECTIONS);
     const leftPod = new LoftSurface(mirrorSections(SIDEPOD_SECTIONS));
@@ -656,6 +781,12 @@ export class CarModel {
       'wordmark',
       rightPod.buildPatch({ zFrom: -0.34, zTo: 0.5, tFrom: 0.18, tTo: 0.34, flipU: true, segmentsAlong: 20 }),
       leftPod.buildPatch({ zFrom: -0.34, zTo: 0.5, tFrom: 0.66, tTo: 0.82, flipV: true, segmentsAlong: 20 }),
+    );
+    // Y un patrocinador chico en la parte oscura, debajo del logo.
+    batch.add(
+      'sponsor',
+      sponsorRow(rightPod.buildPatch({ zFrom: -0.12, zTo: 0.3, tFrom: 0.095, tTo: 0.16, flipU: true }), 3),
+      sponsorRow(leftPod.buildPatch({ zFrom: -0.12, zTo: 0.3, tFrom: 0.84, tTo: 0.905, flipV: true }), 3),
     );
   }
 
@@ -689,27 +820,56 @@ export class CarModel {
   }
 
   private buildFrontWing(batch: PartBatch): void {
-    // Plano principal de lado a lado; flaps a cada lado del morro.
-    batch.add('carbon', wingElement(0.3, -2.98, 0.07, 4, -0.95, 0.95, this.foil));
-    const flaps: Array<[number, number, number, number, MaterialKey]> = [
-      [0.2, -2.72, 0.11, 14, 'carbon'],
-      [0.17, -2.57, 0.16, 24, 'primary'],
-      [0.14, -2.45, 0.21, 34, 'primary'],
+    // Cuatro elementos de carbono (el de arriba, del color del equipo). Hacia las
+    // puntas suben, giran y se enroscan hasta la placa lateral, como en un alerón actual.
+    const foil = this.foil;
+    const along = this.detail < 0.5 ? [0, 0.36, 0.66, 0.84, 0.95] : [0, 0.18, 0.36, 0.52, 0.66, 0.76, 0.84, 0.9, 0.95];
+    const rollUp = (x: number): number => smoothstep(0.5, 0.95, x);
+    // Plano principal, de lado a lado: algo más alto bajo el morro (sección neutra).
+    const main = along.map((x) => ({
+      x,
+      z: -3.0 + 0.02 * rollUp(x),
+      y: 0.06 + 0.015 * (1 - smoothstep(0.12, 0.34, x)) + 0.012 * rollUp(x),
+      chord: 0.32 - 0.03 * rollUp(x),
+      angle: 2 + 5 * rollUp(x),
+    }));
+    batch.addMirrored('carbon', sweptWing(main, foil, { start: false, end: true }));
+    // Flaps: nacen al costado del morro.
+    const flapX = [0.12, ...along.filter((x) => x > 0.2)];
+    const flaps: Array<{ chord: number; z: number; y: number; rise: number; angle: number; turn: number; material: MaterialKey }> = [
+      { chord: 0.2, z: -2.74, y: 0.105, rise: 0.05, angle: 12, turn: 10, material: 'carbon' },
+      { chord: 0.17, z: -2.6, y: 0.155, rise: 0.08, angle: 24, turn: 14, material: 'carbon' },
+      { chord: 0.14, z: -2.48, y: 0.235, rise: 0.11, angle: 34, turn: 18, material: 'primary' },
     ];
-    for (const [chord, z, y, angle, material] of flaps) {
-      batch.addMirrored(material, wingElement(chord, z, y, angle, 0.15, 0.95, this.foil));
+    for (const flap of flaps) {
+      const stations = flapX.map((x) => ({
+        x,
+        z: flap.z + 0.025 * rollUp(x),
+        y: flap.y + flap.rise * rollUp(x),
+        chord: flap.chord,
+        angle: flap.angle + flap.turn * rollUp(x),
+      }));
+      batch.addMirrored(flap.material, sweptWing(stations, foil, { start: true, end: true }));
     }
-    // Placas laterales y soportes del morro.
+    // Placa lateral baja y curva (cubre las puntas enroscadas), de carbono.
     const endplate: Array<[number, number]> = [
-      [-3.0, 0.03],
-      [-2.4, 0.03],
-      [-2.34, 0.1],
-      [-2.36, 0.3],
-      [-2.55, 0.31],
-      [-2.95, 0.14],
+      [-3.03, 0.03],
+      [-2.36, 0.03],
+      [-2.29, 0.1],
+      [-2.31, 0.46],
+      [-2.42, 0.49],
+      [-2.62, 0.38],
+      [-2.86, 0.19],
+      [-3.03, 0.11],
     ];
-    batch.addMirrored('primary', plate(endplate, 0.95, 0.012));
-    batch.addMirrored('carbon', plate([[-2.9, 0.09], [-2.66, 0.09], [-2.66, 0.14], [-2.9, 0.13]], 0.055, 0.012));
+    const plateGeometry = plate(endplate, 0.955, 0.012);
+    scaleUv(plateGeometry, 0.35, 0.25);
+    batch.addMirrored('carbon', plateGeometry);
+    // Patrocinador en la cara externa de cada placa (la copia izquierda invierte U para leerse bien).
+    const decal = sponsorRow(new PlaneGeometry(0.4, 0.1), 2);
+    decal.rotateY(Math.PI / 2);
+    decal.translate(0.9625, 0.16, -2.7);
+    batch.add('sponsor', decal, flipPlanarU(mirrorX(decal)));
   }
 
   /** Alerón trasero según la forma elegida (se reconstruye al cambiarla en el garaje). */
@@ -726,9 +886,11 @@ export class CarModel {
         : shape === 'blade'
           ? [[2.22, 0.6], [2.33, 0.56], [2.72, 0.62], [2.84, 1.08], [2.5, 1.0], [2.3, 0.92]]
           : [[2.26, 0.62], [2.33, 0.56], [2.7, 0.6], [2.78, 0.7], [2.76, 1.02], [2.44, 1.03], [2.3, 0.94]];
-    // La copia del otro lado invierte U: si no, el logo se leería espejado.
+    // Vista desde afuera, en la placa derecha el auto avanza hacia la derecha de la imagen:
+    // ésa invierte U; la izquierda (reflejada) ya se lee bien desde su lado.
     const rightPlate = plate(endplate, 0.49, 0.012);
-    batch.add('endplate', rightPlate, flipPlanarU(mirrorX(rightPlate)));
+    const leftPlate = mirrorX(rightPlate);
+    batch.add('endplate', flipPlanarU(rightPlate), leftPlate);
     // Viga inferior (beam wing), igual en todas.
     batch.add('carbon', wingElement(0.14, 2.4, 0.36, 8, -0.4, 0.4, foil), wingElement(0.12, 2.5, 0.42, 18, -0.4, 0.4, foil));
     const pylon = (): void => {
@@ -813,25 +975,32 @@ export class CarModel {
       new Vector3(0, 0.84, -0.44),
       ...[...right].reverse().map(([x, y, z]) => new Vector3(-x, y, z)),
     ];
-    batch.add('gloss', new TubeGeometry(new CatmullRomCurve3(path), this.seg(64, 10), 0.022, this.seg(10, 4), false));
+    // Fibra de carbono laqueada, como el halo real: las UV del tubo (0–1 a lo largo y
+    // alrededor) se escalan a su tamaño para que el tejido tenga celdas de ~6 mm.
+    const hoop = new TubeGeometry(new CatmullRomCurve3(path), this.seg(64, 10), 0.022, this.seg(10, 4), false);
+    scaleUv(hoop, 1.05, 0.07);
+    batch.add('carbon', hoop);
     const strut = new CatmullRomCurve3([
       new Vector3(0, 0.84, -0.44),
       new Vector3(0, 0.78, -0.52),
       new Vector3(0, 0.68, -0.6),
       new Vector3(0, 0.6, -0.66),
     ]);
-    batch.add('gloss', new TubeGeometry(strut, this.seg(16, 3), 0.02, this.seg(10, 4), false));
+    const pillar = new TubeGeometry(strut, this.seg(16, 3), 0.02, this.seg(10, 4), false);
+    scaleUv(pillar, 0.2, 0.06);
+    batch.add('carbon', pillar);
   }
 
   private buildSuspension(batch: PartBatch): void {
     const { frontAxleZ: fz, rearAxleZ: rz } = CAR_DIMENSIONS;
     const arms = (z: number, chassisX: number, uprightX: number, upperY: number, lowerY: number): void => {
       for (const dz of [-0.22, 0.22]) {
-        batch.addMirrored('carbon', rod(new Vector3(chassisX, upperY - 0.02, z + dz), new Vector3(uprightX, upperY + 0.07, z), 0.045, 0.014));
-        batch.addMirrored('carbon', rod(new Vector3(chassisX, lowerY, z + dz), new Vector3(uprightX, lowerY + 0.02, z), 0.045, 0.014));
+        // Brazos anchos y planos (perfil aerodinámico), como en los autos actuales.
+        batch.addMirrored('carbon', rod(new Vector3(chassisX, upperY - 0.02, z + dz), new Vector3(uprightX, upperY + 0.07, z), 0.068, 0.016));
+        batch.addMirrored('carbon', rod(new Vector3(chassisX, lowerY, z + dz), new Vector3(uprightX, lowerY + 0.02, z), 0.068, 0.016));
       }
       // Pushrod / pullrod.
-      batch.addMirrored('carbon', rod(new Vector3(uprightX - 0.04, lowerY + 0.03, z + 0.02), new Vector3(chassisX + 0.04, upperY + 0.08, z + 0.1), 0.03, 0.02));
+      batch.addMirrored('carbon', rod(new Vector3(uprightX - 0.04, lowerY + 0.03, z + 0.02), new Vector3(chassisX + 0.04, upperY + 0.08, z + 0.1), 0.04, 0.026));
       // Mangueta dentro de la llanta.
       batch.addMirrored('metal', box(0.05, 0.3, 0.08, uprightX + 0.02, 0.36, z));
     };

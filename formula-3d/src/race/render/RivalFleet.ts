@@ -41,9 +41,16 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Disposer } from '../../core/utils/Disposer';
 import { clamp, damp } from '../../core/utils/math';
 import { CAR_DIMENSIONS, CarModel } from '../../garage/CarModel';
-import { createLiveryTexture, createTireTexture, createWheelCoverTexture, TIRE_PROFILE_POINTS } from '../../garage/carTextures';
+import {
+  createLiveryTexture,
+  createSponsorSheet,
+  createTireTexture,
+  createWheelCoverTexture,
+  TIRE_PROFILE_POINTS,
+} from '../../garage/carTextures';
 import type { LiveryConfig } from '../../garage/livery';
 import type { Vehicle } from '../physics/Vehicle';
+import type { CarShadows } from './CarShadow';
 
 /**
  * Nivel de detalle (según la calidad gráfica): distancia (m) hasta la que un
@@ -341,6 +348,7 @@ interface Template {
   body: BufferGeometry;
   numbers: BufferGeometry | null;
   wordmarks: BufferGeometry | null;
+  sponsors: BufferGeometry | null;
   flap: BufferGeometry | null;
   flapPivot: Vector3;
   tire: BufferGeometry | null;
@@ -369,11 +377,16 @@ function buildTemplate(detail: number, separate: boolean): Template {
     const body: BufferGeometry[] = [];
     const numbers: BufferGeometry[] = [];
     const wordmarks: BufferGeometry[] = [];
+    const sponsors: BufferGeometry[] = [];
     for (const mesh of meshesOf(model.root)) {
       const key = helmetKeys.get(mesh) ?? partKey(mesh, materials);
       if (key === 'wordmark') {
         // Los logos sólo se ven de cerca.
         if (separate) wordmarks.push(bake(mesh));
+        continue;
+      }
+      if (key === 'sponsor') {
+        if (separate) sponsors.push(bake(mesh));
         continue;
       }
       if (separate && (wheelMeshes.has(mesh) || flapMeshes.has(mesh))) continue;
@@ -393,6 +406,7 @@ function buildTemplate(detail: number, separate: boolean): Template {
       body: merged,
       numbers: separate ? mergeGeometries(numbers, false) : null,
       wordmarks: separate && wordmarks.length > 0 ? mergeGeometries(wordmarks, false) : null,
+      sponsors: separate && sponsors.length > 0 ? mergeGeometries(sponsors, false) : null,
       flap: null,
       flapPivot: model.drsPivot.position.clone(),
       tire: null,
@@ -400,6 +414,7 @@ function buildTemplate(detail: number, separate: boolean): Template {
     };
     for (const g of numbers) g.dispose();
     for (const g of wordmarks) g.dispose();
+    for (const g of sponsors) g.dispose();
 
     if (separate) {
       // Flap en coordenadas de su pivote.
@@ -461,6 +476,7 @@ export class RivalFleet {
   private readonly nearFlap: InstancedMesh | null;
   private readonly nearNumbers: InstancedMesh | null;
   private readonly nearWordmarks: InstancedMesh | null;
+  private readonly nearSponsors: InstancedMesh | null;
   private readonly tires: InstancedMesh | null;
   private readonly covers: InstancedMesh | null;
   private readonly farBody: InstancedMesh;
@@ -478,12 +494,21 @@ export class RivalFleet {
   private readonly scale = new Vector3(1, 1, 1);
   private readonly rotation = new Euler();
 
+  /** Sombras de contacto (una por auto dibujado), si se pidieron. */
+  private readonly shadows: InstancedMesh | null;
+
+  /**
+   * @param shadows sombras de contacto compartidas con el auto del jugador
+   */
   constructor(
     cars: readonly RivalCar[],
     anisotropy: number,
     private readonly lod: RivalLod = DEFAULT_LOD,
+    shadows: CarShadows | null = null,
   ) {
     this.root.name = 'rivales';
+    this.shadows = shadows ? shadows.createInstanced(cars.length) : null;
+    if (this.shadows) this.root.add(this.shadows);
     const count = Math.max(1, cars.length);
     this.states = cars.map((car, i) => ({
       car,
@@ -512,6 +537,11 @@ export class RivalFleet {
     this.nearNumbers = near.numbers ? this.instanced(near.numbers, this.own.own(decalMaterial(atlas, NUMBER_COLUMNS, NUMBER_ROWS, 'rival-number')), count, false, 'rivales-numeros') : null;
     const words = this.own.own(createWordmarkAtlas(cars.map((car) => car.wordmark), anisotropy));
     this.nearWordmarks = near.wordmarks ? this.instanced(near.wordmarks, this.own.own(decalMaterial(words, WORD_COLUMNS, WORD_ROWS, 'rival-wordmark')), count, false, 'rivales-logos') : null;
+    // Patrocinadores: la misma hoja para todos, pintada con el acento y el secundario de cada equipo.
+    const sponsorSheet = this.own.own(createSponsorSheet('#ffffff', '#000000', anisotropy, false));
+    this.nearSponsors = near.sponsors
+      ? this.instanced(near.sponsors, this.own.own(decalMaterial(sponsorSheet, 1, 1, 'rival-sponsor')), count, false, 'rivales-patrocinadores')
+      : null;
     const tireTexture = this.own.own(createTireTexture(MASK_LIVERY.tireStripe, 'VELTRA', anisotropy));
     const tireMaterial = this.own.own(new MeshStandardMaterial({ map: tireTexture, roughness: 0.82, metalness: 0 }));
     this.tires = near.tire ? this.instanced(near.tire, tireMaterial, count * 4, true, 'rivales-neumaticos') : null;
@@ -525,7 +555,7 @@ export class RivalFleet {
     this.farBody.castShadow = false;
 
     // Colores por instancia de la carrocería (se reescriben al cambiar de nivel).
-    for (const mesh of [this.nearBody, this.nearFlap, this.farBody, this.nearNumbers, this.nearWordmarks]) {
+    for (const mesh of [this.nearBody, this.nearFlap, this.farBody, this.nearNumbers, this.nearWordmarks, this.nearSponsors]) {
       if (!mesh) continue;
       const geometry = mesh.geometry;
       geometry.setAttribute('iPrimary', new InstancedBufferAttribute(new Float32Array(count * 3), 3));
@@ -534,6 +564,8 @@ export class RivalFleet {
     }
     this.nearNumbers?.geometry.setAttribute('iCell', new InstancedBufferAttribute(new Float32Array(count * 2), 2));
     this.nearWordmarks?.geometry.setAttribute('iCell', new InstancedBufferAttribute(new Float32Array(count * 2), 2));
+    // Una sola celda (la hoja entera): la celda queda en (0, 0).
+    this.nearSponsors?.geometry.setAttribute('iCell', new InstancedBufferAttribute(new Float32Array(count * 2), 2));
     this.update(0, 1, new Vector3());
   }
 
@@ -572,6 +604,7 @@ export class RivalFleet {
 
     let nearCount = 0;
     let farCount = 0;
+    let shadowCount = 0;
     for (const index of this.order) {
       const state = this.states[index];
       if (!state) continue;
@@ -592,6 +625,7 @@ export class RivalFleet {
         state.roll = damp(state.roll, clamp(v.telemetry.ay * ROLL_PER_ACCEL, -0.04, 0.04), 8, dt);
       }
       this.composeCar(x - Math.sin(heading) * MODEL_OFFSET, z - Math.cos(heading) * MODEL_OFFSET, state.pitch, heading, state.roll);
+      this.shadows?.setMatrixAt(shadowCount++, this.carMatrix);
 
       const near = nearCount < this.lod.maxNear && (this.distances[index] ?? Infinity) < this.lod.nearDistance;
       if (near) {
@@ -617,6 +651,10 @@ export class RivalFleet {
           const cell = this.nearWordmarks.geometry.getAttribute('iCell') as InstancedBufferAttribute;
           cell.setXY(slot, index % WORD_COLUMNS, WORD_ROWS - 1 - Math.floor(index / WORD_COLUMNS));
         }
+        if (this.nearSponsors) {
+          this.nearSponsors.setMatrixAt(slot, this.carMatrix);
+          this.writeColors(this.nearSponsors, slot, state);
+        }
         this.writeWheels(slot, v);
       } else {
         const slot = farCount++;
@@ -625,14 +663,17 @@ export class RivalFleet {
       }
     }
 
-    for (const mesh of [this.nearBody, this.nearFlap, this.nearNumbers, this.nearWordmarks]) this.flushInstances(mesh, nearCount);
+    for (const mesh of [this.nearBody, this.nearFlap, this.nearNumbers, this.nearWordmarks, this.nearSponsors]) this.flushInstances(mesh, nearCount);
     this.flushInstances(this.tires, nearCount * 4);
     this.flushInstances(this.covers, nearCount * 4);
     this.flushInstances(this.farBody, farCount);
+    this.flushInstances(this.shadows, shadowCount);
   }
 
   dispose(): void {
     this.root.removeFromParent();
+    // Libera sólo sus matrices: la malla y el material de la sombra son compartidos.
+    this.shadows?.dispose();
     this.own.dispose();
   }
 

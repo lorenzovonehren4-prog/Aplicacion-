@@ -4,7 +4,7 @@
  * `RenderHost` mientras la pantalla de carrera está activa.
  */
 
-import { MathUtils, PerspectiveCamera, Scene, Vector3, type WebGLRenderer } from 'three';
+import { MathUtils, PerspectiveCamera, Scene, Vector3, type Object3D, type WebGLRenderer } from 'three';
 import { prewarm } from '../core/render/prewarm';
 import type { RenderView } from '../core/render/RenderHost';
 import { QUALITY_PRESETS, shadowMapSize, type QualityPreset } from '../core/render/quality';
@@ -18,6 +18,8 @@ import { RaceCamera } from './camera/RaceCamera';
 import { performanceModel } from './physics/CarSpec';
 import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
+import { CarShadows } from './render/CarShadow';
+import { RearMirrors } from './render/RearMirrors';
 import { CheckeredFlag } from './render/CheckeredFlag';
 import { GhostCar } from './render/GhostCar';
 import { RivalFleet, type RivalCar } from './render/RivalFleet';
@@ -59,6 +61,12 @@ export class RaceWorld implements RenderView {
   private introTime = -1;
   private time = 0;
   private readonly flag = new CheckeredFlag();
+  /** Sombras de contacto bajo el auto del jugador y los rivales. */
+  private readonly carShadows = new CarShadows();
+  /** Retrovisores del auto del jugador. */
+  private readonly mirrors = new RearMirrors();
+  /** Lo que no se dibuja en los espejos (se arma una vez). */
+  private mirrorHidden: Object3D[] = [];
   private readonly probe = new Vector3();
   private readonly lookAt = new Vector3();
   private readonly point = { x: 0, z: 0 };
@@ -83,14 +91,19 @@ export class RaceWorld implements RenderView {
     this.scene.fog = trackScene.sky.fog;
     this.rig = new CarRig(vehicle, livery, anisotropy);
     this.scene.add(this.rig.root);
+    this.rig.root.add(this.carShadows.createSingle());
+    this.rig.root.add(this.mirrors.root);
     this.raceCamera = new RaceCamera(this.rig, cameraMode);
     this.racingLine = new RacingLineMesh(vehicle.track.racingLine, performanceModel(vehicle.spec));
     this.scene.add(this.racingLine.mesh);
-    this.rivals = rivals.length > 0 ? new RivalFleet(rivals, anisotropy, preset.rivalLod) : null;
+    this.rivals = rivals.length > 0 ? new RivalFleet(rivals, anisotropy, preset.rivalLod, this.carShadows) : null;
     if (this.rivals) this.scene.add(this.rivals.root);
     this.ghost = ghost ? new GhostCar(anisotropy) : null;
     if (this.ghost) this.scene.add(this.ghost.root);
     this.effects = new TrackEffects(this.scene, preset.particles);
+    // En el espejo no aparecen el propio auto, la línea de la trazada ni las partículas
+    // (su tamaño está calculado para la pantalla, no para la imagen chica del espejo).
+    this.mirrorHidden = [this.rig.root, this.racingLine.mesh, ...this.effects.objects];
 
     // Bandera a cuadros del lado de los boxes, sobre la línea de meta, con la tela sobre la pista.
     const track = vehicle.track;
@@ -333,12 +346,30 @@ export class RaceWorld implements RenderView {
     // Gradación de color y viñeta con posprocesado (una pasada liviana).
     this.speedFx.grade = graphics.postprocessing ? 1 : 0;
     // Sin mapa de sombras el sol deja de proyectarlas (auto y escenario).
-    this.trackScene.sky.setShadowMapSize(shadowMapSize(graphics.shadows, graphics.quality));
+    const shadowSize = shadowMapSize(graphics.shadows, graphics.quality);
+    this.trackScene.sky.setShadowMapSize(shadowSize);
+    this.carShadows.setShadowMapActive(shadowSize > 0);
+    // Reflejo de verdad en Alta y Ultra, siempre que la escena ya se dibuje en una
+    // textura (posprocesado o MSAA): así usa los mismos sombreadores y no compila nada nuevo.
+    const preset = QUALITY_PRESETS[graphics.quality];
+    const offscreen = graphics.postprocessing || preset.msaaSamples > 0;
+    this.mirrors.setLive(offscreen && (graphics.quality === 'high' || graphics.quality === 'ultra'));
+  }
+
+  /**
+   * Imagen de los retrovisores (sólo en el cockpit, que es donde se ven).
+   * Va después de `update` y antes de dibujar el cuadro.
+   */
+  renderMirrors(renderer: WebGLRenderer): void {
+    if (!this.mirrors.live || this.frozen || this.introTime >= 0) return;
+    if (this.raceCamera.currentMode !== 'cockpit') return;
+    this.mirrors.render(renderer, this.scene, this.mirrorHidden);
   }
 
   /** Alivio sin recompilar: sombras más chicas (el sol las sigue proyectando). */
   onLighten(): void {
     this.trackScene.sky.lightenShadows();
+    this.mirrors.setLive(false);
   }
 
   onResize(width: number, height: number, pixelRatio: number): void {
@@ -352,7 +383,9 @@ export class RaceWorld implements RenderView {
     this.ghost?.dispose();
     this.rivals?.dispose();
     this.racingLine.dispose();
+    this.mirrors.dispose();
     this.rig.dispose();
+    this.carShadows.dispose();
     this.trackScene.dispose();
     this.scene.clear();
   }

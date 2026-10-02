@@ -64,7 +64,7 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 1.11.0: las 9 fases del documento de diseño están completas, con
+Versión 1.12.0: las 9 fases del documento de diseño están completas, con
 más tracción en curvas, carga y carrera más fluidas, pistas más anchas,
 gráficos mejorados, circuitos con más detalle (asfalto con goma y marcas,
 árboles con viento, barreras de neumáticos, horizonte y público animado) y
@@ -79,7 +79,11 @@ crece con el tiempo que mantienes la flecha, sin demora: responde enseguida
 pero un toque corto gira poco. En ventanas chicas (como el panel de
 claude.ai) la interfaz se achica en proporción en vez de encimarse. El HUD
 sigue la distribución de una transmisión de carrera y la calidad inicial se
-elige según la GPU para que el juego vaya fluido y nítido.
+elige según la GPU para que el juego vaya fluido y nítido. Los árboles tienen
+copas de hojas, cada auto apoya una sombra en el piso, los autos tienen
+alerón delantero de carbono de varios elementos, morro ancho y calcomanías de
+patrocinadores ficticios, y la cabina tiene retrovisores con la pista de atrás
+(Alta y Ultra), volante con pantalla completa y fibra de carbono.
 Albert Park y Monza, con pantalla de selección de carrera. Modos: práctica
 libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales con IA de 5
 dificultades), contrarreloj con fantasma y campeonato con puntos. XP y

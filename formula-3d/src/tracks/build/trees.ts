@@ -1,32 +1,43 @@
 /**
  * Árboles del parque: tres especies (eucalipto, árbol de copa redonda y
- * ciprés) armadas con "bultos" de follaje deformados con ruido, para que la
- * silueta sea irregular y orgánica.
+ * ciprés). La copa es un manojo de "tarjetas" con una textura de hojas
+ * recortada (alpha test), sobre un núcleo oscuro que la hace ver llena: de
+ * cerca se ven hojas de verdad, no bloques.
  *
- * El aspecto sale de cómo se ilumina, no de la cantidad de triángulos:
- * - Normales "de copa": cada vértice del follaje apunta desde el centro de su
- *   bulto y de la copa entera, así la luz la envuelve suave (sin facetas).
+ * El aspecto sale de cómo se ilumina:
+ * - Normales "de copa": cada vértice apunta desde el centro de su bulto y de
+ *   la copa entera, así la luz envuelve la copa suave (y las tarjetas vistas
+ *   de atrás no se oscurecen: el sombreador ignora de qué lado se las mira).
  * - Oclusión horneada en el color: más oscuro abajo y hacia adentro.
- * - Variación de tono suave por vértice (nada de triángulos de colores).
- * - Viento: el follaje se mece un poco (más arriba, más), con una fase
- *   distinta para cada árbol según dónde está.
+ * - Viento: la copa se mece un poco (más arriba, más), con una fase distinta
+ *   para cada árbol según dónde está.
+ * - De lejos las hojas no se "desgastan": el recorte compensa lo que el
+ *   mipmap promedia (ver `createTreeMaterial`).
  *
- * Unos 150–250 triángulos por árbol (hay miles alrededor de la pista).
+ * Todo el árbol (tronco, núcleo y hojas) usa un solo material: los troncos y
+ * el núcleo leen un rincón opaco y blanco del atlas.
  */
 
 import {
+  BufferGeometry,
   Color,
   CylinderGeometry,
+  DoubleSide,
   Float32BufferAttribute,
   IcosahedronGeometry,
+  MeshDepthMaterial,
   MeshStandardMaterial,
+  Quaternion,
+  RGBADepthPacking,
   Vector3,
-  type BufferGeometry,
   type IUniform,
+  type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { Random } from '../../core/utils/random';
+import { LEAF_ATLAS_CARD_UV, LEAF_ATLAS_SIZE, LEAF_ATLAS_SOLID_UV } from './textures';
 
-/** Ruido suave y determinista (suma de senos) para deformar el follaje. */
+/** Ruido suave y determinista (suma de senos) para deformar el núcleo. */
 function noise3(x: number, y: number, z: number, seed: number): number {
   return (
     Math.sin(x * 1.31 + seed) * Math.cos(y * 1.17 - seed * 0.7) * 0.5 +
@@ -38,81 +49,167 @@ function noise3(x: number, y: number, z: number, seed: number): number {
 interface Lump {
   center: [number, number, number];
   radius: number;
-  /** 0 = 20 caras, 1 = 80 caras. */
-  detail: number;
   /** Estiramiento vertical. */
   squash?: number;
 }
 
-/**
- * Follaje: los bultos se deforman con ruido y reciben normales, color con
- * oclusión y el atributo de viento (`sway`).
- */
-function foliage(lumps: readonly Lump[], base: Color, seed: number): BufferGeometry {
-  // Centro y tamaño de la copa entera (para las normales y la oclusión).
-  let cy = 0;
+/** Centro y alto de la copa entera (para normales y oclusión). */
+interface Canopy {
+  center: Vector3;
+  minY: number;
+  height: number;
+}
+
+function canopyOf(lumps: readonly Lump[]): Canopy {
+  const center = new Vector3();
   let minY = Infinity;
   let maxY = -Infinity;
-  const canopy = new Vector3();
   for (const lump of lumps) {
-    canopy.x += lump.center[0] / lumps.length;
-    canopy.z += lump.center[2] / lumps.length;
-    cy += lump.center[1] / lumps.length;
+    center.x += lump.center[0] / lumps.length;
+    center.y += lump.center[1] / lumps.length;
+    center.z += lump.center[2] / lumps.length;
     const reach = lump.radius * (lump.squash ?? 1) * 1.3;
     minY = Math.min(minY, lump.center[1] - reach);
     maxY = Math.max(maxY, lump.center[1] + reach);
   }
-  canopy.y = cy;
-  const height = Math.max(1, maxY - minY);
+  return { center, minY, height: Math.max(1, maxY - minY) };
+}
 
-  const parts = lumps.map((lump, index) => {
-    const geometry = new IcosahedronGeometry(lump.radius, lump.detail);
-    const position = geometry.getAttribute('position');
-    const normals: number[] = [];
-    const colors: number[] = [];
-    const sway: number[] = [];
+/** Normal de copa: mitad desde el centro del bulto, mitad desde el centro de la copa. */
+function canopyNormal(p: Vector3, lumpCenter: Vector3, canopy: Canopy, out: Vector3): Vector3 {
+  const a = p.clone().sub(lumpCenter);
+  const b = p.clone().sub(canopy.center);
+  if (a.lengthSq() > 1e-8) a.normalize();
+  if (b.lengthSq() > 1e-8) b.normalize();
+  out.copy(a).add(b);
+  // Nunca un vector nulo: una normal NaN ennegrece la imagen entera (el bloom la desparrama).
+  if (out.lengthSq() < 1e-8) out.set(0, 1, 0);
+  return out.normalize();
+}
+
+/** Oclusión horneada (0,42–1): más oscuro abajo y hacia adentro de la copa. */
+function canopyShade(p: Vector3, canopy: Canopy): number {
+  const up = Math.min(1, Math.max(0, (p.y - canopy.minY) / canopy.height));
+  const outward = Math.min(1, p.distanceTo(canopy.center) / (canopy.height * 0.6));
+  return 0.42 + 0.58 * Math.pow(up, 0.8) * (0.7 + 0.3 * outward);
+}
+
+/** Atributos por vértice que comparten todas las partes del árbol. */
+class Builder {
+  readonly positions: number[] = [];
+  readonly normals: number[] = [];
+  readonly colors: number[] = [];
+  readonly sway: number[] = [];
+  readonly uvs: number[] = [];
+
+  vertex(p: Vector3, n: Vector3, color: Color, u: number, v: number): void {
+    this.positions.push(p.x, p.y, p.z);
+    this.normals.push(n.x, n.y, n.z);
+    this.colors.push(color.r, color.g, color.b);
+    this.sway.push(Math.max(0, p.y) / 12);
+    this.uvs.push(u, v);
+  }
+
+  geometry(): BufferGeometry {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new Float32BufferAttribute(this.positions, 3));
+    geometry.setAttribute('normal', new Float32BufferAttribute(this.normals, 3));
+    geometry.setAttribute('color', new Float32BufferAttribute(this.colors, 3));
+    geometry.setAttribute('sway', new Float32BufferAttribute(this.sway, 1));
+    geometry.setAttribute('uv', new Float32BufferAttribute(this.uvs, 2));
+    return geometry;
+  }
+}
+
+/**
+ * Núcleo de la copa: los bultos achicados y oscuros (con el rincón opaco del
+ * atlas). Tapa los huecos entre tarjetas y da cuerpo a la sombra.
+ */
+function core(lumps: readonly Lump[], base: Color, seed: number, scale: number, out: Builder): void {
+  const canopy = canopyOf(lumps);
+  const p = new Vector3();
+  const n = new Vector3();
+  const color = new Color();
+  const [su, sv] = LEAF_ATLAS_SOLID_UV;
+  lumps.forEach((lump, index) => {
+    const ico = new IcosahedronGeometry(lump.radius * scale, 0);
+    const position = ico.getAttribute('position');
     const center = new Vector3(...lump.center);
-    const p = new Vector3();
-    const fromLump = new Vector3();
-    const fromCanopy = new Vector3();
-    const color = new Color();
     for (let i = 0; i < position.count; i++) {
       p.set(position.getX(i), position.getY(i), position.getZ(i));
-      // Deformación: los vértices repetidos entre triángulos se mueven igual (el ruido depende de la posición).
-      const bump = 1 + 0.28 * noise3(p.x, p.y, p.z, seed + index * 1.7);
-      p.multiplyScalar(bump);
+      p.multiplyScalar(1 + 0.22 * noise3(p.x, p.y, p.z, seed + index * 1.7));
       p.y *= lump.squash ?? 1;
       p.add(center);
-      position.setXYZ(i, p.x, p.y, p.z);
-      // Normal: mitad desde el centro del bulto, mitad desde el centro de la copa.
-      fromLump.copy(p).sub(center);
-      fromCanopy.copy(p).sub(canopy);
-      if (fromLump.lengthSq() > 1e-8) fromLump.normalize();
-      if (fromCanopy.lengthSq() > 1e-8) fromCanopy.normalize();
-      fromLump.add(fromCanopy);
-      // Nunca un vector nulo: una normal NaN ennegrece la imagen entera (el bloom la desparrama).
-      if (fromLump.lengthSq() < 1e-8) fromLump.set(0, 1, 0);
-      fromLump.normalize();
-      normals.push(fromLump.x, fromLump.y, fromLump.z);
-      // Oclusión: más oscuro abajo y adentro; un poco de variación de tono.
-      const up = Math.min(1, Math.max(0, (p.y - minY) / height));
-      const outward = Math.min(1, p.distanceTo(canopy) / (height * 0.6));
-      const ao = 0.42 + 0.58 * Math.pow(up, 0.8) * (0.7 + 0.3 * outward);
-      const tone = 1 + 0.12 * noise3(p.x * 0.7, p.y * 0.7, p.z * 0.7, seed * 2.3);
-      color.copy(base).offsetHSL(0.012 * noise3(p.z, p.x, p.y, seed), 0, 0);
-      colors.push(color.r * ao * tone, color.g * ao * tone, color.b * ao * tone);
-      sway.push(Math.max(0, p.y) / 12);
+      canopyNormal(p, center, canopy, n);
+      const shade = canopyShade(p, canopy) * 0.62;
+      color.copy(base).multiplyScalar(shade);
+      out.vertex(p, n, color, su, sv);
     }
-    geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
-    geometry.setAttribute('sway', new Float32BufferAttribute(sway, 1));
-    geometry.deleteAttribute('uv');
-    return geometry;
+    ico.dispose();
   });
-  const merged = mergeGeometries(parts);
-  for (const part of parts) part.dispose();
-  if (!merged) throw new Error('No se pudo armar el follaje.');
-  return merged;
+}
+
+/**
+ * Tarjetas de hojas repartidas en el volumen de cada bulto (más hacia la
+ * superficie), con orientación al azar y la textura del manojo.
+ * @param density tarjetas por m² de "sección" del bulto
+ * @param size tamaño de cada tarjeta respecto del radio del bulto
+ */
+function leafCards(lumps: readonly Lump[], base: Color, seed: number, density: number, size: number, out: Builder): void {
+  const canopy = canopyOf(lumps);
+  const rng = new Random(seed * 7919);
+  const [uvMin, uvMax] = LEAF_ATLAS_CARD_UV;
+  const q = new Quaternion();
+  const axis = new Vector3();
+  const center = new Vector3();
+  const middle = new Vector3();
+  const n = new Vector3();
+  const color = new Color();
+  const corners = [new Vector3(), new Vector3(), new Vector3(), new Vector3()];
+  for (const lump of lumps) {
+    const squash = lump.squash ?? 1;
+    center.set(...lump.center);
+    const count = Math.max(3, Math.round(density * lump.radius * lump.radius * Math.sqrt(squash)));
+    for (let c = 0; c < count; c++) {
+      // Punto en el bulto, más cerca de la superficie que del centro.
+      axis.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1));
+      if (axis.lengthSq() < 1e-4) axis.set(0, 1, 0);
+      axis.normalize();
+      const reach = lump.radius * Math.sqrt(rng.range(0.25, 1));
+      middle.copy(axis).multiplyScalar(reach);
+      middle.y *= squash;
+      middle.add(center);
+      // Orientación al azar y tamaño con algo de variación.
+      axis.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1));
+      if (axis.lengthSq() < 1e-4) axis.set(1, 0, 0);
+      q.setFromAxisAngle(axis.normalize(), rng.range(0, Math.PI * 2));
+      const half = (lump.radius * size * rng.range(0.8, 1.15)) / 2;
+      corners[0]!.set(-half, -half, 0);
+      corners[1]!.set(half, -half, 0);
+      corners[2]!.set(half, half, 0);
+      corners[3]!.set(-half, half, 0);
+      for (const corner of corners) corner.applyQuaternion(q).add(middle);
+      // Variación de tono por tarjeta (unas hojas más claras, otras más oscuras).
+      const tone = rng.range(0.86, 1.12);
+      // Espejar la textura en la mitad de las tarjetas: menos repetición.
+      const flip = rng.next() < 0.5;
+      const u0 = flip ? uvMax : uvMin;
+      const u1 = flip ? uvMin : uvMax;
+      const uv: Array<[number, number]> = [
+        [u0, uvMin],
+        [u1, uvMin],
+        [u1, uvMax],
+        [u0, uvMax],
+      ];
+      for (const index of [0, 1, 2, 0, 2, 3]) {
+        const corner = corners[index]!;
+        canopyNormal(corner, center, canopy, n);
+        color.copy(base).multiplyScalar(canopyShade(corner, canopy) * tone);
+        const [u, v] = uv[index]!;
+        out.vertex(corner, n, color, u, v);
+      }
+    }
+  }
 }
 
 /** Tronco (y ramas): cilindro con color que oscurece hacia la base. */
@@ -125,14 +222,17 @@ function wood(radiusTop: number, radiusBottom: number, length: number, color: Co
   const position = geometry.getAttribute('position');
   const colors: number[] = [];
   const sway: number[] = [];
+  const uvs: number[] = [];
+  const [su, sv] = LEAF_ATLAS_SOLID_UV;
   for (let i = 0; i < position.count; i++) {
     const shade = 0.6 + 0.4 * Math.min(1, position.getY(i) / 6);
     colors.push(color.r * shade, color.g * shade, color.b * shade);
     sway.push(Math.max(0, position.getY(i) - 3) / 24);
+    uvs.push(su, sv);
   }
   geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
   geometry.setAttribute('sway', new Float32BufferAttribute(sway, 1));
-  geometry.deleteAttribute('uv');
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
   return geometry;
 }
 
@@ -146,9 +246,8 @@ function merge(parts: BufferGeometry[]): BufferGeometry {
 
 /**
  * Nivel de detalle de un árbol según la distancia a la cámara:
- * - `near`: todos los bultos del follaje subdivididos (80 caras): la copa no
- *   se ve facetada ni de cerca.
- * - `mid`: sólo el bulto principal subdividido.
+ * - `near`: todas las tarjetas de hojas sobre el núcleo.
+ * - `mid`: la mitad de las tarjetas, más grandes (de lejos se ve igual).
  * - `far`: un único bulto que cubre la copa y el tronco principal (a cientos
  *   de metros se ve igual y cuesta una décima parte).
  */
@@ -163,13 +262,21 @@ interface SpeciesDef {
 }
 
 function buildSpecies(def: SpeciesDef, level: TreeDetail): BufferGeometry {
-  const first = def.lumps[0];
-  let lumps: Lump[];
-  if (level === 'far' && first) lumps = [{ ...first, radius: first.radius * 1.35, detail: 0 }];
-  else if (level === 'near') lumps = def.lumps.map((l) => ({ ...l, detail: Math.max(l.detail, 1) }));
-  else lumps = def.lumps;
+  const base = new Color(def.color);
+  const crown = new Builder();
+  if (level === 'far') {
+    const first = def.lumps[0];
+    if (first) core([{ ...first, radius: first.radius * 1.35 }], base, def.seed, 1, crown);
+    // Sin tarjetas: el bulto de lejos lleva el color pleno de la copa.
+    const colors = crown.colors;
+    for (let i = 0; i < colors.length; i++) colors[i] = (colors[i] ?? 0) / 0.62;
+  } else {
+    core(def.lumps, base, def.seed, 0.72, crown);
+    if (level === 'near') leafCards(def.lumps, base, def.seed, 2.5, 1.05, crown);
+    else leafCards(def.lumps, base, def.seed, 1.1, 1.4, crown);
+  }
   const woods = level === 'far' ? def.wood.slice(0, 1) : def.wood;
-  return merge([...woods.map((make) => make()), foliage(lumps, new Color(def.color), def.seed)]);
+  return merge([...woods.map((make) => make()), crown.geometry()]);
 }
 
 /** Eucalipto, árbol de copa redonda y ciprés (en ese orden), con el detalle pedido. */
@@ -185,10 +292,10 @@ export function treeSpecies(level: TreeDetail = 'mid'): BufferGeometry[] {
         () => wood(0.07, 0.14, 3.2, bark, -0.6, -0.8, [0, 7, 0]),
       ],
       lumps: [
-        { center: [0, 10.6, 0], radius: 3, detail: 1, squash: 0.8 },
-        { center: [2.4, 9.3, 0.9], radius: 2.2, detail: 0, squash: 0.8 },
-        { center: [-2, 11.4, -0.7], radius: 2.1, detail: 0, squash: 0.85 },
-        { center: [0.6, 12.4, -1.4], radius: 1.7, detail: 0 },
+        { center: [0, 10.6, 0], radius: 3, squash: 0.8 },
+        { center: [2.4, 9.3, 0.9], radius: 2.2, squash: 0.8 },
+        { center: [-2, 11.4, -0.7], radius: 2.1, squash: 0.85 },
+        { center: [0.6, 12.4, -1.4], radius: 1.7 },
       ],
       color: '#6c8452',
       seed: 11,
@@ -197,9 +304,9 @@ export function treeSpecies(level: TreeDetail = 'mid'): BufferGeometry[] {
     {
       wood: [() => wood(0.24, 0.36, 4.4, darkBark)],
       lumps: [
-        { center: [0, 6.3, 0], radius: 3.6, detail: 1, squash: 0.85 },
-        { center: [1.8, 7.5, 0.6], radius: 2.3, detail: 0 },
-        { center: [-1.5, 7.2, -0.9], radius: 2.1, detail: 0 },
+        { center: [0, 6.3, 0], radius: 3.6, squash: 0.85 },
+        { center: [1.8, 7.5, 0.6], radius: 2.3 },
+        { center: [-1.5, 7.2, -0.9], radius: 2.1 },
       ],
       color: '#3e6630',
       seed: 23,
@@ -208,8 +315,8 @@ export function treeSpecies(level: TreeDetail = 'mid'): BufferGeometry[] {
     {
       wood: [() => wood(0.16, 0.24, 2.2, darkBark)],
       lumps: [
-        { center: [0, 5, 0], radius: 1.9, detail: 1, squash: 2.1 },
-        { center: [0, 9.2, 0], radius: 1.3, detail: 0, squash: 2 },
+        { center: [0, 5, 0], radius: 1.9, squash: 2.1 },
+        { center: [0, 9.2, 0], radius: 1.3, squash: 2 },
       ],
       color: '#2b4a27',
       seed: 31,
@@ -218,13 +325,28 @@ export function treeSpecies(level: TreeDetail = 'mid'): BufferGeometry[] {
   return species.map((def) => buildSpecies(def, level));
 }
 
+/** Umbral del recorte de las hojas. */
+const LEAF_ALPHA_TEST = 0.5;
+
 /**
- * Material del follaje y los troncos (colores por vértice y por árbol) con
- * viento en el sombreador de vértices.
+ * Material de todo el árbol: atlas de hojas recortado, colores por vértice y
+ * por árbol, viento en el sombreador de vértices.
+ * - Las normales de copa valen para los dos lados de cada tarjeta.
+ * - De lejos el mipmap promedia las hojas con el fondo transparente y el
+ *   recorte las "comería": se compensa la opacidad según el nivel de mipmap.
  * @param time uniforme con los segundos (lo avanza el circuito)
  */
-export function createTreeMaterial(time: IUniform<number>): MeshStandardMaterial {
-  const material = new MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
+export function createTreeMaterial(time: IUniform<number>, atlas: Texture): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({
+    vertexColors: true,
+    map: atlas,
+    alphaTest: LEAF_ALPHA_TEST,
+    side: DoubleSide,
+    roughness: 1,
+    metalness: 0,
+    // Las hojas casi no reflejan el cielo (si no, se ven blanquecinas en ángulo rasante).
+    envMapIntensity: 0.35,
+  });
   material.onBeforeCompile = (shader) => {
     shader.uniforms.windTime = time;
     shader.vertexShader = shader.vertexShader
@@ -242,7 +364,30 @@ export function createTreeMaterial(time: IUniform<number>): MeshStandardMaterial
         transformed.x += sway * gust * (0.35 * sin(windTime * 1.3 + phase) + 0.12 * sin(windTime * 3.1 + phase * 1.7 + position.y));
         transformed.z += sway * gust * 0.22 * sin(windTime * 1.1 + phase * 1.3);`,
       );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        #ifdef USE_MAP
+          // Nivel de mipmap aproximado: de lejos se sube la opacidad (si no, el recorte vacía la copa).
+          vec2 leafTexel = vMapUv * ${LEAF_ATLAS_SIZE.toFixed(1)};
+          float leafMip = max(0.0, 0.5 * log2(max(dot(dFdx(leafTexel), dFdx(leafTexel)), dot(dFdy(leafTexel), dFdy(leafTexel)))));
+          diffuseColor.a *= 1.0 + leafMip * 0.3;
+        #endif`,
+      )
+      .replace(
+        '#include <normal_fragment_begin>',
+        `#include <normal_fragment_begin>
+        // Normales de copa: valen igual de los dos lados de cada tarjeta.
+        normal = normalize( vNormal );
+        nonPerturbedNormal = normal;`,
+      );
   };
-  material.customProgramCacheKey = () => 'arboles-viento';
+  material.customProgramCacheKey = () => 'arboles-hojas';
   return material;
+}
+
+/** Material de profundidad para las sombras: con el recorte de las hojas (si no, cada tarjeta proyecta un cuadrado). */
+export function createTreeDepthMaterial(atlas: Texture): MeshDepthMaterial {
+  return new MeshDepthMaterial({ depthPacking: RGBADepthPacking, map: atlas, alphaTest: LEAF_ALPHA_TEST });
 }

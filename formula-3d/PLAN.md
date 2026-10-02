@@ -1174,6 +1174,50 @@ revisión propia del código + resumen y espera de confirmación.
       F1 y un mapa oficial): sólo se tomó la distribución y el estilo; marcas,
       logos y patrocinadores siguen siendo ficticios.
 
+### Versión 1.12 — Árboles, autos y cabina como en las referencias ✅
+
+Pedido: "que se vea de la mejor manera y sin ir bugeado", tras comparar el
+juego en 4K con las referencias. Lo que más se notaba: árboles de bolas,
+autos que flotan en Baja y la cabina (espejos blancos, volante chico).
+
+- [x] **Árboles de hojas**: la copa ya no es un puñado de esferas; es un
+      núcleo oscuro más muchas "tarjetas" con un atlas de hojas pintado
+      en canvas (ramitas, ~950 hojas con nervadura), recortadas con
+      `alphaTest` y con el borde reforzado según el nivel de mipmap para que
+      de lejos no se deshagan. Normales de copa (redondeadas) para que la luz
+      no las delate como planos, viento en el vértice y sombras recortadas
+      con la forma de las hojas (`customDepthMaterial`). Tres niveles por
+      distancia (cerca, medio, lejos) con el mismo material.
+- [x] **Sombra de contacto** bajo cada auto (el jugador y los rivales
+      instanciados): un rectángulo difuso apoyado en el piso, más oscuro sin
+      mapa de sombras (en Baja los autos ya no flotan) y tenue con él.
+- [x] **Retrovisores**: en Alta y Ultra muestran la pista de verdad (una
+      cámara hacia atrás dibuja una imagen chica cada dos cuadros, sin
+      recalcular sombras ni compilar nada nuevo; cada espejo muestra su
+      mitad invertida); en Baja y Media, un reflejo pintado de cielo, árboles
+      y asfalto en vez del bloque blanco. Si el ajuste automático alivia la
+      carga, vuelven al reflejo pintado.
+- [x] **Volante**: más cerca del piloto (se ve más grande) y pantalla nueva
+      como la de un volante real: posición y vuelta a la izquierda, marcha
+      grande con la velocidad abajo, delta y DRS a la derecha.
+- [x] **Fibra de carbono** en el halo y alrededor del cockpit (tejido de
+      ~6 mm escalado al tamaño de cada pieza).
+- [x] **Autos como en las referencias** (capturas de un juego oficial
+      aportadas por el usuario; sólo estilo, todo sigue siendo ficticio):
+      alerón delantero nuevo con cuatro elementos de carbono que suben, giran
+      y se enroscan hacia las puntas (`sweptWing`: perfil barrido por
+      estaciones), el de arriba del color del equipo, y placas laterales bajas
+      y curvas; morro más ancho y bajo, apoyado en el plano principal; brazos
+      de suspensión anchos y planos; calcomanías de patrocinadores ficticios
+      (NOVAFUEL, KRONOS, AEROLUX y LUMEN, los mismos de los carteles de la
+      pista) en el morro, la cubierta del motor, los pontones y las placas del
+      alerón. Los rivales las llevan con el acento y el secundario de su
+      equipo (una malla instanciada más, sólo en el nivel cercano).
+- [x] **Logo del alerón trasero**: desde afuera se leía espejado en las dos
+      placas; ahora se lee bien.
+- [x] **Fuga en Alta**: cada vuelta al menú dejaba vivo el mapa de sombras
+      (2048²) de la luz del estudio; se libera con el estudio.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1262,3 +1306,4 @@ revisión propia del código + resumen y espera de confirmación.
 - **Versión 1.9**: dirección con teclado intermedia entre la directa y la por tiempo (pedido del usuario).
 - **Versión 1.10**: interfaz en ventanas chicas (panel de claude.ai), fuga de texturas y recorrido completo sin errores (pedido del usuario).
 - **Versión 1.11**: carga más rápida, imagen nítida y diseño de transmisión según referencias (pedido del usuario).
+- **Versión 1.12**: árboles de hojas, sombras de los autos, cabina con espejos, volante y carbono, y autos con alerón, morro y patrocinadores según referencias (pedido del usuario).

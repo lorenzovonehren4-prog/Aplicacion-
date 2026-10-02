@@ -226,6 +226,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     world.update(dt, simulating ? alpha : 1, tel);
     if (simulating) session.takeContacts(this.contactBurst);
     world.updateEffects(dt, this.effectCars, simulating);
+    world.renderMirrors(this.game.render.renderer);
 
     // Superficies bajo las ruedas (sonido y vibración).
     let grass = 0;
@@ -1239,9 +1240,14 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     world.rig.wheel.setDisplay({
       gear: tel.gear,
       speed: String(Math.round(units === 'kmh' ? tel.speed * 3.6 : tel.speed * 2.23694)),
+      unit: units === 'kmh' ? 'KM/H' : 'MPH',
       delta: delta === null ? '' : `${delta < 0 ? '−' : '+'}${Math.abs(delta).toFixed(2)}`,
       deltaPositive: delta === null ? null : delta > 0,
       drs: session.drsState === 'open',
+      position: session.order ? session.position : null,
+      cars: session.cars.length,
+      lap: Math.max(1, timer.lap),
+      totalLaps: session.config.laps,
     });
   }
 

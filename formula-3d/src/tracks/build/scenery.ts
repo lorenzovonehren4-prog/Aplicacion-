@@ -33,8 +33,8 @@ import {
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { addChunkedInstances, addChunkedLodInstances, addMerged, addMesh, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
-import { createDistanceBoards, createSpectator, createWaterNormals, createWindows } from './textures';
-import { createTreeMaterial, treeSpecies } from './trees';
+import { createDistanceBoards, createLeafAtlas, createSpectator, createWaterNormals, createWindows } from './textures';
+import { createTreeDepthMaterial, createTreeMaterial, treeSpecies } from './trees';
 
 // ─── Lago ────────────────────────────────────────────────────────────────
 
@@ -199,7 +199,9 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
   // El viento avanza con el reloj del circuito.
   const time = { value: 0 };
   ctx.tickers.push((seconds) => (time.value = seconds));
-  const material = ctx.own.own(createTreeMaterial(time));
+  const atlas = ctx.own.own(createLeafAtlas(ctx.anisotropy));
+  const material = ctx.own.own(createTreeMaterial(time, atlas));
+  const depthMaterial = ctx.detailShadows ? ctx.own.own(createTreeDepthMaterial(atlas)) : undefined;
   for (const geometry of [...near, ...mid, ...far]) ctx.own.own(geometry);
   for (let kind = 0; kind < 3; kind++) {
     const list = placements[kind] ?? [];
@@ -210,7 +212,7 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
       levels.map((geometry, i) => ({ geometry: geometry as BufferGeometry, distance: TREE_LOD_DISTANCES[i] ?? 0 })),
       material,
       list,
-      { cell: TREE_CELL, name: `arboles-${kind}`, cast: ctx.detailShadows, receive: false },
+      { cell: TREE_CELL, name: `arboles-${kind}`, cast: ctx.detailShadows, receive: false, ...(depthMaterial ? { depthMaterial } : {}) },
     );
   }
 }

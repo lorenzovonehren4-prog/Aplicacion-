@@ -257,6 +257,9 @@ export class StudioScene implements RenderView {
     this.keyLight.shadow.camera.near = 3;
     this.keyLight.shadow.camera.far = 14;
     this.scene.add(this.keyLight, this.keyLight.target);
+    // Su mapa de sombras lo crea el renderer y sólo se libera con la luz: si no,
+    // cada vuelta al menú (el estudio se recrea) dejaba uno de 2048² en Alta.
+    this.own.add(() => this.keyLight.dispose());
 
     this.rimLight = new SpotLight('#ff2a3c', 40, 18, 0.55, 1, 2);
     this.rimLight.position.set(-5, 3, 7);

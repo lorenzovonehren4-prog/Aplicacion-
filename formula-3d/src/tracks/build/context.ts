@@ -99,7 +99,7 @@ export function addChunkedInstances(
   geometry: BufferGeometry,
   material: Material,
   items: readonly InstanceItem[],
-  options: { cell: number; name: string; cast: boolean; receive: boolean },
+  options: { cell: number; name: string; cast: boolean; receive: boolean; depthMaterial?: Material },
 ): void {
   const cells = new Map<string, InstanceItem[]>();
   for (const item of items) {
@@ -146,7 +146,7 @@ export function addChunkedLodInstances(
   levels: ReadonlyArray<{ geometry: BufferGeometry; distance: number }>,
   material: Material,
   items: readonly InstanceItem[],
-  options: { cell: number; name: string; cast: boolean; receive: boolean },
+  options: { cell: number; name: string; cast: boolean; receive: boolean; depthMaterial?: Material },
 ): void {
   const cells = new Map<string, InstanceItem[]>();
   for (const item of items) {
@@ -185,6 +185,8 @@ export function addChunkedLodInstances(
       });
       mesh.castShadow = options.cast;
       mesh.receiveShadow = options.receive;
+      // Sombra con la forma recortada (hojas), no la de cada tarjeta entera.
+      if (options.depthMaterial) mesh.customDepthMaterial = options.depthMaterial;
       mesh.name = options.name;
       mesh.matrixAutoUpdate = false;
       mesh.computeBoundingSphere();

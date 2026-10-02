@@ -279,6 +279,109 @@ export function createWordmarkTexture(
   return toTexture(canvas, anisotropy);
 }
 
+/**
+ * Patrocinadores ficticios del auto (los mismos de los carteles de la pista),
+ * uno por fila de 512 × 128 y cada uno con su tipografía, como las
+ * calcomanías de un auto real. Fila 0 arriba del canvas.
+ */
+export const SPONSORS = ['NOVAFUEL', 'KRONOS', 'AEROLUX', 'LUMEN'] as const;
+
+/**
+ * Hoja de calcomanías de patrocinadores: texto en `fill` con borde `outline`
+ * sobre fondo transparente. Los rivales la usan en blanco y negro (su shader
+ * cambia el blanco por el acento del equipo y el negro por el secundario).
+ */
+export function createSponsorSheet(fill: string, outline: string, anisotropy: number, srgb = true): CanvasTexture {
+  const W = 512;
+  const H = 128;
+  const [canvas, ctx] = makeCanvas(W, H * SPONSORS.length);
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  const stroke = (text: string, x: number, y: number, width = 8): void => {
+    ctx.lineWidth = width;
+    ctx.strokeStyle = outline;
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = fill;
+    ctx.fillText(text, x, y);
+  };
+  SPONSORS.forEach((name, row) => {
+    const cy = row * H + H / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, row * H, W, H);
+    ctx.clip();
+    switch (name) {
+      case 'NOVAFUEL': {
+        // Gota estilizada + cursiva gruesa.
+        ctx.font = `italic 900 76px ${DISPLAY_FONT}`;
+        ctx.textAlign = 'left';
+        const text = 'NOVAFUEL';
+        const width = Math.min(ctx.measureText(text).width, 380);
+        const x0 = (W - width - 70) / 2;
+        ctx.beginPath();
+        ctx.moveTo(x0 + 26, cy - 34);
+        ctx.quadraticCurveTo(x0 + 52, cy + 4, x0 + 26, cy + 30);
+        ctx.quadraticCurveTo(x0, cy + 4, x0 + 26, cy - 34);
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = outline;
+        ctx.stroke();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = outline;
+        ctx.strokeText(text, x0 + 66, cy + 4, 380);
+        ctx.fillStyle = fill;
+        ctx.fillText(text, x0 + 66, cy + 4, 380);
+        break;
+      }
+      case 'KRONOS': {
+        // Mayúsculas anchas y espaciadas, sin cursiva.
+        ctx.font = `700 70px ${NUMBER_FONT}`;
+        ctx.textAlign = 'center';
+        stroke('KRONOS', W / 2, cy + 4);
+        break;
+      }
+      case 'AEROLUX': {
+        // Cursiva con subrayado en flecha.
+        ctx.font = `italic 700 80px ${DISPLAY_FONT}`;
+        ctx.textAlign = 'center';
+        stroke('AEROLUX', W / 2, cy - 6);
+        const width = Math.min(ctx.measureText('AEROLUX').width, 420);
+        ctx.beginPath();
+        ctx.moveTo(W / 2 - width / 2, cy + 38);
+        ctx.lineTo(W / 2 + width / 2 - 14, cy + 30);
+        ctx.lineTo(W / 2 + width / 2 + 10, cy + 34);
+        ctx.lineTo(W / 2 + width / 2 - 14, cy + 42);
+        ctx.closePath();
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = outline;
+        ctx.stroke();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        break;
+      }
+      case 'LUMEN': {
+        // Punto luminoso + letras finas.
+        ctx.font = `600 78px ${DISPLAY_FONT}`;
+        ctx.textAlign = 'left';
+        const width = ctx.measureText('LUMEN').width;
+        const x0 = (W - width - 64) / 2;
+        ctx.beginPath();
+        ctx.arc(x0 + 22, cy + 2, 20, 0, Math.PI * 2);
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = outline;
+        ctx.stroke();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        stroke('LUMEN', x0 + 60, cy + 4);
+        break;
+      }
+    }
+    ctx.restore();
+  });
+  return toTexture(canvas, anisotropy, srgb);
+}
+
 /** Tejido de carbono sarga 2×2, visible con reflejos. Se repite (RepeatWrapping). */
 export function createCarbonTexture(anisotropy: number): CanvasTexture {
   const S = 256;

@@ -8,7 +8,7 @@
  * cámara no emiten (no se verían).
  */
 
-import type { PerspectiveCamera, Scene } from 'three';
+import type { Object3D, PerspectiveCamera, Scene } from 'three';
 import type { Vehicle } from '../physics/Vehicle';
 import { DUST, ParticleSystem, SMOKE, SPARKS } from './Particles';
 
@@ -40,6 +40,11 @@ export class TrackEffects {
     this.dust = new ParticleSystem(DUST, amount);
     this.sparks = new ParticleSystem(SPARKS, amount);
     scene.add(this.smoke.points, this.dust.points, this.sparks.points);
+  }
+
+  /** Las nubes de partículas (para ocultarlas en el dibujo de los espejos). */
+  get objects(): readonly Object3D[] {
+    return [this.smoke.points, this.dust.points, this.sparks.points];
   }
 
   /** Alto de la imagen en píxeles reales (para el tamaño de las partículas). */

@@ -359,6 +359,86 @@ export function createFence(anisotropy: number): Texture {
   return texture;
 }
 
+/** Tamaño del atlas de hojas (px). */
+export const LEAF_ATLAS_SIZE = 512;
+/**
+ * Coordenada de textura de un rincón opaco y blanco del atlas de hojas: los
+ * troncos y el núcleo de las copas la usan, así todo el árbol comparte un solo
+ * material (el color sale de los colores por vértice).
+ */
+export const LEAF_ATLAS_SOLID_UV: readonly [number, number] = [12 / LEAF_ATLAS_SIZE, 1 - 12 / LEAF_ATLAS_SIZE];
+/** Las tarjetas de hojas usan sólo el centro del atlas (lejos del rincón opaco). */
+export const LEAF_ATLAS_CARD_UV: readonly [number, number] = [0.06, 0.94];
+
+/**
+ * Atlas de hojas: un manojo de hojas (elipses con nervadura, luz y sombra) sobre
+ * fondo transparente, en tonos claros casi neutros (el verde de cada especie y
+ * de cada árbol lo ponen los colores por vértice y por instancia). El borde del
+ * manojo es irregular para que las copas no se vean como tarjetas.
+ */
+export function createLeafAtlas(anisotropy: number): Texture {
+  const S = LEAF_ATLAS_SIZE;
+  const [element] = remember('hojas', () => {
+    const [c, ctx] = canvas(S, S);
+    const rng = new Random(0x1eaf);
+    ctx.clearRect(0, 0, S, S);
+    // Rincón opaco (troncos y núcleo de la copa).
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 24, 24);
+    // Ramitas debajo de las hojas.
+    ctx.strokeStyle = 'rgba(90, 80, 62, 0.9)';
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 14; i++) {
+      const angle = rng.range(0, Math.PI * 2);
+      const length = rng.range(90, 200);
+      ctx.lineWidth = rng.range(2, 4);
+      ctx.beginPath();
+      ctx.moveTo(S / 2, S / 2);
+      ctx.lineTo(S / 2 + Math.cos(angle) * length, S / 2 + Math.sin(angle) * length);
+      ctx.stroke();
+    }
+    // Hojas: más densas al centro, borde irregular (radio que varía con el ángulo).
+    const lobes = Array.from({ length: 7 }, () => rng.range(0.82, 1));
+    for (let i = 0; i < 950; i++) {
+      const angle = rng.range(0, Math.PI * 2);
+      const lobe = lobes[Math.floor(((angle / (Math.PI * 2)) * lobes.length) % lobes.length)] ?? 1;
+      const reach = Math.sqrt(rng.next()) * 214 * lobe;
+      const x = S / 2 + Math.cos(angle) * reach;
+      const y = S / 2 + Math.sin(angle) * reach;
+      const length = rng.range(15, 30);
+      const width = length * rng.range(0.32, 0.46);
+      const tilt = angle + rng.range(-0.9, 0.9);
+      // Tono: claro y casi neutro, más oscuro hacia adentro (sombra propia del manojo).
+      const shade = 0.7 + 0.3 * (reach / 214) + rng.range(-0.08, 0.08);
+      const hue = rng.range(-12, 18);
+      const r = Math.min(255, (205 + hue) * shade);
+      const g = Math.min(255, 232 * shade);
+      const b = Math.min(255, (196 - hue * 0.5) * shade);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(tilt);
+      const gradient = ctx.createLinearGradient(0, -width / 2, 0, width / 2);
+      gradient.addColorStop(0, `rgb(${Math.round(r * 1.08)}, ${Math.round(g * 1.08)}, ${Math.round(b * 1.05)})`);
+      gradient.addColorStop(1, `rgb(${Math.round(r * 0.72)}, ${Math.round(g * 0.74)}, ${Math.round(b * 0.7)})`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, length / 2, width / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Nervadura central.
+      ctx.strokeStyle = `rgba(255, 255, 240, 0.28)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-length / 2 + 2, 0);
+      ctx.lineTo(length / 2 - 2, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+    return [c];
+  });
+  if (!element) throw new Error('No se pudo pintar el atlas de hojas.');
+  return finish(element, anisotropy, true, false);
+}
+
 /** Silueta de espectador (se tiñe con el color de cada instancia). */
 export function createSpectator(anisotropy: number): Texture {
   const [element, ctx] = canvas(32, 64);
