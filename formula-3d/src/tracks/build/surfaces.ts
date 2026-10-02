@@ -12,9 +12,8 @@ import {
   type BufferGeometry,
   type Texture,
 } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ASPHALT_TILE, createRacedAsphaltMaterial, createTrackDataTexture } from './asphalt';
-import { addMesh, type BuildContext } from './context';
+import { addMesh, mergeAll, type BuildContext } from './context';
 import { DETAIL_PARS, detailLayer } from './detail';
 import { buildRibbon, fullLap, spansWhere, type ProfilePoint } from './ribbon';
 import { createAsphalt, createChecker, createGravel, createGrass, createKerb } from './textures';
@@ -179,7 +178,7 @@ export function buildPaint(ctx: BuildContext): void {
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
   });
-  const merged = mergeGeometries(pieces);
+  const merged = mergeAll(pieces);
   for (const piece of pieces) piece.dispose();
   if (merged) addMesh(ctx, merged, white, { name: 'pintura' });
 
@@ -240,7 +239,7 @@ export function buildKerbs(ctx: BuildContext): void {
       }),
     );
   }
-  const merged = mergeGeometries(pieces);
+  const merged = mergeAll(pieces);
   for (const piece of pieces) piece.dispose();
   if (!merged) return;
   const texture = ctx.own.own(createKerb(ctx.anisotropy, ctx.textureSize));
@@ -293,7 +292,7 @@ export function buildRunoff(ctx: BuildContext): void {
         );
       }
     }
-    const merged = mergeGeometries(pieces);
+    const merged = mergeAll(pieces);
     for (const piece of pieces) piece.dispose();
     if (!merged) continue;
     if (kind === 1) {

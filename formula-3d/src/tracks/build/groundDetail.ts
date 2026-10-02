@@ -13,8 +13,7 @@
  */
 
 import { Float32BufferAttribute, MeshBasicMaterial, MeshLambertMaterial, type BufferGeometry } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addMesh, type BuildContext } from './context';
+import { addMesh, mergeAll, type BuildContext } from './context';
 import { buildRibbon, spansWhere, wallSpans, type ProfilePoint } from './ribbon';
 
 /** Ancho (m) de la sombra de contacto al pie del muro. */
@@ -77,7 +76,7 @@ export function buildContactShadows(ctx: BuildContext): void {
     pieces.push(paint(ribbon, [0, 0, 0], (u) => CONTACT_ALPHA * Math.pow(sign < 0 ? 1 - u : u, 1.6)));
     }
   }
-  const merged = mergeGeometries(pieces);
+  const merged = mergeAll(pieces);
   for (const piece of pieces) piece.dispose();
   if (!merged) return;
   const material = new MeshBasicMaterial({
@@ -124,7 +123,7 @@ export function buildEdgeWear(ctx: BuildContext): void {
       pieces.push(paint(ribbon, WEAR_COLOR, (u) => WEAR_ALPHA * Math.pow(sign < 0 ? u : 1 - u, 1.4)));
     }
   }
-  const merged = mergeGeometries(pieces);
+  const merged = mergeAll(pieces);
   for (const piece of pieces) piece.dispose();
   if (!merged) return;
   const material = new MeshLambertMaterial({ vertexColors: true, transparent: true, depthWrite: false });

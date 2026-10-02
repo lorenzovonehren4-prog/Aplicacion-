@@ -30,8 +30,7 @@ import {
   type BufferGeometry,
   type Texture,
 } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addChunkedInstances, addChunkedLodInstances, addMerged, addMesh, type BuildContext, type InstanceItem } from './context';
+import { addChunkedInstances, addChunkedLodInstances, addMerged, addMesh, mergeAll, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
 import { createDistanceBoards, createLeafAtlas, createSpectator, createWaterNormals, createWindows } from './textures';
 import { createTreeDepthMaterial, createTreeMaterial, treeSpecies } from './trees';
@@ -301,8 +300,8 @@ export function buildGrandstands(ctx: BuildContext): StandZone[] {
     }
   });
 
-  const standMerged = mergeGeometries(steps);
-  const roofMerged = mergeGeometries(roofs);
+  const standMerged = mergeAll(steps);
+  const roofMerged = mergeAll(roofs);
   for (const piece of [...steps, ...roofs]) piece.dispose();
   if (standMerged) {
     addMesh(ctx, standMerged, new MeshStandardMaterial({ vertexColors: true, roughness: 0.8 }), {
@@ -563,8 +562,8 @@ export function buildDistanceBoards(ctx: BuildContext): void {
       posts.push(post);
     });
   }
-  const mergedBoards = mergeGeometries(boards);
-  const mergedPosts = mergeGeometries(posts);
+  const mergedBoards = mergeAll(boards);
+  const mergedPosts = mergeAll(posts);
   for (const piece of [...boards, ...posts]) piece.dispose();
   if (mergedBoards) {
     const texture = ctx.own.own(createDistanceBoards(ctx.anisotropy));

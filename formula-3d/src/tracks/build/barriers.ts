@@ -19,8 +19,7 @@ import {
   Vector3,
   type BufferGeometry,
 } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addChunkedInstances, addMesh, type BuildContext, type InstanceItem } from './context';
+import { addChunkedInstances, addMesh, mergeAll, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, spansWhere, wallSpans, type ProfilePoint } from './ribbon';
 import { createFence, createWall } from './textures';
 
@@ -147,8 +146,8 @@ export function buildWalls(ctx: BuildContext): void {
     }
   }
 
-  const concrete = mergeGeometries(faces.concrete);
-  const top = mergeGeometries(caps);
+  const concrete = mergeAll(faces.concrete);
+  const top = mergeAll(caps);
   for (const piece of [...faces.concrete, ...caps]) piece.dispose();
   if (concrete) {
     const texture = ctx.own.own(createWall(ctx.anisotropy, ctx.textureSize));
@@ -196,7 +195,7 @@ export function buildFences(ctx: BuildContext): void {
     );
     }
   }
-  const fence = mergeGeometries(pieces);
+  const fence = mergeAll(pieces);
   for (const piece of pieces) piece.dispose();
   if (fence) {
     const texture = ctx.own.own(createFence(ctx.anisotropy));

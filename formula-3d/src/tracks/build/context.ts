@@ -24,6 +24,14 @@ export interface BuildContext {
   tickers: Array<(time: number) => void>;
 }
 
+/**
+ * `mergeGeometries` que devuelve `null` con la lista vacía: hay pistas sin
+ * grava, sin carteles o sin tribunas de un tipo (Mónaco no tiene grava).
+ */
+export function mergeAll(geometries: BufferGeometry[]): BufferGeometry | null {
+  return geometries.length > 0 ? mergeGeometries(geometries) : null;
+}
+
 /** Crea una malla, la agrega a la escena y registra geometría y material para liberarlos. */
 export function addMesh(
   ctx: BuildContext,
@@ -67,7 +75,7 @@ export function addMerged(ctx: BuildContext, object: Object3D, name: string): vo
     parts.set(material, entry);
   });
   for (const [material, entry] of parts) {
-    const merged = mergeGeometries(entry.geometries);
+    const merged = mergeAll(entry.geometries);
     for (const geometry of entry.geometries) geometry.dispose();
     if (!merged) continue;
     addMesh(ctx, merged, material, { cast: entry.cast, receive: entry.receive, name });

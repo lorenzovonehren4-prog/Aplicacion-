@@ -6,7 +6,7 @@
  * Recorre: splash → menú → Ajustes (cambia calidad y volumen) → vuelve →
  * recarga → comprueba que lo guardado sigue ahí → Práctica libre (carga del
  * circuito, presentación, manejo, cambio de cámara, pausa) → sale al menú →
- * Carrera rápida (semáforo, largada, rivales en la torre y el minimapa,
+ * Carrera rápida en Mónaco (semáforo, largada, rivales en la torre y el minimapa,
  * Ajustes → Ayudas desde la pausa). Falla
  * si aparece cualquier error o advertencia en la consola. Guarda capturas en
  * e2e/capturas/.
@@ -230,7 +230,8 @@ async function main() {
     // ─── Carrera rápida: semáforo, largada y pestaña Ayudas desde la pausa ───
     step = 'carrera: semáforo';
     await page.locator('.mtile', { hasText: 'Carrera rápida' }).click();
-    await startFromSelection(page, 'carrera');
+    // Mónaco: urbano entre edificios, sin grava ni pasto (otro camino de construcción).
+    await startFromSelection(page, 'carrera', 'Mónaco');
     await page.waitForSelector('.screen--race .loading', { state: 'attached' });
     await waitForScreen(page, 'race');
     await page.waitForSelector('.loading', { state: 'detached' });
@@ -305,17 +306,19 @@ async function main() {
 
 /**
  * Selección de carrera: arranca con el circuito guardado enfocado; Enter pasa
- * al botón de salida y Enter de nuevo va a pista.
+ * al botón de salida y Enter de nuevo va a pista. Con `track` (nombre corto
+ * de la tarjeta) se elige ese circuito con un clic.
  */
-async function startFromSelection(page, label) {
+async function startFromSelection(page, label, track) {
   await waitForScreen(page, 'rsel');
   const maps = await page.locator('.tmap path').count();
   if (maps < 3) throw new Error(`La selección de ${label} no dibujó el mapa del circuito.`);
   await page.screenshot({ path: `${shots}seleccion-${label}.png` });
-  await page.keyboard.press('Enter');
+  if (track) await page.locator('.tcard', { hasText: track }).click();
+  else await page.keyboard.press('Enter');
   await page.waitForSelector('.rsel__start.is-focused');
   await page.keyboard.press('Enter');
-  log(`selección de ${label}: circuito y opciones → a pista`);
+  log(`selección de ${label}: ${track ?? 'circuito guardado'} y opciones → a pista`);
 }
 
 /** Espera a que `id` sea la pantalla de arriba y la transición haya terminado. */
