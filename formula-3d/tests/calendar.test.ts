@@ -33,6 +33,19 @@ describe('calendario de 24 circuitos', () => {
     }
   }, 60000);
 
+  it('la trazada nunca dobla más cerrado de lo que gira el auto (giro mínimo ≈ 9,6 m)', () => {
+    const wheelbase = F1_SPEC.cgToFront + F1_SPEC.cgToRear;
+    const turning = wheelbase / Math.tan(F1_SPEC.maxSteerLow);
+    expect(turning).toBeGreaterThan(9);
+    for (const def of TRACKS) {
+      const curvature = Track.load(def).racingLine.curvature;
+      let tightest = 0;
+      for (const k of curvature) tightest = Math.max(tightest, Math.abs(k));
+      // Con margen sobre el giro del auto (antes, Mónaco pedía 2,6 m en la horquilla).
+      expect(1 / tightest, def.id).toBeGreaterThan(turning + 1);
+    }
+  }, 60000);
+
   it('el piloto automático da una vuelta válida en todos', () => {
     for (const def of TRACKS) {
       const track = Track.load(def);

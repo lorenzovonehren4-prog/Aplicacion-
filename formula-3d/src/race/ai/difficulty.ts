@@ -46,14 +46,22 @@ const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
  * @param driver talento y agresividad propios
  * @param random 0–1, para la variación de la reacción (inyectable en las pruebas)
  */
+/** Ritmo a partir del cual cada punto de dificultad suma la mitad (fracción de la trazada ideal). */
+const PACE_KNEE = 0.85;
+
 export function botParams(value: number, driver: Pick<DriverDef, 'skill' | 'aggression'>, random = 0.5): BotParams {
   const t = Math.min(1, Math.max(0, value / 100));
   // El talento separa a los pilotos ±1,5 % alrededor del ritmo de la dificultad.
   const talent = (driver.skill - 0.84) * 0.12;
+  // Ritmo en curva: en los niveles fáciles bastante por debajo de la trazada
+  // ideal (los trazados reales tienen curvas más exigentes), y sube rápido
+  // hasta Profesional. Pasado `PACE_KNEE` el auto ya casi no tiene margen: el
+  // ritmo sigue subiendo a la mitad (Leyenda ≈ 0,89–0,90). Más rápido, en las
+  // curvas largas y los cambios de dirección se abría y perdía más de lo que
+  // ganaba (con las 24 pistas, Leyenda daba vueltas más lentas que Profesional).
+  const raw = lerp(0.7, 0.955, t * t * 0.4 + t * 0.6) + talent;
   return {
-    // Ritmo en curva: en los niveles fáciles bastante por debajo de la trazada
-    // ideal (los trazados reales tienen curvas más exigentes), sube rápido cerca de Leyenda.
-    pace: Math.min(0.97, lerp(0.7, 0.955, t * t * 0.4 + t * 0.6) + talent),
+    pace: Math.min(0.97, raw <= PACE_KNEE ? raw : PACE_KNEE + (raw - PACE_KNEE) * 0.5),
     topThrottle: Math.min(1, lerp(0.86, 1, t) + talent * 0.5),
     braking: Math.min(0.95, lerp(0.58, 0.92, t) + talent),
     aggression: Math.min(1, Math.max(0, lerp(0.15, 0.75, t) * 0.5 + driver.aggression * 0.5)),

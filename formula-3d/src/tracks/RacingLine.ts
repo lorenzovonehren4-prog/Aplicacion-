@@ -10,6 +10,12 @@
  * (pianos incluidos). Resolver primero con puntos cada 32 m y refinar a 16,
  * 8 y 4 m hace que las curvas largas converjan en pocas iteraciones.
  *
+ * Cada segunda diferencia se pesa con 1/Δ³ (Δ = separación real de los puntos
+ * sobre la trazada): así la suma mide ∫κ² ds de verdad. Sin el peso, por
+ * dentro de una horquilla los puntos se juntan, sus segundas diferencias se
+ * achican y la línea "abrazaba" el borde interior con radios de 3–7 m, que el
+ * auto (giro mínimo ≈ 9,6 m) no puede seguir: los bots se abrían y se salían.
+ *
  * Después se calcula su curvatura, su perfil de velocidad y el color "fijo"
  * de cada tramo: verde (acelerar), amarillo (levantar / al límite) y rojo
  * (frenar).
@@ -36,6 +42,15 @@ const LEVELS: ReadonlyArray<readonly [number, number]> = [
   [8, 300],
   [4, 250],
 ];
+/**
+ * Radio mínimo de la trazada (m). El auto gira, a fondo de volante, en
+ * ≈ 9,6 m: la línea nunca pide algo más cerrado (con margen). En una
+ * horquilla como la de Mónaco la trazada se abre en vez de pegarse al borde
+ * interior.
+ */
+const MIN_RADIUS = 11;
+/** Cuánto se cierra el lado de adentro en cada vuelta del ajuste de radio (m). */
+const RADIUS_STEP = 0.15;
 /** Frenada fuerte (m/s²): rojo. */
 const HARD_BRAKING = 11;
 /** Desaceleración leve (m/s²): amarillo (levantar el pie). */
@@ -87,23 +102,107 @@ function buildFrame(geometry: TrackGeometry, trackside: Trackside, spacing: numb
 
 /** Descenso por coordenadas del funcional de curvatura sobre un nivel. */
 function relax(frame: Frame, d: Float64Array, passes: number): void {
-  const { n, cx, cz, nx, nz, lo, hi } = frame;
-  const px = (k: number): number => {
-    const j = ((k % n) + n) % n;
-    return (cx[j] ?? 0) + (d[j] ?? 0) * (nx[j] ?? 0);
-  };
-  const pz = (k: number): number => {
-    const j = ((k % n) + n) % n;
-    return (cz[j] ?? 0) + (d[j] ?? 0) * (nz[j] ?? 0);
+  const { n, step, cx, cz, nx, nz, lo, hi } = frame;
+  // Posiciones de los puntos (se actualiza sólo el que cambia).
+  const px = new Float64Array(n);
+  const pz = new Float64Array(n);
+  for (let k = 0; k < n; k++) {
+    px[k] = (cx[k] ?? 0) + (d[k] ?? 0) * (nx[k] ?? 0);
+    pz[k] = (cz[k] ?? 0) + (d[k] ?? 0) * (nz[k] ?? 0);
+  }
+  // Peso de la segunda diferencia centrada en j: 1/Δ³ (relativo al paso del nivel).
+  const weight = new Float64Array(n);
+  const minSpacing = step * 0.2;
+  const updateWeights = (): void => {
+    for (let j = 0; j < n; j++) {
+      const a = j === 0 ? n - 1 : j - 1;
+      const b = j === n - 1 ? 0 : j + 1;
+      const before = Math.hypot((px[j] ?? 0) - (px[a] ?? 0), (pz[j] ?? 0) - (pz[a] ?? 0));
+      const after = Math.hypot((px[b] ?? 0) - (px[j] ?? 0), (pz[b] ?? 0) - (pz[j] ?? 0));
+      const spacing = Math.max(minSpacing, (before + after) / 2) / step;
+      weight[j] = 1 / (spacing * spacing * spacing);
+    }
   };
   for (let pass = 0; pass < passes; pass++) {
+    // Los pesos cambian poco entre pasadas: se recalculan cada 8.
+    if (pass % 8 === 0) updateWeights();
     for (let k = 0; k < n; k++) {
-      // Mínimo con los vecinos fijos: (4·(P₋₁ + P₊₁) − (P₋₂ + P₊₂)) / 6.
-      const tx = (4 * (px(k - 1) + px(k + 1)) - (px(k - 2) + px(k + 2))) / 6;
-      const tz = (4 * (pz(k - 1) + pz(k + 1)) - (pz(k - 2) + pz(k + 2))) / 6;
-      const along = (tx - (cx[k] ?? 0)) * (nx[k] ?? 0) + (tz - (cz[k] ?? 0)) * (nz[k] ?? 0);
-      d[k] = Math.max(lo[k] ?? 0, Math.min(hi[k] ?? 0, along));
+      const m2 = (k - 2 + n) % n;
+      const m1 = (k - 1 + n) % n;
+      const p1 = (k + 1) % n;
+      const p2 = (k + 2) % n;
+      // Mínimo con los vecinos fijos de Σ wⱼ·|Pⱼ₋₁ − 2Pⱼ + Pⱼ₊₁|²
+      // (con pesos iguales: (4·(P₋₁ + P₊₁) − (P₋₂ + P₊₂)) / 6).
+      const wa = weight[m1] ?? 1;
+      const wb = weight[k] ?? 1;
+      const wc = weight[p1] ?? 1;
+      const total = wa + 4 * wb + wc;
+      const xm1 = px[m1] ?? 0;
+      const xp1 = px[p1] ?? 0;
+      const zm1 = pz[m1] ?? 0;
+      const zp1 = pz[p1] ?? 0;
+      const tx = (wa * (2 * xm1 - (px[m2] ?? 0)) + 2 * wb * (xm1 + xp1) + wc * (2 * xp1 - (px[p2] ?? 0))) / total;
+      const tz = (wa * (2 * zm1 - (pz[m2] ?? 0)) + 2 * wb * (zm1 + zp1) + wc * (2 * zp1 - (pz[p2] ?? 0))) / total;
+      const ox = cx[k] ?? 0;
+      const oz = cz[k] ?? 0;
+      const ux = nx[k] ?? 0;
+      const uz = nz[k] ?? 0;
+      const value = Math.max(lo[k] ?? 0, Math.min(hi[k] ?? 0, (tx - ox) * ux + (tz - oz) * uz));
+      d[k] = value;
+      px[k] = ox + value * ux;
+      pz[k] = oz + value * uz;
     }
+  }
+}
+
+/**
+ * Curvatura con signo en el punto k (+ = derecha), por el círculo que pasa por
+ * k − 1, k y k + 1.
+ */
+function curvatureAt(frame: Frame, d: Float64Array, k: number): number {
+  const { n, cx, cz, nx, nz } = frame;
+  const at = (j: number): [number, number] => {
+    const i = ((j % n) + n) % n;
+    return [(cx[i] ?? 0) + (d[i] ?? 0) * (nx[i] ?? 0), (cz[i] ?? 0) + (d[i] ?? 0) * (nz[i] ?? 0)];
+  };
+  const [ax, az] = at(k - 1);
+  const [bx, bz] = at(k);
+  const [qx, qz] = at(k + 1);
+  const ux = bx - ax;
+  const uz = bz - az;
+  const vx = qx - bx;
+  const vz = qz - bz;
+  const cross = ux * vz - uz * vx;
+  const chord = Math.hypot(qx - ax, qz - az) * Math.hypot(ux, uz) * Math.hypot(vx, vz);
+  return chord > 1e-9 ? (2 * cross) / chord : 0;
+}
+
+/**
+ * Abre la trazada donde dobla más cerrado que `MIN_RADIUS`: en esos puntos (y
+ * sus vecinos) se corre de a poco el límite del lado de adentro y se vuelve a
+ * relajar, hasta que ningún punto pida más de lo que el auto puede girar.
+ */
+function limitRadius(frame: Frame, d: Float64Array): void {
+  const { n, lo, hi } = frame;
+  const cap = 1 / MIN_RADIUS;
+  for (let round = 0; round < 120; round++) {
+    let tight = 0;
+    for (let k = 0; k < n; k++) {
+      const kappa = curvatureAt(frame, d, k);
+      if (Math.abs(kappa) <= cap) continue;
+      tight++;
+      for (let j = k - 2; j <= k + 2; j++) {
+        const i = ((j % n) + n) % n;
+        const low = lo[i] ?? 0;
+        const high = hi[i] ?? 0;
+        const now = d[i] ?? 0;
+        // Curva a la derecha: adentro es +d (se baja el tope); a la izquierda, al revés.
+        if (kappa > 0) hi[i] = Math.max(low, Math.min(high, now - RADIUS_STEP));
+        else lo[i] = Math.min(high, Math.max(low, now + RADIUS_STEP));
+      }
+    }
+    if (tight === 0) return;
+    relax(frame, d, 24);
   }
 }
 
@@ -158,6 +257,7 @@ export class RacingLine {
       previous = { d, step: frame.step };
     }
     if (!frame) throw new Error('La trazada necesita al menos un nivel de resolución.');
+    limitRadius(frame, d);
 
     const n = frame.n;
     this.count = n;

@@ -44,10 +44,52 @@ const STUCK_TIME = 5;
 const MISTAKE_TIME = 2.2;
 /** Prudencia de la primera vuelta: segundos tras la largada con frenadas más largas y sin maniobras al frenar. */
 const START_CAUTION = 30;
+/** Ritmo en curva durante la largada (fracción del propio). */
+const START_PACE = 0.94;
 /** Por debajo de esta velocidad (m/s) nadie cede el paso a nadie. */
 const YIELD_MIN_SPEED = 12;
 /** Anticipación del movimiento lateral de los demás (s). */
 const LATERAL_LOOKAHEAD = 0.45;
+/**
+ * Se está quedando sin pista: pasado de su trayectoria hacia el borde (m) con
+ * menos de esto de asfalto (m) y yéndose hacia afuera (m/s). Levanta el pie
+ * (pasa peso adelante y recupera agarre), como un piloto a la salida de una
+ * curva rápida.
+ */
+const RUNOUT_OVERSHOOT = 0.45;
+const RUNOUT_ROOM = 2.4;
+const RUNOUT_DRIFT = 0.4;
+/** Fuera del asfalto (más de 1,5 m) tanto tiempo (s): vuelve a la trazada como uno trabado. */
+const OFF_TRACK_TIME = 4;
+/**
+ * Memoria de la pista: largo de cada tramo (m), cuánto antes del problema se
+ * va con más cuidado (m), cuánto ritmo se resigna por cada susto, el mínimo y
+ * cada cuánto puede aprender un mismo bot (s).
+ */
+const LESSON_BIN = 20;
+const LESSON_REACH = 140;
+const LESSON_STEP = 0.025;
+const LESSON_MIN = 0.86;
+const LESSON_COOLDOWN = 2.5;
+/** Ángulo de deriva (rad) que ya es un trompo: también enseña. */
+const SPIN_ANGLE = 0.32;
+
+/**
+ * Lo que los bots aprendieron de cada pista cargada: un factor de ritmo por
+ * tramo (1 = al ritmo de su nivel). Lo comparten todos los bots de la sesión:
+ * si uno se abre en una curva, el resto llega a ella con un poco más de
+ * margen, como pilotos que aprenden el circuito. Una pista nueva empieza de cero.
+ */
+const lessons = new WeakMap<Track, Float32Array>();
+
+function lessonsFor(track: Track): Float32Array {
+  let table = lessons.get(track);
+  if (!table) {
+    table = new Float32Array(Math.ceil(track.geometry.length / LESSON_BIN)).fill(1);
+    lessons.set(track, table);
+  }
+  return table;
+}
 
 export class BotDriver {
   /** Pide volver a pista (quedó detenido o atascado). */
@@ -66,12 +108,16 @@ export class BotDriver {
   private brake = 0;
   private launchWait: number;
   private stuckTime = 0;
+  private offTrackTime = 0;
   private mistake = 0;
   private wasBraking = false;
   /** Segundos desde la largada. */
   private sinceStart = 0;
   private readonly brakingZones: number;
   private readonly target = { x: 0, z: 0 };
+  /** Factor de ritmo aprendido por tramo (compartido con los otros bots de la pista). */
+  private readonly caution: Float32Array;
+  private lessonCooldown = 0;
 
   /**
    * @param random generador 0–1 (inyectable para que las pruebas sean repetibles)
@@ -90,6 +136,7 @@ export class BotDriver {
       if ((braking[k] ?? 0) > 0 && (braking[(k - 1 + braking.length) % braking.length] ?? 0) === 0) zones++;
     }
     this.brakingZones = Math.max(1, zones);
+    this.caution = lessonsFor(track);
   }
 
   /** Todavía espera su reacción a la largada (el auto sigue retenido). */
@@ -113,6 +160,7 @@ export class BotDriver {
     this.brake = 0;
     this.launchWait = onGrid ? this.params.reaction : 0;
     this.stuckTime = 0;
+    this.offTrackTime = 0;
     this.mistake = 0;
     this.wasBraking = false;
     this.sinceStart = onGrid ? 0 : START_CAUTION;
@@ -159,7 +207,8 @@ export class BotDriver {
     this.wasBraking = braking;
     this.mistake = Math.max(0, this.mistake - dt);
     const erring = this.mistake > 0;
-    const pace = erring ? Math.min(1.02, p.pace * 1.025) : p.pace;
+    // En la largada (autos de a dos y de a tres) se llega a las primeras curvas con margen.
+    const pace = erring ? Math.min(1.02, p.pace * 1.025) : p.pace * (cautious ? START_PACE : 1);
     const brakingFraction = erring ? Math.min(1.05, p.braking * 1.12) : p.braking * (cautious ? 0.88 : 1);
     // Curva que viene (la más cerrada de los próximos 120 m; + = derecha).
     let corner = 0;
@@ -186,6 +235,11 @@ export class BotDriver {
     let alongsideAhead: Vehicle | null = null;
     // Auto por dentro de la próxima curva con el que voy a la par: se le deja el lugar.
     let outsideOf: Vehicle | null = null;
+    // Hay un auto en el carril al que pensaba volver (pero no en el actual).
+    let mergeBlocked = false;
+    // Los autos que más lugar me quitan a cada lado.
+    let leftSqueezer: Vehicle | null = null;
+    let rightSqueezer: Vehicle | null = null;
     for (const other of others) {
       if (other === car) continue;
       const ds = g.deltaS(s, other.projection.s);
@@ -193,13 +247,30 @@ export class BotDriver {
       // Lado a lado (o a punto de estarlo): no cerrarse sobre él. Un auto justo
       // delante o detrás en la misma línea no cuenta (a ése se lo sigue).
       const overlap = Math.abs(ds) < CAR_LENGTH + 0.5;
-      const near = ds > -(CAR_LENGTH + 2) && ds < CAR_LENGTH + 3;
+      // Un auto que viene detrás (sin llegar a la mitad de mi auto) no me quita
+      // lugar: es él quien debe esquivarme. Antes el puntero le cedía la trazada
+      // al que lo seguía y se abría en la primera curva.
+      const near = ds > -CAR_LENGTH * 0.75 && ds < CAR_LENGTH + 3;
       if (near && (overlap || Math.abs(od - d) > 1.4)) {
         // Con su movimiento lateral: si viene hacia mí, se le deja lugar antes.
         const drift = lateralSpeed(other, g) * LATERAL_LOOKAHEAD;
-        if (od >= d) maxD = Math.min(maxD, Math.min(od, od + drift) - SIDE_CLEARANCE);
-        else minD = Math.max(minD, Math.max(od, od + drift) + SIDE_CLEARANCE);
-        if (ds > 0 && Math.abs(od - d) >= BLOCKING_WIDTH * 0.8) alongsideAhead = other;
+        if (od >= d) {
+          const limit = Math.min(od, od + drift) - SIDE_CLEARANCE;
+          if (limit < maxD) {
+            maxD = limit;
+            rightSqueezer = other;
+          }
+        } else {
+          const limit = Math.max(od, od + drift) + SIDE_CLEARANCE;
+          if (limit > minD) {
+            minD = limit;
+            leftSqueezer = other;
+          }
+        }
+        // Al costado y a la par o adelante: si no queda lugar, el que cede soy yo.
+        if (ds > -2 && Math.abs(od - d) >= BLOCKING_WIDTH * 0.8 && (!alongsideAhead || ds > g.deltaS(s, alongsideAhead.projection.s))) {
+          alongsideAhead = other;
+        }
         // Por fuera de la curva que viene y sin ir claramente adelante: cede.
         const outside = cornerSide !== 0 && Math.sign(od - d) === cornerSide;
         if (overlap && outside && ds > -3) outsideOf = other;
@@ -213,9 +284,13 @@ export class BotDriver {
         const lineThere = line.offsetAt(other.projection.s);
         const now = Math.min(Math.abs(od - (lineThere + this.lane)), Math.abs(theirs - (lineThere + this.lane)));
         const planned = Math.min(Math.abs(od - (lineThere + this.laneTarget)), Math.abs(theirs - (lineThere + this.laneTarget)));
-        if (Math.min(now, planned) < BLOCKING_WIDTH && gap < blockerGap) {
+        if (now < BLOCKING_WIDTH && gap < blockerGap) {
           blocker = other;
           blockerGap = gap;
+        } else if (planned < BLOCKING_WIDTH && gap < 40) {
+          // Sólo estorba en el carril al que iba a volver: se queda en el suyo
+          // (frenar a fondo por él, doblando rápido, lo hacía trompear).
+          mergeBlocked = true;
         }
       } else if (ds < 0 && ds > -30 && -ds < attackerGap) {
         attacker = other;
@@ -276,16 +351,23 @@ export class BotDriver {
       const side = Math.sign(attacker.projection.d - d) || 1;
       this.laneTarget = this.lane + side * 1.4;
       this.defended = true;
+    } else if (mergeBlocked && this.passSide === 0) {
+      this.laneTarget = this.lane;
     } else if (!attacker || attackerGap > 25) {
       this.defended = false;
       // Sin nadie cerca, de vuelta a la trazada de a poco.
       this.laneTarget *= Math.max(0, 1 - dt * 0.6);
     }
-    // Límites: el asfalto y los autos que tiene al lado.
+    // Límites: el asfalto y los autos que tiene al lado. Apretado entre dos
+    // autos (o un auto y el borde), el medio, pero nunca fuera del asfalto: en
+    // la largada el de afuera se iba de la pista empujado por el resto.
+    const edgeLow = -halfWidth + EDGE_MARGIN - lineHere;
+    const edgeHigh = halfWidth - EDGE_MARGIN - lineHere;
     const clampLane = (value: number): number => {
       const low = minD - lineHere;
       const high = maxD - lineHere;
-      return low > high ? (low + high) / 2 : Math.max(low, Math.min(high, value));
+      const lane = low > high ? (low + high) / 2 : Math.max(low, Math.min(high, value));
+      return Math.max(edgeLow, Math.min(edgeHigh, lane));
     };
     this.laneTarget = clampLane(this.laneTarget);
     const step = LANE_RATE * dt;
@@ -301,7 +383,14 @@ export class BotDriver {
     const lateralLimit = halfWidth - EDGE_MARGIN * 0.6;
     const low = Math.max(-lateralLimit, minD);
     const high = Math.min(lateralLimit, maxD);
-    const aim = low > high ? (low + high) / 2 : Math.max(low, Math.min(high, aheadLine + this.lane));
+    const wantedAim = Math.max(-lateralLimit, Math.min(lateralLimit, aheadLine + this.lane));
+    const aim = Math.max(-lateralLimit, Math.min(lateralLimit, low > high ? (low + high) / 2 : Math.max(low, Math.min(high, wantedAim))));
+    // Encajonado: un auto a la par o adelante no lo deja ir por donde la curva
+    // pide. En vez de abrirse (y salirse), levanta y se acomoda detrás de él.
+    const boxer = wantedAim > aim + 2 ? rightSqueezer : wantedAim < aim - 2 ? leftSqueezer : null;
+    if (boxer && g.deltaS(s, boxer.projection.s) > -2 && boxer.vx > YIELD_MIN_SPEED && speed > YIELD_MIN_SPEED) {
+      targetSpeed = Math.min(targetSpeed, Math.max(0, boxer.vx - 2));
+    }
     g.pointAt(s + lookahead, aim, this.target);
     const dx = this.target.x - car.x;
     const dz = this.target.z - car.z;
@@ -322,23 +411,54 @@ export class BotDriver {
     const maxSteer = spec.maxSteerHigh + (spec.maxSteerLow - spec.maxSteerHigh) / (1 + (speed / spec.steerSpeedFalloff) ** 2);
     out.steer = Math.max(-1, Math.min(1, -wheelAngle / maxSteer));
 
+    // ─── Se queda sin pista: levanta (y si se pasó mucho, frena apenas) ───
+    const room = halfWidth - Math.abs(d);
+    const edgeSide = Math.sign(d) || 1;
+    const overshoot = edgeSide * (d - (lineHere + this.lane));
+    const drift = edgeSide * lateralSpeed(car, g);
+    if (speed > 15 && room < RUNOUT_ROOM && overshoot > RUNOUT_OVERSHOOT && drift > RUNOUT_DRIFT) {
+      targetSpeed = Math.min(targetSpeed, speed - (overshoot > 1.2 ? 1.2 : 0.5));
+    }
+    // Un susto (afuera del asfalto o muy pasado hacia el borde) sin haberlo
+    // buscado: la próxima vez se llega a este tramo con más margen.
+    this.lessonCooldown = Math.max(0, this.lessonCooldown - dt);
+    const slipNow = speed > 5 ? Math.atan2(car.vy, Math.max(1, car.vx)) : 0;
+    const spinning = speed > 10 && Math.abs(slipNow) > SPIN_ANGLE;
+    const scare = spinning || room < -0.5 || (overshoot > 1.2 && room < 0.8 && drift > RUNOUT_DRIFT);
+    if (scare && !erring && !cautious && speed > 10 && this.lessonCooldown === 0) {
+      this.learn(s);
+      this.lessonCooldown = LESSON_COOLDOWN;
+    }
+
     // ─── Pedales ───
     const error = targetSpeed - speed;
     // Deslizando: se levanta el pie (acelerar en pleno trompo lo empeora).
-    const sliding = Math.abs(slip) > SLIDE_ANGLE || car.telemetry.slide > 0.5;
+    // Casi detenido (en el pasto, después de un trompo) no hay deslizamiento que
+    // cuidar: con el acelerador limitado no salía nunca del pasto.
+    const sliding = speed > 5 && (Math.abs(slip) > SLIDE_ANGLE || car.telemetry.slide > 0.5);
     const throttleCap = sliding ? 0.25 : p.topThrottle;
     const wanted = error > 0 ? Math.min(throttleCap, error * 0.6) : 0;
     this.throttle = Math.min(wanted, this.throttle + dt / THROTTLE_RISE);
     out.throttle = this.throttle;
-    // Freno progresivo, y menos cuanto más dobla (frenar a fondo girando hace trompear).
-    const brakeWanted = error < -0.6 ? Math.min(1, -error / 5) * (1 - 0.45 * Math.abs(out.steer)) : 0;
+    // Freno progresivo, y sólo con el agarre que deja la curva (elipse de
+    // fricción): frenar a fondo doblando rápido hace trompear, y en el tráfico
+    // de la largada varios se iban así en la primera curva.
+    const bend = Math.abs(line.curvature[line.indexAt(s)] ?? 0);
+    const lateralUse = Math.min(1, (speed * speed * bend) / this.lateralGripAt(speed));
+    const brakeRoom = Math.sqrt(Math.max(0.2, 1 - lateralUse * lateralUse));
+    const brakeWanted = error < -0.6 ? Math.min(1, -error / 5) * Math.min(1 - 0.45 * Math.abs(out.steer), brakeRoom) : 0;
     const brakeStep = dt * (brakeWanted > this.brake ? BRAKE_RISE : BRAKE_FALL);
     this.brake += Math.max(-brakeStep, Math.min(brakeStep, brakeWanted - this.brake));
     out.brake = sliding ? Math.min(this.brake, 0.3) : this.brake;
 
-    // ─── ¿Atascado? (contra un muro o en la grava) ───
+    // ─── ¿Atascado? (contra un muro, en la grava o sin poder volver al asfalto) ───
     this.stuckTime = speed < 2 ? this.stuckTime + dt : 0;
-    if (this.stuckTime > STUCK_TIME) this.needsReset = true;
+    this.offTrackTime = room < -1.5 ? this.offTrackTime + dt : Math.max(0, this.offTrackTime - dt * 2);
+    if (!this.needsReset && (this.stuckTime > STUCK_TIME || this.offTrackTime > OFF_TRACK_TIME)) {
+      this.needsReset = true;
+      // Lo que lo dejó afuera pasó un poco antes: ahí se aprende el doble.
+      if (!erring) for (let back = 0; back <= LESSON_BIN * 4; back += LESSON_BIN * 2) this.learn(s - back);
+    }
     return out;
   }
 
@@ -346,6 +466,7 @@ export class BotDriver {
   recovered(): void {
     this.needsReset = false;
     this.stuckTime = 0;
+    this.offTrackTime = 0;
     this.lane = 0;
     this.laneTarget = 0;
     this.passSide = 0;
@@ -363,12 +484,35 @@ export class BotDriver {
     const windowLength = 30 + (speed * speed) / (2 * 22);
     let target = Infinity;
     for (let ahead = 0; ahead <= windowLength; ahead += 5) {
-      const reference = line.speedAt(s + ahead) * pace;
+      const reference = line.speedAt(s + ahead) * pace * this.cautionAt(s + ahead);
       const decel = brakingFraction * this.decelAt(Math.sqrt((reference * reference + speed * speed) / 2));
       const allowed = Math.sqrt(reference * reference + 2 * decel * ahead);
       if (allowed < target) target = allowed;
     }
     return target;
+  }
+
+  /** Factor aprendido en la posición s. */
+  private cautionAt(s: number): number {
+    const bins = this.caution.length;
+    const bin = Math.floor(this.track.geometry.wrapS(s) / LESSON_BIN) % bins;
+    return this.caution[bin] ?? 1;
+  }
+
+  /** Resigna un poco de ritmo en los tramos que llevan hasta s (más cerca del problema, más). */
+  private learn(s: number): void {
+    const bins = this.caution.length;
+    for (let back = 0; back <= LESSON_REACH; back += LESSON_BIN) {
+      const bin = (((Math.floor(this.track.geometry.wrapS(s - back) / LESSON_BIN)) % bins) + bins) % bins;
+      const weight = 1 - (0.5 * back) / LESSON_REACH;
+      this.caution[bin] = Math.max(LESSON_MIN, (this.caution[bin] ?? 1) - LESSON_STEP * weight);
+    }
+  }
+
+  /** Aceleración lateral disponible (m/s²) a una velocidad (con la carga aerodinámica). */
+  private lateralGripAt(speed: number): number {
+    const m = this.model;
+    return Math.max(1, m.grip * (m.gravity + m.downforcePerMass * speed * speed));
   }
 
   /** Frenada disponible (m/s²) a una velocidad: el agarre crece con la carga aerodinámica. */
