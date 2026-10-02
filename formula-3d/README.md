@@ -64,7 +64,10 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.0.0: las 24 pistas del calendario 2026 con su trazado real (de
+Versión 2.1.0: la trazada ideal ya nunca pide curvas más cerradas de lo que
+gira el auto (la horquilla de Mónaco se toma a 49 km/h, como en la
+realidad) y los bots aprenden cada pista: en Leyenda casi no se salen,
+largan limpio y no quedan atascados. Desde la 2.0.0: las 24 pistas del calendario 2026 con su trazado real (de
 Melbourne a Yas Marina, con las urbanas entre muros y edificios, el cruce
 de Suzuka y el desierto de Sakhir), cada una clasificada como Fácil, Media o
 Difícil después de analizar su trazado y medirla con el propio juego, y 5

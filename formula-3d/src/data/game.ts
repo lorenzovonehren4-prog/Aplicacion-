@@ -3,7 +3,7 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '2.0.0';
+export const GAME_VERSION = '2.1.0';
 
 export type MenuItemId =
   | 'practice'

@@ -1367,6 +1367,61 @@ que ser moderno, con animaciones y fluido")
       dificultad, el mapa del circuito y una fila de datos (dificultad,
       longitud, curvas, DRS, récord, tu récord).
 
+### Versión 2.1 — Trazada posible y bots que no se salen ✅
+
+Pedido: "mejora lo que puedas mejorar, pero que no se bugee y el juego vaya
+de la mejor manera". Se corrieron carreras simuladas de 12 autos en las 24
+pistas y en tres dificultades, y un bot solo a ritmo de Leyenda, para medir
+salidas de pista, rescates y tiempos.
+
+**Lo que apareció**
+
+- En Leyenda los autos quedaban hasta 28 s fuera de la pista y, solos,
+  daban vueltas **más lentas que en Profesional** de tanto salirse.
+- La trazada ideal pedía radios imposibles para el auto (giro mínimo
+  ≈ 9,6 m): Mónaco 2,6 m, Shanghái 4,9, Spa 6,5, Sakhir 6,8, Austin 7,0,
+  México 8,0. Los bots (y quien siguiera la línea de ayuda) se abrían.
+- En la largada de Suzuka medio pelotón se iba en la primera curva, en las
+  tres dificultades.
+- Un bot que hacía un trompo quedaba en el pasto con el acelerador limitado
+  y no salía; en Melbourne volvía a trompear en el mismo lugar cada vuelta.
+
+**Lo que se cambió**
+
+- [x] **Trazada**: cada término del funcional de curvatura se pesa con 1/Δ³
+      (Δ = separación real entre puntos), así mide ∫κ² ds de verdad; antes,
+      por dentro de una horquilla los puntos se juntaban y la línea
+      "abrazaba" el borde. Después, un ajuste de radio mínimo (11 m) cierra
+      de a poco el lado de adentro donde haga falta y vuelve a relajar. Todas
+      las pistas quedan con radio ≥ 11,3 m; la horquilla de Mónaco se toma a
+      49 km/h (como en la realidad) y las vueltas teóricas bajan 1–2 s. La
+      relajación usa arreglos en vez de clausuras: las 24 pistas cargan en
+      5,5 s en total (antes 5,8 s), con el mismo resultado.
+- [x] **Ritmo de Leyenda**: por encima de 0,85 de la trazada ideal, cada
+      punto de dificultad suma la mitad (Leyenda ≈ 0,89–0,90). Hasta
+      Profesional, igual que antes.
+- [x] **Los bots aprenden la pista**: un susto (salirse más de medio metro,
+      un trompo, pasarse hacia el borde o un rescate) les hace llegar a ese
+      tramo (y los 140 m previos) con un poco más de margen. Lo comparten
+      todos los bots de la sesión. Un bot de Leyenda solo: salidas por vuelta
+      en las 24 pistas 65 / 53 / 38 → 22 / 4 / 0.
+- [x] **Manejo**: levantan cuando se quedan sin pista a la salida; frenan
+      sólo con el agarre que deja la curva (elipse de fricción); llegan a las
+      primeras curvas de la largada con 6 % de margen; casi detenidos
+      aceleran a fondo; 4 s fuera de la pista (o 5 s detenidos) los devuelve
+      a la trazada.
+- [x] **Tráfico**: un auto que viene detrás ya no les quita lugar (el puntero
+      le cedía la trazada al segundo); no frenan a fondo por un auto que sólo
+      está en el carril al que pensaban volver; nunca apuntan fuera del
+      asfalto; encajonados por uno a la par, se acomodan detrás.
+- [x] **Resultado** (24 carreras de 1 vuelta con 12 autos, Leyenda): rescates
+      33 → 11 y peor tiempo fuera de la pista 28 s → 7,5 s. En Profesional
+      13 → 10 y en Amateur 4 → 3.
+- [x] Pruebas nuevas (`tests/bots.test.ts` y `tests/calendar.test.ts`): radio
+      mínimo de la trazada en las 24 pistas, carrera de una vuelta en Leyenda
+      en las 24 (todos terminan, pocos rescates, nadie mucho tiempo afuera) y
+      un bot que en la tercera vuelta ya no se sale.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1457,3 +1512,4 @@ que ser moderno, con animaciones y fluido")
 - **Versión 1.11**: carga más rápida, imagen nítida y diseño de transmisión según referencias (pedido del usuario).
 - **Versión 1.12**: árboles de hojas, sombras de los autos, cabina con espejos, volante y carbono, y autos con alerón, morro y patrocinadores según referencias (pedido del usuario).
 - **Versión 2.0**: las 24 pistas del calendario 2026, análisis y clasificación por dificultad, 5 campeonatos y menú principal nuevo (pedido del usuario).
+- **Versión 2.1**: trazada que el auto puede seguir, bots que aprenden la pista y no se salen, largadas limpias (pedido del usuario).
