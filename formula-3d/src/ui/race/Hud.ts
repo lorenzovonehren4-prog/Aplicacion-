@@ -230,6 +230,10 @@ export class Hud {
   private readonly lastValue = h('span', { class: 'timing__value' });
   private readonly bestValue = h('span', { class: 'timing__value' });
   private readonly pbValue = h('span', { class: 'timing__value' });
+  /** Próxima medalla del circuito (práctica y contrarreloj): nombre y tiempo a bajar. */
+  private readonly medalLabel = h('span', { class: 'timing__label' });
+  private readonly medalValue = h('span', { class: 'timing__value' });
+  private readonly medalRow = h('div', { class: 'timing__row timing__row--medal' }, this.medalLabel, this.medalValue);
   private readonly sectors: HTMLSpanElement[] = [0, 1, 2].map(() => h('span', { class: 'timing__sector' }));
 
   // Tablero.
@@ -313,6 +317,7 @@ export class Hud {
       row('ÚLTIMA', this.lastValue),
       row('MEJOR', this.bestValue),
       row('RÉCORD', this.pbValue),
+      this.medalRow,
     );
 
     const dash = h(
@@ -589,6 +594,18 @@ export class Hud {
 
   setVisible(visible: boolean): void {
     toggle(this.root, 'is-hidden', !visible);
+  }
+
+  /**
+   * Próxima medalla del circuito: "ORO 1:30.100" con el color de la medalla,
+   * o null para ocultar la fila (en carrera, o con el platino ya ganado).
+   */
+  setMedalTarget(target: { label: string; color: string; time: number } | null): void {
+    toggle(this.medalRow, 'is-visible', target !== null);
+    if (!target) return;
+    setText(this.medalLabel, target.label.toUpperCase());
+    setText(this.medalValue, formatLapTime(target.time));
+    this.medalRow.style.setProperty('--tone', target.color);
   }
 
   /** Muestra u oculta el retrovisor (los avisos de arriba se corren para no taparse). */

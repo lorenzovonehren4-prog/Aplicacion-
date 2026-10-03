@@ -13,6 +13,7 @@ import type { Game } from '../../core/Game';
 import { DEFAULT_PILOT_NAME, PROFILE_NAME_MAX_LENGTH } from '../../core/save/schema';
 import { formatInteger, formatLapTime } from '../../core/utils/format';
 import { achievementContext, ACHIEVEMENTS } from '../../progression/career';
+import { MEDAL_INFO, medalFor, medalTally } from '../../progression/medals';
 import { passProgress, SEASON } from '../../progression/seasonPass';
 import { TRACKS } from '../../tracks/registry';
 import { finished } from '../anim/finished';
@@ -109,6 +110,17 @@ export class ProfileScreen extends BaseScreen {
 
   // ─── Panel izquierdo ───────────────────────────────────────────────────
 
+  /** Mejor vuelta de un circuito, con el disco de la medalla ganada. */
+  private recordLap(track: (typeof TRACKS)[number], best: number | null): HTMLElement {
+    const medal = medalFor(track, best);
+    const lap = h('span', { class: `precord__lap${medal ? ' has-medal' : ''}`, text: best ? formatLapTime(best) : '—:——.———' });
+    if (medal) {
+      lap.style.setProperty('--tone', MEDAL_INFO[medal].color);
+      lap.title = `Medalla de ${MEDAL_INFO[medal].label}`;
+    }
+    return lap;
+  }
+
   private buildPanel(): void {
     const data = this.game.save.data;
     const stats = data.stats;
@@ -116,6 +128,7 @@ export class ProfileScreen extends BaseScreen {
     const edit = h('button', { class: 'profile__edit', attrs: { type: 'button' }, text: 'Editar nombre' });
     this.nav.add(edit, { onConfirm: () => this.editName() });
     const pass = passProgress(data.progression.pass.xp);
+    const medals = medalTally(TRACKS, (id) => data.records[id]?.bestLap);
     const cells: ReadonlyArray<readonly [string, string]> = [
       ['Carreras', formatInteger(stats.races)],
       ['Victorias', formatInteger(stats.wins)],
@@ -127,6 +140,8 @@ export class ProfileScreen extends BaseScreen {
       ['Km recorridos', formatInteger(stats.distanceKm)],
       ['Campeonatos', `${formatInteger(stats.championships)} / ${formatInteger(stats.seasons)}`],
       ['Nivel del pase', pass.complete ? 'Completo' : `${pass.tier} / ${SEASON.tiers}`],
+      ['Pistas con medalla', `${medals.bronze} / ${TRACKS.length}`],
+      ['Medallas de oro', `${medals.gold} / ${TRACKS.length}`],
     ];
     const grid = h(
       'div',
@@ -142,7 +157,7 @@ export class ProfileScreen extends BaseScreen {
         { class: 'precord' },
         h('span', { class: 'precord__code', text: track.countryCode }),
         h('span', { class: 'precord__name' }, h('b', { text: track.name }), h('small', { text: track.grandPrix })),
-        h('span', { class: 'precord__lap', text: record?.bestLap ? formatLapTime(record.bestLap) : '—:——.———' }),
+        this.recordLap(track, record?.bestLap ?? null),
         h('span', { class: 'precord__meta', text: `${plural(t?.wins ?? 0, 'victoria', 'victorias')} · ${plural(t?.podiums ?? 0, 'podio', 'podios')}${record?.ghost ? ' · fantasma' : ''}` }),
       );
       records.append(row);

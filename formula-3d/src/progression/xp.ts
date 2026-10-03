@@ -91,6 +91,8 @@ export interface XpLine {
   /** Detalle chico a la derecha de la etiqueta ("×4", "P3"…). */
   detail: string;
   xp: number;
+  /** Color de la marca de la línea (premios: el de la medalla, el del desafío). */
+  color?: string;
 }
 
 export interface XpMultiplier {
@@ -103,11 +105,16 @@ export interface XpAward {
   multipliers: XpMultiplier[];
   /** Suma de las líneas antes de multiplicar. */
   subtotal: number;
+  /** Premios fijos (medallas, desafío del día): se suman después de multiplicar. */
+  bonuses: XpLine[];
   total: number;
 }
 
-/** XP de una sesión, con el detalle línea por línea para la pantalla de resultados. */
-export function computeXp(input: XpInput, labels: { difficulty: string; assists: string }): XpAward {
+/**
+ * XP de una sesión, con el detalle línea por línea para la pantalla de resultados.
+ * @param bonuses premios fijos que no dependen de la dificultad ni de las ayudas
+ */
+export function computeXp(input: XpInput, labels: { difficulty: string; assists: string }, bonuses: XpLine[] = []): XpAward {
   const lines: XpLine[] = [];
   const multipliers: XpMultiplier[] = [];
   if (input.mode === 'race') {
@@ -137,7 +144,8 @@ export function computeXp(input: XpInput, labels: { difficulty: string; assists:
   multipliers.push({ label: `Ayudas ${labels.assists}`, value: input.assistMultiplier });
   const subtotal = lines.reduce((sum, line) => sum + line.xp, 0);
   const factor = multipliers.reduce((product, m) => product * m.value, 1);
-  return { lines, multipliers, subtotal, total: Math.round((subtotal * factor) / 10) * 10 };
+  const extra = bonuses.reduce((sum, line) => sum + line.xp, 0);
+  return { lines, multipliers, subtotal, bonuses, total: Math.round((subtotal * factor) / 10) * 10 + extra };
 }
 
 /** Estado del piloto antes o después de sumar XP (para animar las barras). */

@@ -225,6 +225,17 @@
   color: var(--c-accent-2);
 }
 
+/* Premio fijo (medalla, desafío del día): marca de su color a la izquierda. */
+.res__line--extra {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tone, var(--c-gold)) 22%, transparent), transparent 70%);
+  box-shadow: inset 3px 0 0 var(--tone, var(--c-gold));
+}
+
+.res__line--extra .res__line-label {
+  font-weight: 700;
+  color: var(--c-text);
+}
+
 .res__total {
   display: flex;
   align-items: baseline;

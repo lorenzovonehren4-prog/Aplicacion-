@@ -17,6 +17,7 @@ import type { UiAction } from '../../core/input/actions';
 import type { ScreenParams } from '../../core/screens/params';
 import { formatDelta, formatLapTime } from '../../core/utils/format';
 import { CHAMPIONSHIPS, LEVEL_LABEL, TRACK_DIFFICULTY } from '../../data/championships';
+import { MEDALS, MEDAL_INFO, medalFor, medalTimes, nextMedal } from '../../progression/medals';
 import { CORNER_KIND_LABEL, trackAnalysis, trackInsight, type CornerInfo, type TrackInsight } from '../../tracks/insight';
 import { TRACKS } from '../../tracks/registry';
 import type { TrackDefinition } from '../../tracks/TrackDefinition';
@@ -101,7 +102,7 @@ export class CircuitsScreen extends BaseScreen<ScreenParams['circuits']> {
         createCountryFlag(def.countryCode, 'crow__flag'),
         h('span', { class: 'crow__text' }, h('span', { class: 'crow__name', text: def.short }), h('span', { class: 'crow__gp', text: def.grandPrix })),
         h('span', { class: 'crow__date', text: info?.date ?? '' }),
-        best === null ? h('span', { class: 'crow__best' }) : h('span', { class: 'crow__best is-set', attrs: { title: 'Tienes tiempo aquí' } }, svg(ICONS.stopwatch)),
+        this.listMark(def, best),
         h('span', { class: 'crow__level' }),
       );
       this.rows.set(def.id, row);
@@ -377,7 +378,47 @@ export class CircuitsScreen extends BaseScreen<ScreenParams['circuits']> {
     return [card, this.trace(insight, corner.number - 1), chips];
   }
 
-  /** Tus tiempos en el circuito: vuelta, sectores, vuelta ideal y resultados. */
+  /** Marca de la fila de la lista: la medalla ganada, un cronómetro si hay tiempo sin medalla, o nada. */
+  private listMark(def: TrackDefinition, best: number | null): HTMLElement {
+    const medal = medalFor(def, best);
+    if (medal) {
+      return h('span', { class: 'crow__best crow__medal', attrs: { title: `Medalla de ${MEDAL_INFO[medal].label}` }, style: { '--tone': MEDAL_INFO[medal].color } });
+    }
+    return best === null ? h('span', { class: 'crow__best' }) : h('span', { class: 'crow__best is-set', attrs: { title: 'Tienes tiempo aquí' } }, svg(ICONS.stopwatch));
+  }
+
+  /** Las cuatro medallas del circuito con su tiempo, las ganadas y cuánto falta para la próxima. */
+  private medalLadder(def: TrackDefinition, best: number | null): HTMLElement {
+    const times = medalTimes(def);
+    const current = medalFor(def, best);
+    const won = current === null ? 0 : MEDALS.indexOf(current) + 1;
+    const next = nextMedal(def, best);
+    const hint = !next
+      ? '¡Tienes el platino! La mejor medalla de este circuito.'
+      : best === null
+        ? `Haz una vuelta válida en ${formatLapTime(next.time)} o menos para el bronce (en práctica, contrarreloj o carrera).`
+        : `Te faltan ${(best - next.time).toFixed(3)} s para la de ${MEDAL_INFO[next.medal].label.toLowerCase()}.`;
+    return h(
+      'div',
+      { class: 'cmedals' },
+      h('div', { class: 'cmedals__head' }, h('span', { class: 'cmedals__title', text: 'Medallas' }), h('span', { class: 'cmedals__hint', text: hint })),
+      h(
+        'div',
+        { class: 'cmedals__row' },
+        ...MEDALS.map((medal, i) =>
+          h(
+            'div',
+            { class: `cmedal${i < won ? ' is-won' : ''}${next?.medal === medal ? ' is-next' : ''}`, style: { '--tone': MEDAL_INFO[medal].color } },
+            h('span', { class: 'cmedal__disc' }),
+            h('span', { class: 'cmedal__label', text: MEDAL_INFO[medal].label }),
+            h('span', { class: 'cmedal__time', text: formatLapTime(times[medal]) }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /** Tus tiempos en el circuito: medallas, vuelta, sectores, vuelta ideal y resultados. */
   private times(): HTMLElement[] {
     const def = this.track;
     const data = this.game.save.data;
@@ -401,6 +442,7 @@ export class CircuitsScreen extends BaseScreen<ScreenParams['circuits']> {
           h('b', { text: 'Todavía no tienes una vuelta válida aquí.' }),
           h('span', { text: `Corre una práctica, una carrera o una contrarreloj: tu mejor vuelta y tus mejores sectores quedan guardados. El récord es ${formatLapTime(def.lapRecord.seconds)}.` }),
         ),
+        this.medalLadder(def, null),
         results,
       ];
     }
@@ -427,6 +469,7 @@ export class CircuitsScreen extends BaseScreen<ScreenParams['circuits']> {
         h('span', { class: 'cbest__bar' }, h('i', { style: { transform: `scaleX(${pace.toFixed(3)})` } })),
         h('span', { class: 'cbest__pace', text: `${Math.round(pace * 100)} % del ritmo del récord · ${Math.round((def.lengthKm * 3600) / best)} km/h de promedio` }),
       ),
+      this.medalLadder(def, best),
       h('div', { class: 'csectors' }, sectorTile(0), sectorTile(1), sectorTile(2)),
       h(
         'p',

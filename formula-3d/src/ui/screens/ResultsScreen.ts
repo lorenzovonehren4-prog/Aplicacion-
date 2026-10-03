@@ -175,7 +175,8 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
       );
     }
     if (p.award.lines.length === 0) {
-      this.lineRows.push(h('div', { class: 'res__line is-empty' }, h('span', { class: 'res__line-label', text: 'Sin vueltas válidas: esta vez no hay XP.' })));
+      const text = p.award.bonuses.length > 0 ? 'Sin vueltas válidas en esta sesión.' : 'Sin vueltas válidas: esta vez no hay XP.';
+      this.lineRows.push(h('div', { class: 'res__line is-empty' }, h('span', { class: 'res__line-label', text })));
     }
     for (const multiplier of p.award.multipliers) {
       this.multiplierRows.push(
@@ -187,6 +188,18 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
           h('span', { class: 'res__line-xp', text: `×${multiplier.value.toFixed(2)}` }),
         ),
       );
+    }
+    // Premios fijos (medallas, desafío del día): después de los multiplicadores, que no los tocan.
+    for (const bonus of p.award.bonuses) {
+      const row = h(
+        'div',
+        { class: 'res__line res__line--extra' },
+        h('span', { class: 'res__line-label', text: bonus.label }),
+        h('span', { class: 'res__line-detail', text: bonus.detail }),
+        h('span', { class: 'res__line-xp', text: `+${formatInteger(bonus.xp)}` }),
+      );
+      if (bonus.color) row.style.setProperty('--tone', bonus.color);
+      this.multiplierRows.push(row);
     }
     if (p.devPoints) this.devNote.textContent = `${p.devPoints.available} para gastar en el Garaje`;
     this.buildActions();

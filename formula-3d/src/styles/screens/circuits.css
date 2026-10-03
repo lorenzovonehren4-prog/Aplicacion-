@@ -147,6 +147,16 @@
   height: 15px;
 }
 
+/* Medalla del circuito en la lista: un disco de su color. */
+.crow__medal::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--tone) 45%, color-mix(in srgb, var(--tone) 55%, #000) 100%);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tone) 60%, transparent);
+}
+
 .crow__level {
   width: 8px;
   height: 8px;
@@ -872,4 +882,88 @@
     inset: auto;
     margin: 0 var(--gutter) var(--gutter);
   }
+}
+
+/* Medallas del circuito (pestaña "Tus tiempos"). */
+.cmedals {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+}
+
+.cmedals__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.cmedals__title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+}
+
+.cmedals__hint {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.cmedals__row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cmedal {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  opacity: 0.55;
+}
+
+.cmedal.is-won {
+  opacity: 1;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 22%, transparent), rgba(0, 0, 0, 0.2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent);
+}
+
+.cmedal.is-next {
+  opacity: 1;
+  outline: 1px dashed color-mix(in srgb, var(--tone) 70%, transparent);
+  outline-offset: -1px;
+}
+
+.cmedal__disc {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 10%, var(--tone) 45%, color-mix(in srgb, var(--tone) 50%, #000) 100%);
+}
+
+.cmedal:not(.is-won) .cmedal__disc {
+  filter: grayscale(0.8) brightness(0.6);
+}
+
+.cmedal__label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tone);
+}
+
+.cmedal__time {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--c-text-2);
 }

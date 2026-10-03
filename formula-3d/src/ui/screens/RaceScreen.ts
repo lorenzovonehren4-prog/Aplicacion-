@@ -28,7 +28,8 @@ import { DRIVERS, liveryOf, pickRivals, playerCode, wordmarkOf, type DriverDef }
 import { isFinished, PLAYER_ID, pointsFor, recordRound, standings as championshipStandings } from '../../race/championship';
 import { liveryFromSetup } from '../../garage/setup';
 import { difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
-import { applyXp, computeXp, snapshotOf } from '../../progression/xp';
+import { MEDAL_INFO, medalsEarned, nextMedal, type Medal } from '../../progression/medals';
+import { applyXp, computeXp, snapshotOf, type XpLine } from '../../progression/xp';
 import { recordSession } from '../../progression/career';
 import { applyUpgrades, devPointsFor } from '../../progression/upgrades';
 import type { RivalCar } from '../../race/render/RivalFleet';
@@ -177,6 +178,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private overtakes = 0;
   private soloLaps = 0;
   private soloPersonalBest = false;
+  /** Medallas del circuito ganadas en esta sesión (para la XP de los resultados). */
+  private readonly medalsWon: Medal[] = [];
   /** Resultados listos (XP ya sumada) para la pantalla siguiente. */
   private results: ResultsParams | null = null;
   private readonly ghostPose: GhostPose = { x: 0, z: 0, heading: 0 };
@@ -449,6 +452,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const rivals = session.cars.filter((car) => !car.isPlayer);
     this.botVehicles = rivals.map((car) => car.vehicle);
     this.hud.configureRace(session.order ? { count: session.cars.length, rivalColors: rivals.map((car) => car.team.primary) } : null);
+    this.refreshMedalTarget();
     this.rivalDots.length = 0;
     for (let i = 0; i < rivals.length; i++) this.rivalDots.push({ x: 0, z: 0 });
     this.hud.setVisible(false);
@@ -920,6 +924,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         seasonPosition,
       },
       { difficulty: difficultyLabel(difficulty), assists: LEVEL_INFO[settings.assists.level].name },
+      this.sessionBonuses(),
     );
     const before = snapshotOf(this.game.save.data.progression);
     const gain = applyXp(this.game.save.data.progression, award.total);
@@ -1066,12 +1071,50 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
   private saveRecord(time: number): void {
     const id = this.params.trackId;
+    const before = this.game.save.data.records[id]?.bestLap ?? null;
+    const def = this.track?.def;
+    if (def && (before === null || time < before)) this.announceMedals(medalsEarned(def, before, time), time);
     this.game.save.update((data) => {
       const record = data.records[id];
       const current = record?.bestLap ?? null;
       // Conserva el fantasma guardado (si lo hay).
       if (current === null || time < current) data.records[id] = { ...record, bestLap: time };
     });
+  }
+
+  /** ¡Medalla! Aviso en pista y sonido; la XP se suma en los resultados. */
+  private announceMedals(earned: readonly Medal[], time: number): void {
+    const top = earned[earned.length - 1];
+    if (!top) return;
+    this.medalsWon.push(...earned);
+    const def = this.track?.def;
+    const next = def ? nextMedal(def, time) : null;
+    const detail = next ? `Próxima: ${MEDAL_INFO[next.medal].label} en ${formatLapTime(next.time)}` : 'La mejor medalla de este circuito';
+    // Después del aviso de la vuelta (récord personal), para que se lean los dos.
+    this.own.timeout(() => {
+      this.hud?.message(`¡MEDALLA DE ${MEDAL_INFO[top].label.toUpperCase()}!`, detail, 'gold');
+      this.game.playUi('rewardBig');
+    }, 900);
+    this.refreshMedalTarget(time);
+  }
+
+  /** Fila de la próxima medalla en el HUD: en práctica y contrarreloj (en carrera, la posición importa más). */
+  private refreshMedalTarget(best: number | null = this.game.save.data.records[this.params.trackId]?.bestLap ?? null): void {
+    const def = this.track?.def;
+    if (!this.hud || !def) return;
+    const next = this.params.mode === 'race' ? null : nextMedal(def, best);
+    this.hud.setMedalTarget(next ? { label: MEDAL_INFO[next.medal].label, color: MEDAL_INFO[next.medal].color, time: next.time } : null);
+  }
+
+  /** Premios fijos de la sesión: cada medalla ganada (sin multiplicar por dificultad ni ayudas). */
+  private sessionBonuses(): XpLine[] {
+    const def = this.track?.def;
+    return this.medalsWon.map((medal) => ({
+      label: `Medalla de ${MEDAL_INFO[medal].label}`,
+      detail: def?.name ?? '',
+      xp: MEDAL_INFO[medal].xp,
+      color: MEDAL_INFO[medal].color,
+    }));
   }
 
   // ─── Rendimiento ───────────────────────────────────────────────────────

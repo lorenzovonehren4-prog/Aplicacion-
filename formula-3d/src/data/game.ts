@@ -53,7 +53,7 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'timeTrial',
         label: 'Contrarreloj',
         icon: 'stopwatch',
-        description: 'Una vuelta perfecta contra tu propio fantasma.',
+        description: 'Una vuelta perfecta contra tu propio fantasma: gana el bronce, la plata, el oro y el platino de cada circuito.',
         phase: 5,
       },
       {

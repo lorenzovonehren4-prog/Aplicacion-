@@ -641,6 +641,35 @@
   color: var(--c-text-2);
 }
 
+/* Próxima medalla: sólo en práctica y contrarreloj, con el color de la medalla. */
+.timing__row--medal {
+  display: none;
+}
+
+.timing__row--medal.is-visible {
+  display: flex;
+}
+
+.timing__row--medal .timing__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tone, var(--c-gold));
+}
+
+.timing__row--medal .timing__label::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone, var(--c-gold));
+  box-shadow: 0 0 6px var(--tone, var(--c-gold));
+}
+
+.timing__row--medal .timing__value {
+  color: var(--c-text);
+}
+
 /* Minimapa */
 
 .minimap {

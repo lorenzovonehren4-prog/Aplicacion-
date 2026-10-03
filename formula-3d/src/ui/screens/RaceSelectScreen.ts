@@ -25,6 +25,7 @@ import type { RaceSelectMode, ScreenParams } from '../../core/screens/params';
 import { formatLapTime } from '../../core/utils/format';
 import { LEVEL_LABEL, TRACK_DIFFICULTY } from '../../data/championships';
 import { DIFFICULTY_INFO, difficultyValue } from '../../race/ai/difficulty';
+import { MEDAL_INFO, nextMedal } from '../../progression/medals';
 import { TRACKS } from '../../tracks/registry';
 import type { TrackDefinition } from '../../tracks/TrackDefinition';
 import { WEATHER_INFO } from '../../tracks/weather';
@@ -218,6 +219,13 @@ export class RaceSelectScreen extends BaseScreen<ScreenParams['raceSelect']> {
     ];
     if (this.mode === 'timeTrial') {
       items.push(stat('TU FANTASMA', record?.ghost ? formatLapTime(record.ghost.time) : 'Sin grabar', record?.ghost ? 'is-ghost' : ''));
+    }
+    if (this.mode !== 'quickRace') {
+      // La meta de la práctica y la contrarreloj: la próxima medalla del circuito.
+      const next = nextMedal(def, record?.bestLap);
+      const medal = next ? stat(`MEDALLA DE ${MEDAL_INFO[next.medal].label.toUpperCase()}`, formatLapTime(next.time), 'is-medal') : stat('MEDALLAS', '¡Platino!', 'is-medal');
+      medal.style.setProperty('--tone', MEDAL_INFO[next?.medal ?? 'platinum'].color);
+      items.push(medal);
     }
     this.stats.replaceChildren(...items);
   }

@@ -20,6 +20,7 @@ import { GAME_VERSION, MAIN_MENU, type MenuItem, type MenuItemId } from '../../d
 import type { DriverGesture, DriverPose } from '../../garage/DriverModel';
 import type { StudioScene, StudioShot } from '../../garage/StudioScene';
 import { formatInteger } from '../../core/utils/format';
+import { medalTally } from '../../progression/medals';
 import { applyUpgrades, carStats, totalLevels, UPGRADE_IDS, UPGRADE_MAX_LEVEL } from '../../progression/upgrades';
 import { DIFFICULTY_INFO } from '../../race/ai/difficulty';
 import { F1_SPEC } from '../../race/physics/CarSpec';
@@ -523,8 +524,10 @@ export class MainMenuScreen extends BaseScreen {
       case 'quickRace':
         return (TRACKS.find((t) => t.id === settings.race.trackId) ?? TRACKS[0])?.short ?? '';
       case 'timeTrial': {
-        const ghosts = Object.values(data.records).filter((r) => r.ghost).length;
-        return ghosts > 0 ? `${ghosts} ${ghosts === 1 ? 'fantasma' : 'fantasmas'}` : 'Sin fantasmas';
+        // Las medallas son la meta de la contrarreloj: cuántas pistas tienen alguna y cuántas de oro.
+        const tally = medalTally(TRACKS, (trackId) => data.records[trackId]?.bestLap);
+        if (tally.gold > 0) return `${tally.gold} ${tally.gold === 1 ? 'oro' : 'oros'} · ${tally.bronze}/${TRACKS.length}`;
+        return tally.bronze > 0 ? `${tally.bronze}/${TRACKS.length} con medalla` : 'Gana medallas';
       }
       case 'championship': {
         const state = data.championship;

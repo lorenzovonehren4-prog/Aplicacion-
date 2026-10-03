@@ -514,6 +514,14 @@
   color: #9fd4ff;
 }
 
+.rsel__stat.is-medal .rsel__stat-label {
+  color: var(--tone);
+}
+
+.rsel__stat.is-medal .rsel__stat-value {
+  color: var(--c-text);
+}
+
 /* Pie */
 
 .rsel__footer {
