@@ -173,6 +173,7 @@ export class GarageScreen extends BaseScreen {
       this.studio = null;
     }
     this.game.render.setView(this.studio);
+    this.studio?.setDriverVisible(false);
     this.studio?.setFrameShift(this.frameShift());
     this.own.listen(window, 'resize', () => this.studio?.setFrameShift(this.frameShift()));
     this.selectTab('upgrades', false);
@@ -215,7 +216,8 @@ export class GarageScreen extends BaseScreen {
   override exit(): void {
     // El estudio sigue vivo para el menú: vuelve al giro lento con lo equipado.
     this.studio?.setShot(null);
-    this.studio?.car.setLivery(liveryFromSetup(this.setup));
+    this.studio?.setLivery(liveryFromSetup(this.setup));
+    this.studio?.setDriverVisible(true);
     super.exit();
   }
 
@@ -249,7 +251,7 @@ export class GarageScreen extends BaseScreen {
     const key = JSON.stringify(setup);
     if (key === this.previewKey) return;
     this.previewKey = key;
-    this.studio?.car.setLivery(liveryFromSetup(setup));
+    this.studio?.setLivery(liveryFromSetup(setup));
   }
 
   // ─── Pestañas ──────────────────────────────────────────────────────────

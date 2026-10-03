@@ -679,3 +679,84 @@ export function createHelmetTexture(livery: LiveryConfig, anisotropy: number): C
   }
   return toTexture(canvas, anisotropy);
 }
+
+/**
+ * Traje del piloto, torso (mapeado alrededor de una cápsula: X = vuelta
+ * empezando por la espalda, Y = de arriba a abajo). Color principal, paneles
+ * laterales del secundario con filetes del acento, cinturón y logos.
+ */
+export function createSuitTexture(livery: LiveryConfig, anisotropy: number): CanvasTexture {
+  const W = 512;
+  const H = 256;
+  const [canvas, ctx] = makeCanvas(W, H);
+  ctx.fillStyle = livery.primary;
+  ctx.fillRect(0, 0, W, H);
+  // Cuello y hombros un poco más oscuros (costuras).
+  const top = ctx.createLinearGradient(0, 0, 0, H * 0.25);
+  top.addColorStop(0, shade(livery.primary, -0.12));
+  top.addColorStop(1, livery.primary);
+  ctx.fillStyle = top;
+  ctx.fillRect(0, 0, W, H * 0.25);
+  // Paneles laterales (u = 0.25 y 0.75 son los costados).
+  for (const center of [0.25, 0.75]) {
+    const x = W * center;
+    ctx.fillStyle = livery.secondary;
+    ctx.beginPath();
+    ctx.moveTo(x - W * 0.035, H * 0.22);
+    ctx.lineTo(x + W * 0.035, H * 0.22);
+    ctx.lineTo(x + W * 0.07, H);
+    ctx.lineTo(x - W * 0.07, H);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = livery.accent;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  // Cinturón del secundario con filetes del acento (justo arriba de la pelvis).
+  ctx.fillStyle = livery.secondary;
+  ctx.fillRect(0, H * 0.7, W, H * 0.11);
+  ctx.fillStyle = livery.accent;
+  ctx.fillRect(0, H * 0.69, W, 4);
+  ctx.fillRect(0, H * 0.81, W, 3);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  // Pecho: el logo del equipo (frente = u 0.5) y un patrocinador abajo.
+  ctx.font = `italic 900 34px ${DISPLAY_FONT}`;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = livery.secondary;
+  ctx.strokeText('ÁPICE', W * 0.5, H * 0.4);
+  ctx.fillStyle = livery.accent;
+  ctx.fillText('ÁPICE', W * 0.5, H * 0.4);
+  ctx.fillStyle = '#f4f4f2';
+  ctx.fillRect(W * 0.43, H * 0.56, W * 0.14, H * 0.09);
+  ctx.font = `800 17px ${DISPLAY_FONT}`;
+  ctx.fillStyle = '#111317';
+  ctx.fillText(SPONSORS[0], W * 0.5, H * 0.605);
+  // Espalda: el número del auto.
+  ctx.font = `900 46px ${NUMBER_FONT}`;
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = livery.secondary;
+  for (const x of [0, W]) {
+    ctx.strokeText(String(livery.number), x, H * 0.45);
+    ctx.fillStyle = livery.accent;
+    ctx.fillText(String(livery.number), x, H * 0.45);
+  }
+  return toTexture(canvas, anisotropy);
+}
+
+/** Mangas y piernas del traje: color principal con una franja del secundario a cada costado. */
+export function createSuitLimbTexture(livery: LiveryConfig, anisotropy: number): CanvasTexture {
+  const W = 256;
+  const H = 64;
+  const [canvas, ctx] = makeCanvas(W, H);
+  ctx.fillStyle = livery.primary;
+  ctx.fillRect(0, 0, W, H);
+  for (const center of [0.25, 0.75]) {
+    ctx.fillStyle = livery.accent;
+    ctx.fillRect(W * center - 12, 0, 24, H);
+    ctx.fillStyle = livery.secondary;
+    ctx.fillRect(W * center - 9, 0, 18, H);
+  }
+  return toTexture(canvas, anisotropy);
+}

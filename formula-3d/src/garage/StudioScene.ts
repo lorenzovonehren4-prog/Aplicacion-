@@ -41,6 +41,7 @@ import type { GraphicsSettings } from '../core/save/schema';
 import { Disposer } from '../core/utils/Disposer';
 import { damp } from '../core/utils/math';
 import { CarModel } from './CarModel';
+import { DriverModel, type DriverGesture, type DriverPose } from './DriverModel';
 import { StudioAtmosphere } from './StudioAtmosphere';
 import type { LiveryConfig } from './livery';
 
@@ -254,7 +255,7 @@ interface Orbit {
 }
 
 /** Encuadres del garaje: la cámara se acerca a la pieza que se está editando. */
-export type StudioShot = 'overview' | 'side' | 'front' | 'wheel' | 'rear' | 'helmet' | 'engine' | 'floor';
+export type StudioShot = 'overview' | 'side' | 'front' | 'wheel' | 'rear' | 'helmet' | 'engine' | 'floor' | 'driver';
 
 interface ShotDef {
   angle: number;
@@ -276,7 +277,12 @@ const SHOTS: Readonly<Record<StudioShot, ShotDef>> = {
   engine: { angle: 0.95, radius: 4.2, height: 1.55, look: [0, 0.62, 1.2] },
   /** Bajo y de costado: fondo plano, suspensión y caja (atrás). */
   floor: { angle: 1.75, radius: 4.6, height: 0.38, look: [0, 0.3, 1.0] },
+  /** El piloto de cuerpo entero, de frente y con el auto detrás. */
+  driver: { angle: 2.55, radius: 4.4, height: 1.5, look: [1.25, 1.0, -1.25] },
 };
+
+/** Lugar del piloto en el podio: junto a la rueda delantera derecha, mirando hacia afuera y adelante. */
+const DRIVER_SPOT = { x: 1.42, z: -1.38, yaw: -0.64 };
 
 /**
  * Tablas de las luces de área (dos texturas de 64×64). `init()` crea tablas
@@ -294,6 +300,7 @@ export class StudioScene implements RenderView {
   readonly scene = new Scene();
   readonly camera = new PerspectiveCamera(30, 16 / 9, 0.1, 80);
   readonly car: CarModel;
+  readonly driver: DriverModel;
 
   private readonly own = new Disposer();
   private readonly environment: EnvironmentMap;
@@ -409,6 +416,11 @@ export class StudioScene implements RenderView {
     this.car.root.position.y = 0.001;
     this.car.setSteer(0.28);
     this.platform.add(this.car.root);
+    // ─── Piloto ───
+    this.driver = new DriverModel(options.livery, anisotropy);
+    this.driver.root.position.set(DRIVER_SPOT.x, 0.001, DRIVER_SPOT.z);
+    this.driver.root.rotation.y = DRIVER_SPOT.yaw;
+    this.platform.add(this.driver.root);
     this.keyLight.target.position.set(0, 0.4 + PODIUM_HEIGHT, 0);
     this.rimLight.target.position.set(0, 0.4 + PODIUM_HEIGHT, 0);
 
@@ -451,6 +463,27 @@ export class StudioScene implements RenderView {
     this.lookTarget.set(def.look[0], def.look[1] + PODIUM_HEIGHT, def.look[2]);
   }
 
+  /** Livery del auto y del piloto (traje y casco). */
+  setLivery(livery: LiveryConfig): void {
+    this.car.setLivery(livery);
+    this.driver.setLivery(livery);
+  }
+
+  /** El piloto se ve en el menú y se esconde en el garaje (allí el auto es protagonista). */
+  setDriverVisible(visible: boolean): void {
+    this.driver.root.visible = visible;
+  }
+
+  /** Gesto del piloto (saludo, pulgar arriba, señalar el auto, mano en el casco). */
+  driverGesture(gesture: DriverGesture): void {
+    if (this.driver.root.visible) this.driver.play(gesture);
+  }
+
+  /** Pose de base del piloto (`null`: la cambia solo). */
+  driverPose(pose: DriverPose | null): void {
+    this.driver.setPose(pose);
+  }
+
   /** Pulso celeste en el piso (una mejora recién comprada). */
   burst(): void {
     this.atmosphere?.burst();
@@ -477,6 +510,7 @@ export class StudioScene implements RenderView {
     this.applyOrbitToCamera();
 
     this.atmosphere?.update(dt);
+    if (this.driver.root.visible) this.driver.update(dt, this.camera.position);
 
     // Luz trasera "respirando", como un auto encendido en boxes.
     this.car.setRearLight(0.35 + 0.65 * (0.5 + 0.5 * Math.sin(this.time * 2.2)));
@@ -508,6 +542,7 @@ export class StudioScene implements RenderView {
     this.atmosphere?.dispose();
     this.destroyReflector();
     this.car.dispose();
+    this.driver.dispose();
     this.own.dispose();
     this.scene.clear();
   }
