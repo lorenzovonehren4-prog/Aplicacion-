@@ -6,7 +6,7 @@ import { traceLayout } from '../src/tracks/layout';
 import { getTrack, TRACKS } from '../src/tracks/registry';
 import { cornerSpeed } from '../src/tracks/TrackAnalysis';
 import { Track } from '../src/tracks/Track';
-import { numberedCorners } from '../src/ui/components/TrackMap';
+import { numberedCorners } from '../src/tracks/insight';
 
 const track = Track.load(AUSTRALIA);
 const g = track.geometry;

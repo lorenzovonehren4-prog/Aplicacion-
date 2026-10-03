@@ -7,8 +7,7 @@
  * vuelta sin parar.
  */
 
-import { Track } from '../../tracks/Track';
-import type { Corner } from '../../tracks/TrackAnalysis';
+import { trackInsight } from '../../tracks/insight';
 import { TrackGeometry } from '../../tracks/TrackGeometry';
 import { traceLayout } from '../../tracks/layout';
 import type { TrackDefinition } from '../../tracks/TrackDefinition';
@@ -18,25 +17,14 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const SIZE = 1000;
 const PAD = 70;
 
-/**
- * Curvas "oficiales" a partir de las detectadas: las `count` más cerradas, en
- * el orden de la vuelta. Así no llevan número los quiebres de recta (radios
- * grandes) y la cuenta coincide con la del circuito (`turns`): en Monza son
- * justo las once de verdad, con la Curva Grande incluida.
- */
-export function numberedCorners(corners: readonly Corner[], count: number): Corner[] {
-  const keep = new Set([...corners].sort((a, b) => a.radius - b.radius).slice(0, count));
-  return corners.filter((corner) => keep.has(corner));
-}
-
 interface Outline {
   path: string;
   /** Los tres sectores (meta → S1 → S2 → meta). */
   sectors: string[];
   /** Zonas de DRS, corridas hacia afuera del trazado. */
   drs: string[];
-  /** Curvas numeradas: posición del rótulo (afuera del trazado). */
-  turns: Array<{ x: number; y: number; n: number }>;
+  /** Curvas numeradas: posición del rótulo (afuera del trazado) y del ápice. */
+  turns: Array<{ x: number; y: number; n: number; ax: number; ay: number }>;
   start: [number, number, number, number];
   /** Flecha del sentido de marcha sobre la recta principal. */
   arrow: string;
@@ -125,10 +113,9 @@ function outline(def: TrackDefinition): Outline {
     return [lx, lz] as [number, number];
   });
   // Curvas numeradas (las del análisis del circuito, sin quiebres de recta).
-  const track = Track.load(def);
-  const turns = numberedCorners(track.analysis.corners, def.turns).map((corner, i) => {
-    const [, , x, y] = across(corner.apex, 46);
-    return { x, y, n: i + 1 };
+  const turns = trackInsight(def).numbered.map((corner, i) => {
+    const [ax, ay, x, y] = across(corner.apex, 46);
+    return { x, y, n: i + 1, ax, ay };
   });
   const result: Outline = {
     path: `${segment(0, g.length)}Z`,
@@ -197,9 +184,23 @@ export class TrackMap {
   readonly element: SVGSVGElement;
   private current = '';
   private comet: Animation[] = [];
+  private turnGroups: SVGGElement[] = [];
+  private highlighted: number | null = null;
 
   constructor() {
     this.element = el('svg', { viewBox: `0 0 ${SIZE} ${SIZE}`, class: 'tmap', 'aria-hidden': 'true' });
+  }
+
+  /** Resalta una curva (número desde 1) o ninguna con `null`; la resaltada va al frente. */
+  highlight(turn: number | null): void {
+    if (turn === this.highlighted) return;
+    this.highlighted = turn;
+    this.element.classList.toggle('has-focus', turn !== null);
+    this.turnGroups.forEach((group, i) => {
+      const active = i + 1 === turn;
+      group.classList.toggle('is-active', active);
+      if (active) group.parentNode?.appendChild(group);
+    });
   }
 
   /** Muestra un circuito (con el trazado dibujándose si cambió). */
@@ -211,8 +212,14 @@ export class TrackMap {
     const base = el('path', { d: o.path, class: 'tmap__base' });
     const sectors = o.sectors.map((d, i) => el('path', { d, class: `tmap__line tmap__line--s${i + 1}` }));
     const drs = o.drs.map((d) => el('path', { d, class: 'tmap__drs' }));
-    const turns = o.turns.map(({ x, y, n }) => {
+    const turns = o.turns.map(({ x, y, n, ax, ay }) => {
       const group = el('g', { class: 'tmap__turn' });
+      // Marca del ápice (sólo se ve con la curva resaltada) y el rótulo.
+      group.append(
+        el('line', { x1: ax.toFixed(1), y1: ay.toFixed(1), x2: x.toFixed(1), y2: y.toFixed(1), class: 'tmap__apex-link' }),
+        el('circle', { cx: ax.toFixed(1), cy: ay.toFixed(1), r: '30', class: 'tmap__apex-ring' }),
+        el('circle', { cx: ax.toFixed(1), cy: ay.toFixed(1), r: '11', class: 'tmap__apex' }),
+      );
       group.append(el('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: '23' }));
       const label = el('text', { x: x.toFixed(1), y: (y + 1).toFixed(1) });
       label.textContent = String(n);
@@ -233,6 +240,10 @@ export class TrackMap {
     const tail = el('path', { d: o.path, class: 'tmap__comet-tail' });
     const head = el('path', { d: o.path, class: 'tmap__comet' });
     this.element.replaceChildren(glow, base, ...sectors, ...drs, ...ticks, start, arrow, ...labels, ...turns, tail, head);
+    this.turnGroups = turns;
+    const pending = this.highlighted;
+    this.highlighted = null;
+    this.highlight(pending);
     for (const animation of this.comet) animation.cancel();
     this.comet = [];
     const total = base.getTotalLength?.() ?? 0;

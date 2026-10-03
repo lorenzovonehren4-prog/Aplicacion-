@@ -136,9 +136,17 @@ async function main() {
     await page.locator('.mtile', { hasText: 'Garaje' }).click();
     await waitForScreen(page, 'garage');
     await page.mouse.move(2, 2);
+    // Abre en Mejoras: las cinco áreas y una compra con los puntos de bienvenida.
+    const areas = await page.locator('.uprow').count();
+    if (areas !== 5) throw new Error(`El garaje muestra ${areas} áreas de mejora.`);
+    await page.keyboard.press('Enter');
+    await expectText(page, '.uprow.is-focused .uprow__stage', 'Nivel 1 · Mapa de motor');
+    // Pintura (E) y después Festejo (Q dos veces: da la vuelta hasta la última).
+    await page.keyboard.press('KeyE');
+    await page.waitForSelector('.tab.is-active >> text=Pintura');
     const paints = await page.locator('.gcard').count();
     if (paints < 10) throw new Error(`El garaje muestra ${paints} pinturas.`);
-    // Pestaña Festejo (Q da la vuelta hasta la última): las serpentinas de fábrica, equipadas.
+    await page.keyboard.press('KeyQ');
     await page.keyboard.press('KeyQ');
     await page.waitForSelector('.tab.is-active >> text=Festejo');
     const celebrations = await page.locator('.gcard').count();
@@ -153,7 +161,7 @@ async function main() {
     await page.keyboard.press('Escape');
     await waitForScreen(page, 'menu');
     await page.mouse.move(2, 2);
-    log('garaje: pinturas, festejo de fábrica, pestañas con Q / E y número 7 → 8 guardado');
+    log('garaje: mejora comprada, pinturas, festejo de fábrica, pestañas con Q / E y número 7 → 8 guardado');
 
     // ─── Perfil y manual de ayudas ───
     step = 'perfil';

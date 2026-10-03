@@ -18,6 +18,7 @@ import './styles/screens/menu.css';
 import './styles/screens/settings.css';
 import './styles/screens/race.css';
 import './styles/screens/raceSelect.css';
+import './styles/screens/circuits.css';
 import './styles/screens/results.css';
 import './styles/screens/pass.css';
 import './styles/screens/garage.css';

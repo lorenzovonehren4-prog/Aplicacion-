@@ -1422,6 +1422,93 @@ salidas de pista, rescates y tiempos.
       en las 24 (todos terminan, pocos rescates, nadie mucho tiempo afuera) y
       un bot que en la tercera vuelta ya no se sale.
 
+### Versión 2.2 — Piloto 3D, mejoras del auto y guía de circuitos ✅
+
+Pedido: "el menú más atractivo y con animaciones, con personaje, vehículos y
+las mismas pistas con más información, como diseñador de juegos
+profesional". Respuestas del usuario: **piloto 3D en el menú**, **un auto
+con mejoras** y, para las pistas, **ficha técnica completa, tus tiempos y
+récords y guía curva por curva**.
+
+**Piloto 3D** (`garage/DriverModel.ts`)
+
+- [x] Figura procedural junto a la rueda delantera derecha, sin modelos
+      externos: torso, pelvis y extremidades torneados (perfil de revolución
+      con la textura mapeada por altura), casco con la misma textura y
+      visera que el del auto (el elegido en el garaje) y traje con los
+      colores de la livery: logo en el pecho, patrocinador, número en la
+      espalda, cinturón y franjas del secundario.
+- [x] Esqueleto de 16 articulaciones animado por poses mezcladas (cada
+      articulación se acerca suave a la pose pedida): apoyado en el auto,
+      manos en la cintura y brazos cruzados, que cambian solas cada 12–20 s.
+      Encima: respiración, cambio de peso y mirada que sigue a la cámara,
+      mira el auto o mira alrededor.
+- [x] Gestos: saludo (al llegar al menú), pulgar arriba, señalar el auto y
+      mano en el casco; cada tanto hace uno solo.
+- [x] En el menú reacciona a la tarjeta enfocada (si el foco se queda
+      0,4 s): señala el auto en Garaje y Circuitos, pulgar arriba en
+      Campeonato y Práctica, saludo en el Pase; en Perfil se cruza de brazos
+      y la cámara lo encuadra. Se esconde en el garaje.
+
+**Mejoras del auto** (`progression/upgrades.ts`)
+
+- [x] Cinco áreas con cinco niveles (costos 1-2-3-4-5, 75 puntos el auto
+      completo), y cada nivel cambia la física del auto del jugador (los
+      rivales siguen de fábrica): Motor +1,6 % de potencia; Aerodinámica
+      +2,4 % de carga y +0,4 % de arrastre; Frenos +1,6 % de agarre
+      longitudinal y +3 % de fuerza de freno; Caja −10 % de tiempo de cambio
+      y +2,5 % de empuje en 1.ª–4.ª; Chasis +1,2 % de agarre, −2 kg y un
+      límite más progresivo. Todo al máximo: 999 → 1.079 CV, punta 333 →
+      339 km/h, curva a 200 km/h 2,98 → 3,37 g, frenada 4,50 → 5,44 g y
+      cambio 60 → 30 ms.
+- [x] Puntos de desarrollo: en carrera 3 por terminar + bonus por puesto,
+      por largo (×0,8–1,47) y por dificultad (×0,8–1,5), más 10/6/4 al
+      cerrar un campeonato en el podio; sin rivales, 1 cada 3 vueltas válidas
+      (hasta 3) y 1 por récord personal. Un guardado viejo recibe 5 + 2 por
+      carrera corrida (hasta 45). Se ven en Resultados con su conteo.
+- [x] Pestaña **Mejoras** (la primera del garaje): puntos con barra de
+      progreso del auto, una fila por área con su ícono, color, niveles
+      encendidos, nombre de la etapa y costo; la ficha del auto (potencia,
+      velocidad punta, curva y frenada a 200 km/h, cambio) con barras y la
+      vista previa del próximo nivel (celeste si mejora, roja si empeora:
+      la aerodinámica quita un poco de punta). La cámara apunta a la pieza
+      de cada área y al comprar el piso del estudio late en celeste.
+- [x] Se guardan también los mejores sectores por pista.
+
+**Guía de circuitos** (pantalla nueva, `ui/screens/CircuitsScreen.ts`)
+
+- [x] Lista de las 24 pistas (bandera, Gran Premio, fecha, dificultad y un
+      cronómetro si ya tienes tiempo) y, del circuito elegido, título con
+      insignias (dificultad, fecha, campeonatos en los que está), mapa
+      grande y tres pestañas (Q / E):
+  - **Ficha técnica** calculada con la física del juego (`tracks/insight.ts`):
+    longitud y tipo, curvas y zonas de DRS, velocidad máxima, % de la
+    vuelta a fondo y el tramo más largo a fondo, frenadas (y cuántas bajan
+    100 km/h o más), la curva más lenta con su marcha, el récord y su
+    promedio; la **traza de velocidad** de una vuelta con una franja verde,
+    amarilla y roja (a fondo, curva, frenada), los sectores y el número de
+    cada curva; y por qué tiene esa dificultad.
+  - **Curva por curva**: ← → recorre las curvas; cada una con su tipo
+    (horquilla, lenta, media, rápida, a fondo), sentido, radio, velocidad
+    de llegada y mínima, marcha, metros de frenada y un consejo armado con
+    esos datos (frenadas grandes, curvas que se enlazan, rectas largas
+    después). El mapa resalta la curva (su ápice late) y la traza la marca.
+  - **Tus tiempos**: mejor vuelta y distancia al récord, % del ritmo del
+    récord, mejores sectores (S1/S2/S3 con los colores del mapa), vuelta
+    ideal y cuánto falta para hacerla, fantasma y carreras, victorias y
+    podios en esa pista.
+- [x] ENTER o "Correr aquí" van a la carrera rápida con el circuito
+      elegido; "Contrarreloj", a la contrarreloj. El análisis (≈20–70 ms por
+      pista, sin la trazada ideal) se hace cuando el foco se queda quieto y
+      se guarda. El mapa de la selección de carrera ahora usa el mismo
+      análisis y ya no arma el circuito completo (antes ~250 ms por pista).
+- [x] Tarjeta **Circuitos** en el riel del menú (Competir) y el Garaje
+      muestra mejoras, puntos y potencia en el panel grande.
+- [x] Pruebas nuevas: `tests/upgrades.test.ts` (costos, compra, efectos de
+      cada área, recorte de niveles, puntos por sesión y de bienvenida) y
+      `tests/insight.test.ts` (fichas y guías de las 24 pistas, marchas,
+      Mónaco contra Monza). La prueba de humo compra una mejora.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1513,3 +1600,4 @@ salidas de pista, rescates y tiempos.
 - **Versión 1.12**: árboles de hojas, sombras de los autos, cabina con espejos, volante y carbono, y autos con alerón, morro y patrocinadores según referencias (pedido del usuario).
 - **Versión 2.0**: las 24 pistas del calendario 2026, análisis y clasificación por dificultad, 5 campeonatos y menú principal nuevo (pedido del usuario).
 - **Versión 2.1**: trazada que el auto puede seguir, bots que aprenden la pista y no se salen, largadas limpias (pedido del usuario).
+- **Versión 2.2**: piloto 3D animado en el menú, mejoras del auto con puntos de desarrollo y guía de circuitos con ficha técnica, curva por curva y tus tiempos (pedido del usuario).

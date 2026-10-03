@@ -3,13 +3,14 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '2.1.0';
+export const GAME_VERSION = '2.2.0';
 
 export type MenuItemId =
   | 'practice'
   | 'quickRace'
   | 'timeTrial'
   | 'championship'
+  | 'circuits'
   | 'garage'
   | 'pass'
   | 'profile'
@@ -62,6 +63,13 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         description: 'Cinco campeonatos (Fácil, Media, Difícil, Total y la Gran Gira) con puntos y tabla de pilotos.',
         phase: 5,
       },
+      {
+        id: 'circuits',
+        label: 'Circuitos',
+        icon: 'circuit',
+        description: 'Las 24 pistas a fondo: ficha técnica, guía curva por curva con consejos y tus tiempos en cada una.',
+        phase: 10,
+      },
     ],
   },
   {
@@ -71,7 +79,7 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'garage',
         label: 'Garaje',
         icon: 'wrench',
-        description: 'Pinta tu monoplaza y cambia alerones, llantas y casco.',
+        description: 'Mejora el motor, la aerodinámica, los frenos, la caja y el chasis; pinta tu monoplaza y cambia alerones, llantas y casco.',
         phase: 7,
       },
       {

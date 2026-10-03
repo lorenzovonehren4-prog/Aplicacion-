@@ -2,8 +2,8 @@
  * Mapa de pantallas del juego y transiciones permitidas entre ellas.
  *
  * Es la "máquina de estados" del documento de diseño:
- *   Splash → Tutorial (sólo la 1.ª vez) → Menú → Garaje / Pase / Perfil / Ajustes /
- *   Manual de ayudas / Selección de carrera → Presentación del circuito → Carrera →
+ *   Splash → Tutorial (sólo la 1.ª vez) → Menú → Garaje / Circuitos / Pase / Perfil /
+ *   Ajustes / Manual de ayudas / Selección de carrera → Presentación del circuito → Carrera →
  *   Resultados → Podio → Menú
  *
  * `goTo` reemplaza toda la pila de pantallas; `push` apila una pantalla encima de
@@ -15,6 +15,7 @@ export const SCREEN_IDS = [
   'tutorial',
   'menu',
   'garage',
+  'circuits',
   'pass',
   'profile',
   'settings',
@@ -43,8 +44,10 @@ export const SCREEN_FLOW: FlowTable = {
   goTo: {
     splash: ['tutorial', 'menu'],
     tutorial: ['menu'],
-    menu: ['garage', 'pass', 'profile', 'raceSelect', 'championship', 'race'],
+    menu: ['garage', 'circuits', 'pass', 'profile', 'raceSelect', 'championship', 'race'],
     garage: ['menu'],
+    // Desde la guía se puede ir a correr en el circuito elegido.
+    circuits: ['menu', 'raceSelect'],
     pass: ['menu'],
     profile: ['menu'],
     // Ajustes y el Manual siempre se apilan y vuelven con `pop`.

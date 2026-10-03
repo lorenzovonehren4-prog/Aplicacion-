@@ -341,6 +341,77 @@
   dominant-baseline: middle;
 }
 
+/* Curva resaltada (guía de circuitos): las demás se apagan y el ápice late. */
+.tmap__turn {
+  transition: opacity 0.3s;
+}
+
+.tmap.has-focus .tmap__turn:not(.is-active) {
+  opacity: 0.32;
+}
+
+.tmap__turn .tmap__apex,
+.tmap__turn .tmap__apex-ring,
+.tmap__apex-link {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.tmap__turn .tmap__apex {
+  fill: #fff;
+  stroke: none;
+}
+
+.tmap__turn .tmap__apex-ring {
+  fill: none;
+  stroke: var(--tmap-focus, #29d8ff);
+  stroke-width: 5;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tmap__apex-link {
+  stroke: var(--tmap-focus, #29d8ff);
+  stroke-width: 3;
+  stroke-dasharray: 6 6;
+}
+
+.tmap__turn.is-active .tmap__apex,
+.tmap__turn.is-active .tmap__apex-link {
+  opacity: 1;
+}
+
+.tmap__turn.is-active .tmap__apex-ring {
+  opacity: 1;
+  animation: tmap-apex 1.3s ease-out infinite;
+}
+
+.tmap__turn.is-active circle:last-of-type {
+  fill: var(--tmap-focus, #29d8ff);
+  stroke: #fff;
+}
+
+.tmap__turn.is-active text {
+  fill: #041016;
+}
+
+@keyframes tmap-apex {
+  from {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tmap__turn.is-active .tmap__apex-ring {
+    animation: none;
+  }
+}
+
 .tmap__start {
   stroke: var(--c-accent);
   stroke-width: 7;

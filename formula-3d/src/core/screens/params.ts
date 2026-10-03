@@ -78,6 +78,8 @@ export interface ScreenParams {
   podium: ResultsParams;
   pass: undefined;
   garage: undefined;
+  /** Guía de circuitos (abre en el circuito pedido o en el último elegido). */
+  circuits: { trackId?: string } | undefined;
   profile: undefined;
   assistsManual: undefined;
   tutorial: undefined;

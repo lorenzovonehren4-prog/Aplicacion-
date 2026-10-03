@@ -64,7 +64,19 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.1.0: la trazada ideal ya nunca pide curvas más cerradas de lo que
+Versión 2.2.0: en el menú hay un **piloto 3D** junto al auto, con el traje
+del equipo y el casco elegido en el garaje, que respira, mira a la cámara,
+saluda y reacciona a cada tarjeta (señala el auto, levanta el pulgar, se
+cruza de brazos en el Perfil). El auto se **mejora**: cada carrera da puntos
+de desarrollo para Motor, Aerodinámica, Frenos, Caja de cambios y Chasis
+(cinco niveles cada uno, con efecto real en la física), en la nueva pestaña
+Mejoras del garaje con la ficha del auto en barras. Y la pantalla nueva
+**Circuitos** muestra las 24 pistas a fondo: ficha técnica calculada con la
+física del juego y la traza de velocidad de una vuelta, guía curva por
+curva con velocidades, marcha, frenada y un consejo, y tus tiempos (mejor
+vuelta, sectores, vuelta ideal y resultados en esa pista).
+
+Desde la 2.1.0: la trazada ideal ya nunca pide curvas más cerradas de lo que
 gira el auto (la horquilla de Mónaco se toma a 49 km/h, como en la
 realidad) y los bots aprenden cada pista: en Leyenda casi no se salen,
 largan limpio y no quedan atascados. Desde la 2.0.0: las 24 pistas del calendario 2026 con su trazado real (de

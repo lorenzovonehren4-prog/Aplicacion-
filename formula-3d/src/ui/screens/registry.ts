@@ -1,6 +1,7 @@
 import type { Game } from '../../core/Game';
 import { AssistsManualScreen } from './AssistsManualScreen';
 import { ChampionshipScreen } from './ChampionshipScreen';
+import { CircuitsScreen } from './CircuitsScreen';
 import { GarageScreen } from './GarageScreen';
 import { MainMenuScreen } from './MainMenuScreen';
 import { PodiumScreen } from './PodiumScreen';
@@ -25,6 +26,7 @@ export function registerScreens(game: Game): void {
   game.screens.register('podium', () => new PodiumScreen(game));
   game.screens.register('pass', () => new SeasonPassScreen(game));
   game.screens.register('garage', () => new GarageScreen(game));
+  game.screens.register('circuits', () => new CircuitsScreen(game));
   game.screens.register('profile', () => new ProfileScreen(game));
   game.screens.register('assistsManual', () => new AssistsManualScreen(game));
   game.screens.register('tutorial', () => new TutorialScreen(game));

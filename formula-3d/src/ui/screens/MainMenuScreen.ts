@@ -17,8 +17,12 @@ import { LEVEL_INFO } from '../../assists/presets';
 import type { Game } from '../../core/Game';
 import { CHAMPIONSHIPS, getChampionship, LEVEL_LABEL, TRACK_DIFFICULTY } from '../../data/championships';
 import { GAME_VERSION, MAIN_MENU, type MenuItem, type MenuItemId } from '../../data/game';
-import type { StudioScene } from '../../garage/StudioScene';
+import type { DriverGesture, DriverPose } from '../../garage/DriverModel';
+import type { StudioScene, StudioShot } from '../../garage/StudioScene';
+import { formatInteger } from '../../core/utils/format';
+import { applyUpgrades, carStats, totalLevels, UPGRADE_IDS, UPGRADE_MAX_LEVEL } from '../../progression/upgrades';
 import { DIFFICULTY_INFO } from '../../race/ai/difficulty';
+import { F1_SPEC } from '../../race/physics/CarSpec';
 import { isFinished, nextRound } from '../../race/championship';
 import { getTrack, TRACKS } from '../../tracks/registry';
 import { countUp } from '../anim/countUp';
@@ -43,6 +47,7 @@ const OPENERS: Partial<Record<MenuItemId, Opener>> = {
   quickRace: (game) => game.screens.goTo('raceSelect', { mode: 'quickRace' }),
   timeTrial: (game) => game.screens.goTo('raceSelect', { mode: 'timeTrial' }),
   championship: (game) => game.screens.goTo('championship', undefined),
+  circuits: (game) => game.screens.goTo('circuits', undefined),
   pass: (game) => game.screens.goTo('pass', undefined),
   garage: (game) => game.screens.goTo('garage', undefined),
   profile: (game) => game.screens.goTo('profile', undefined),
@@ -56,6 +61,7 @@ const ACCENTS: Readonly<Record<MenuItemId, string>> = {
   quickRace: '#ff2a3c',
   timeTrial: '#a97bff',
   championship: '#ffc53d',
+  circuits: '#29d8ff',
   garage: '#ff8a3d',
   pass: '#ff5fb0',
   profile: '#5b9bff',
@@ -87,6 +93,40 @@ interface Feature {
   accent: string;
   open: Opener | undefined;
   card: HTMLButtonElement;
+  /** Qué acceso es (para el gesto del piloto). */
+  id: MenuItemId | 'continue';
+}
+
+/**
+ * Lo que hace el piloto del estudio al enfocar cada tarjeta: un gesto, una
+ * pose fija y, para el perfil, la cámara se acerca a él.
+ */
+const STAGING: Readonly<Record<MenuItemId | 'continue', { gesture?: DriverGesture; pose?: DriverPose; shot?: StudioShot }>> = {
+  continue: { gesture: 'helmet' },
+  practice: { gesture: 'thumbsUp' },
+  quickRace: { gesture: 'helmet' },
+  timeTrial: { gesture: 'helmet', pose: 'hips' },
+  championship: { gesture: 'thumbsUp' },
+  circuits: { gesture: 'point' },
+  garage: { gesture: 'point', pose: 'lean' },
+  pass: { gesture: 'wave' },
+  profile: { pose: 'crossed', shot: 'driver' },
+  manual: { pose: 'hips' },
+  settings: {},
+};
+/** Tiempo que el foco tiene que quedarse en una tarjeta para que el piloto reaccione (ms). */
+const STAGE_DELAY = 420;
+/** Separación mínima entre gestos (s): navegar rápido no lo vuelve loco. */
+const GESTURE_GAP = 2.4;
+
+/**
+ * Rótulo de la tarjeta: las palabras largas llevan un guion suave en su
+ * sílaba, así en tarjetas angostas cortan bien ("CONTRA-RRELOJ") en vez de
+ * quedar recortadas.
+ */
+const SOFT_BREAKS: Readonly<Record<string, string>> = { Contrarreloj: 'Contra\u00ADrreloj' };
+function cardLabel(label: string): string {
+  return SOFT_BREAKS[label] ?? label;
 }
 
 /** Cuánto se corre el auto a la derecha para dejar lugar al panel, según el ancho. */
@@ -139,6 +179,9 @@ export class MainMenuScreen extends BaseScreen {
   private current: Feature | null = null;
   private heroTween: gsap.core.Timeline | null = null;
   private pillPlaced = false;
+  private stageTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastGesture = -Infinity;
+  private shot: StudioShot | null = null;
 
   constructor(game: Game) {
     super(game, 'screen--menu');
@@ -215,6 +258,7 @@ export class MainMenuScreen extends BaseScreen {
     });
     this.own.add(() => {
       this.heroTween?.kill();
+      if (this.stageTimer) clearTimeout(this.stageTimer);
     });
 
     const first = this.tiles.get('quickRace') ?? this.cards[0];
@@ -242,6 +286,18 @@ export class MainMenuScreen extends BaseScreen {
     // El panel grande vuelve a entrar con el resto (la pantalla ya está a la vista).
     if (this.current) this.showFeature(this.current, 0.2);
     this.placePill(false);
+    // El piloto saluda al llegar al menú.
+    this.own.timeout(() => {
+      this.lastGesture = performance.now() / 1000;
+      this.studio?.driverGesture('wave');
+    }, quick ? 0 : 700);
+  }
+
+  override exit(): void {
+    // El estudio sigue para otras pantallas: vuelve al giro lento y a las poses sueltas.
+    if (this.shot) this.studio?.setShot(null);
+    this.studio?.driverPose(null);
+    super.exit();
   }
 
   update(dt: number): void {
@@ -283,6 +339,26 @@ export class MainMenuScreen extends BaseScreen {
     if (first && this.nav.focused !== first) this.nav.focus(first, false);
   }
 
+  /** El piloto (y la cámara) reaccionan a la tarjeta si el foco se queda en ella. */
+  private stage(id: MenuItemId | 'continue'): void {
+    if (this.stageTimer) clearTimeout(this.stageTimer);
+    this.stageTimer = setTimeout(() => {
+      this.stageTimer = null;
+      const staging = STAGING[id];
+      const shot = staging.shot ?? null;
+      if (shot !== this.shot) {
+        this.shot = shot;
+        this.studio?.setShot(shot);
+      }
+      this.studio?.driverPose(staging.pose ?? null);
+      const now = performance.now() / 1000;
+      if (staging.gesture && now - this.lastGesture > GESTURE_GAP) {
+        this.lastGesture = now;
+        this.studio?.driverGesture(staging.gesture);
+      }
+    }, STAGE_DELAY);
+  }
+
   /** Grupo del riel: rótulo y tarjetas; `units` reparte el ancho. */
   private group(label: string, units: number, ...cards: HTMLButtonElement[]): HTMLElement {
     return h(
@@ -302,6 +378,7 @@ export class MainMenuScreen extends BaseScreen {
         const next = feature();
         this.showFeature(next, 0);
         this.placePill(true);
+        this.stage(next.id);
       },
       onConfirm: () => {
         const next = this.current?.card === card ? this.current : feature();
@@ -328,7 +405,7 @@ export class MainMenuScreen extends BaseScreen {
             props,
             svg(ICONS[item.icon], 'icon mcard__mark'),
             h('span', { class: 'mcard__head' }, svg(ICONS[item.icon], 'icon mcard__icon'), open ? null : svg(ICONS.lock, 'icon mcard__lock')),
-            h('span', { class: 'mcard__label', text: item.label }),
+            h('span', { class: 'mcard__label', text: cardLabel(item.label) }),
             h('span', { class: 'mcard__sub', text: open ? this.subFor(item.id) : `Fase ${item.phase}` }),
           )
         : h('button', props, svg(ICONS[item.icon], 'icon mchip__icon'), h('span', { class: 'mchip__label', text: item.label }));
@@ -344,6 +421,7 @@ export class MainMenuScreen extends BaseScreen {
       accent: ACCENTS[item.id],
       open,
       card: tile,
+      id: item.id,
     }));
     return tile;
   }
@@ -418,6 +496,7 @@ export class MainMenuScreen extends BaseScreen {
       accent: CONTINUE_ACCENT,
       open,
       card,
+      id: 'continue',
     }));
     return card;
   }
@@ -452,8 +531,12 @@ export class MainMenuScreen extends BaseScreen {
         if (state && !isFinished(state)) return `${state.rounds.filter((r) => r.results).length}/${state.rounds.length} carreras`;
         return `${CHAMPIONSHIPS.length} campeonatos`;
       }
+      case 'circuits': {
+        const timed = Object.values(data.records).filter((r) => r.bestLap !== null).length;
+        return `${timed}/${TRACKS.length} con tiempo`;
+      }
       case 'garage':
-        return `Auto #${data.garage.number}`;
+        return data.workshop.points > 0 ? `${data.workshop.points} ${data.workshop.points === 1 ? 'punto' : 'puntos'}` : `Auto #${data.garage.number}`;
       case 'pass':
         return `Nivel ${this.passLevel()}`;
       case 'profile':
@@ -501,11 +584,20 @@ export class MainMenuScreen extends BaseScreen {
           ['Títulos', stats.championships],
         ];
       }
-      case 'garage':
+      case 'circuits':
         return [
-          ['Número', `#${data.garage.number}`],
-          ['Desbloqueados', data.progression.unlocked.length],
+          ['Circuitos', TRACKS.length],
+          ['Con tu tiempo', records.filter((r) => r.bestLap !== null).length],
+          ['Curvas', TRACKS.reduce((sum, t) => sum + t.turns, 0)],
         ];
+      case 'garage': {
+        const car = carStats(applyUpgrades(F1_SPEC, data.workshop.levels));
+        return [
+          ['Mejoras', `${totalLevels(data.workshop.levels)}/${UPGRADE_IDS.length * UPGRADE_MAX_LEVEL}`],
+          ['Puntos', data.workshop.points],
+          ['Potencia', `${formatInteger(car.power)} CV`],
+        ];
+      }
       case 'pass':
         return [
           ['Nivel del pase', this.passLevel()],
