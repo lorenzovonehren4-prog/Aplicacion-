@@ -141,6 +141,35 @@ const DAMAGE_GRIP = 0.12;
 const DAMAGE_DOWNFORCE = 0.15;
 const DAMAGE_DRAG = 0.1;
 
+/** Todo el estado del auto (para la repetición: se guarda antes de mostrarla y se vuelve a él después). */
+export type VehicleState = ReturnType<Vehicle['saveState']>;
+
+/** Una pose grabada (la repetición la muestra sin física). */
+export interface ShownPose {
+  x: number;
+  z: number;
+  heading: number;
+  speed: number;
+  /** Aceleración (m/s², para la inclinación y las luces). */
+  accel: number;
+  /** Velocidad de giro (rad/s, para la inclinación lateral). */
+  yawRate: number;
+  steer: number;
+  drs: number;
+  throttle: number;
+  brake: number;
+  slide: number;
+  lockup: number;
+  wheelspin: number;
+  rumble: number;
+  wheelsOff: number;
+  gear: number;
+  rpm: number;
+}
+
+/** Distancia (m) entre dos poses mostradas desde la que se considera un salto (repetición). */
+const SHOW_JUMP = 25;
+
 /** Agarre relativo de un neumático con este desgaste (0–1). */
 export function tyreGrip(wear: number): number {
   const w = Math.max(0, Math.min(1, wear));
@@ -337,6 +366,114 @@ export class Vehicle {
     this.telemetry.throttle = input.throttle;
     this.telemetry.brake = input.brake;
     this.wear(dt);
+  }
+
+  /** Copia de todo el estado (física, motor, caja, ruedas, telemetría, desgaste). */
+  saveState() {
+    return {
+      x: this.x,
+      z: this.z,
+      heading: this.heading,
+      vx: this.vx,
+      vy: this.vy,
+      yawRate: this.yawRate,
+      steerAngle: this.steerAngle,
+      drs: this.drs,
+      drsAllowed: this.drsAllowed,
+      slipstream: this.slipstream,
+      wheelSpinFront: this.wheelSpinFront,
+      wheelSpinRear: this.wheelSpinRear,
+      held: this.held,
+      tyreWear: this.tyreWear,
+      damage: this.damage,
+      rpm: this.rpm,
+      damageCooldown: this.damageCooldown,
+      smoothedAx: this.smoothedAx,
+      reverseTimer: this.reverseTimer,
+      gearbox: this.gearbox.state,
+      projection: { ...this.projection },
+      wheels: this.wheels.map((wheel) => ({ ...wheel, projection: { ...wheel.projection } })),
+      telemetry: { ...this.telemetry },
+    };
+  }
+
+  /** Vuelve a un estado guardado con `saveState`. */
+  loadState(state: VehicleState): void {
+    this.x = state.x;
+    this.z = state.z;
+    this.heading = state.heading;
+    this.vx = state.vx;
+    this.vy = state.vy;
+    this.yawRate = state.yawRate;
+    this.steerAngle = state.steerAngle;
+    this.drs = state.drs;
+    this.drsAllowed = state.drsAllowed;
+    this.slipstream = state.slipstream;
+    this.wheelSpinFront = state.wheelSpinFront;
+    this.wheelSpinRear = state.wheelSpinRear;
+    this.held = state.held;
+    this.tyreWear = state.tyreWear;
+    this.damage = state.damage;
+    this.rpm = state.rpm;
+    this.damageCooldown = state.damageCooldown;
+    this.smoothedAx = state.smoothedAx;
+    this.reverseTimer = state.reverseTimer;
+    this.gearbox.state = state.gearbox;
+    Object.assign(this.projection, state.projection);
+    state.wheels.forEach((saved, i) => {
+      const wheel = this.wheels[i];
+      if (!wheel) return;
+      wheel.x = saved.x;
+      wheel.z = saved.z;
+      wheel.surface = saved.surface;
+      wheel.load = saved.load;
+      Object.assign(wheel.projection, saved.projection);
+    });
+    Object.assign(this.telemetry, state.telemetry);
+  }
+
+  /**
+   * Muestra una pose grabada (repetición): posición, giro de las ruedas,
+   * motor y telemetría para el dibujo, el sonido y el humo; sin física.
+   */
+  showPose(pose: ShownPose, dt: number): void {
+    const spec = this.spec;
+    // Un salto (al saltar en la repetición): la proyección busca en toda la pista, no cerca de donde estaba.
+    if (Math.hypot(pose.x - this.x, pose.z - this.z) > SHOW_JUMP) {
+      this.projection.index = -1;
+      for (const wheel of this.wheels) wheel.projection.index = -1;
+    }
+    this.x = pose.x;
+    this.z = pose.z;
+    this.heading = pose.heading;
+    this.vx = pose.speed;
+    this.vy = 0;
+    this.yawRate = pose.yawRate;
+    this.steerAngle = pose.steer;
+    this.drs = pose.drs;
+    this.updateWheelPositions();
+    this.updateProjections();
+    this.rpm = pose.rpm;
+    this.wheelSpinFront += (pose.speed / spec.wheelRadius) * dt;
+    this.wheelSpinRear += (pose.speed / spec.wheelRadius) * dt;
+    const t = this.telemetry;
+    t.speed = pose.speed;
+    t.rpm = pose.rpm;
+    t.gear = pose.gear;
+    t.throttle = pose.throttle;
+    t.brake = pose.brake;
+    t.ax = pose.accel;
+    t.ay = pose.speed * pose.yawRate;
+    t.slide = pose.slide;
+    t.lockup = pose.lockup;
+    t.wheelspin = pose.wheelspin;
+    t.rumble = pose.rumble;
+    t.wheelsOff = pose.wheelsOff;
+    t.impact = 0;
+    t.limiter = false;
+    t.tcActive = false;
+    t.absActive = false;
+    t.stabilityActive = false;
   }
 
   /** Neumáticos nuevos y auto reparado (parada en boxes). */

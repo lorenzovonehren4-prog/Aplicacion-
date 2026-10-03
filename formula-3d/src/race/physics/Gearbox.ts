@@ -32,6 +32,18 @@ export class Gearbox {
 
   constructor(private readonly spec: CarSpec) {}
 
+  /** Estado de la caja (para guardarlo y volver a él, ver `Vehicle.saveState`). */
+  get state(): { gear: Gear; shiftCut: number; shiftCount: number; sinceShift: number } {
+    return { gear: this.gear, shiftCut: this.shiftCut, shiftCount: this.shiftCount, sinceShift: this.sinceShift };
+  }
+
+  set state(state: { gear: Gear; shiftCut: number; shiftCount: number; sinceShift: number }) {
+    this.gear = state.gear;
+    this.shiftCut = state.shiftCut;
+    this.shiftCount = state.shiftCount;
+    this.sinceShift = state.sinceShift;
+  }
+
   reset(gear: Gear = 1): void {
     this.gear = gear;
     this.shiftCut = 0;

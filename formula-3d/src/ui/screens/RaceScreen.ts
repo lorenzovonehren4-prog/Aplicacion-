@@ -44,6 +44,11 @@ import type { Vehicle } from '../../race/physics/Vehicle';
 import { CAMERA_LABELS } from '../../race/camera/RaceCamera';
 import { RaceWorld, type IntroShot } from '../../race/RaceWorld';
 import type { CrewStop } from '../../race/render/PitCrew';
+import { REPLAY_CAMERA_LABELS, REPLAY_CAMERA_ORDER, ReplayCamera, type ReplayTarget } from '../../race/camera/ReplayCamera';
+import { ReplayPlayer } from '../../race/ReplayPlayer';
+import { ReplayRecorder, type ReplaySource } from '../../race/session/Replay';
+import type { VehicleState } from '../../race/physics/Vehicle';
+import { ReplayOverlay, type ReplayRow } from '../race/ReplayOverlay';
 import { BuildCancelled } from '../../tracks/TrackBuilder';
 import { getTrack, TRACKS } from '../../tracks/registry';
 import { Track } from '../../tracks/Track';
@@ -56,7 +61,7 @@ import { LoadingOverlay } from '../race/LoadingOverlay';
 import { PauseMenu, type PauseChoice } from '../race/PauseMenu';
 import { BaseScreen } from './BaseScreen';
 
-type Phase = 'loading' | 'intro' | 'running' | 'paused' | 'results' | 'error' | 'leaving';
+type Phase = 'loading' | 'intro' | 'running' | 'paused' | 'results' | 'replay' | 'error' | 'leaving';
 
 /** Cada cuánto se renueva la vibración del gamepad (ms). */
 const RUMBLE_INTERVAL = 90;
@@ -70,6 +75,10 @@ const SLOW_MOTION_HOLD = 1.3;
 const SLOW_MOTION_RAMP = 0.9;
 /** Frecuencia de la torre de posiciones (s) y de los rivales en el minimapa (s). */
 const STANDINGS_INTERVAL = 0.25;
+/** La grabación sigue estos segundos después de la bandera del jugador (la vuelta de enfriamiento). */
+const REPLAY_TAIL = 8;
+/** La interfaz de la repetición se actualiza cada tanto (s). */
+const REPLAY_UI_INTERVAL = 0.1;
 /** Con menos vueltas que esto (en total) se muestran las teclas al empezar. */
 const NEWCOMER_LAPS = 15;
 /** Reacción a la largada: excelente y buena (s). */
@@ -87,6 +96,18 @@ const RADIO_IMPACT = 14;
 const RADIO_IMPACT_GAP = 20_000;
 
 const QUALITY_LABELS = { low: 'Baja', medium: 'Media', high: 'Alta', ultra: 'Ultra' } as const;
+/** Grabación mínima (cuadros) para ofrecer la repetición. */
+const REPLAY_HZ_MIN = 40;
+
+/** Filas de la torre de la repetición: todas si entran; si no, los primeros y alrededor del auto que se sigue. */
+function pickReplayRows(rows: ReplayRow[]): ReplayRow[] {
+  const max = 10;
+  if (rows.length <= max) return rows;
+  const focus = rows.findIndex((row) => row.focused);
+  if (focus < max - 2) return rows.slice(0, max);
+  const start = Math.max(3, Math.min(rows.length - (max - 3), focus - 3));
+  return [...rows.slice(0, 3), ...rows.slice(start, start + max - 3)];
+}
 
 /** Espera `count` cuadros del navegador. */
 function waitFrames(count: number): Promise<void> {
@@ -137,7 +158,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private world: RaceWorld | null = null;
   /** Los autos que emiten partículas (el jugador y los rivales). */
   private effectCars: Vehicle[] = [];
-  private readonly contactBurst = (x: number, z: number, speed: number): void => this.world?.effects.burst(x, z, speed);
+  private readonly contactBurst = (x: number, z: number, speed: number): void => {
+    this.world?.effects.burst(x, z, speed);
+    this.recorder?.mark({ kind: 'burst', x, z, speed });
+  };
   private loading: LoadingOverlay | null = null;
   private hud: Hud | null = null;
   private pause: PauseMenu | null = null;
@@ -198,6 +222,15 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private carWarned = { tyres: false, wing: false };
   private carTimer = 0;
   private readonly crewStops: CrewStop[] = [];
+  /** Repetición: la grabación (en carrera), el reproductor y lo que se guarda para volver. */
+  private recorder: ReplayRecorder | null = null;
+  private readonly replaySources: ReplaySource[] = [];
+  /** Hora de la grabación en que el jugador recibió la bandera. */
+  private flagAt: number | null = null;
+  private replay: { player: ReplayPlayer; camera: ReplayCamera; target: ReplayTarget; saved: VehicleState[]; uiTimer: number } | null = null;
+  private replayOverlay: ReplayOverlay | null = null;
+  /** Lo que mostró el panel final (para volver a mostrarlo al salir de la repetición). */
+  private finishShown: { result: RaceResult; personalBest: boolean; xp: number } | null = null;
 
   constructor(game: Game) {
     super(game, 'screen--race');
@@ -232,12 +265,36 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     world.beforeStep();
     const events = session.step(step, driving.controls, driving.drsRequested);
     if (events.length > 0) this.handleSessionEvents(events);
+    this.recordReplay(step, session);
+  }
+
+  /** Graba un paso para la repetición (en carrera, hasta un rato después de la bandera del jugador). */
+  private recordReplay(step: number, session: Session): void {
+    const recorder = this.recorder;
+    const order = session.order;
+    if (!recorder || recorder.closed || !order) return;
+    if (this.flagAt !== null && recorder.now >= this.flagAt + REPLAY_TAIL) {
+      recorder.closed = true;
+      return;
+    }
+    session.cars.forEach((car, i) => {
+      const source = this.replaySources[i] ?? (this.replaySources[i] = { vehicle: car.vehicle, progress: 0, pit: 0 });
+      source.progress = order.runners[i]?.progress ?? 0;
+      source.pit = car.pit ? (car.pit.phase === 'stop' ? 2 : 1) : 0;
+    });
+    recorder.record(step, this.replaySources);
   }
 
   update(dt: number, alpha: number): void {
     const session = this.session;
     const world = this.world;
     if (!session || !world || this.phase === 'loading') return;
+    if (this.phase === 'replay') {
+      this.driving?.update(dt, 0);
+      this.driving?.release();
+      this.updateReplay(dt, session, world);
+      return;
+    }
     const vehicle = session.vehicle;
     const tel = vehicle.telemetry;
     this.updateSlowMotion();
@@ -315,6 +372,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.finish?.onAction(action);
       return;
     }
+    if (this.phase === 'replay') {
+      this.replayOverlay?.onAction(action);
+      return;
+    }
     if (this.phase === 'running' && action === 'back') this.setPaused(true);
   }
 
@@ -346,6 +407,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.hud?.dispose();
     this.pause?.dispose();
     this.finish?.dispose();
+    this.replayOverlay?.dispose();
     this.loading?.dispose();
     this.world?.dispose();
     super.exit();
@@ -480,10 +542,29 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       onChoice: (choice) => this.onPauseChoice(choice),
       onMove: () => this.game.playUi('move'),
     });
+    const recording = session.isRace && session.order !== null;
+    this.recorder = recording ? new ReplayRecorder(session.cars.length) : null;
+    this.replaySources.length = 0;
+    this.flagAt = null;
     this.finish = new FinishPanel({
       onContinue: () => this.openResults(),
+      ...(recording ? { onReplay: () => this.openReplay() } : {}),
       onMove: () => this.game.playUi('move'),
     });
+    this.replayOverlay = recording
+      ? new ReplayOverlay(
+          {
+            onTogglePlay: () => this.replay?.player.togglePlay(),
+            onSeek: (fraction) => this.replaySeek(() => this.replay?.player.seek(fraction)),
+            onSkip: (seconds) => this.replaySeek(() => this.replay?.player.skip(seconds)),
+            onSpeed: (step) => this.replay?.player.changeSpeed(step),
+            onCar: (step) => this.replayFocus(step),
+            onCamera: () => this.replayCamera(),
+            onExit: () => this.closeReplay(),
+          },
+          this.game.input.lastDevice,
+        )
+      : null;
     this.driving = new DrivingInput(
       this.game.input,
       () => this.game.settings.controls,
@@ -552,6 +633,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.own.add(
       this.game.events.on('input:device', ({ device }) => {
         this.startHints?.setDevice(device);
+        this.replayOverlay?.setDevice(device);
       }),
     );
     this.own.add(
@@ -576,6 +658,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     });
 
     this.root.append(this.hud.root, this.introCard, this.skipHint, this.startHints.element, this.pause.root, this.finish.root);
+    if (this.replayOverlay) this.root.append(this.replayOverlay.root);
   }
 
   // ─── Presentación ──────────────────────────────────────────────────────
@@ -667,6 +750,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       else if (this.phase === 'paused' && !this.covered) this.setPaused(false);
       return;
     }
+    if (this.phase === 'replay') {
+      if (event === 'camera') this.replayCamera();
+      return;
+    }
     if (this.phase !== 'running') return;
     switch (event) {
       case 'camera': {
@@ -729,9 +816,12 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         case 'light':
           hud.setLights(event.index + 1);
           world.setStartLights(event.index + 1);
+          this.recorder?.mark({ kind: 'lights', lit: event.index + 1 });
           this.audio.cue('light');
           break;
         case 'lightsOut':
+          this.recorder?.mark({ kind: 'lights', lit: 0 });
+          this.recorder?.markStart();
           this.mirrorDelay = MIRROR_AFTER_START;
           hud.lightsOut();
           world.setStartLights(0);
@@ -791,6 +881,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         }
         case 'lapStarted':
           hud.clearSectors();
+          this.recorder?.mark({ kind: 'lap', number: event.number });
           break;
         case 'sector':
           hud.setSector(event.index, event.result);
@@ -854,6 +945,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           this.own.timeout(() => this.radio('lastLap'), 1200);
           break;
         case 'finished':
+          if (this.recorder) {
+            this.recorder.mark({ kind: 'flag' });
+            this.flagAt = this.recorder.now;
+          }
           this.onFinished(event.result);
           break;
       }
@@ -1005,7 +1100,169 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     // La carrera cuenta en cuanto el jugador recibe la bandera: campeonato y XP se guardan ya.
     this.recordChampionshipRound();
     this.results = this.awardSession(result, personalBest);
+    this.finishShown = { result, personalBest, xp: this.results.award.total };
     this.finish.show(result, personalBest, this.session.standings(), this.results.award.total);
+  }
+
+  // ─── Repetición ────────────────────────────────────────────────────────
+
+  /**
+   * Abre la repetición desde el panel final: la carrera queda en pausa (se
+   * guarda el estado de cada auto para seguir después) y los autos pasan a
+   * mostrar lo grabado.
+   */
+  private openReplay(): void {
+    const session = this.session;
+    const world = this.world;
+    const recorder = this.recorder;
+    const overlay = this.replayOverlay;
+    if (this.phase !== 'results' || !session || !world || !recorder || !overlay || recorder.frames < REPLAY_HZ_MIN) return;
+    this.game.playUi('confirm');
+    this.phase = 'replay';
+    void this.finish?.hide(true);
+    this.stopSlowMotion();
+    const saved = session.cars.map((car) => car.vehicle.saveState());
+    const player = new ReplayPlayer(recorder, session.player.index);
+    const camera = new ReplayCamera(session.track, world.camera);
+    const target: ReplayTarget = { x: 0, z: 0, heading: 0, s: 0, speed: 0 };
+    this.replay = { player, camera, target, saved, uiTimer: 0 };
+    world.racingLine.setHidden(true);
+    world.showPitStop(null);
+    world.effects.clear();
+    world.setMirrorRect(null);
+    this.mirrorShown = null;
+    world.setReplay({ camera, target });
+    this.audio.setMuted(false);
+    overlay.show(player.lapMarks());
+    this.replaySeek(() => undefined);
+  }
+
+  /** Vuelve al panel final: los autos recuperan su estado y la carrera sigue donde estaba. */
+  private closeReplay(): void {
+    const replay = this.replay;
+    const session = this.session;
+    const world = this.world;
+    if (this.phase !== 'replay' || !replay || !session || !world) return;
+    this.game.playUi('back');
+    session.cars.forEach((car, i) => {
+      const state = replay.saved[i];
+      if (state) car.vehicle.loadState(state);
+    });
+    this.replay = null;
+    world.setReplay(null);
+    world.snap();
+    world.effects.clear();
+    world.setStartLights(0);
+    world.showCheckeredFlag();
+    world.updateCrew([]);
+    this.replayOverlay?.hide();
+    this.phase = 'results';
+    const shown = this.finishShown;
+    if (shown && this.finish) this.finish.show(shown.result, shown.personalBest, session.standings(), shown.xp);
+  }
+
+  /** Un salto en el tiempo: corta la cámara y no dispara las chispas del tramo salteado. */
+  private replaySeek(jump: () => void): void {
+    const replay = this.replay;
+    if (!replay) return;
+    jump();
+    replay.camera.snap();
+    this.world?.effects.clear();
+    this.world?.snap();
+  }
+
+  private replayFocus(step: number): void {
+    const replay = this.replay;
+    if (!replay) return;
+    replay.player.cycleFocus(step);
+    replay.camera.snap();
+    this.game.playUi('move');
+  }
+
+  private replayCamera(): void {
+    const replay = this.replay;
+    if (!replay) return;
+    const order = REPLAY_CAMERA_ORDER;
+    replay.camera.setMode(order[(order.indexOf(replay.camera.mode) + 1) % order.length] ?? 'auto');
+    this.game.playUi('tab');
+  }
+
+  /** Un cuadro de la repetición: reloj, poses de los autos, cámara, efectos, sonido y la interfaz. */
+  private updateReplay(dt: number, session: Session, world: RaceWorld): void {
+    const replay = this.replay;
+    if (!replay) return;
+    const { player, target } = replay;
+    const before = player.time;
+    player.advance(dt);
+    const step = player.time - before;
+    world.beforeStep();
+    player.apply(this.effectCars, Math.abs(step));
+    // Lo que sigue la cámara.
+    const focus = session.cars[player.focus]?.vehicle ?? session.vehicle;
+    target.x = focus.x;
+    target.z = focus.z;
+    target.heading = focus.heading;
+    target.speed = focus.vx;
+    target.s = focus.projection.s;
+    world.update(dt, 1, focus.telemetry);
+    world.setStartLights(player.lights);
+    if (player.flag) world.showCheckeredFlag();
+    else world.hideCheckeredFlag();
+    // Chispas de los choques (sólo reproduciendo hacia adelante y no muy rápido).
+    if (player.playing && player.speed <= 2) player.burstsBetween(before, player.time, (x, z, speed) => world.effects.burst(x, z, speed));
+    world.updateEffects(player.playing ? dt * player.speed : 0, this.effectCars, player.playing);
+    // Equipos de boxes de lo grabado.
+    const stops = this.crewStops;
+    stops.length = 0;
+    const pit = session.track.pitLane;
+    session.cars.forEach((car, i) => {
+      const pose = player.cars[i];
+      if (!pose || pose.pit === 0) return;
+      const box = pit.boxes[car.box] ?? 0;
+      stops.push({ box: car.box, color: car.team.primary, toBox: session.track.geometry.deltaS(car.vehicle.projection.s, box), working: pose.pit === 2 });
+    });
+    world.updateCrew(stops);
+    // Sonido: el motor del auto que se sigue (sólo a velocidad normal).
+    const audible = player.playing && player.speed === 1;
+    this.audio.setMuted(!audible);
+    if (audible) {
+      this.audio.update(focus.telemetry, this.surfaces, 0);
+      this.updateTrafficAudio(world, session);
+    }
+    replay.uiTimer -= dt;
+    if (replay.uiTimer > 0) return;
+    replay.uiTimer = REPLAY_UI_INTERVAL;
+    const order = player.standings();
+    const rows: ReplayRow[] = order.map((index, i) => {
+      const car = session.cars[index];
+      return {
+        position: i + 1,
+        code: car?.code ?? '',
+        color: car?.team.primary ?? '#888',
+        isPlayer: car?.isPlayer ?? false,
+        focused: index === player.focus,
+        inPit: (player.cars[index]?.pit ?? 0) > 0,
+      };
+    });
+    const focusCar = session.cars[player.focus];
+    const laps = session.config.laps;
+    this.replayOverlay?.update({
+      time: player.elapsed,
+      duration: player.duration,
+      clock: player.clock,
+      playing: player.playing,
+      speed: player.speed,
+      lap: player.lap,
+      totalLaps: laps,
+      camera: replay.camera.mode === 'auto' ? `${REPLAY_CAMERA_LABELS.auto} · ${REPLAY_CAMERA_LABELS[replay.camera.currentShot]}` : REPLAY_CAMERA_LABELS[replay.camera.mode],
+      car: {
+        position: order.indexOf(player.focus) + 1,
+        name: focusCar?.name ?? '',
+        team: focusCar?.team.name ?? '',
+        color: focusCar?.team.primary ?? '#888',
+      },
+      rows: pickReplayRows(rows),
+    });
   }
 
   /** "Continuar" en el panel final: a los resultados. */

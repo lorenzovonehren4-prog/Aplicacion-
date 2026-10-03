@@ -13,6 +13,8 @@ export const ICONS = {
   helmet: stroke('<path d="M3.5 15a8.5 8.5 0 0 1 17 0v2.5a1.5 1.5 0 0 1-1.5 1.5H7a3.5 3.5 0 0 1-3.5-3.5z"/><path d="M11 11.5h9.3M11 11.5V15h9.5"/>'),
   play: stroke('<path d="M7 4.5v15l12-7.5z"/>'),
   pause: stroke('<path d="M8 5v14M16 5v14"/>'),
+  rewind: stroke('<path d="M11 6 4 12l7 6zM20 6l-7 6 7 6z"/>'),
+  forward: stroke('<path d="M13 6l7 6-7 6zM4 6l7 6-7 6z"/>'),
   exit: stroke('<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>'),
   camera: stroke('<rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/>'),
   stopwatch: stroke('<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5M12 2.5v3.5M18.5 6.5l1.5-1.5"/>'),

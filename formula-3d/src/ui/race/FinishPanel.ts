@@ -19,6 +19,8 @@ import { FocusNavigator } from '../nav/FocusNavigator';
 export interface FinishPanelOptions {
   /** "Continuar": a la pantalla de resultados. */
   onContinue(): void;
+  /** "Ver repetición" (sólo en carrera). */
+  onReplay?: () => void;
   onMove(): void;
 }
 
@@ -44,6 +46,8 @@ export class FinishPanel {
   private readonly panel: HTMLDivElement;
   private readonly buttons: HTMLButtonElement[] = [];
   private visible = false;
+  /** Animación de entrada (se corta si el panel se cierra antes de que termine). */
+  private showTimeline: gsap.core.Timeline | null = null;
 
   constructor(options: FinishPanelOptions) {
     this.nav = new FocusNavigator({ onMove: () => options.onMove() });
@@ -51,6 +55,12 @@ export class FinishPanel {
     const next = createMenuButton({ label: 'Continuar', icon: 'play' });
     this.buttons.push(next);
     this.nav.add(next, { onConfirm: () => options.onContinue() });
+    const onReplay = options.onReplay;
+    const replay = onReplay ? createMenuButton({ label: 'Ver repetición', icon: 'camera' }) : null;
+    if (replay && onReplay) {
+      this.buttons.push(replay);
+      this.nav.add(replay, { onConfirm: () => onReplay() });
+    }
 
     this.panel = h(
       'div',
@@ -66,7 +76,7 @@ export class FinishPanel {
       ),
       this.table,
       this.note,
-      h('div', { class: 'finish__actions' }, h('div', { class: 'finish__xp' }, h('span', { class: 'finish__label', text: 'XP GANADA' }), this.xp), next),
+      h('div', { class: 'finish__actions' }, h('div', { class: 'finish__xp' }, h('span', { class: 'finish__label', text: 'XP GANADA' }), this.xp), h('div', { class: 'finish__buttons' }, next, replay)),
     );
     this.root = h('div', { class: 'finish' }, h('div', { class: 'finish__backdrop' }), this.standingsPanel, this.panel);
   }
@@ -152,7 +162,7 @@ export class FinishPanel {
       tl.from(this.classification.children, { x: -24, opacity: 0, stagger: quick ? 0 : 0.035, duration: quick ? 0.01 : 0.35 }, 0.3);
     }
     tl.from(this.buttons, { x: 40, opacity: 0, stagger: quick ? 0 : 0.08, duration: quick ? 0.01 : 0.45, ease: 'back.out(1.6)' }, 0.8);
-    this.own.tween(tl);
+    this.showTimeline = this.own.tween(tl);
   }
 
   /**
@@ -198,15 +208,19 @@ export class FinishPanel {
     this.classification.replaceChildren(header, ...rows);
   }
 
-  async hide(): Promise<void> {
+  /** @param instant sin animación (al pasar a la repetición: un corte, como en la TV) */
+  async hide(instant = false): Promise<void> {
     if (!this.visible) return;
     this.visible = false;
     this.nav.setEnabled(false);
+    // Si todavía estaba entrando, la entrada termina ya (si no, peleaba con la salida y el panel quedaba a medias).
+    this.showTimeline?.progress(1).kill();
+    this.showTimeline = null;
     const tl = gsap.timeline();
     tl.to(this.panel, { x: 60, opacity: 0, duration: 0.3, ease: 'power2.in' }, 0);
     tl.to(this.standingsPanel, { x: -60, opacity: 0, duration: 0.3, ease: 'power2.in' }, 0);
     tl.to(this.root.querySelector('.finish__backdrop'), { opacity: 0, duration: 0.3 }, 0);
-    if (prefersReducedMotion()) tl.progress(1);
+    if (instant || prefersReducedMotion()) tl.progress(1);
     this.own.tween(tl);
     await finished(tl);
     if (!this.visible) this.root.classList.remove('is-visible');

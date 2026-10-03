@@ -16,6 +16,7 @@ import type { LiveryConfig } from '../garage/livery';
 import { DISTANT_LAYER } from '../tracks/build/context';
 import { buildTrackScene, type BuildOptions, type TrackScene } from '../tracks/TrackBuilder';
 import { RaceCamera } from './camera/RaceCamera';
+import type { ReplayCamera, ReplayTarget } from './camera/ReplayCamera';
 import { performanceModel } from './physics/CarSpec';
 import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
@@ -59,6 +60,8 @@ export class RaceWorld implements RenderView {
   readonly crew: PitCrew;
   /** Toma de TV de la parada en boxes del jugador (box) o null. */
   private pitShot: number | null = null;
+  /** Repetición: su cámara y el auto que sigue (null en carrera). */
+  private replay: { camera: ReplayCamera; target: ReplayTarget } | null = null;
   /** Desenfoque de velocidad y aire caliente de los escapes (lo lee el `RenderHost`). */
   readonly speedFx = createSpeedFx();
   /** Con "reducir movimiento" no hay desenfoque ni apertura del FOV. */
@@ -163,6 +166,21 @@ export class RaceWorld implements RenderView {
     }
     if (box !== null) this.rig.setDriverVisible(true);
     this.pitShot = box;
+  }
+
+  /**
+   * Repetición: la cámara de la repetición reemplaza a la de carrera (sin
+   * desenfoque, espejos ni volante). null = vuelve a la de carrera.
+   */
+  setReplay(replay: { camera: ReplayCamera; target: ReplayTarget } | null): void {
+    this.replay = replay;
+    this.pitShot = null;
+    if (replay) {
+      this.rig.setDriverVisible(true);
+    } else {
+      this.rig.setDriverVisible(this.raceCamera.currentMode !== 'cockpit');
+      this.raceCamera.resetFollow();
+    }
   }
 
   /** Equipos de boxes de las paradas en curso. */
@@ -352,6 +370,8 @@ export class RaceWorld implements RenderView {
     if (this.introTime >= 0) {
       this.introTime += dt;
       this.updateIntroCamera();
+    } else if (this.replay) {
+      this.replay.camera.update(dt, this.replay.target);
     } else {
       this.raceCamera.update(dt, telemetry);
       if (this.pitShot !== null) this.pitCamera(this.pitShot);
@@ -360,7 +380,7 @@ export class RaceWorld implements RenderView {
     // El volante sólo se ve desde el cockpit (y en la presentación, que gira alrededor del
     // auto): con las otras cámaras se ahorran sus llamadas de dibujo y los redibujos de la pantalla.
     const wheel = this.rig.wheel;
-    wheel.root.visible = this.introTime >= 0 || this.raceCamera.currentMode === 'cockpit';
+    wheel.root.visible = this.introTime >= 0 || (this.raceCamera.currentMode === 'cockpit' && !this.replay);
     if (wheel.root.visible) {
       const shift = this.vehicle.spec.shiftRpm;
       wheel.update(this.vehicle.steerAngle, (telemetry.rpm - (shift - 3200)) / 3200, telemetry.limiter, this.time);
@@ -369,6 +389,7 @@ export class RaceWorld implements RenderView {
     // Las sombras cubren lo que se mira: en el vuelo y el paneo, el punto de mira.
     const shot = this.introShot;
     if (shot === 'flyover' || shot === 'grid') this.trackScene.sky.follow(this.lookAt.x, this.lookAt.z);
+    else if (this.replay) this.trackScene.sky.follow(this.replay.target.x, this.replay.target.z);
     else this.trackScene.sky.follow(this.rig.pose.x, this.rig.pose.z);
     this.trackScene.update(this.time);
     this.flag.update(dt, this.time);
@@ -387,12 +408,12 @@ export class RaceWorld implements RenderView {
     const v = this.vehicle;
 
     // Empuje (DRS o rebufo) → FOV; velocidad → desenfoque radial desde el punto de fuga.
-    const rush = this.motionEffects && simulating ? Math.max(v.drs, Math.min(1, v.slipstream * 1.4)) : 0;
+    const rush = this.motionEffects && simulating && !this.replay ? Math.max(v.drs, Math.min(1, v.slipstream * 1.4)) : 0;
     this.raceCamera.setRush(rush);
     const fast = MathUtils.smoothstep(v.speed, 42, 88);
     const mode = this.raceCamera.currentMode;
     const modeFactor = mode === 'chase' ? 0.7 : mode === 'tcam' ? 1 : 0.85;
-    fx.blur = this.motionEffects && simulating && this.introTime < 0 ? (fast * 0.75 + rush * 0.35) * modeFactor : 0;
+    fx.blur = this.motionEffects && simulating && this.introTime < 0 && !this.replay ? (fast * 0.75 + rush * 0.35) * modeFactor : 0;
     if (fx.blur > 0) {
       const ahead = 300;
       this.probe.set(v.x - Math.sin(v.heading) * ahead, 0.8, v.z - Math.cos(v.heading) * ahead).project(camera);
@@ -485,7 +506,7 @@ export class RaceWorld implements RenderView {
    * los espejos del auto. Va después de `update` y antes de dibujar el cuadro.
    */
   renderMirrors(renderer: WebGLRenderer): void {
-    if (!this.mirrors.live || this.frozen || this.introTime >= 0) return;
+    if (!this.mirrors.live || this.frozen || this.introTime >= 0 || this.replay) return;
     const glass = this.mirrors.glassLive && this.raceCamera.currentMode === 'cockpit';
     if (!glass && !this.mirrorOverlay.visible) return;
     this.mirrors.render(renderer, this.scene, this.mirrorHidden, this.rearView.every);
@@ -493,7 +514,7 @@ export class RaceWorld implements RenderView {
 
   /** El retrovisor de la pantalla, encima del cuadro terminado. */
   overlay(renderer: WebGLRenderer): void {
-    if (this.introTime >= 0) return;
+    if (this.introTime >= 0 || this.replay) return;
     this.mirrorOverlay.render(renderer, this.mirrors.image);
   }
 
