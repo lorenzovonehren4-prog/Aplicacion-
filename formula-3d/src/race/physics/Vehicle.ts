@@ -9,7 +9,10 @@
  *   arrastre: una rueda en el pasto tira del auto hacia afuera,
  * - control de tracción y ABS como "electrónica" del auto (las ayudas de la
  *   Fase 3 ajustan su nivel),
- * - choques contra muros con impulso, rebote bajo y fricción.
+ * - choques contra muros con impulso, rebote bajo y fricción,
+ * - desgaste de neumáticos (menos agarre, con un "precipicio" al final) y
+ *   daño por golpes (alerón delantero: menos agarre adelante y más arrastre);
+ *   una parada en boxes los deja nuevos.
  *
  * Convenciones (ISO): x adelante, y izquierda, guiñada positiva = giro a la
  * izquierda. En el mundo, rumbo 0 mira a −Z y `heading` es la rotación Y.
@@ -122,6 +125,28 @@ const STABILITY_GAIN = 7;
 const ANTI_SLIDE_RATE = 12;
 /** Fracción de la deriva del pico de agarre trasero que el anti-derrape deja usar. */
 const ANTI_SLIDE_KEEP = 0.6;
+/**
+ * Neumáticos: hasta `TYRE_CLIFF` de desgaste pierden agarre de a poco
+ * (`TYRE_FADE` en total) y después se caen (`TYRE_CLIFF_DROP` más).
+ */
+const TYRE_FADE = 0.04;
+const TYRE_CLIFF = 0.7;
+const TYRE_CLIFF_DROP = 0.12;
+/** Golpe (m/s) desde el que hay daño, daño por cada m/s de más y tiempo entre dos golpes que cuentan (s). */
+const DAMAGE_FROM = 8;
+const DAMAGE_PER = 0.035;
+const DAMAGE_COOLDOWN = 0.5;
+/** Con el auto destrozado (daño 1): agarre delantero y carga que pierde, arrastre que gana. */
+const DAMAGE_GRIP = 0.12;
+const DAMAGE_DOWNFORCE = 0.15;
+const DAMAGE_DRAG = 0.1;
+
+/** Agarre relativo de un neumático con este desgaste (0–1). */
+export function tyreGrip(wear: number): number {
+  const w = Math.max(0, Math.min(1, wear));
+  return 1 - (TYRE_FADE * Math.min(w, TYRE_CLIFF)) / TYRE_CLIFF - (TYRE_CLIFF_DROP * Math.max(0, w - TYRE_CLIFF)) / (1 - TYRE_CLIFF);
+}
+
 /** Puntos del contorno del auto relativos al CG, en pares (x adelante, y izquierda). */
 const HULL: readonly number[] = [
   3.1, 0.95,
@@ -191,8 +216,17 @@ export class Vehicle {
    * sube de vueltas con el acelerador. Se suelta al apagarse el semáforo.
    */
   held = false;
+  /** Desgaste de los neumáticos (0 = nuevos … 1 = gastados). */
+  tyreWear = 0;
+  /** Daño del auto por golpes (0 = intacto … 1). */
+  damage = 0;
+  /** Desgaste por metro recorrido (lo fija la sesión según el largo de la carrera; 0 = no se gastan). */
+  wearRate = 0;
+  /** Los golpes dañan el auto. */
+  damageEnabled = false;
 
   private rpm: number;
+  private damageCooldown = 0;
   private smoothedAx = 0;
   private reverseTimer = 0;
   private readonly wheelbase: number;
@@ -302,6 +336,84 @@ export class Vehicle {
     this.telemetry.gear = this.gearbox.gear;
     this.telemetry.throttle = input.throttle;
     this.telemetry.brake = input.brake;
+    this.wear(dt);
+  }
+
+  /** Neumáticos nuevos y auto reparado (parada en boxes). */
+  renew(): void {
+    this.tyreWear = 0;
+    this.damage = 0;
+  }
+
+  /** Desgaste de neumáticos (más al patinar, bloquear o derrapar) y daño por golpes. */
+  private wear(dt: number): void {
+    const t = this.telemetry;
+    if (this.wearRate > 0) {
+      const stress = 1 + 1.5 * t.slide + 0.8 * t.lockup + 0.8 * t.wheelspin + (t.wheelsOff >= 2 ? 0.5 : 0);
+      this.tyreWear = Math.min(1, this.tyreWear + this.wearRate * this.speed * dt * stress);
+    }
+    this.damageCooldown = Math.max(0, this.damageCooldown - dt);
+    this.takeHit(t.impact);
+  }
+
+  /** Un golpe (m/s, contra un muro o contra otro auto): desde cierta fuerza, daña el auto. */
+  takeHit(speed: number): void {
+    if (!this.damageEnabled || speed <= DAMAGE_FROM || this.damageCooldown > 0) return;
+    this.damage = Math.min(1, this.damage + (speed - DAMAGE_FROM) * DAMAGE_PER);
+    this.damageCooldown = DAMAGE_COOLDOWN;
+  }
+
+  /**
+   * Mueve el auto por un camino que no sale de la física (la calle de boxes,
+   * con el piloto automático): posición, rumbo y velocidad dados; ruedas,
+   * motor, caja y telemetría siguen como si anduviera.
+   * @param accel aceleración de este paso (m/s², para pedales y luces)
+   * @param steer ángulo de las ruedas delanteras (rad)
+   */
+  moveAlong(dt: number, x: number, z: number, heading: number, speed: number, accel: number, steer: number): void {
+    const spec = this.spec;
+    this.x = x;
+    this.z = z;
+    this.heading = heading;
+    this.vx = speed;
+    this.vy = 0;
+    this.yawRate = 0;
+    this.drs = 0;
+    this.drsAllowed = false;
+    this.steerAngle = steer;
+    this.updateWheelPositions();
+    this.updateProjections();
+    const throttle = accel > 0.05 ? Math.min(1, 0.25 + accel / 6) : speed > 0.5 ? 0.12 : 0;
+    const brake = accel < -0.5 ? Math.min(1, -accel / 10) : 0;
+    const shift = this.shiftInputs;
+    shift.speed = speed;
+    shift.throttle = throttle;
+    shift.brake = brake;
+    shift.wheelspin = false;
+    this.gearbox.update(dt, shift);
+    const target = Math.max(this.gearbox.rpmFor(this.gearbox.gear, speed), spec.idleRpm + (speed < 3 ? throttle * 2500 : 0));
+    this.rpm += (Math.min(spec.limiterRpm, target) - this.rpm) * Math.min(1, dt * 12);
+    this.wheelSpinFront += (speed / spec.wheelRadius) * dt;
+    this.wheelSpinRear += (speed / spec.wheelRadius) * dt;
+    this.smoothedAx = accel;
+    const t = this.telemetry;
+    t.speed = speed;
+    t.rpm = this.rpm;
+    t.gear = this.gearbox.gear;
+    t.throttle = throttle;
+    t.brake = brake;
+    t.ax = accel;
+    t.ay = speed * speed * Math.tan(steer) / (spec.cgToFront + spec.cgToRear);
+    t.wheelspin = 0;
+    t.lockup = 0;
+    t.slide = 0;
+    t.rumble = 0;
+    t.wheelsOff = 0;
+    t.tcActive = false;
+    t.absActive = false;
+    t.stabilityActive = false;
+    t.impact = 0;
+    t.limiter = false;
   }
 
   private substep(dt: number, input: DriverInput): void {
@@ -341,8 +453,8 @@ export class Vehicle {
     // ─── Cargas: peso + carga aerodinámica + transferencia longitudinal ───
     const v2 = this.vx * this.vx + this.vy * this.vy;
     const half = 0.5 * spec.airDensity;
-    const downforce = half * spec.downforceArea * v2 * (1 - spec.drsDownforceCut * this.drs);
-    const drag = half * spec.dragArea * v2 * (1 - spec.drsDragCut * this.drs) * (1 - 0.25 * this.slipstream);
+    const downforce = half * spec.downforceArea * v2 * (1 - spec.drsDownforceCut * this.drs) * (1 - DAMAGE_DOWNFORCE * this.damage);
+    const drag = half * spec.dragArea * v2 * (1 - spec.drsDragCut * this.drs) * (1 - 0.25 * this.slipstream) * (1 + DAMAGE_DRAG * this.damage);
     const transfer = (spec.mass * this.smoothedAx * spec.cgHeight) / this.wheelbase;
     const loadFront = Math.max(
       0.15 * spec.mass * g,
@@ -365,8 +477,8 @@ export class Vehicle {
       rumble = Math.max(rumble, SURFACES[wheel.surface].rumble);
       if (wheel.surface !== 'asphalt' && wheel.surface !== 'kerb') wheelsOff++;
     }
-    const boost = this.electronics.gripBoost ?? 1;
-    const muFront = boost * spec.grip * spec.frontGripBias * (this.gripAt(0) + this.gripAt(1)) * 0.5;
+    const boost = (this.electronics.gripBoost ?? 1) * tyreGrip(this.tyreWear);
+    const muFront = boost * spec.grip * spec.frontGripBias * (this.gripAt(0) + this.gripAt(1)) * 0.5 * (1 - DAMAGE_GRIP * this.damage);
     const muRear = boost * spec.grip * (this.gripAt(2) + this.gripAt(3)) * 0.5;
     const capFront = muFront * loadFront;
     const capRear = muRear * loadRear;

@@ -9,6 +9,7 @@ import { analyzeTrack, type TrackAnalysis } from './TrackAnalysis';
 import type { Side, TrackDefinition } from './TrackDefinition';
 import { TrackGeometry } from './TrackGeometry';
 import { planTrackside, surfaceAt, type SurfaceType, type Trackside } from './Trackside';
+import { planPitLane, type PitLane } from './PitLane';
 
 export interface DrsZone {
   detection: number;
@@ -43,6 +44,8 @@ export class Track {
   readonly sectorEnds: readonly [number, number];
   readonly drsZones: readonly DrsZone[];
   readonly pits: { side: Side; from: number; to: number };
+  /** Calle de boxes: desvíos, muro, carriles y lugares de parada. */
+  readonly pitLane: PitLane;
 
   private constructor(
     readonly def: TrackDefinition,
@@ -53,7 +56,8 @@ export class Track {
     this.startS = g.designToS(def.startLine);
     const model = performanceModel(spec);
     this.analysis = analyzeTrack(g, model, this.startS);
-    this.trackside = planTrackside(def, g, this.analysis);
+    this.pitLane = planPitLane(def, g);
+    this.trackside = planTrackside(def, g, this.analysis, this.pitLane);
     this.racingLine = RacingLine.compute(g, this.trackside, model);
     this.sectorEnds = [g.designToS(def.sectors[0]), g.designToS(def.sectors[1])];
     this.drsZones = def.drsZones.map((zone) => ({

@@ -21,6 +21,7 @@ import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
 import { CarShadows } from './render/CarShadow';
 import { MirrorOverlay } from './render/MirrorOverlay';
+import { PitCrew, type CrewStop } from './render/PitCrew';
 import { RearMirrors, type RearViewMode } from './render/RearMirrors';
 import { CheckeredFlag } from './render/CheckeredFlag';
 import { GhostCar } from './render/GhostCar';
@@ -54,6 +55,10 @@ export class RaceWorld implements RenderView {
   readonly ghost: GhostCar | null;
   /** Humo, tierra y chispas. */
   readonly effects: TrackEffects;
+  /** Equipos de boxes (aparecen cuando su auto para). */
+  readonly crew: PitCrew;
+  /** Toma de TV de la parada en boxes del jugador (box) o null. */
+  private pitShot: number | null = null;
   /** Desenfoque de velocidad y aire caliente de los escapes (lo lee el `RenderHost`). */
   readonly speedFx = createSpeedFx();
   /** Con "reducir movimiento" no hay desenfoque ni apertura del FOV. */
@@ -114,6 +119,8 @@ export class RaceWorld implements RenderView {
     this.ghost = ghost ? new GhostCar(anisotropy) : null;
     if (this.ghost) this.scene.add(this.ghost.root);
     this.effects = new TrackEffects(this.scene, preset.particles);
+    this.crew = new PitCrew(vehicle.track);
+    for (const mesh of this.crew.meshes) this.scene.add(mesh);
     // En el espejo no aparecen el propio auto, la línea de la trazada ni las partículas
     // (su tamaño está calculado para la pantalla, no para la imagen chica del espejo).
     this.mirrorHidden = [this.rig.root, this.racingLine.mesh, ...this.effects.objects];
@@ -142,6 +149,25 @@ export class RaceWorld implements RenderView {
   /** Vuelve a guardar la bandera (al reiniciar la sesión). */
   hideCheckeredFlag(): void {
     this.flag.hide();
+  }
+
+  /**
+   * Parada del jugador: mientras el equipo trabaja, una cámara de TV desde el
+   * box (adelante y del lado de los garajes); al terminar vuelve suave a la de carrera.
+   */
+  showPitStop(box: number | null): void {
+    if (box === null && this.pitShot !== null) {
+      const camera = this.camera;
+      this.raceCamera.blendFrom(camera.position.clone(), camera.quaternion.clone(), camera.fov, 0.8);
+      this.rig.setDriverVisible(this.raceCamera.currentMode !== 'cockpit');
+    }
+    if (box !== null) this.rig.setDriverVisible(true);
+    this.pitShot = box;
+  }
+
+  /** Equipos de boxes de las paradas en curso. */
+  updateCrew(stops: readonly CrewStop[]): void {
+    this.crew.update(stops);
   }
 
   /** Muestra la línea de trazada según la ayuda elegida. */
@@ -328,6 +354,7 @@ export class RaceWorld implements RenderView {
       this.updateIntroCamera();
     } else {
       this.raceCamera.update(dt, telemetry);
+      if (this.pitShot !== null) this.pitCamera(this.pitShot);
     }
     this.rivals?.update(dt, alpha, this.camera.position);
     // El volante sólo se ve desde el cockpit (y en la presentación, que gira alrededor del
@@ -485,6 +512,7 @@ export class RaceWorld implements RenderView {
   dispose(): void {
     this.flag.dispose();
     this.effects.dispose();
+    this.crew.dispose();
     this.ghost?.dispose();
     this.rivals?.dispose();
     this.racingLine.dispose();
@@ -495,6 +523,21 @@ export class RaceWorld implements RenderView {
     this.releaseShadowDepth();
     this.trackScene.dispose();
     this.scene.clear();
+  }
+
+  /** Toma de la parada: desde el carril rápido, adelante del box, mirando al auto y al equipo. */
+  private pitCamera(box: number): void {
+    const track = this.vehicle.track;
+    const pit = track.pitLane;
+    const s = pit.boxes[box] ?? pit.boxes[0] ?? 0;
+    const geometry = track.geometry;
+    geometry.pointAt(s + 8.5, pit.sign * (pit.inner + 1.2), this.point);
+    const camera = this.camera;
+    camera.position.set(this.point.x, 1.9, this.point.z);
+    this.lookAt.set(this.rig.pose.x, 0.7, this.rig.pose.z);
+    camera.up.set(0, 1, 0);
+    camera.lookAt(this.lookAt);
+    this.setIntroFov(44);
   }
 
   /** Cámara de la presentación según la toma. */

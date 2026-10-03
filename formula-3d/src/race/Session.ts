@@ -13,18 +13,19 @@ import { BrakingAssist } from '../assists/BrakingAssist';
 import { SteeringAssist } from '../assists/SteeringAssist';
 import { TRACTION_LEVELS, type ActiveAssists } from '../assists/presets';
 import type { SessionMode } from '../core/screens/params';
-import { PLAYER_TEAM_ID, teamOf, type DriverDef, type TeamDef } from '../data/teams';
+import { PLAYER_TEAM_ID, TEAMS, teamOf, type DriverDef, type TeamDef } from '../data/teams';
 import type { Track } from '../tracks/Track';
 import { BotDriver, CAR_LENGTH } from './ai/BotDriver';
 import { botParams } from './ai/difficulty';
 import type { DrivingControls } from './input/DrivingInput';
 import { resolveCarCollisions, type CarContact } from './physics/CarCollisions';
 import { performanceModel, type CarSpec } from './physics/CarSpec';
-import { Vehicle, type DriverInput } from './physics/Vehicle';
+import { tyreGrip, Vehicle, type DriverInput } from './physics/Vehicle';
 import { LapTimer, type LapEvent, type LapRecord } from './session/LapTimer';
 import { GhostRecorder, type GhostLap } from './session/Ghost';
 import { RaceOrder, type OrderEvent } from './session/RaceOrder';
 import { RaceFlags, type FlagCar, type FlagEvent } from './session/Flags';
+import { PitStop } from './session/PitStop';
 
 /** Agarre extra del nivel Principiante (×1,08: como más carga aerodinámica). */
 const BEGINNER_GRIP = 1.08;
@@ -81,6 +82,16 @@ export interface Competitor {
   slipstream: number;
   /** Segundos que le quedan como "fantasma" (sin choques) tras volver a la pista. */
   ghost: number;
+  /** Box de su equipo (índice en la calle de boxes). */
+  readonly box: number;
+  /** Parada en boxes en curso (null en pista). */
+  pit: PitStop | null;
+  /** Segundos que todavía no choca después de salir de boxes (mientras se acomoda en la pista). */
+  rejoin: number;
+  /** Paradas hechas en la carrera. */
+  stops: number;
+  /** Bots: vuelta al final de la cual para en boxes (null = no planea parar). */
+  pitLap: number | null;
 }
 
 /** Fila de la clasificación o de la tabla de posiciones. */
@@ -107,6 +118,8 @@ export interface StandingRow {
   fastestLap: boolean;
   /** Sanción de tiempo acumulada (s): se suma al tiempo final. */
   penalty: number;
+  /** Está parando en boxes. */
+  inPit: boolean;
 }
 
 export interface RaceResult {
@@ -123,6 +136,8 @@ export interface RaceResult {
   penalty: number;
   /** Advertencias por límites de pista. */
   warnings: number;
+  /** Paradas en boxes del jugador. */
+  stops: number;
 }
 
 export type SessionEvent =
@@ -145,6 +160,12 @@ export type SessionEvent =
    * carrera, donde sólo deja la vuelta sin récord) y la sanción de ahora (s).
    */
   | { kind: 'trackLimits'; count: number; penalty: number }
+  /** Un auto entra a boxes, empieza el servicio o vuelve a la pista (`time` = segundos de servicio). */
+  | { kind: 'pitEntry'; index: number }
+  | { kind: 'pitService'; index: number; time: number }
+  /** Terminó el servicio: el auto arranca del box. */
+  | { kind: 'pitRelease'; index: number }
+  | { kind: 'pitExit'; index: number; time: number }
   | { kind: 'lastLap' }
   | { kind: 'position'; from: number; to: number }
   | { kind: 'fastestLap'; index: number; time: number }
@@ -186,6 +207,27 @@ export const TIME_PENALTY = 5;
 export const TRACK_LIMIT_WARNINGS = 3;
 /** Tiempo (s) con las ruedas en pista para que la próxima salida cuente como otra infracción. */
 const TRACK_LIMIT_RESET = 1;
+/** Carreras desde este largo (vueltas) piden una parada: los neumáticos no llegan al final. */
+export const PIT_STRATEGY_LAPS = 5;
+/** Vueltas que duran los neumáticos (fracción de la carrera, carreras largas y cortas) y en práctica. */
+const TYRE_LIFE_LONG = 0.62;
+const TYRE_LIFE_SHORT = 1.6;
+const TYRE_LIFE_PRACTICE = 8;
+/** Manejando normal se gastan algo más que en la cuenta (derrapes, bloqueos): margen del cálculo. */
+const WEAR_MARGIN = 1.15;
+/** Bots: paran por daño o por neumáticos desde estos valores (si queda más de una vuelta). */
+const BOT_PIT_DAMAGE = 0.45;
+const BOT_PIT_WEAR = 0.9;
+/**
+ * Choque entre autos (m/s) que daña a los dos: un toque de autos rueda a rueda
+ * golpea más el alerón que lo que dice su velocidad (se suma este extra).
+ */
+const CONTACT_DAMAGE = 6;
+const DAMAGE_CONTACT_BONUS = 2;
+/** Jugador: con las ruedas tan afuera del borde (m) dentro del desvío de entrada, entra a boxes. */
+const PIT_ENTRY_DEPTH = 4;
+/** Segundos sin chocar después de volver a la pista desde boxes. */
+const REJOIN_TIME = 1.5;
 /** Las banderas amarillas y azules empiezan a contar después de la largada (s de carrera). */
 const FLAGS_FROM = 8;
 /** Salida en falso: el auto se escapa hasta este tramo (m) a lo sumo a esta velocidad (m/s) y frena. */
@@ -215,6 +257,8 @@ export class Session {
   jumpStart = false;
   /** Tiempo de reacción del jugador a la largada (s), si lo hubo. */
   reaction: number | null = null;
+  /** El jugador pidió boxes: entra al pasar por la entrada. */
+  pitRequested = false;
   /** Ayuda de frenado (su `active` ilumina el ícono del HUD). */
   readonly brakingAssist: BrakingAssist;
   readonly steeringAssist: SteeringAssist;
@@ -248,7 +292,11 @@ export class Session {
   private readonly lastS: number[];
   private readonly orderEvents: OrderEvent[] = [];
   private readonly flagCars: FlagCar[];
+  /** Dónde estaba cada auto en el paso anterior (s), para ver si pasó por la entrada de boxes. */
+  private readonly pitPrevS: number[];
   private readonly flagEvents: FlagEvent[] = [];
+  /** Entradas a boxes de este paso (se pasan a los eventos del paso). */
+  private readonly pitEvents: SessionEvent[] = [];
   private readonly raw: DriverInput = { throttle: 0, brake: 0, steer: 0, drs: false };
   private readonly assisted: DriverInput = { throttle: 0, brake: 0, steer: 0, drs: false };
   private readonly botInput: DriverInput = { throttle: 0, brake: 0, steer: 0, drs: false };
@@ -293,6 +341,11 @@ export class Session {
         drsArmed: false,
         slipstream: 0,
         ghost: 0,
+        box: boxOf(driver.teamId),
+        pit: null,
+        rejoin: 0,
+        stops: 0,
+        pitLap: null,
       };
     });
     // El jugador larga en la mitad de la parrilla (o último, si se pide).
@@ -310,6 +363,11 @@ export class Session {
       drsArmed: false,
       slipstream: 0,
       ghost: 0,
+      box: boxOf(PLAYER_TEAM_ID),
+      pit: null,
+      rejoin: 0,
+      stops: 0,
+      pitLap: null,
     });
     this.cars = grid.map((car, index) => ({ ...car, index }));
     const player = this.cars[playerSlot];
@@ -317,6 +375,7 @@ export class Session {
     this.player = player;
     this.vehicles = this.cars.map((car) => car.vehicle);
     this.penalties = this.cars.map(() => 0);
+    this.pitPrevS = this.cars.map(() => 0);
     this.flagCars = this.cars.map(() => ({ distance: 0, progress: 0, speed: 0, wheelsOff: 0, ignore: true }));
     this.solid = this.cars.map(() => true);
     this.distances = this.cars.map(() => 0);
@@ -367,7 +426,7 @@ export class Session {
   /** ¿El auto va en sentido contrario a la pista? */
   get wrongWay(): boolean {
     const v = this.vehicle;
-    if (this.phase !== 'running' || v.speed < WRONG_WAY_SPEED || v.vx < 0) return false;
+    if (this.phase !== 'running' || this.player.pit || v.speed < WRONG_WAY_SPEED || v.vx < 0) return false;
     const g = this.track.geometry;
     const i = g.wrapIndex(v.projection.index);
     const dot = -Math.sin(v.heading) * (g.tx[i] ?? 0) - Math.cos(v.heading) * (g.tz[i] ?? 0);
@@ -436,6 +495,7 @@ export class Session {
         bestLap: runner.bestLap,
         fastestLap: order.fastest?.index === index,
         penalty: this.penalties[index] ?? 0,
+        inPit: car.pit !== null,
       };
     });
     return classify(rows);
@@ -493,17 +553,25 @@ export class Session {
     // ─── Mandos de cada auto ───
     // Los fantasmas no chocan ni cuentan como tráfico para los bots.
     this.visible.length = 0;
+    this.checkPitEntries();
     for (const car of this.cars) {
       const wasGhost = car.ghost > 0;
       car.ghost = Math.max(0, car.ghost - dt);
       // El fantasma no termina encima de otro auto: el choque los separaba de golpe.
       if (wasGhost && car.ghost === 0 && this.overlapsAnyone(car)) car.ghost = GHOST_EXTEND;
-      this.solid[car.index] = car.ghost <= 0;
-      if (car.ghost <= 0) this.visible.push(car.vehicle);
+      car.rejoin = Math.max(0, car.rejoin - dt);
+      // En boxes (y mientras se acomoda al salir) no choca ni es tráfico para los bots.
+      const solid = car.ghost <= 0 && !car.pit && car.rejoin <= 0;
+      this.solid[car.index] = solid;
+      if (solid) this.visible.push(car.vehicle);
     }
     for (const car of this.cars) {
       const vehicle = car.vehicle;
       let input: DriverInput;
+      if (car.pit) {
+        this.stepPit(car, dt, events);
+        continue;
+      }
       if (car.isPlayer) {
         input =
           this.phase === 'finished'
@@ -511,6 +579,7 @@ export class Session {
             : this.steeringAssist.apply(this.brakingAssist.apply(raw, v.projection.s, v.vx, this.assisted), v, this.assisted);
       } else if (car.bot) {
         const done = this.order?.runners[car.index]?.finished ?? false;
+        car.bot.grip = tyreGrip(vehicle.tyreWear) * (1 - 0.1 * vehicle.damage);
         input = car.bot.drive(vehicle, dt, this.visible, this.botInput, done ? COOLDOWN_SPEED : Infinity);
         vehicle.held = car.bot.holding;
       } else {
@@ -519,6 +588,8 @@ export class Session {
       vehicle.step(dt, input);
     }
 
+    for (const event of this.pitEvents.splice(0)) events.push(event);
+
     // ─── Choques entre autos ───
     if (this.hasRivals) {
       for (const contact of resolveCarCollisions(this.vehicles, this.contacts, this.solid)) {
@@ -526,6 +597,10 @@ export class Session {
         if (involvesPlayer && contact.speed > CONTACT_SPEED && this.phase === 'running') this.playerContacts++;
         const a = this.vehicles[contact.a];
         const b = this.vehicles[contact.b];
+        if (contact.speed > CONTACT_DAMAGE) {
+          a?.takeHit(contact.speed + DAMAGE_CONTACT_BONUS);
+          b?.takeHit(contact.speed + DAMAGE_CONTACT_BONUS);
+        }
         // Con tope: si nadie los lee (pausa), no crecen sin límite.
         if (a && b && contact.speed > 1.5 && this.contactPoints.length < 48) this.contactPoints.push((a.x + b.x) / 2, (a.z + b.z) / 2, contact.speed);
       }
@@ -574,6 +649,92 @@ export class Session {
     this.start();
   }
 
+  /** ¿Se puede parar en boxes en esta sesión? (en contrarreloj no: la calle es sólo escenario). */
+  get pitsOpen(): boolean {
+    return !this.isTimeTrial;
+  }
+
+  /**
+   * El jugador pide boxes (o se arrepiente): entra al pasar por la entrada.
+   * @returns si quedó pedido
+   */
+  togglePitRequest(): boolean {
+    if (!this.pitsOpen || this.player.pit || this.phase !== 'running') return false;
+    this.pitRequested = !this.pitRequested;
+    return this.pitRequested;
+  }
+
+  /** Desgaste por metro: los neumáticos duran una parte de la carrera (en las largas, hay que parar). */
+  private get wearRate(): number {
+    if (this.isTimeTrial) return 0;
+    const laps = this.config.laps;
+    const life = laps === null ? TYRE_LIFE_PRACTICE : laps * (laps >= PIT_STRATEGY_LAPS ? TYRE_LIFE_LONG : TYRE_LIFE_SHORT);
+    return 1 / (life * this.track.length * WEAR_MARGIN);
+  }
+
+  /** Vuelta en que para un bot: en las carreras largas, cerca de la mitad (cada uno distinto). */
+  private planPitLap(): number | null {
+    const laps = this.config.laps;
+    if (!this.isRace || laps === null || laps < PIT_STRATEGY_LAPS) return null;
+    return Math.max(2, Math.min(laps - 1, Math.round(laps * (0.4 + 0.25 * this.random()))));
+  }
+
+  /**
+   * ¿Quién entra a boxes en este paso? El jugador, si lo pidió y pasa por la
+   * entrada o si se mete en el desvío; los bots, en la vuelta planeada o si
+   * el daño o los neumáticos ya no dan más.
+   */
+  private checkPitEntries(): void {
+    if (!this.pitsOpen) return;
+    const pit = this.track.pitLane;
+    const g = this.track.geometry;
+    const hw = g.halfWidth;
+    for (const car of this.cars) {
+      const s = car.vehicle.projection.s;
+      const before = this.pitPrevS[car.index] ?? s;
+      this.pitPrevS[car.index] = s;
+      if (car.pit || car.rejoin > 0 || this.phase === 'grid') continue;
+      const runner = this.order?.runners[car.index];
+      if (runner?.finished) continue;
+      const crossed = g.deltaS(before, pit.entry) >= 0 && g.deltaS(s, pit.entry) < 0 && Math.abs(g.deltaS(s, before)) < 50;
+      if (car.isPlayer) {
+        if (this.phase !== 'running') continue;
+        const intoRamp = this.track.inRange(s, pit.entry, pit.wallFrom) && car.vehicle.projection.d * pit.sign > hw + PIT_ENTRY_DEPTH;
+        if ((this.pitRequested && crossed) || intoRamp) this.enterPit(car);
+        continue;
+      }
+      if (!crossed || !runner) continue;
+      const laps = this.config.laps ?? Infinity;
+      const lapsLeft = laps - runner.lap;
+      const planned = car.pitLap !== null && runner.lap >= car.pitLap && car.stops === 0;
+      const forced = lapsLeft >= 1 && (car.vehicle.damage > BOT_PIT_DAMAGE || car.vehicle.tyreWear > BOT_PIT_WEAR);
+      if (planned || forced) this.enterPit(car);
+    }
+  }
+
+  private enterPit(car: Competitor): void {
+    car.pit = new PitStop(this.track, car.vehicle, car.box, this.random);
+    car.drsArmed = false;
+    if (car.isPlayer) this.pitRequested = false;
+    this.pitEvents.push({ kind: 'pitEntry', index: car.index });
+  }
+
+  /** Un paso de la parada en boxes de un auto (sin física) y la vuelta a la pista al terminar. */
+  private stepPit(car: Competitor, dt: number, events: SessionEvent[]): void {
+    const pit = car.pit;
+    if (!pit) return;
+    const phase = pit.phase;
+    pit.step(dt, car.vehicle);
+    if (phase !== 'stop' && pit.phase === 'stop') events.push({ kind: 'pitService', index: car.index, time: pit.serviceTime });
+    if (phase === 'stop' && pit.phase !== 'stop') events.push({ kind: 'pitRelease', index: car.index });
+    if (pit.phase !== 'done') return;
+    car.pit = null;
+    car.stops++;
+    car.rejoin = REJOIN_TIME;
+    car.bot?.rejoin(car.vehicle);
+    events.push({ kind: 'pitExit', index: car.index, time: pit.serviceTime });
+  }
+
   /**
    * Límites de pista: con las cuatro ruedas afuera la vuelta no cuenta para el
    * récord y, en carrera, es una infracción: las primeras son advertencias
@@ -582,6 +743,11 @@ export class Session {
    * cuenta después de volver a la pista por un momento.
    */
   private checkTrackLimits(dt: number, events: SessionEvent[]): void {
+    // En boxes (y al volver) el auto anda por la calle y los desvíos: no son límites de pista.
+    if (this.player.pit || this.player.rejoin > 0) {
+      this.offTrack = false;
+      return;
+    }
     if (this.vehicle.telemetry.wheelsOff < 4) {
       if (this.offTrack) {
         this.backOnTrack += dt;
@@ -642,6 +808,13 @@ export class Session {
       car.ghost = 0;
       car.vehicle.slipstream = 0;
       car.bot?.reset(car.vehicle);
+      car.pit = null;
+      car.rejoin = 0;
+      car.stops = 0;
+      car.pitLap = this.planPitLap();
+      car.vehicle.renew();
+      car.vehicle.wearRate = this.wearRate;
+      car.vehicle.damageEnabled = this.pitsOpen;
     });
     this.cooldown.reset(null);
     this.inDrsZone = false;
@@ -659,6 +832,8 @@ export class Session {
     this.offTrack = false;
     this.backOnTrack = 0;
     this.gridS = this.vehicle.projection.s;
+    this.pitRequested = false;
+    this.cars.forEach((car, i) => (this.pitPrevS[i] = car.vehicle.projection.s));
     this.cars.forEach((car, i) => {
       this.lastS[i] = car.vehicle.projection.s;
       this.distances[i] = this.distanceOf(car.vehicle);
@@ -847,7 +1022,7 @@ export class Session {
       flagCar.progress = runner.progress;
       flagCar.speed = car.vehicle.speed;
       flagCar.wheelsOff = car.vehicle.telemetry.wheelsOff;
-      flagCar.ignore = runner.finished || car.ghost > 0;
+      flagCar.ignore = runner.finished || car.ghost > 0 || car.pit !== null || car.rejoin > 0;
     });
     const flagEvents = flags.update(dt, this.flagCars, this.player.index, this.flagEvents.splice(0));
     for (const event of flagEvents) events.push(event);
@@ -897,6 +1072,7 @@ export class Session {
       contacts: this.playerContacts,
       penalty: this.penalties[this.player.index] ?? 0,
       warnings: this.warnings,
+      stops: this.player.stops,
     };
     events.push({ kind: 'finished', result: this.result });
   }
@@ -951,4 +1127,9 @@ export function classify(rows: StandingRow[]): StandingRow[] {
   const all = [...done, ...rest];
   all.forEach((row, i) => (row.position = i + 1));
   return all;
+}
+
+/** Box de un equipo: el orden de los equipos en la calle de boxes. */
+function boxOf(teamId: string): number {
+  return Math.max(0, TEAMS.findIndex((team) => team.id === teamId));
 }

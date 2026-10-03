@@ -12,6 +12,7 @@ import {
   type BufferGeometry,
   type Texture,
 } from 'three';
+import { PIT_WALL_RUNOFF } from '../PitLane';
 import { ASPHALT_TILE, createRacedAsphaltMaterial, createTrackDataTexture } from './asphalt';
 import { addMesh, mergeAll, type BuildContext } from './context';
 import { DETAIL_PARS, detailLayer } from './detail';
@@ -323,34 +324,89 @@ export function buildRunoff(ctx: BuildContext): void {
   }
 }
 
-/** Calle de boxes, detrás del muro de boxes. */
+/**
+ * Calle de boxes, detrás del muro de boxes: el asfalto de la calle y su
+ * pintura (líneas de entrada y salida desde el borde de la pista hasta las
+ * puntas del muro, división de carriles, líneas del límite de velocidad y
+ * los lugares de parada de los equipos). Los desvíos de entrada y salida son
+ * escapatorias asfaltadas (ver `Trackside`).
+ */
 export function buildPitLane(ctx: BuildContext): { inner: number; outer: number } {
   const track = ctx.track;
   const g = track.geometry;
-  const pits = track.pits;
-  const walls = pits.side === 'left' ? track.trackside.wallLeft : track.trackside.wallRight;
-  const sign = pits.side === 'left' ? -1 : 1;
-  const inner = (walls[g.indexAt((pits.from + pits.to) / 2)] ?? 11) + 0.6;
-  const outer = inner + 13;
+  const hw = g.halfWidth;
+  const pit = track.pitLane;
+  const sign = pit.sign;
   const { map } = asphaltTextures(ctx);
+  // Perfil de una cinta entre dos distancias (sin signo) del lado de boxes.
+  const band = (d0: number, d1: number, y: number): ProfilePoint[] =>
+    sign > 0
+      ? [
+          [d0, y],
+          [d1, y],
+        ]
+      : [
+          [-d1, y],
+          [-d0, y],
+        ];
   const lane = buildRibbon(g, {
-    from: pits.from,
-    to: pits.to,
+    from: pit.wallFrom,
+    to: pit.wallTo,
     step: 3,
-    profile: (): ProfilePoint[] =>
-      sign > 0
-        ? [
-            [inner, Y.runoff],
-            [outer, Y.runoff],
-          ]
-        : [
-            [-outer, Y.runoff],
-            [-inner, Y.runoff],
-          ],
+    profile: () => band(pit.inner, pit.outer, Y.runoff),
     vLength: 7,
     u: 'meters',
     uLength: 7,
   });
   addMesh(ctx, lane, new MeshStandardMaterial({ map, color: '#cfd3d8', roughness: 0.85 }), { name: 'boxes' });
-  return { inner, outer };
+
+  const white: BufferGeometry[] = [];
+  const yellow: BufferGeometry[] = [];
+  const paint = (into: BufferGeometry[], from: number, to: number, edge: (t: number) => number, width: number, step = 2): void => {
+    const length = g.wrapS(to - from);
+    into.push(
+      buildRibbon(g, {
+        from,
+        to,
+        step: Math.min(step, Math.max(0.1, length)),
+        profile: (_, at) => {
+          const t = length > 0 ? Math.min(1, g.wrapS(at - from) / length) : 0;
+          const d = edge(t);
+          return band(d, d + width, Y.paint);
+        },
+        vLength: 1,
+      }),
+    );
+  };
+  const ease = (t: number): number => t * t * (3 - 2 * t);
+  // Líneas de entrada y de salida: del borde de la pista a la punta del muro y de vuelta.
+  paint(white, pit.entry, pit.wallFrom, (t) => hw + 0.15 + (PIT_WALL_RUNOFF - 0.45) * ease(t), 0.3);
+  paint(white, pit.wallTo, pit.exit, (t) => hw + 0.15 + (PIT_WALL_RUNOFF - 0.45) * (1 - ease(t)), 0.3);
+  // División entre el carril rápido y el de trabajo (a trazos).
+  const divider = (pit.fast + pit.box) / 2;
+  const span = g.wrapS(pit.wallTo - pit.wallFrom);
+  for (let along = 4; along + 3 < span; along += 7) paint(white, pit.wallFrom + along, pit.wallFrom + along + 3, () => divider, 0.18);
+  // Límite de velocidad: una línea de lado a lado al empezar y al terminar.
+  for (const at of [pit.limitFrom, pit.limitTo]) paint(white, at, at + 0.5, () => pit.inner + 0.3, pit.outer - pit.inner - 0.6, 0.5);
+  // Lugares de parada: un rectángulo amarillo en el carril de trabajo.
+  for (const at of pit.boxes) {
+    const near = pit.box - 1.6;
+    const far = pit.box + 1.6;
+    paint(yellow, at - 3, at + 3, () => near, 0.14, 6);
+    paint(yellow, at - 3, at + 3, () => far - 0.14, 0.14, 6);
+    paint(yellow, at + 2.86, at + 3, () => near, far - near, 0.14);
+    paint(yellow, at - 3, at - 2.86, () => near, far - near, 0.14);
+  }
+  const paints: Array<[BufferGeometry[], string, string]> = [
+    [white, '#f2f2ee', 'boxes-pintura'],
+    [yellow, '#f5c400', 'boxes-lugares'],
+  ];
+  for (const [pieces, color, name] of paints) {
+    const merged = mergeAll(pieces);
+    for (const piece of pieces) piece.dispose();
+    if (!merged) continue;
+    const material = new MeshStandardMaterial({ color, roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    addMesh(ctx, merged, material, { name });
+  }
+  return { inner: pit.inner, outer: pit.outer };
 }

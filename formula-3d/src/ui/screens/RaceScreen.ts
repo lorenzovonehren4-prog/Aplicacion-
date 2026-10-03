@@ -43,6 +43,7 @@ import { decodeGhost, encodeGhost, GhostPlayer, type GhostLap, type GhostPose } 
 import type { Vehicle } from '../../race/physics/Vehicle';
 import { CAMERA_LABELS } from '../../race/camera/RaceCamera';
 import { RaceWorld, type IntroShot } from '../../race/RaceWorld';
+import type { CrewStop } from '../../race/render/PitCrew';
 import { BuildCancelled } from '../../tracks/TrackBuilder';
 import { getTrack, TRACKS } from '../../tracks/registry';
 import { Track } from '../../tracks/Track';
@@ -193,6 +194,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   /** Resultados listos (XP ya sumada) para la pantalla siguiente. */
   private results: ResultsParams | null = null;
   private readonly ghostPose: GhostPose = { x: 0, z: 0, heading: 0 };
+  /** Ya avisó por radio de neumáticos gastados o del alerón dañado (hasta la próxima parada). */
+  private carWarned = { tyres: false, wing: false };
+  private carTimer = 0;
+  private readonly crewStops: CrewStop[] = [];
 
   constructor(game: Game) {
     super(game, 'screen--race');
@@ -249,6 +254,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
     const simulating = this.phase === 'running' || this.phase === 'results';
     world.update(dt, simulating ? alpha : 1, tel);
+    this.updateCrews(session, world);
     if (simulating) session.takeContacts(this.contactBurst);
     world.updateEffects(dt, this.effectCars, simulating);
     world.renderMirrors(this.game.render.renderer);
@@ -534,6 +540,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         { keys: [{ keyboard: keyLabel(keys.brake), gamepad: 'LT' }], label: 'Frenar' },
         { keys: [{ keyboard: `${keyLabel(keys.left)}${keyLabel(keys.right)}`, gamepad: 'L' }], label: 'Doblar' },
         { keys: [{ keyboard: keyLabel(keys.drs), gamepad: 'X' }], label: 'DRS' },
+        { keys: [{ keyboard: keyLabel(keys.pit), gamepad: '▼' }], label: 'Boxes' },
         { keys: [{ keyboard: keyLabel(keys.camera), gamepad: 'Y' }], label: 'Cámara' },
         { keys: [{ keyboard: keyLabel(keys.mirror), gamepad: '▲' }], label: 'Retrovisor' },
         { keys: [{ keyboard: keyLabel(keys.reset), gamepad: 'SELECT' }], label: 'Volver a pista' },
@@ -675,8 +682,16 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         this.game.playUi('tab');
         break;
       }
+      case 'pit': {
+        if (!session.pitsOpen || session.phase !== 'running' || session.player.pit) break;
+        const on = session.togglePitRequest();
+        this.hud?.message(on ? 'BOX, BOX' : 'BOX CANCELADO', on ? 'Entras a boxes al pasar por la entrada (antes de la recta)' : 'Te quedas en pista', on ? 'blue' : 'info');
+        this.radio(on ? 'boxBox' : 'boxCancel');
+        this.game.playUi('tab');
+        break;
+      }
       case 'reset': {
-        if (session.phase !== 'running') break;
+        if (session.phase !== 'running' || session.player.pit) break;
         this.handleSessionEvents(session.resetToTrack());
         world.snap();
         this.driving?.release();
@@ -742,6 +757,23 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         }
         case 'trackLimits':
           this.onTrackLimits(event.count, event.penalty);
+          break;
+        case 'pitEntry':
+          if (event.index === session.player.index) world.racingLine.setHidden(true);
+          break;
+        case 'pitService':
+          if (event.index === session.player.index) world.showPitStop(session.player.box);
+          break;
+        case 'pitRelease':
+          if (event.index === session.player.index) world.showPitStop(null);
+          break;
+        case 'pitExit':
+          if (event.index === session.player.index) {
+            world.racingLine.setHidden(false);
+            hud.message('¡DE VUELTA EN PISTA!', `Parada de ${event.time.toFixed(1)} s · neumáticos nuevos`, 'good');
+            this.own.timeout(() => this.radio('pitDone'), 600);
+            this.carWarned = { tyres: false, wing: false };
+          }
           break;
         case 'yellow': {
           const flags = session.flags;
@@ -1406,11 +1438,25 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.setPaused(false);
     }
     world.racingLine.setHidden(session.phase === 'grid');
+    world.showPitStop(null);
+    this.carWarned = { tyres: false, wing: false };
     if (session.isRace) this.hud?.message('A LA PARRILLA', 'Nueva largada: no aceleres hasta que se apaguen las luces', 'info');
     else this.hud?.message('SESIÓN REINICIADA', 'Vuelta de salida', 'info');
   }
 
   // ─── HUD y vibración ───────────────────────────────────────────────────
+
+  /** Equipos de boxes: los de las paradas en curso. */
+  private updateCrews(session: Session, world: RaceWorld): void {
+    const stops = this.crewStops;
+    stops.length = 0;
+    for (const car of session.cars) {
+      const pit = car.pit;
+      if (!pit) continue;
+      stops.push({ box: car.box, color: car.team.primary, toBox: pit.toBox, working: pit.phase === 'stop' });
+    }
+    world.updateCrew(stops);
+  }
 
   /** Motores de los rivales en 3D, oídos desde la cámara. */
   private updateTrafficAudio(world: RaceWorld, session: Session): void {
@@ -1460,6 +1506,44 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     }
   }
 
+  /**
+   * Estado del auto (neumáticos, alerón, pedido de boxes) 4 veces por segundo,
+   * avisos de radio cuando conviene parar y el panel de la parada en boxes.
+   */
+  private updateCar(dt: number, session: Session, hud: Hud): void {
+    const pit = session.player.pit;
+    if (pit) {
+      const box = pit.phase === 'stop';
+      hud.setPit({
+        title: box ? 'PARADA EN BOXES' : pit.phase === 'out' ? 'SALIDA DE BOXES' : 'ENTRANDO A BOXES',
+        detail: box
+          ? `${pit.serviceLeft.toFixed(1)} s · ${pit.repair ? 'gomas nuevas y alerón' : 'gomas nuevas'}`
+          : pit.limited
+            ? 'LIMITADOR · 80 km/h'
+            : 'El equipo maneja por la calle',
+        progress: box ? 1 - pit.serviceLeft / pit.serviceTime : null,
+      });
+    } else {
+      hud.setPit(null);
+    }
+    this.carTimer -= dt;
+    if (this.carTimer > 0) return;
+    this.carTimer = 0.25;
+    const vehicle = session.vehicle;
+    hud.setCar(session.pitsOpen ? { wear: vehicle.tyreWear, damage: vehicle.damage, boxRequested: session.pitRequested } : null);
+    // Avisos de radio (una vez hasta la próxima parada), si todavía conviene parar.
+    const laps = session.config.laps;
+    const lapsLeft = laps === null ? Infinity : laps - session.timer.lap;
+    if (!session.pitsOpen || pit || session.pitRequested || session.phase !== 'running' || lapsLeft < 2) return;
+    if (!this.carWarned.tyres && vehicle.tyreWear > 0.72) {
+      this.carWarned.tyres = true;
+      this.radio('tyresWorn');
+    } else if (!this.carWarned.wing && vehicle.damage > 0.3) {
+      this.carWarned.wing = true;
+      this.radio('wingDamage');
+    }
+  }
+
   /** Banderas: sectores amarillos en el minimapa y la que le toca al jugador. */
   private updateFlags(session: Session, hud: Hud): void {
     const flags = session.flags;
@@ -1490,7 +1574,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     // Después de la largada espera a que se vaya el semáforo (ocupa el mismo lugar).
     this.mirrorDelay = Math.max(0, this.mirrorDelay - dt);
     // Con la pausa o el panel final el HUD se oculta: el retrovisor también (si no, quedaría sin marco).
-    const visible = this.game.settings.game.mirror && this.phase === 'running' && session.phase !== 'grid' && this.mirrorDelay <= 0;
+    const visible = this.game.settings.game.mirror && this.phase === 'running' && session.phase !== 'grid' && this.mirrorDelay <= 0 && !session.player.pit;
     if (visible !== this.mirrorShown) {
       this.mirrorShown = visible;
       hud.setMirror(visible);
@@ -1561,6 +1645,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       slipstream: session.player.slipstream,
     });
     this.updateRivals(dt);
+    this.updateCar(dt, session, hud);
     // La pantalla del volante sólo se redibuja si el volante está a la vista.
     if (!world.rig.wheel.root.visible) return;
     const units = this.game.settings.game.units;

@@ -71,7 +71,7 @@ export class Standings {
         }
         return;
       }
-      const gap = intervalText(row);
+      const gap = row.inPit && !row.finished ? 'BOX' : intervalText(row);
       // Salto de posiciones entre la fila anterior y ésta: se marca con un separador.
       const previous = shown[i - 1];
       const gapBefore = previous !== undefined && row.position - previous.position > 1;
@@ -83,6 +83,7 @@ export class Standings {
       view.root.classList.toggle('is-finished', row.finished);
       view.root.classList.toggle('is-fastest', row.fastestLap);
       view.root.classList.toggle('is-split', gapBefore);
+      view.root.classList.toggle('is-pit', row.inPit && !row.finished);
       view.position.textContent = String(row.position);
       view.color.style.background = row.teamColor;
       view.code.textContent = row.code;

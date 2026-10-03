@@ -100,6 +100,11 @@ export class BotDriver {
   needsReset = false;
   /** Bandera azul: el auto que lo va a doblar (se corre de la trazada y lo deja pasar). */
   blueFlag: Vehicle | null = null;
+  /**
+   * Agarre que le queda al auto respecto de uno nuevo (neumáticos gastados,
+   * daño): las curvas se toman más despacio (la velocidad va con su raíz).
+   */
+  grip = 1;
   /** Carril actual y deseado (m, respecto de la trazada; + derecha). */
   private lane = 0;
   private laneTarget = 0;
@@ -174,6 +179,16 @@ export class BotDriver {
     this.blueFlag = null;
   }
 
+  /**
+   * Vuelve a la pista después de una parada en boxes: sigue en el carril en
+   * que quedó (sin volantazos hacia la trazada) y sin esperar ninguna largada.
+   */
+  rejoin(car: Vehicle): void {
+    this.reset(null);
+    this.lane = car.projection.d - this.track.racingLine.offsetAt(car.projection.s);
+    this.laneTarget = this.lane;
+  }
+
   /** En la parrilla: acelera en vacío para tener vueltas al apagarse las luces. */
   grid(out: DriverInput): DriverInput {
     out.throttle = 0.55;
@@ -227,7 +242,7 @@ export class BotDriver {
 
     // ─── Velocidad planeada sin tráfico ───
     const offLine = Math.min(1, Math.abs(this.lane) / 3);
-    let targetSpeed = Math.min(speedCap, this.plannedSpeed(s, speed, pace * (1 - 0.05 * offLine), brakingFraction));
+    let targetSpeed = Math.min(speedCap, this.plannedSpeed(s, speed, pace * (1 - 0.05 * offLine) * Math.sqrt(this.grip), brakingFraction * this.grip));
 
     // ─── Tráfico ───
     const halfWidth = g.halfWidth;

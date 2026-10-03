@@ -28,7 +28,12 @@ export type RadioMoment =
   | 'trackLimitsWarning'
   | 'trackLimitsFlag'
   | 'trackLimitsPenalty'
-  | 'penaltyAtFinish';
+  | 'penaltyAtFinish'
+  | 'boxBox'
+  | 'boxCancel'
+  | 'tyresWorn'
+  | 'wingDamage'
+  | 'pitDone';
 
 export const RADIO_LINES: Readonly<Record<RadioMoment, readonly string[]>> = {
   practiceStart: [
@@ -71,6 +76,14 @@ export const RADIO_LINES: Readonly<Record<RadioMoment, readonly string[]>> = {
   ],
   trackLimitsFlag: ['Bandera blanca y negra. Una salida más y es sanción.', 'Última advertencia: la próxima son cinco segundos.'],
   trackLimitsPenalty: ['Cinco segundos de sanción por límites de pista.', 'Nos sancionaron: cinco segundos. Mantenla en la pista.'],
+  boxBox: ['Box, box. Entra a boxes en esta vuelta.', 'Recibido: box en esta vuelta, te estamos esperando.'],
+  boxCancel: ['Entendido, nos quedamos afuera.', 'Ok, seguimos en pista.'],
+  tyresWorn: [
+    'Las gomas se están terminando. Cuando quieras, box (tecla B).',
+    'Neumáticos muy gastados: una parada te devuelve el ritmo.',
+  ],
+  wingDamage: ['Tenemos daño en el alerón delantero. Si quieres, entra a boxes y lo cambiamos.'],
+  pitDone: ['¡Buena parada! Gomas nuevas, a empujar.', 'Parada limpia. Ahora a recuperar posiciones.'],
   penaltyAtFinish: [
     'Cruzamos la meta, pero falta descontar la sanción. Veamos dónde quedamos.',
     'Bandera a cuadros. Ahora se suma la sanción al tiempo final.',

@@ -875,6 +875,11 @@
   color: var(--c-text-2);
 }
 
+.standings__row.is-pit .standings__gap {
+  font-weight: 700;
+  color: #7fb0ff;
+}
+
 .standings__penalty {
   font-family: var(--font-num);
   font-size: 10px;
@@ -967,6 +972,151 @@
   padding: 8px 10px 10px;
   background: rgba(10, 11, 15, 0.86);
   border-left: 3px solid var(--c-accent);
+}
+
+/* Estado del auto (neumáticos y alerón) arriba de las ayudas. */
+.car {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.car.is-visible {
+  display: flex;
+}
+
+.car__icon {
+  flex: none;
+  width: 26px;
+  height: 42px;
+}
+
+.car__icon .car__body {
+  fill: #3a3f4a;
+}
+
+.car__icon .car__tyre,
+.car__icon .car__wing {
+  transition: fill 0.4s;
+}
+
+.car__icon[data-tyres='good'] .car__tyre,
+.car__icon[data-wing='good'] .car__wing {
+  fill: #27e06b;
+}
+
+.car__icon[data-tyres='warn'] .car__tyre,
+.car__icon[data-wing='warn'] .car__wing {
+  fill: var(--c-gold);
+}
+
+.car__icon[data-tyres='bad'] .car__tyre,
+.car__icon[data-wing='bad'] .car__wing {
+  fill: #ff3b4a;
+}
+
+.car__stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.car__label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--c-text-3);
+}
+
+.car__value {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.car__value[data-tone='warn'] {
+  color: var(--c-gold);
+}
+
+.car__value[data-tone='bad'] {
+  color: #ff3b4a;
+}
+
+.car__box {
+  grid-column: 1 / -1;
+  display: none;
+  justify-self: start;
+  padding: 1px 6px;
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fff;
+  background: #1f6bff;
+  animation: flag-blink 0.9s ease-in-out infinite;
+}
+
+.car__box.is-on {
+  display: inline-block;
+}
+
+/* Parada en boxes: panel arriba al centro (en el lugar del semáforo y del retrovisor, que no se ven en boxes). */
+.pitbox {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--gutter) + 8px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 260px;
+  padding: 10px 22px 12px;
+  background: rgba(10, 11, 15, 0.9);
+  border-top: 3px solid #1f6bff;
+  translate: -50% 0;
+}
+
+.pitbox.is-visible {
+  display: flex;
+}
+
+.pitbox__title {
+  font-size: 18px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.08em;
+}
+
+.pitbox__detail {
+  font-family: var(--font-num);
+  font-size: 14px;
+  color: var(--c-text-2);
+}
+
+.pitbox__bar {
+  display: none;
+  width: 100%;
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pitbox.has-progress .pitbox__bar {
+  display: block;
+}
+
+.pitbox__bar-fill {
+  display: block;
+  height: 100%;
+  background: #27e06b;
+  transform-origin: left;
 }
 
 .mfd__title {
@@ -1231,6 +1381,7 @@
 }
 
 /* Con el semáforo en pantalla, los avisos van debajo (alto del semáforo: relleno + dos luces). */
+.hud.has-pit .hud__messages,
 .hud.has-lights .hud__messages {
   top: calc(var(--gutter) + 8px + 46px + 2 * clamp(22px, 3vw, 34px) + 14px);
 }

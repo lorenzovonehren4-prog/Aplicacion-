@@ -91,6 +91,9 @@ export interface HudAssists {
   stability: boolean;
 }
 
+/** El auto visto desde arriba: alerón delantero, cuatro neumáticos y el cuerpo (los colores los pone el CSS). */
+const CAR_ICON = `<svg viewBox="0 0 40 64" aria-hidden="true"><rect class="car__wing" x="5" y="2" width="30" height="4" rx="1"/><rect class="car__tyre" x="2" y="10" width="8" height="13" rx="2"/><rect class="car__tyre" x="30" y="10" width="8" height="13" rx="2"/><rect class="car__tyre" x="1" y="42" width="9" height="16" rx="2"/><rect class="car__tyre" x="30" y="42" width="9" height="16" rx="2"/><path class="car__body" d="M17 6h6l2 14 5 6v20l-3 12H13l-3-12V26l5-6z"/></svg>`;
+
 /** Ondas de radio para el mensaje del equipo. */
 const RADIO_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 13v8M9 21h6"/><circle cx="12" cy="10" r="2"/><path d="M8.5 6.5a5 5 0 0 0 0 7M15.5 6.5a5 5 0 0 1 0 7M5.7 3.7a9 9 0 0 0 0 12.6M18.3 3.7a9 9 0 0 1 0 12.6"/></svg>`;
 /** Letras por segundo del mensaje de radio. */
@@ -281,6 +284,39 @@ export class Hud {
   private readonly abs = h('span', { class: 'dash__aid', text: 'ABS', attrs: { title: 'Antibloqueo de frenos' } });
   private readonly stability = h('span', { class: 'dash__aid', text: 'EST', attrs: { title: 'Control de estabilidad' } });
 
+  // Estado del auto: neumáticos y alerón (dibujo cenital) y el pedido de boxes.
+  private readonly carIcon = svg(CAR_ICON, 'car__icon');
+  private readonly tyreValue = h('span', { class: 'car__value' });
+  private readonly wingValue = h('span', { class: 'car__value' });
+  private readonly boxChip = h('span', { class: 'car__box', text: 'BOX' });
+  private readonly carPanel = h(
+    'div',
+    { class: 'car' },
+    this.carIcon,
+    h(
+      'div',
+      { class: 'car__stats' },
+      h('span', { class: 'car__label', text: 'GOMAS' }),
+      this.tyreValue,
+      h('span', { class: 'car__label', text: 'ALERÓN' }),
+      this.wingValue,
+      this.boxChip,
+    ),
+  );
+  private carKey = '';
+  // Parada en boxes: qué está pasando y, en el box, cuánto falta.
+  private readonly pitTitle = h('span', { class: 'pitbox__title' });
+  private readonly pitDetail = h('span', { class: 'pitbox__detail' });
+  private readonly pitBar = h('span', { class: 'pitbox__bar-fill' });
+  private readonly pitBox = h(
+    'div',
+    { class: 'hud__pitbox pitbox', attrs: { role: 'status' } },
+    this.pitTitle,
+    this.pitDetail,
+    h('span', { class: 'pitbox__bar' }, this.pitBar),
+  );
+  private pitKey = '';
+
   // Semáforo en pantalla.
   private readonly lamps: HTMLSpanElement[] = [];
   private readonly lights = h('div', { class: 'hud__lights', attrs: { 'aria-hidden': 'true' } });
@@ -373,6 +409,7 @@ export class Hud {
     const assistsPanel = h(
       'div',
       { class: 'hud__mfd mfd' },
+      this.carPanel,
       h('span', { class: 'mfd__title', text: 'AYUDAS' }),
       h('div', { class: 'dash__flags' }, this.drs, this.brakeAid, this.tc, this.abs, this.stability),
     );
@@ -403,8 +440,48 @@ export class Hud {
       this.wrongWay,
       this.cameraLabel,
       this.mirror,
+      this.pitBox,
     );
     setText(this.unitLabel, units === 'kmh' ? 'KM/H' : 'MPH');
+  }
+
+  /**
+   * Neumáticos y alerón (colores según el desgaste y el daño) y el pedido de
+   * boxes. null = sin desgaste en esta sesión (contrarreloj): no se muestra.
+   */
+  setCar(state: { wear: number; damage: number; boxRequested: boolean } | null): void {
+    const key = state ? `${Math.round(state.wear * 100)}|${Math.round(state.damage * 100)}|${state.boxRequested}` : 'off';
+    if (key === this.carKey) return;
+    this.carKey = key;
+    toggle(this.carPanel, 'is-visible', state !== null);
+    if (!state) return;
+    const tyreTone = state.wear < 0.45 ? 'good' : state.wear < 0.72 ? 'warn' : 'bad';
+    const wingTone = state.damage < 0.1 ? 'good' : state.damage < 0.4 ? 'warn' : 'bad';
+    this.carIcon.dataset.tyres = tyreTone;
+    this.carIcon.dataset.wing = wingTone;
+    setText(this.tyreValue, `${Math.round((1 - state.wear) * 100)} %`);
+    setText(this.wingValue, state.damage < 0.02 ? 'OK' : `${Math.round((1 - state.damage) * 100)} %`);
+    this.tyreValue.dataset.tone = tyreTone;
+    this.wingValue.dataset.tone = wingTone;
+    toggle(this.boxChip, 'is-on', state.boxRequested);
+  }
+
+  /** Panel de la parada en boxes (null = no está en boxes). `progress` 0–1 durante el servicio. */
+  setPit(state: { title: string; detail: string; progress: number | null } | null): void {
+    toggle(this.pitBox, 'is-visible', state !== null);
+    toggle(this.root, 'has-pit', state !== null);
+    if (!state) {
+      this.pitKey = '';
+      return;
+    }
+    const key = `${state.title}|${state.detail}`;
+    if (key !== this.pitKey) {
+      this.pitKey = key;
+      setText(this.pitTitle, state.title);
+      setText(this.pitDetail, state.detail);
+    }
+    toggle(this.pitBox, 'has-progress', state.progress !== null);
+    if (state.progress !== null) setTransform(this.pitBar, `scaleX(${Math.max(0, Math.min(1, state.progress)).toFixed(3)})`);
   }
 
   /** Vueltas totales (null en práctica) y ayudas con ícono en el tablero. */

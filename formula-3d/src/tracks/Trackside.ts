@@ -6,6 +6,7 @@
  * para que física, mallas y efectos lo consulten al instante.
  */
 
+import { PIT_WALL_RUNOFF, type PitLane } from './PitLane';
 import type { Corner, TrackAnalysis } from './TrackAnalysis';
 import type { RunoffKind, Side, TrackDefinition } from './TrackDefinition';
 import type { TrackGeometry } from './TrackGeometry';
@@ -60,10 +61,12 @@ const KERB_OUTSIDE = 1.7;
 const KERB_MAX_RADIUS = 360;
 /** Ventana de suavizado de los muros (m a cada lado). */
 const WALL_SMOOTHING = 24;
+/** Al empezar un desvío de boxes el muro queda a esto del borde (m) y se abre hasta detrás de la calle. */
+const RAMP_EDGE = 6;
 /** Tramo (m, a cada lado) donde se busca la curva más cerrada para limitar el muro interior. */
 const INSIDE_REACH = 30;
 
-export function planTrackside(def: TrackDefinition, geometry: TrackGeometry, analysis: TrackAnalysis): Trackside {
+export function planTrackside(def: TrackDefinition, geometry: TrackGeometry, analysis: TrackAnalysis, pit: PitLane): Trackside {
   const n = geometry.count;
   const hw = geometry.halfWidth;
   const street = def.scenery.street !== undefined;
@@ -92,10 +95,12 @@ export function planTrackside(def: TrackDefinition, geometry: TrackGeometry, ana
 
   for (const corner of analysis.corners) planCorner(corner, geometry, kerbs, setRunoff, street);
 
-  // Muro de boxes: pegado a la pista a lo largo de la zona de pits.
-  const pitFrom = geometry.designToS(def.pits.from);
-  const pitTo = geometry.designToS(def.pits.to);
-  setRunoff(def.pits.side, pitFrom, pitTo, 'tarmac', 3.5, false);
+  // Boxes: desvíos de asfalto de entrada y salida (el muro de afuera, detrás
+  // de la calle) y, entre ellos, el muro de boxes pegado a la pista.
+  const rampWidth = pit.outerWall - hw;
+  setRunoff(pit.side, pit.entry, pit.wallFrom, 'tarmac', rampWidth, false);
+  setRunoff(pit.side, pit.wallFrom, pit.wallTo, 'tarmac', PIT_WALL_RUNOFF, false);
+  setRunoff(pit.side, pit.wallTo, pit.exit, 'tarmac', rampWidth, false);
 
   for (const override of def.runoff ?? []) {
     setRunoff(override.side, geometry.designToS(override.from), geometry.designToS(override.to), override.kind, override.width, false);
@@ -110,10 +115,20 @@ export function planTrackside(def: TrackDefinition, geometry: TrackGeometry, ana
 
   const wallLeft = smoothWalls(geometry, runoffWidth.left, kerbLeft, -1, hw);
   const wallRight = smoothWalls(geometry, runoffWidth.right, kerbRight, 1, hw);
+  const pitWalls = pit.side === 'left' ? wallLeft : wallRight;
+  shapePitWalls(geometry, pit, pitWalls);
   const gapLeft = new Uint8Array(n);
   const gapRight = new Uint8Array(n);
   separateNeighbours(geometry, wallLeft, gapLeft, kind.left, -1);
   separateNeighbours(geometry, wallRight, gapRight, kind.right, 1);
+  // Punta y final del muro de boxes: el muro se corta ahí (si no, la malla
+  // uniría el muro de afuera con el de boxes cruzando la entrada de la calle).
+  const pitGaps = pit.side === 'left' ? gapLeft : gapRight;
+  for (const s of [pit.wallFrom, pit.wallTo]) {
+    const i = geometry.indexAt(s);
+    pitGaps[geometry.wrapIndex(i - 1)] = 1;
+    pitGaps[i] = 1;
+  }
   return { kerbs, kerbLeft, kerbRight, runoffLeft: kind.left, runoffRight: kind.right, wallLeft, wallRight, gapLeft, gapRight };
 }
 
@@ -269,6 +284,33 @@ function planCorner(
     to: geometry.wrapS(corner.end + 18),
     width: KERB_OUTSIDE,
   });
+}
+
+/**
+ * Muros del lado de boxes, sin el suavizado en las puntas: en los desvíos el
+ * muro va detrás de la calle (nunca más cerca) y a lo largo de los boxes,
+ * pegado a la pista, con escalones netos en la punta y el final del muro de boxes.
+ */
+function shapePitWalls(geometry: TrackGeometry, pit: PitLane, walls: Float32Array): void {
+  const hw = geometry.halfWidth;
+  const each = (from: number, to: number, fn: (i: number) => void): void => {
+    const steps = Math.round(geometry.wrapS(to - from) / geometry.ds);
+    const start = geometry.indexAt(from);
+    for (let k = 0; k <= steps; k++) fn(geometry.wrapIndex(start + k));
+  };
+  // En los desvíos el muro se abre de a poco (el auto también se abre de a poco): sin escalones.
+  const ramp = (from: number, to: number, opening: boolean): void => {
+    const length = Math.max(1, geometry.wrapS(to - from));
+    each(from, to, (i) => {
+      const t = Math.min(1, geometry.wrapS(i * geometry.ds - from) / length);
+      const open = opening ? t : 1 - t;
+      const eased = open * open * (3 - 2 * open);
+      walls[i] = Math.max(walls[i] ?? 0, hw + RAMP_EDGE + (pit.outerWall - hw - RAMP_EDGE) * Math.min(1, eased * 1.6));
+    });
+  };
+  ramp(pit.entry, pit.wallFrom, true);
+  ramp(pit.wallTo, pit.exit, false);
+  each(pit.wallFrom, pit.wallTo, (i) => (walls[i] = hw + PIT_WALL_RUNOFF));
 }
 
 /**

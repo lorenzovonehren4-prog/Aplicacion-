@@ -5,7 +5,7 @@
  * para que nunca se pueda quedar sin forma de volver.
  */
 
-export const DRIVE_ACTIONS = ['throttle', 'brake', 'left', 'right', 'drs', 'camera', 'mirror', 'reset', 'pause'] as const;
+export const DRIVE_ACTIONS = ['throttle', 'brake', 'left', 'right', 'drs', 'pit', 'camera', 'mirror', 'reset', 'pause'] as const;
 export type DriveAction = (typeof DRIVE_ACTIONS)[number];
 
 export type KeyBindings = Record<DriveAction, string>;
@@ -16,6 +16,7 @@ export const DRIVE_ACTION_LABELS: Readonly<Record<DriveAction, string>> = {
   left: 'Doblar a la izquierda',
   right: 'Doblar a la derecha',
   drs: 'DRS',
+  pit: 'Pedir boxes',
   camera: 'Cambiar cámara',
   mirror: 'Retrovisor',
   reset: 'Volver a la pista',
@@ -29,12 +30,16 @@ export function createDefaultBindings(): KeyBindings {
     left: 'ArrowLeft',
     right: 'ArrowRight',
     drs: 'KeyD',
+    pit: 'KeyB',
     camera: 'KeyC',
     mirror: 'KeyM',
     reset: 'KeyR',
     pause: 'KeyP',
   };
 }
+
+/** Teclas libres para una acción nueva cuya tecla de fábrica ya se usa en otra (guardados viejos). */
+export const SPARE_KEYS: readonly string[] = ['KeyB', 'KeyN', 'KeyV', 'KeyX', 'KeyZ', 'KeyK', 'KeyL', 'KeyJ', 'KeyH', 'KeyG', 'KeyF'];
 
 /** Teclas que no se pueden asignar (Esc siempre pausa y vuelve; las modificadoras no sirven solas). */
 const RESERVED = /^(Escape|Tab|Meta(Left|Right)|OSLeft|OSRight|ContextMenu|F\d{1,2})$/;

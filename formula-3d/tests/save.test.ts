@@ -118,6 +118,20 @@ describe('sanitizeSave', () => {
   });
 });
 
+describe('teclas nuevas en guardados viejos', () => {
+  it('la tecla de boxes llega con su tecla de fábrica o, si ya estaba usada, con una libre', () => {
+    const old = { throttle: 'ArrowUp', brake: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', drs: 'KeyD', camera: 'KeyC', mirror: 'KeyM', reset: 'KeyR', pause: 'KeyP' };
+    const fresh = sanitizeSave({ settings: { controls: { keys: old } } }, defaults());
+    expect(fresh.settings.controls.keys.pit).toBe('KeyB');
+    // El jugador había puesto el DRS en la B: se respeta y boxes va a otra tecla libre.
+    const taken = sanitizeSave({ settings: { controls: { keys: { ...old, drs: 'KeyB' } } } }, defaults());
+    const keys = taken.settings.controls.keys;
+    expect(keys.drs).toBe('KeyB');
+    expect(keys.pit).not.toBe('KeyB');
+    expect(new Set(Object.values(keys)).size).toBe(Object.keys(keys).length);
+  });
+});
+
 describe('migrateSave', () => {
   it('1 → 2: los ajustes gráficos vuelven a los del equipo (el resto queda igual)', () => {
     const result = migrateSave({ version: 1, profile: { name: 'Ana' }, settings: { graphics: { quality: 'medium', resolutionScale: 0.6 }, audio: { master: 0.5 } } });

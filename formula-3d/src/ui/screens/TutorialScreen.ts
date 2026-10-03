@@ -183,6 +183,7 @@ export class TutorialScreen extends BaseScreen {
       [keyLabel(keys.brake), 'LT', 'Frenar'],
       [`${keyLabel(keys.left)} ${keyLabel(keys.right)}`, 'Stick', 'Doblar'],
       [keyLabel(keys.drs), 'X', 'DRS en las zonas verdes del mapa'],
+      [keyLabel(keys.pit), '▼', 'Pedir boxes (gomas nuevas y auto reparado)'],
       [keyLabel(keys.camera), 'Y', 'Cambiar cámara'],
       [keyLabel(keys.reset), 'Select', 'Volver a la pista'],
       ['ESC', 'Start', 'Pausa'],
@@ -197,7 +198,7 @@ export class TutorialScreen extends BaseScreen {
         { class: 'tut__keys' },
         ...rows.map(([key, pad, label]) => h('div', { class: 'tut__key' }, h('kbd', { text: key }), h('kbd', { class: 'is-pad', text: pad }), h('span', { text: label }))),
       ),
-      h('p', { class: 'tut__text', text: 'La caja es automática. Las teclas se cambian en Ajustes → Controles, y el Manual de ayudas explica cada ayuda con demos.' }),
+      h('p', { class: 'tut__text', text: 'La caja es automática. En la largada no aceleres hasta que se apaguen las luces. Las teclas se cambian en Ajustes → Controles, y el Manual de ayudas explica cada ayuda con demos.' }),
       go,
     ]);
     this.nav.focus(go);

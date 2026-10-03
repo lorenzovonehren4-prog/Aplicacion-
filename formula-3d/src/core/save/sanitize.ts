@@ -7,7 +7,7 @@
 
 import { ownsItemId, PATTERNS, type GarageSetup } from '../../garage/setup';
 import { ACHIEVEMENTS, createDefaultStats, type CareerStats, type TrackStats } from '../../progression/career';
-import { DRIVE_ACTIONS, isBindableKey, type KeyBindings } from '../input/bindings';
+import { DRIVE_ACTIONS, isBindableKey, SPARE_KEYS, type KeyBindings } from '../input/bindings';
 import { getItem, isItemId, STARTER_ITEM_IDS, type ItemKind } from '../../progression/items';
 import { MAX_LEVEL, xpToNextLevel } from '../../progression/levels';
 import { createDailyState, type DailyState } from '../../progression/daily';
@@ -319,9 +319,12 @@ function sanitizeBindings(raw: unknown, defaults: KeyBindings): KeyBindings {
   const r = record(raw);
   const result = { ...defaults };
   const used = new Set<string>();
+  const chosen = new Set(DRIVE_ACTIONS.map((action) => r[action]).filter((code): code is string => typeof code === 'string'));
   for (const action of DRIVE_ACTIONS) {
     const code = r[action];
     if (typeof code === 'string' && isBindableKey(code) && !used.has(code)) result[action] = code;
+    // Acción nueva (guardado de antes) con su tecla de fábrica ya elegida para otra: una libre.
+    else if (code === undefined && chosen.has(defaults[action])) result[action] = SPARE_KEYS.find((key) => !chosen.has(key) && !used.has(key)) ?? defaults[action];
     used.add(result[action]);
   }
   // Si una tecla por defecto quedó repetida con una elegida, se vuelve a fábrica completa.

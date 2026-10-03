@@ -13,9 +13,10 @@
  * Gamepad: gatillos analógicos y stick con zona muerta y curva de respuesta.
  *
  * Teclas (reasignables en Ajustes → Controles, `core/input/bindings.ts`): por
- * defecto ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · C cámara · R volver a
- * pista · P pausa (Esc pausa siempre). Gamepad: RT/LT, stick izquierdo, X DRS,
- * Y cámara, Select volver a pista, Start pausa.
+ * defecto ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · B boxes · C cámara ·
+ * M retrovisor · R volver a pista · P pausa (Esc pausa siempre). Gamepad:
+ * RT/LT, stick izquierdo, X DRS, cruceta abajo boxes, Y cámara, cruceta arriba
+ * retrovisor, Select volver a pista, Start pausa.
  */
 
 import type { InputManager } from '../../core/input/InputManager';
@@ -29,10 +30,10 @@ export interface DrivingControls {
   steer: number;
 }
 
-export type DrivingEvent = 'camera' | 'mirror' | 'drs' | 'reset' | 'pause';
+export type DrivingEvent = 'camera' | 'mirror' | 'drs' | 'pit' | 'reset' | 'pause';
 
 /** Acciones de un toque (las teclas vienen de los ajustes; Esc llega como "volver" y también pausa). */
-const KEY_EVENTS: ReadonlyArray<DrivingEvent> = ['camera', 'mirror', 'drs', 'reset', 'pause'];
+const KEY_EVENTS: ReadonlyArray<DrivingEvent> = ['camera', 'mirror', 'drs', 'pit', 'reset', 'pause'];
 
 /** Botones del gamepad (mapeo estándar) → evento. */
 const PAD_EVENTS: ReadonlyArray<readonly [number, DrivingEvent]> = [
@@ -41,6 +42,7 @@ const PAD_EVENTS: ReadonlyArray<readonly [number, DrivingEvent]> = [
   [8, 'reset'], // Select / Share
   [9, 'pause'], // Start / Options
   [12, 'mirror'], // Cruceta arriba
+  [13, 'pit'], // Cruceta abajo
 ];
 
 const THROTTLE_UP = 6;

@@ -27,9 +27,16 @@ describe('calendario de 24 circuitos', () => {
         if (t.gapLeft[i] !== 1) expect(t.wallLeft[i] ?? 0, `${def.id} izq ${i}`).toBeGreaterThan(g.halfWidth * 0.7);
         if (t.gapRight[i] !== 1) expect(t.wallRight[i] ?? 0, `${def.id} der ${i}`).toBeGreaterThan(g.halfWidth * 0.7);
       }
-      // Sólo Suzuka (el "ocho") cruza sobre sí misma.
-      const gaps = t.gapLeft.some((v) => v === 1) || t.gapRight.some((v) => v === 1);
-      expect(gaps, def.id).toBe(def.id === 'suzuka');
+      // Sólo Suzuka (el "ocho") cruza sobre sí misma; los demás cortes son la punta
+      // y el final del muro de boxes (dos muestras en cada uno).
+      const pit = track.pitLane;
+      const ends = [pit.wallFrom, pit.wallTo].map((s) => g.indexAt(s));
+      const nearEnds = (i: number): boolean => ends.some((end) => Math.abs(g.wrapIndex(i - end + 2) - 2) <= 1);
+      const crossing = (gaps: Uint8Array, side: 'left' | 'right'): boolean =>
+        gaps.some((v, i) => v === 1 && !(side === pit.side && nearEnds(i)));
+      expect(crossing(t.gapLeft, 'left') || crossing(t.gapRight, 'right'), def.id).toBe(def.id === 'suzuka');
+      const pitGaps = pit.side === 'left' ? t.gapLeft : t.gapRight;
+      for (const end of ends) expect(pitGaps[end], `${def.id} punta del muro`).toBe(1);
     }
   }, 60000);
 

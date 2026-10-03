@@ -240,6 +240,7 @@ describe('clasificación con sanciones', () => {
     bestLap: null,
     fastestLap: false,
     penalty,
+    inPit: false,
   });
 
   it('el que llega primero con +5 s queda detrás de quien cruzó menos de 5 s después', () => {
