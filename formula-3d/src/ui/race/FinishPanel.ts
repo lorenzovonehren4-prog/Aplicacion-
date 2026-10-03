@@ -108,11 +108,11 @@ export class FinishPanel {
     );
     this.table.replaceChildren(header, ...rows);
     this.best.textContent = bestTime === null ? 'Ninguna válida' : formatLapTime(bestTime);
-    this.note.textContent = personalBest
-      ? '¡Nuevo récord personal en este circuito!'
-      : result.laps.some((lap) => !lap.valid)
-        ? 'Las vueltas tachadas se anularon por límites de pista o por volver a pista.'
-        : '';
+    const notes: string[] = [];
+    if (result.penalty > 0) notes.push(`El tiempo total incluye +${result.penalty} s de sanción.`);
+    if (personalBest) notes.push('¡Nuevo récord personal en este circuito!');
+    else if (result.laps.some((lap) => !lap.valid)) notes.push('Las vueltas tachadas no cuentan para el récord (salidas de pista o volver a pista).');
+    this.note.textContent = notes.join(' ');
 
     this.root.classList.add('is-visible');
     this.nav.setEnabled(true);
@@ -121,7 +121,8 @@ export class FinishPanel {
 
     const quick = prefersReducedMotion();
     const counter = { value: 0 };
-    this.total.textContent = formatLapTime(quick ? result.totalTime : 0);
+    const totalTime = result.totalTime + result.penalty;
+    this.total.textContent = formatLapTime(quick ? totalTime : 0);
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
     tl.fromTo(this.root.querySelector('.finish__backdrop'), { opacity: 0 }, { opacity: 1, duration: quick ? 0.01 : 0.4 }, 0);
     tl.fromTo(this.panel, { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: quick ? 0.01 : 0.6 }, 0);
@@ -135,7 +136,7 @@ export class FinishPanel {
       tl.to(
         counter,
         {
-          value: result.totalTime,
+          value: totalTime,
           duration: 1.3,
           ease: 'power2.out',
           onUpdate: () => {
@@ -160,7 +161,7 @@ export class FinishPanel {
    */
   updateStandings(standings: readonly StandingRow[]): void {
     const cells = standings.map((row) => ({ row, result: resultText(row, standings[0]) }));
-    const key = cells.map(({ row, result }) => `${row.index}:${result}:${row.fastestLap}`).join('|');
+    const key = cells.map(({ row, result }) => `${row.index}:${result}:${row.fastestLap}:${row.penalty}`).join('|');
     if (key === this.classificationKey) return;
     this.classificationKey = key;
     const header = h(
@@ -185,6 +186,7 @@ export class FinishPanel {
           h('span', { class: 'finish__cnumber', text: String(row.number) }),
           h('span', { text: row.name }),
           h('span', { class: 'finish__cteam-name', text: row.teamName }),
+          row.penalty > 0 ? h('span', { class: 'finish__cpenalty', text: `+${row.penalty} s` }) : null,
         ),
         h('span', { class: 'finish__ctime', text: result }),
         h('span', {
@@ -220,13 +222,17 @@ export class FinishPanel {
   }
 }
 
-/** Tiempo del ganador, diferencia con él (o en vueltas) o "EN PISTA" si todavía no terminó. */
+/**
+ * Tiempo del ganador, diferencia con él (o en vueltas) o "EN PISTA" si
+ * todavía no terminó. Los tiempos llevan sumadas las sanciones.
+ */
 function resultText(row: StandingRow, winner: StandingRow | undefined): string {
   if (!row.finished) return 'EN PISTA';
-  if (row.position === 1 || !winner || winner.finishTime === null || row.finishTime === null) {
-    return row.finishTime === null ? '' : formatLapTime(row.finishTime);
-  }
+  const total = (r: StandingRow): number | null => (r.finishTime === null ? null : r.finishTime + r.penalty);
+  const mine = total(row);
+  const best = winner ? total(winner) : null;
+  if (row.position === 1 || !winner || best === null || mine === null) return mine === null ? '' : formatLapTime(mine);
   const laps = winner.laps - row.laps;
   if (laps > 0) return `+${laps} ${laps === 1 ? 'VUELTA' : 'VUELTAS'}`;
-  return formatGap(row.finishTime - winner.finishTime);
+  return formatGap(mine - best);
 }

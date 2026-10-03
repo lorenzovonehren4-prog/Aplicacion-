@@ -126,6 +126,8 @@ export class RacingLineMesh {
   private readonly gripLimit: Float32Array;
   private mode: LineMode = 'off';
   private type: LineType = 'fixed';
+  /** Oculta aunque la ayuda esté activa (ver `setHidden`). */
+  private hidden = false;
 
   constructor(
     private readonly line: RacingLine,
@@ -210,12 +212,18 @@ export class RacingLineMesh {
   configure(mode: LineMode, type: LineType): void {
     this.mode = mode;
     this.type = type;
-    this.mesh.visible = mode !== 'off';
+    this.mesh.visible = mode !== 'off' && !this.hidden;
     this.mesh.material.uniforms.uCornersOnly!.value = mode === 'corners' ? 1 : 0;
     if (type === 'fixed') {
       this.shown.set(this.line.state);
       this.writeStates();
     }
+  }
+
+  /** Oculta la línea aunque la ayuda esté activa (en la parrilla, en la calle de boxes, en la repetición). */
+  setHidden(hidden: boolean): void {
+    this.hidden = hidden;
+    this.mesh.visible = this.mode !== 'off' && !hidden;
   }
 
   /**

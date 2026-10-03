@@ -225,7 +225,8 @@ describe('carrera con rivales', () => {
     let severe = 0;
     for (let t = 0; t < 330; t += STEP) {
       if (session.phase === 'grid') {
-        events.push(...session.step(STEP, me.grid(input), false));
+        // Espera las luces sin acelerar (si no, salida en falso).
+        events.push(...session.step(STEP, { throttle: 0, brake: 0, steer: 0 }, false));
       } else {
         me.drive(session.vehicle, STEP, session.cars.map((c) => c.vehicle), input);
         events.push(...session.step(STEP, input, true));

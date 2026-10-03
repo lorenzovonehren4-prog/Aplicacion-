@@ -1,6 +1,6 @@
 /**
  * Torre de posiciones en carrera, estilo transmisión: posición, color del
- * equipo, abreviatura del piloto e intervalo con el auto de adelante. Con
+ * equipo, abreviatura del piloto, sanción (si tiene) e intervalo con el auto de adelante. Con
  * muchos autos muestra los tres primeros y una ventana alrededor del jugador.
  * Las filas se crean una sola vez y sólo se reescribe lo que cambia.
  */
@@ -19,6 +19,8 @@ interface RowView {
   position: HTMLSpanElement;
   color: HTMLSpanElement;
   code: HTMLSpanElement;
+  /** Sanción de tiempo ("+5s"), si tiene. */
+  penalty: HTMLSpanElement;
   gap: HTMLSpanElement;
   key: string;
 }
@@ -43,10 +45,11 @@ export class Standings {
         position: h('span', { class: 'standings__pos' }),
         color: h('span', { class: 'standings__team' }),
         code: h('span', { class: 'standings__code' }),
+        penalty: h('span', { class: 'standings__penalty' }),
         gap: h('span', { class: 'standings__gap' }),
         key: '',
       };
-      view.root.append(view.position, view.color, view.code, view.gap);
+      view.root.append(view.position, view.color, view.code, view.penalty, view.gap);
       this.rows.push(view);
       this.list.append(view.root);
     }
@@ -72,7 +75,7 @@ export class Standings {
       // Salto de posiciones entre la fila anterior y ésta: se marca con un separador.
       const previous = shown[i - 1];
       const gapBefore = previous !== undefined && row.position - previous.position > 1;
-      const key = `${row.position}|${row.code}|${gap}|${row.isPlayer}|${row.finished}|${row.fastestLap}|${gapBefore}`;
+      const key = `${row.position}|${row.code}|${gap}|${row.isPlayer}|${row.finished}|${row.fastestLap}|${gapBefore}|${row.penalty}`;
       if (key === view.key) return;
       view.key = key;
       view.root.classList.remove('is-empty');
@@ -83,6 +86,7 @@ export class Standings {
       view.position.textContent = String(row.position);
       view.color.style.background = row.teamColor;
       view.code.textContent = row.code;
+      view.penalty.textContent = row.penalty > 0 ? `+${row.penalty}s` : '';
       view.gap.textContent = gap;
     });
   }

@@ -549,17 +549,84 @@
   color: var(--c-text-3);
 }
 
-.timing__invalid {
+.timing__status {
   padding: 1px 6px;
+  font-family: var(--font-num);
   font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: #fff;
   background: #c01626;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.timing__invalid.is-visible {
+.timing__status.is-visible {
   opacity: 1;
+}
+
+.timing__status.is-warning {
+  color: #1a1300;
+  background: var(--c-gold);
+}
+
+/* Bandera de la dirección de carrera (debajo de los tiempos). */
+.timing__flag {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 5px 8px;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.timing__flag.is-visible {
+  display: flex;
+}
+
+.timing__flag-cloth {
+  flex: none;
+  width: 22px;
+  height: 14px;
+  border-radius: 1px;
+  animation: flag-wave 0.7s ease-in-out infinite alternate;
+}
+
+.timing__flag[data-flag='yellow'] .timing__flag-cloth {
+  background: #ffd21f;
+}
+
+.timing__flag[data-flag='blue'] .timing__flag-cloth {
+  background: #1f6bff;
+}
+
+.timing__flag[data-flag='blackWhite'] .timing__flag-cloth {
+  background: linear-gradient(135deg, #f3f4f6 0 50%, #0b0c10 50% 100%);
+}
+
+.timing__flag[data-flag='yellow'] {
+  color: #ffd21f;
+}
+
+.timing__flag[data-flag='blue'] {
+  color: #7fb0ff;
+}
+
+@keyframes flag-wave {
+  to {
+    transform: skewY(-8deg) scaleX(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timing__flag-cloth,
+  .minimap__sector.is-yellow {
+    animation: none;
+  }
 }
 
 .timing__main {
@@ -710,6 +777,25 @@
   stroke-linecap: round;
 }
 
+.minimap__sector {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.minimap__sector.is-yellow {
+  stroke: #ffd21f;
+  animation: flag-blink 0.9s ease-in-out infinite;
+}
+
+@keyframes flag-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 .minimap__start {
   stroke: #fff;
   stroke-width: 3;
@@ -750,7 +836,7 @@
 
 .standings__row {
   display: grid;
-  grid: auto-flow / 22px 4px 1fr auto;
+  grid: auto-flow / 22px 4px 1fr auto auto;
   gap: 7px;
   align-items: center;
   height: 22px;
@@ -787,6 +873,17 @@
 
 .standings__gap {
   color: var(--c-text-2);
+}
+
+.standings__penalty {
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 700;
+  color: #ff6b76;
+}
+
+.standings__penalty:empty {
+  display: none;
 }
 
 .standings__row.is-player {
@@ -1050,9 +1147,11 @@
   animation: aid-blink 0.18s steps(2) infinite;
 }
 
+/* El parpadeo es del brillo, no del fondo: el texto siempre se lee. */
 @keyframes aid-blink {
   50% {
-    background: rgba(245, 197, 66, 0.45);
+    box-shadow: 0 0 2px rgba(245, 197, 66, 0.2);
+    filter: brightness(0.82);
   }
 }
 
@@ -1131,6 +1230,11 @@
   top: calc(18% + 5%);
 }
 
+/* Con el semáforo en pantalla, los avisos van debajo (alto del semáforo: relleno + dos luces). */
+.hud.has-lights .hud__messages {
+  top: calc(var(--gutter) + 8px + 46px + 2 * clamp(22px, 3vw, 34px) + 14px);
+}
+
 /* Avisos */
 
 .hud__messages {
@@ -1160,6 +1264,18 @@
 
 .hud__message--bad {
   border-color: #ff2a3c;
+}
+
+.hud__message--warn {
+  border-color: var(--c-gold);
+}
+
+.hud__message--blue {
+  border-color: #1f6bff;
+}
+
+.hud__message--warn .hud__message-title {
+  color: var(--c-gold);
 }
 
 .hud__message--best {
@@ -1460,6 +1576,16 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--c-text-3);
+}
+
+.finish__cpenalty {
+  flex: none;
+  padding: 0 5px;
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: #c01626;
 }
 
 .finish__ctime {

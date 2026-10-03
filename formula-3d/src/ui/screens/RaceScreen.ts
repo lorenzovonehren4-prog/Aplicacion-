@@ -36,7 +36,7 @@ import { applyUpgrades, devPointsFor } from '../../progression/upgrades';
 import type { RivalCar } from '../../race/render/RivalFleet';
 import { DrivingInput, type DrivingEvent } from '../../race/input/DrivingInput';
 import { F1_SPEC } from '../../race/physics/CarSpec';
-import { Session, type RaceResult, type SessionEvent } from '../../race/Session';
+import { Session, TIME_PENALTY, TRACK_LIMIT_WARNINGS, type RaceResult, type SessionEvent } from '../../race/Session';
 import { RaceAudio, type SurfaceMix } from '../../race/audio/RaceAudio';
 import type { Listener } from '../../race/audio/BotEngines';
 import { decodeGhost, encodeGhost, GhostPlayer, type GhostLap, type GhostPose } from '../../race/session/Ghost';
@@ -69,6 +69,11 @@ const SLOW_MOTION_HOLD = 1.3;
 const SLOW_MOTION_RAMP = 0.9;
 /** Frecuencia de la torre de posiciones (s) y de los rivales en el minimapa (s). */
 const STANDINGS_INTERVAL = 0.25;
+/** Con menos vueltas que esto (en total) se muestran las teclas al empezar. */
+const NEWCOMER_LAPS = 15;
+/** Reacción a la largada: excelente y buena (s). */
+const REACTION_GREAT = 0.2;
+const REACTION_GOOD = 0.32;
 /** Hasta cuántos segundos detrás se nombra al que viene en el retrovisor. */
 const MIRROR_NEAR = 3;
 /** El retrovisor aparece este tiempo (s) después de la largada, cuando ya se fue el semáforo. */
@@ -608,19 +613,24 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.own.tween(gsap.to([this.introCard, this.skipHint], { opacity: 0, x: -30, duration: quick ? 0.01 : 0.35, ease: 'power2.in' }));
     this.hud.setVisible(true);
     this.hud.reveal();
-    if (this.startHints) {
+    // Las teclas, sólo para quien recién empieza: en carrera, mientras espera en la
+    // parrilla (se van con la largada); si no, unos segundos.
+    const newcomer = this.game.save.data.stats.laps < NEWCOMER_LAPS;
+    if (this.startHints && newcomer) {
       const hints = this.startHints.element;
       const tl = gsap.timeline();
       tl.fromTo(hints, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: quick ? 0.01 : 0.5, ease: 'power3.out' }, 0.3);
-      tl.to(hints, { opacity: 0, duration: 0.8 }, '+=7');
+      if (!this.session?.isRace) tl.to(hints, { opacity: 0, duration: 0.8 }, '+=7');
       this.own.tween(tl);
     }
+    // En la parrilla no se ve la trazada (cruzaba los autos de adelante): aparece con la largada.
+    this.world.racingLine.setHidden(this.session?.phase === 'grid');
     if (this.daily) {
       const goal = this.daily.goal;
       this.own.timeout(() => this.hud?.message(`DESAFÍO DEL DÍA · ${this.daily?.title.toUpperCase() ?? ''}`, goal, 'gold'), 3200);
     }
     if (this.session?.isRace) {
-      this.hud.message('A LA PARRILLA', 'Acelera para subir las vueltas del motor y espera las luces', 'info');
+      this.hud.message('A LA PARRILLA', 'No aceleres hasta que se apaguen las cinco luces', 'info');
     } else if (this.session?.isTimeTrial) {
       const ghost = this.session.ghost;
       const rival = this.params.rivalGhost;
@@ -710,9 +720,43 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           this.mirrorDelay = MIRROR_AFTER_START;
           hud.lightsOut();
           world.setStartLights(0);
+          world.racingLine.setHidden(false);
+          this.hideStartHints();
           this.audio.cue('lightsOut');
-          this.own.timeout(() => this.radio('raceStart'), 1800);
+          if (!session.jumpStart) this.own.timeout(() => this.radio('raceStart'), 1800);
           break;
+        case 'gridHint':
+          hud.message('¡ESPERA LAS LUCES!', 'Acelera recién cuando se apaguen todas: antes es salida en falso', 'warn');
+          break;
+        case 'jumpStart':
+          hud.message('SALIDA EN FALSO', `+${event.seconds} s de sanción: se suma a tu tiempo final`, 'bad');
+          this.game.playUi('locked');
+          this.own.timeout(() => this.radio('jumpStart'), 900);
+          break;
+        case 'reaction': {
+          const time = event.time;
+          const [label, tone] =
+            time < REACTION_GREAT ? (['¡Reacción perfecta!', 'best'] as const) : time < REACTION_GOOD ? (['Buena reacción', 'good'] as const) : (['Reacción lenta', 'info'] as const);
+          hud.message(`REACCIÓN ${time.toFixed(3)} s`, label, tone);
+          break;
+        }
+        case 'trackLimits':
+          this.onTrackLimits(event.count, event.penalty);
+          break;
+        case 'yellow': {
+          const flags = session.flags;
+          if (!event.on || !flags || session.phase !== 'running') break;
+          const here = flags.sectorOf(session.distance);
+          if (event.sector === here || event.sector === (here + 1) % 3) {
+            hud.message('BANDERA AMARILLA', `Sector ${event.sector + 1}: hay un auto detenido o afuera. ¡Cuidado!`, 'warn');
+          }
+          break;
+        }
+        case 'blue': {
+          const lapper = event.index === null ? undefined : session.cars[event.index];
+          if (lapper && session.phase === 'running') hud.message('BANDERA AZUL', `Te va a doblar ${lapper.name}: déjalo pasar`, 'blue');
+          break;
+        }
         case 'lapStarted':
           hud.clearSectors();
           break;
@@ -731,7 +775,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           if (!finishing) this.announceLap(event.lap.number, event.lap.time, event.lap.valid, event.personalBest, event.bestOfSession);
           break;
         case 'invalidated':
-          if (event.reason === 'trackLimits') hud.message('VUELTA ANULADA', 'Límites de pista: las cuatro ruedas afuera', 'bad');
+          // El aviso lo da `trackLimits` (advertencias y sanciones); volver a pista avisa por su cuenta.
           break;
         case 'drsZone':
           // Al salir de la zona, el pedido de DRS se cancela.
@@ -784,6 +828,37 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     }
   }
 
+  /**
+   * Las cuatro ruedas afuera. En carrera: advertencia (la última, con bandera
+   * blanca y negra) o sanción; fuera de carrera, la vuelta no cuenta para el récord.
+   */
+  private onTrackLimits(count: number, penalty: number): void {
+    const hud = this.hud;
+    if (!hud) return;
+    if (count === 0) {
+      hud.message('LÍMITES DE PISTA', 'Las cuatro ruedas afuera: esta vuelta no cuenta para el récord', 'warn');
+      return;
+    }
+    if (penalty > 0) {
+      hud.message(`SANCIÓN +${penalty} s`, 'Límites de pista: se suma a tu tiempo final', 'bad');
+      this.game.playUi('locked');
+      this.own.timeout(() => this.radio('trackLimitsPenalty'), 900);
+    } else if (count === TRACK_LIMIT_WARNINGS) {
+      hud.message('BANDERA BLANCA Y NEGRA', `Advertencia ${count} de ${TRACK_LIMIT_WARNINGS}: la próxima salida, +${TIME_PENALTY} s`, 'warn');
+      this.own.timeout(() => this.radio('trackLimitsFlag'), 900);
+    } else {
+      hud.message(`ADVERTENCIA ${count} DE ${TRACK_LIMIT_WARNINGS}`, 'Límites de pista: las cuatro ruedas afuera', 'warn');
+      if (count === 1) this.own.timeout(() => this.radio('trackLimitsWarning'), 900);
+    }
+  }
+
+  /** Las teclas de la largada se van con el semáforo. */
+  private hideStartHints(): void {
+    const hints = this.startHints?.element;
+    if (!hints || Number(getComputedStyle(hints).opacity) === 0) return;
+    this.own.tween(gsap.to(hints, { opacity: 0, duration: prefersReducedMotion() ? 0.01 : 0.5, overwrite: true }));
+  }
+
   /** Mensaje y radio al completar una vuelta. */
   private announceLap(number: number, time: number, valid: boolean, personalBest: boolean, bestOfSession: boolean): void {
     const hud = this.hud;
@@ -791,8 +866,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (!hud || !session) return;
     const text = formatLapTime(time);
     if (!valid) {
-      hud.message(`VUELTA ${number} · ${text}`, 'Anulada: no cuenta para el récord', 'bad');
-      this.radio('invalidLap');
+      hud.message(`VUELTA ${number} · ${text}`, 'Con salida de pista: no cuenta para el récord', 'info');
+      if (!session.isRace) this.radio('invalidLap');
     } else if (personalBest) {
       hud.message('¡NUEVO RÉCORD PERSONAL!', text, 'best');
       this.radio('personalBest');
@@ -836,12 +911,15 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.world?.showCheckeredFlag();
     // Cámara lenta al cruzar la línea (no con "reducir movimiento").
     if (!prefersReducedMotion()) this.slowMotionStart = performance.now();
+    const sanction = result.penalty > 0 ? ` · sanción +${result.penalty} s` : '';
     this.hud?.message(
       'BANDERA A CUADROS',
-      withRivals ? `Terminaste P${result.position} de ${result.starters}` : `Tiempo total ${formatLapTime(result.totalTime)}`,
+      withRivals ? `Cruzaste P${this.session?.position ?? result.position} de ${result.starters}${sanction}` : `Tiempo total ${formatLapTime(result.totalTime + result.penalty)}${sanction}`,
       'gold',
     );
-    const moment: RadioMoment = !withRivals
+    const moment: RadioMoment = result.penalty > 0 && withRivals
+      ? 'penaltyAtFinish'
+      : !withRivals
       ? 'finished'
       : result.position === 1
         ? 'raceWin'
@@ -880,6 +958,13 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private showFinish(): void {
     const result = this.pendingFinish;
     if (!result || this.phase !== 'running' || !this.finish || !this.session) return;
+    // Con sanción, la posición final depende de quién cruce la meta dentro de ese tiempo: se espera.
+    const pending = this.session.classificationPending;
+    if (pending > 0) {
+      this.own.timeout(() => this.showFinish(), Math.min(6, pending) * 1000 + 150);
+      return;
+    }
+    result.position = this.session.finalPosition;
     this.pendingFinish = null;
     this.phase = 'results';
     this.driving?.release();
@@ -944,7 +1029,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         laps: result ? (this.params.laps ?? DEFAULT_RACE_LAPS) : this.soloLaps,
         overtakes: this.overtakes,
         fastestLap: withRivals && playerRow?.fastestLap === true,
-        clean: result !== null && result.contacts === 0 && result.laps.every((lap) => lap.valid),
+        clean: result !== null && result.contacts === 0 && result.penalty === 0 && result.laps.every((lap) => lap.valid),
         personalBest: result ? personalBest : this.soloPersonalBest,
         difficulty,
         assistMultiplier: xpMultiplier(settings.assists),
@@ -967,7 +1052,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       validLaps: result ? result.laps.filter((lap) => lap.valid).length : this.soloLaps,
       distanceKm: lapsDriven * trackKm,
       fastestLap: withRivals && playerRow?.fastestLap === true,
-      clean: result !== null && result.contacts === 0 && result.laps.every((lap) => lap.valid),
+      clean: result !== null && result.contacts === 0 && result.penalty === 0 && result.laps.every((lap) => lap.valid),
       overtakes: this.overtakes,
       difficulty,
       assistMultiplier: xpMultiplier(settings.assists),
@@ -1004,7 +1089,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       modeLabel,
       position: withRivals ? result.position : null,
       starters: result?.starters ?? 1,
-      totalTime: result?.totalTime ?? null,
+      totalTime: result ? result.totalTime + result.penalty : null,
       bestLap: result ? (result.bestLap?.time ?? null) : (session?.timer.bestLap?.time ?? null),
       personalBest: result ? personalBest : this.soloPersonalBest,
       award,
@@ -1320,7 +1405,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     } else {
       this.setPaused(false);
     }
-    if (session.isRace) this.hud?.message('A LA PARRILLA', 'Nueva largada: espera las luces', 'info');
+    world.racingLine.setHidden(session.phase === 'grid');
+    if (session.isRace) this.hud?.message('A LA PARRILLA', 'Nueva largada: no aceleres hasta que se apaguen las luces', 'info');
     else this.hud?.message('SESIÓN REINICIADA', 'Vuelta de salida', 'info');
   }
 
@@ -1348,7 +1434,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.audio.updateTraffic(l, this.botVehicles);
   }
 
-  /** Torre de posiciones (4 veces por segundo) y rivales en el minimapa (20 por segundo). */
+  /** Torre de posiciones y banderas (4 veces por segundo) y rivales en el minimapa (20 por segundo). */
   private updateRivals(dt: number): void {
     const session = this.session;
     const hud = this.hud;
@@ -1357,6 +1443,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     if (this.standingsTimer <= 0) {
       this.standingsTimer = STANDINGS_INTERVAL;
       hud.updateStandings(session.standings());
+      this.updateFlags(session, hud);
     }
     this.minimapTimer -= dt;
     if (this.minimapTimer <= 0) {
@@ -1371,6 +1458,23 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       }
       hud.setRivals(this.rivalDots);
     }
+  }
+
+  /** Banderas: sectores amarillos en el minimapa y la que le toca al jugador. */
+  private updateFlags(session: Session, hud: Hud): void {
+    const flags = session.flags;
+    if (!flags) return;
+    const yellow = flags.yellow.map((left) => left > 0);
+    const here = flags.sectorOf(session.distance);
+    const next = (here + 1) % yellow.length;
+    const running = session.phase === 'running';
+    const lapper = flags.blue[session.player.index];
+    hud.setFlags({
+      yellow,
+      yellowHere: !running ? null : yellow[here] ? here : yellow[next] ? next : null,
+      blue: running && lapper !== null && lapper !== undefined ? (session.cars[lapper]?.code ?? null) : null,
+      blackWhite: running && session.warnings === TRACK_LIMIT_WARNINGS,
+    });
   }
 
   /**
@@ -1444,6 +1548,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       lap: timer.lap,
       lapTime: timer.lap > 0 ? timer.lapTime : null,
       lapValid: timer.valid,
+      warnings: session.isRace ? session.warnings : null,
+      penalty: session.penalties[session.player.index] ?? 0,
       delta,
       lastLap: timer.lastLap?.time ?? null,
       bestLap: timer.bestLap?.time ?? null,

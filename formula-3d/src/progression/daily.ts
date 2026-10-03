@@ -10,7 +10,7 @@
  * - Podio: terminar entre los tres primeros.
  * - Remontada: largar último y terminar entre los seis primeros.
  * - Carrera limpia: terminar entre los seis primeros sin tocar a nadie y sin
- *   vueltas anuladas.
+ *   salidas de pista.
  * - Victoria: ganar una carrera corta contra rivales un poco más lentos.
  * Las carreras usan la dificultad que el jugador eligió (o el nivel de abajo,
  * en la remontada y la victoria), así el desafío es de su nivel.
@@ -187,7 +187,7 @@ export function dailyChallenge(
         kind,
         trackId: def.id,
         title: 'Carrera limpia',
-        goal: `Termina entre los seis primeros en ${def.short} sin tocar a nadie y sin vueltas anuladas (3 vueltas).`,
+        goal: `Termina entre los seis primeros en ${def.short} sin tocar a nadie y sin salirte de la pista (3 vueltas).`,
         race: { ...base, mode: 'race', laps: 3, rivals: 11, difficulty },
         position: 6,
       };

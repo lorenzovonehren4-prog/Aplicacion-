@@ -48,6 +48,10 @@ const START_CAUTION = 30;
 const START_PACE = 0.94;
 /** Por debajo de esta velocidad (m/s) nadie cede el paso a nadie. */
 const YIELD_MIN_SPEED = 12;
+/** Bandera azul: desde qué distancia (m) detrás se corre, a cuánto del centro (m) y cuánto levanta. */
+const BLUE_YIELD_RANGE = 70;
+const BLUE_YIELD_OFFSET = 3;
+const BLUE_YIELD_PACE = 0.97;
 /** Anticipación del movimiento lateral de los demás (s). */
 const LATERAL_LOOKAHEAD = 0.45;
 /**
@@ -94,6 +98,8 @@ function lessonsFor(track: Track): Float32Array {
 export class BotDriver {
   /** Pide volver a pista (quedó detenido o atascado). */
   needsReset = false;
+  /** Bandera azul: el auto que lo va a doblar (se corre de la trazada y lo deja pasar). */
+  blueFlag: Vehicle | null = null;
   /** Carril actual y deseado (m, respecto de la trazada; + derecha). */
   private lane = 0;
   private laneTarget = 0;
@@ -165,6 +171,7 @@ export class BotDriver {
     this.wasBraking = false;
     this.sinceStart = onGrid ? 0 : START_CAUTION;
     this.needsReset = false;
+    this.blueFlag = null;
   }
 
   /** En la parrilla: acelera en vacío para tener vueltas al apagarse las luces. */
@@ -334,9 +341,17 @@ export class BotDriver {
     if (this.passHold <= 0 && (!blocker || blockerGap > 45)) this.passSide = 0;
 
     // ─── Carril deseado ───
+    const lapper = this.blueFlag;
+    const lapperGap = lapper ? -g.deltaS(s, lapper.projection.s) : Infinity;
     if (this.passSide !== 0 && blocker) {
       const want = blocker.projection.d + this.passSide * (SIDE_CLEARANCE + 0.2) - lineHere;
       this.laneTarget = want;
+    } else if (lapper && lapperGap > 0 && lapperGap < BLUE_YIELD_RANGE && !braking) {
+      // Bandera azul: se corre al lado contrario del que viene y levanta un poco.
+      const away = -(Math.sign(lapper.projection.d - d) || Math.sign(lineHere) || 1);
+      this.laneTarget = away * BLUE_YIELD_OFFSET - lineHere;
+      targetSpeed *= BLUE_YIELD_PACE;
+      this.defended = true;
     } else if (
       attacker &&
       attackerGap < 12 &&

@@ -1,10 +1,12 @@
 /**
  * Sesión en pista: práctica libre (sola) o carrera a N vueltas contra bots.
  * Reúne la física, las ayudas, la IA, el cronómetro y las reglas: parrilla y
- * semáforo, zonas de DRS (en carrera, con detección a menos de 1 s del de
- * adelante), rebufo, choques entre autos, límites de pista, volver a pista
- * con R, posiciones e intervalos, bandera a cuadros para todos y vuelta de
- * enfriamiento. No sabe nada del DOM ni del 3D: la pantalla de carrera la dibuja.
+ * semáforo (con salida en falso y tiempo de reacción), zonas de DRS (en
+ * carrera, con detección a menos de 1 s del de adelante), rebufo, choques
+ * entre autos, límites de pista (advertencias y, desde la cuarta, sanciones de
+ * tiempo), volver a pista con R, posiciones e intervalos, bandera a cuadros
+ * para todos, clasificación con las sanciones y vuelta de enfriamiento. No
+ * sabe nada del DOM ni del 3D: la pantalla de carrera la dibuja.
  */
 
 import { BrakingAssist } from '../assists/BrakingAssist';
@@ -22,6 +24,7 @@ import { Vehicle, type DriverInput } from './physics/Vehicle';
 import { LapTimer, type LapEvent, type LapRecord } from './session/LapTimer';
 import { GhostRecorder, type GhostLap } from './session/Ghost';
 import { RaceOrder, type OrderEvent } from './session/RaceOrder';
+import { RaceFlags, type FlagCar, type FlagEvent } from './session/Flags';
 
 /** Agarre extra del nivel Principiante (×1,08: como más carga aerodinámica). */
 const BEGINNER_GRIP = 1.08;
@@ -102,6 +105,8 @@ export interface StandingRow {
   bestLap: number | null;
   /** Tiene la vuelta rápida de la carrera. */
   fastestLap: boolean;
+  /** Sanción de tiempo acumulada (s): se suma al tiempo final. */
+  penalty: number;
 }
 
 export interface RaceResult {
@@ -114,16 +119,32 @@ export interface RaceResult {
   starters: number;
   /** Choques del jugador con otros autos durante la carrera. */
   contacts: number;
+  /** Sanción de tiempo del jugador (s), ya sumada a su clasificación. */
+  penalty: number;
+  /** Advertencias por límites de pista. */
+  warnings: number;
 }
 
 export type SessionEvent =
   | LapEvent
+  | FlagEvent
   | { kind: 'drsZone'; entered: boolean }
   | { kind: 'drsOpened' }
   | { kind: 'drsEnabled' }
   | { kind: 'drsArmed' }
   | { kind: 'light'; index: number }
   | { kind: 'lightsOut' }
+  /** Aceleró antes de la primera luz: sólo un aviso. */
+  | { kind: 'gridHint' }
+  /** Aceleró con el semáforo encendido: salida en falso y sanción. */
+  | { kind: 'jumpStart'; seconds: number }
+  /** Tiempo de reacción a la largada (s). */
+  | { kind: 'reaction'; time: number }
+  /**
+   * Las cuatro ruedas afuera: `count` infracciones en la carrera (0 fuera de
+   * carrera, donde sólo deja la vuelta sin récord) y la sanción de ahora (s).
+   */
+  | { kind: 'trackLimits'; count: number; penalty: number }
   | { kind: 'lastLap' }
   | { kind: 'position'; from: number; to: number }
   | { kind: 'fastestLap'; index: number; time: number }
@@ -153,6 +174,23 @@ const GHOST_TIME = 3.5;
 const GHOST_EXTEND = 0.25;
 /** Distancia entre centros (m) desde la que dos autos ya no pueden tocarse (largo de un auto y algo más). */
 const GHOST_CLEARANCE = 6.4;
+/** Acelerador que cuenta como salida en falso con el semáforo encendido. */
+const JUMP_THROTTLE = 0.2;
+/** Acelerador que marca la reacción a la largada (un toque: el teclado sube en rampa). */
+const REACTION_THROTTLE = 0.08;
+/** Hasta cuántos segundos después de la largada se mide la reacción. */
+const REACTION_WINDOW = 3;
+/** Sanción por salida en falso y por cada infracción después de las advertencias (s). */
+export const TIME_PENALTY = 5;
+/** Advertencias por límites de pista antes de las sanciones (la última, con bandera blanca y negra). */
+export const TRACK_LIMIT_WARNINGS = 3;
+/** Tiempo (s) con las ruedas en pista para que la próxima salida cuente como otra infracción. */
+const TRACK_LIMIT_RESET = 1;
+/** Las banderas amarillas y azules empiezan a contar después de la largada (s de carrera). */
+const FLAGS_FROM = 8;
+/** Salida en falso: el auto se escapa hasta este tramo (m) a lo sumo a esta velocidad (m/s) y frena. */
+const CREEP_DISTANCE = 1.2;
+const CREEP_SPEED = 1.5;
 
 export class Session {
   readonly vehicle: Vehicle;
@@ -165,8 +203,18 @@ export class Session {
   result: RaceResult | null = null;
   /** Orden de carrera (null en práctica o sin rivales). */
   order: RaceOrder | null = null;
+  /** Banderas amarillas y azules (con el orden de carrera). */
+  flags: RaceFlags | null = null;
   /** Contrarreloj: el fantasma que se muestra (el guardado o la mejor vuelta de hoy). */
   ghost: GhostLap | null;
+  /** Sanción de tiempo acumulada de cada auto (s), por índice: se suma a su tiempo final. */
+  readonly penalties: number[];
+  /** Infracciones del jugador por límites de pista en la carrera (las primeras son advertencias). */
+  warnings = 0;
+  /** El jugador hizo salida en falso en esta largada. */
+  jumpStart = false;
+  /** Tiempo de reacción del jugador a la largada (s), si lo hubo. */
+  reaction: number | null = null;
   /** Ayuda de frenado (su `active` ilumina el ícono del HUD). */
   readonly brakingAssist: BrakingAssist;
   readonly steeringAssist: SteeringAssist;
@@ -180,6 +228,15 @@ export class Session {
   private cooldownTime = 0;
   private playerContacts = 0;
   private lastPosition = 0;
+  /** Ya se avisó que hay que esperar las luces (una vez por largada). */
+  private gridHinted = false;
+  /** Segundos desde que se apagaron las luces, mientras se espera la reacción (−1 = no se mide). */
+  private sinceLightsOut = -1;
+  /** Dónde estaba el jugador en la parrilla (s), para frenar el auto en una salida en falso. */
+  private gridS = 0;
+  /** Infracción en curso (ya contada) y tiempo con las ruedas de vuelta en la pista. */
+  private offTrack = false;
+  private backOnTrack = 0;
   private readonly cooldown: BotDriver;
   private readonly recorder = new GhostRecorder();
   private readonly vehicles: Vehicle[];
@@ -190,6 +247,8 @@ export class Session {
   private readonly distances: number[];
   private readonly lastS: number[];
   private readonly orderEvents: OrderEvent[] = [];
+  private readonly flagCars: FlagCar[];
+  private readonly flagEvents: FlagEvent[] = [];
   private readonly raw: DriverInput = { throttle: 0, brake: 0, steer: 0, drs: false };
   private readonly assisted: DriverInput = { throttle: 0, brake: 0, steer: 0, drs: false };
   private readonly botInput: DriverInput = { throttle: 0, brake: 0, steer: 0, drs: false };
@@ -257,6 +316,8 @@ export class Session {
     if (!player) throw new Error('No se pudo ubicar al jugador en la parrilla.');
     this.player = player;
     this.vehicles = this.cars.map((car) => car.vehicle);
+    this.penalties = this.cars.map(() => 0);
+    this.flagCars = this.cars.map(() => ({ distance: 0, progress: 0, speed: 0, wheelsOff: 0, ignore: true }));
     this.solid = this.cars.map(() => true);
     this.distances = this.cars.map(() => 0);
     this.lastS = this.cars.map(() => 0);
@@ -346,11 +407,15 @@ export class Session {
     points.length = 0;
   }
 
-  /** Tabla de posiciones (del primero al último). Vacía si no hay rivales. */
+  /**
+   * Tabla de posiciones (del primero al último). Vacía si no hay rivales. En
+   * pista es el orden de carrera; los que terminaron se clasifican por vueltas
+   * y por su tiempo con las sanciones sumadas.
+   */
   standings(): StandingRow[] {
     const order = this.order;
     if (!order) return [];
-    return order.order.map((index) => {
+    const rows = order.order.map((index): StandingRow => {
       const runner = order.runners[index];
       const car = this.cars[index];
       if (!runner || !car) throw new Error('Orden de carrera inconsistente.');
@@ -370,8 +435,29 @@ export class Session {
         gap: order.gapToLeader(index),
         bestLap: runner.bestLap,
         fastestLap: order.fastest?.index === index,
+        penalty: this.penalties[index] ?? 0,
       };
     });
+    return classify(rows);
+  }
+
+  /** Posición final del jugador (con las sanciones de todos ya aplicadas a los que terminaron). */
+  get finalPosition(): number {
+    return this.standings().find((row) => row.isPlayer)?.position ?? this.position;
+  }
+
+  /**
+   * Segundos de carrera que faltan para que la posición final del jugador ya
+   * no pueda cambiar por su sanción: los que crucen la meta dentro de ese
+   * tiempo quedan delante. 0 = definitiva.
+   */
+  get classificationPending(): number {
+    const order = this.order;
+    const runner = order?.runners[this.player.index];
+    const penalty = this.penalties[this.player.index] ?? 0;
+    if (!order || !runner?.finished || runner.finishTime === null || penalty <= 0) return 0;
+    if (order.runners.every((r) => r.finished)) return 0;
+    return Math.max(0, runner.finishTime + penalty - order.time);
   }
 
   /**
@@ -390,12 +476,15 @@ export class Session {
 
     if (this.phase === 'grid') {
       this.stepGrid(dt, events);
-      // En la parrilla el acelerador sólo sube las vueltas del motor.
+      // En la parrilla los bots suben las vueltas del motor; el jugador espera
+      // (si aceleró con el semáforo encendido, el auto se le escapa un poco).
       for (const car of this.cars) {
-        car.vehicle.step(dt, car.bot ? car.bot.grid(this.botInput) : raw);
+        if (car.isPlayer && this.jumpStart && this.phase === 'grid') car.vehicle.step(dt, this.creepInput());
+        else car.vehicle.step(dt, car.bot ? car.bot.grid(this.botInput) : raw);
       }
       return events;
     }
+    this.measureReaction(dt, events);
 
     const distanceBefore = this.distance;
     this.updateDrs(events);
@@ -454,11 +543,7 @@ export class Session {
         this.onLapEvent(event, events);
       }
       if (this.isTimeTrial && this.timer.lap > 0) this.recorder.record(this.timer.lapTime, v.x, v.z, v.heading);
-      // Límites de pista: las cuatro ruedas fuera anulan la vuelta.
-      if (v.telemetry.wheelsOff >= 4) {
-        const event = this.timer.invalidate('trackLimits');
-        if (event) events.push(event);
-      }
+      this.checkTrackLimits(dt, events);
     }
     this.updateOrder(dt, events);
 
@@ -489,6 +574,65 @@ export class Session {
     this.start();
   }
 
+  /**
+   * Límites de pista: con las cuatro ruedas afuera la vuelta no cuenta para el
+   * récord y, en carrera, es una infracción: las primeras son advertencias
+   * (la última, con bandera blanca y negra) y desde ahí cada una suma
+   * `TIME_PENALTY` s. Una salida larga es una sola infracción: la próxima
+   * cuenta después de volver a la pista por un momento.
+   */
+  private checkTrackLimits(dt: number, events: SessionEvent[]): void {
+    if (this.vehicle.telemetry.wheelsOff < 4) {
+      if (this.offTrack) {
+        this.backOnTrack += dt;
+        if (this.backOnTrack >= TRACK_LIMIT_RESET) this.offTrack = false;
+      }
+      return;
+    }
+    this.backOnTrack = 0;
+    if (this.offTrack) return;
+    this.offTrack = true;
+    const invalidated = this.timer.invalidate('trackLimits') !== null;
+    if (this.isRace) {
+      this.warnings++;
+      const penalty = this.warnings > TRACK_LIMIT_WARNINGS ? TIME_PENALTY : 0;
+      if (penalty > 0) this.addPenalty(this.player.index, penalty);
+      events.push({ kind: 'trackLimits', count: this.warnings, penalty });
+    } else if (invalidated) {
+      events.push({ kind: 'trackLimits', count: 0, penalty: 0 });
+    }
+  }
+
+  private addPenalty(index: number, seconds: number): void {
+    this.penalties[index] = (this.penalties[index] ?? 0) + seconds;
+  }
+
+  /** Tiempo de reacción: desde que se apagan las luces hasta que el jugador acelera. */
+  private measureReaction(dt: number, events: SessionEvent[]): void {
+    if (this.sinceLightsOut < 0) return;
+    this.sinceLightsOut += dt;
+    if (this.raw.throttle > REACTION_THROTTLE) {
+      this.reaction = this.sinceLightsOut;
+      this.sinceLightsOut = -1;
+      events.push({ kind: 'reaction', time: this.reaction });
+    } else if (this.sinceLightsOut > REACTION_WINDOW) {
+      this.sinceLightsOut = -1;
+    }
+  }
+
+  /** Salida en falso: el auto avanza un poco, despacio, y se frena hasta que se apaguen las luces. */
+  private creepInput(): DriverInput {
+    const v = this.vehicle;
+    const input = this.assisted;
+    const moved = this.track.geometry.deltaS(this.gridS, v.projection.s);
+    const go = moved < CREEP_DISTANCE && v.speed < CREEP_SPEED;
+    input.throttle = go ? Math.min(this.raw.throttle, 0.3) : 0;
+    input.brake = go ? 0 : 1;
+    input.steer = 0;
+    input.drs = false;
+    return input;
+  }
+
   private start(): void {
     this.cars.forEach((car, position) => {
       const slot = this.track.gridSlot(position);
@@ -506,12 +650,26 @@ export class Session {
     this.cooldownTime = 0;
     this.playerContacts = 0;
     this.lastPosition = this.player.index + 1;
+    this.penalties.fill(0);
+    this.warnings = 0;
+    this.jumpStart = false;
+    this.reaction = null;
+    this.gridHinted = false;
+    this.sinceLightsOut = -1;
+    this.offTrack = false;
+    this.backOnTrack = 0;
+    this.gridS = this.vehicle.projection.s;
     this.cars.forEach((car, i) => {
       this.lastS[i] = car.vehicle.projection.s;
       this.distances[i] = this.distanceOf(car.vehicle);
     });
     this.order =
       this.isRace && this.hasRivals && this.config.laps !== null ? new RaceOrder(this.track.length, this.config.laps, this.distances) : null;
+    const g = this.track.geometry;
+    this.flags = this.order
+      ? new RaceFlags(this.track.length, [g.wrapS(this.track.sectorEnds[0] - this.track.startS), g.wrapS(this.track.sectorEnds[1] - this.track.startS)], this.cars.length)
+      : null;
+    for (const car of this.cars) if (car.bot) car.bot.blueFlag = null;
     if (this.isRace) {
       this.phase = 'grid';
       this.lights = new StartLights(this.random);
@@ -526,6 +684,20 @@ export class Session {
   private stepGrid(dt: number, events: SessionEvent[]): void {
     const lights = this.lights;
     if (!lights) return;
+    // Acelerar antes de tiempo: antes de la primera luz es un aviso; con el semáforo encendido, salida en falso.
+    if (this.raw.throttle > JUMP_THROTTLE && !this.jumpStart) {
+      if (lights.lit === 0) {
+        if (!this.gridHinted) {
+          this.gridHinted = true;
+          events.push({ kind: 'gridHint' });
+        }
+      } else {
+        this.jumpStart = true;
+        this.vehicle.held = false;
+        this.addPenalty(this.player.index, TIME_PENALTY);
+        events.push({ kind: 'jumpStart', seconds: TIME_PENALTY });
+      }
+    }
     for (const event of lights.step(dt)) {
       if (event.kind === 'light') {
         events.push({ kind: 'light', index: event.index });
@@ -533,6 +705,7 @@ export class Session {
         // El jugador sale al instante; cada bot, tras su tiempo de reacción.
         this.vehicle.held = false;
         this.phase = 'running';
+        if (!this.jumpStart) this.sinceLightsOut = 0;
         events.push({ kind: 'lightsOut' });
         events.push(this.timer.beginRace());
       }
@@ -659,6 +832,30 @@ export class Session {
       events.push({ kind: 'position', from: this.lastPosition, to: position });
     }
     this.lastPosition = position;
+    this.updateFlags(dt, order, events);
+  }
+
+  /** Amarillas por sector y azules (los bots que van a ser doblados se corren). */
+  private updateFlags(dt: number, order: RaceOrder, events: SessionEvent[]): void {
+    const flags = this.flags;
+    if (!flags || order.time < FLAGS_FROM) return;
+    this.cars.forEach((car, i) => {
+      const runner = order.runners[i];
+      const flagCar = this.flagCars[i];
+      if (!runner || !flagCar) return;
+      flagCar.distance = runner.distance;
+      flagCar.progress = runner.progress;
+      flagCar.speed = car.vehicle.speed;
+      flagCar.wheelsOff = car.vehicle.telemetry.wheelsOff;
+      flagCar.ignore = runner.finished || car.ghost > 0;
+    });
+    const flagEvents = flags.update(dt, this.flagCars, this.player.index, this.flagEvents.splice(0));
+    for (const event of flagEvents) events.push(event);
+    this.cars.forEach((car, i) => {
+      if (!car.bot) return;
+      const lapper = flags.blue[i];
+      car.bot.blueFlag = lapper === null || lapper === undefined ? null : (this.cars[lapper]?.vehicle ?? null);
+    });
   }
 
   private onLapEvent(event: LapEvent, events: SessionEvent[]): void {
@@ -695,9 +892,11 @@ export class Session {
       totalTime: recorded.reduce((sum, lap) => sum + lap.time, 0),
       bestLap: this.timer.bestLap,
       laps: recorded,
-      position: this.position,
+      position: this.finalPosition,
       starters: this.cars.length,
       contacts: this.playerContacts,
+      penalty: this.penalties[this.player.index] ?? 0,
+      warnings: this.warnings,
     };
     events.push({ kind: 'finished', result: this.result });
   }
@@ -728,4 +927,28 @@ export class Session {
     if (this.isTimeTrial && this.ghost) timer.setReference(this.ghost.time, this.ghost.trace);
     return timer;
   }
+}
+
+/**
+ * Clasificación: los que terminaron, primero, por vueltas completas y por su
+ * tiempo con la sanción sumada (intervalos y diferencias recalculados); los
+ * que siguen en pista, detrás y en el orden de carrera.
+ */
+export function classify(rows: StandingRow[]): StandingRow[] {
+  const done = rows.filter((row) => row.finished && row.finishTime !== null);
+  if (!done.some((row) => row.penalty > 0)) return rows;
+  const total = (row: StandingRow): number => (row.finishTime ?? 0) + row.penalty;
+  done.sort((a, b) => b.laps - a.laps || total(a) - total(b));
+  const rest = rows.filter((row) => !done.includes(row));
+  const leader = done[0];
+  done.forEach((row, i) => {
+    const ahead = done[i - 1];
+    const versus = (other: StandingRow | undefined): { seconds: number | null; laps: number } =>
+      !other || other === row ? { seconds: null, laps: 0 } : other.laps > row.laps ? { seconds: null, laps: other.laps - row.laps } : { seconds: total(row) - total(other), laps: 0 };
+    row.interval = versus(ahead);
+    row.gap = versus(leader);
+  });
+  const all = [...done, ...rest];
+  all.forEach((row, i) => (row.position = i + 1));
+  return all;
 }

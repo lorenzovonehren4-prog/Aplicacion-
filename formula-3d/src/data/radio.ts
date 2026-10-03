@@ -23,7 +23,12 @@ export type RadioMoment =
   | 'drsArmed'
   | 'raceWin'
   | 'podium'
-  | 'pointsFinish';
+  | 'pointsFinish'
+  | 'jumpStart'
+  | 'trackLimitsWarning'
+  | 'trackLimitsFlag'
+  | 'trackLimitsPenalty'
+  | 'penaltyAtFinish';
 
 export const RADIO_LINES: Readonly<Record<RadioMoment, readonly string[]>> = {
   practiceStart: [
@@ -41,8 +46,8 @@ export const RADIO_LINES: Readonly<Record<RadioMoment, readonly string[]>> = {
     'Perdimos algo de tiempo en esa vuelta. Sigue concentrado.',
   ],
   invalidLap: [
-    'Esa vuelta no cuenta: cuidado con los límites de pista.',
-    'Vuelta anulada. Mantén al menos dos ruedas en la pista.',
+    'Esa vuelta no cuenta para el récord: cuidado con los límites de pista.',
+    'Mantén al menos dos ruedas en la pista y la próxima cuenta.',
   ],
   drsEnabled: ['DRS habilitado: a menos de un segundo del de adelante, ábrelo en las zonas verdes.'],
   lastLap: ['Última vuelta. ¡Dalo todo!', 'Última vuelta, sin errores ahora.'],
@@ -56,4 +61,18 @@ export const RADIO_LINES: Readonly<Record<RadioMoment, readonly string[]>> = {
   raceWin: ['¡GANAMOS! ¡Increíble carrera, felicitaciones!', '¡Victoria! ¡Qué carrera, campeón!'],
   podium: ['¡Podio! Gran resultado para el equipo.', '¡Al podio! Excelente trabajo hoy.'],
   pointsFinish: ['Terminamos en los puntos. Buen trabajo.', 'Carrera sólida, sumamos puntos.'],
+  jumpStart: [
+    'Salida en falso: nos dieron cinco segundos. Hay que abrir hueco.',
+    'Te moviste antes de tiempo. Cinco segundos de sanción, a recuperarlos.',
+  ],
+  trackLimitsWarning: [
+    'Advertencia por límites de pista. Cuidado con las salidas.',
+    'Dirección de carrera nos avisa: límites de pista. Las cuatro ruedas adentro.',
+  ],
+  trackLimitsFlag: ['Bandera blanca y negra. Una salida más y es sanción.', 'Última advertencia: la próxima son cinco segundos.'],
+  trackLimitsPenalty: ['Cinco segundos de sanción por límites de pista.', 'Nos sancionaron: cinco segundos. Mantenla en la pista.'],
+  penaltyAtFinish: [
+    'Cruzamos la meta, pero falta descontar la sanción. Veamos dónde quedamos.',
+    'Bandera a cuadros. Ahora se suma la sanción al tiempo final.',
+  ],
 };

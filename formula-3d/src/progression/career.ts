@@ -28,7 +28,7 @@ export interface CareerStats {
   /** Top 10 (zona de puntos) en carreras de 10 autos o más. */
   pointsFinishes: number;
   fastestLaps: number;
-  /** Sin choques ni vueltas anuladas. */
+  /** Sin choques, sin salidas de pista ni sanciones. */
   cleanRaces: number;
   overtakes: number;
   /** Vueltas válidas en cualquier modo. */
@@ -159,7 +159,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'wins-10', name: 'Dominador', description: 'Gana 10 carreras.', tier: 'gold', progress: (c) => count(c.stats.wins, 10) },
   { id: 'podiums-10', name: 'Habitual del podio', description: 'Consigue 10 podios.', tier: 'silver', progress: (c) => count(c.stats.podiums, 10) },
   { id: 'fastest-lap', name: 'Violeta', description: 'Haz la vuelta rápida de una carrera.', tier: 'bronze', progress: (c) => count(c.stats.fastestLaps, 1) },
-  { id: 'clean-5', name: 'Guante blanco', description: 'Termina 5 carreras sin choques ni vueltas anuladas.', tier: 'silver', progress: (c) => count(c.stats.cleanRaces, 5) },
+  { id: 'clean-5', name: 'Guante blanco', description: 'Termina 5 carreras sin choques ni salidas de pista.', tier: 'silver', progress: (c) => count(c.stats.cleanRaces, 5) },
   { id: 'overtakes-50', name: 'Por dentro', description: 'Suma 50 adelantamientos.', tier: 'silver', progress: (c) => count(c.stats.overtakes, 50) },
   { id: 'legend-win', name: 'Cazaleyendas', description: 'Gana en dificultad Leyenda.', tier: 'gold', progress: (c) => count(c.stats.legendWins, 1) },
   { id: 'unassisted-win', name: 'A mano', description: 'Gana con ayudas de nivel Avanzado o menos.', tier: 'gold', progress: (c) => count(c.stats.unassistedWins, 1) },

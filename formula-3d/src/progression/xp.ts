@@ -73,7 +73,7 @@ export interface XpInput {
   laps: number;
   overtakes: number;
   fastestLap: boolean;
-  /** Sin choques con otros autos ni vueltas invalidadas. */
+  /** Sin choques con otros autos, salidas de pista ni sanciones. */
   clean: boolean;
   personalBest: boolean;
   /** Dificultad de los rivales (0–100). */

@@ -48,7 +48,8 @@ describe('bots en las 24 pistas', () => {
         const before = recovered.mock.calls.length;
         for (let t = 0; t < 260; t += STEP) {
           if (session.phase === 'grid') {
-            session.step(STEP, me.grid(input), false);
+            // Espera las luces sin acelerar (si no, salida en falso).
+            session.step(STEP, { throttle: 0, brake: 0, steer: 0 }, false);
             continue;
           }
           me.drive(session.vehicle, STEP, session.cars.map((c) => c.vehicle), input);

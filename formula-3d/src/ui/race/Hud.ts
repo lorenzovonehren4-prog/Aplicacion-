@@ -6,7 +6,7 @@
  * - arriba a la derecha, el minimapa con las zonas de DRS y los autos,
  * - abajo a la derecha, el tablero: LEDs de cambio, marcha, velocidad,
  *   pedales, DRS y luces de control de tracción y ABS,
- * - al centro, avisos (vuelta anulada, mejor vuelta, sentido contrario).
+ * - al centro, avisos (advertencias y sanciones, mejor vuelta, sentido contrario).
  *
  * Sólo toca el DOM cuando un valor cambia.
  */
@@ -18,7 +18,7 @@ import { formatDelta, formatLapTime } from '../../core/utils/format';
 import type { Track } from '../../tracks/Track';
 import type { SectorResult } from '../../race/session/LapTimer';
 import { LIGHT_COUNT } from '../../race/session/StartLights';
-import type { StandingRow } from '../../race/Session';
+import { TRACK_LIMIT_WARNINGS, type StandingRow } from '../../race/Session';
 import { h, prefersReducedMotion, svg } from '../dom';
 import { Standings } from './Standings';
 
@@ -43,7 +43,12 @@ export interface HudState {
   onGrid: boolean;
   lap: number;
   lapTime: number | null;
+  /** La vuelta en curso cuenta para el récord (sin las cuatro ruedas afuera). */
   lapValid: boolean;
+  /** Infracciones por límites de pista en la carrera (null fuera de carrera). */
+  warnings: number | null;
+  /** Sanción de tiempo acumulada (s). */
+  penalty: number;
   delta: number | null;
   lastLap: number | null;
   bestLap: number | null;
@@ -58,13 +63,25 @@ export interface HudState {
   slipstream: number;
 }
 
+/** Banderas para el HUD. */
+export interface HudFlags {
+  /** Sectores con amarilla (para el minimapa). */
+  yellow: readonly boolean[];
+  /** Amarilla en el sector del jugador o en el que viene (null = ninguna). */
+  yellowHere: number | null;
+  /** Abreviatura del que lo va a doblar (bandera azul). */
+  blue: string | null;
+  /** Bandera blanca y negra (última advertencia por límites de pista). */
+  blackWhite: boolean;
+}
+
 /** Un rival en el minimapa. */
 export interface MinimapCar {
   x: number;
   z: number;
 }
 
-type MessageTone = 'info' | 'good' | 'bad' | 'best' | 'gold';
+type MessageTone = 'info' | 'good' | 'warn' | 'blue' | 'bad' | 'best' | 'gold';
 
 /** Ayudas que muestran ícono en el tablero (sólo si están activadas). */
 export interface HudAssists {
@@ -106,6 +123,8 @@ class Minimap {
   private readonly offsetZ: number;
   private readonly rivalLayer: SVGGElement;
   private rivals: SVGCircleElement[] = [];
+  /** Tramo de cada sector (se pinta de amarillo con bandera amarilla). */
+  private readonly sectorPaths: SVGPathElement[] = [];
 
   constructor(track: Track) {
     const g = track.geometry;
@@ -149,6 +168,8 @@ class Minimap {
     make(full, 'minimap__outline');
     make(full, 'minimap__track');
     for (const zone of track.drsZones) make(path(zone.start, zone.end), 'minimap__drs');
+    const bounds = [track.startS, track.sectorEnds[0], track.sectorEnds[1], track.startS];
+    for (let k = 0; k < 3; k++) this.sectorPaths.push(make(path(bounds[k] ?? 0, bounds[k + 1] ?? 0), 'minimap__sector'));
 
     // Línea de meta.
     const p = { x: 0, z: 0 };
@@ -173,6 +194,11 @@ class Minimap {
 
     this.element = h('div', { class: 'hud__minimap minimap' });
     this.element.append(svg);
+  }
+
+  /** Sectores con bandera amarilla. */
+  setYellow(sectors: readonly boolean[]): void {
+    this.sectorPaths.forEach((element, k) => element.classList.toggle('is-yellow', sectors[k] === true));
   }
 
   setCar(x: number, z: number): void {
@@ -219,7 +245,8 @@ export class Hud {
   private readonly lapLabel = h('span', { class: 'timing__lap' });
   private readonly lapTime = h('span', { class: 'timing__time' });
   private readonly delta = h('span', { class: 'timing__delta' });
-  private readonly invalid = h('span', { class: 'timing__invalid', text: 'ANULADA' });
+  /** Advertencias o sanción (carrera) o "sin récord" (vuelta con las cuatro ruedas afuera). */
+  private readonly status = h('span', { class: 'timing__status' });
   // Posición en carrera ("P3/12").
   private readonly placeValue = h('span', { class: 'timing__place-value' });
   private readonly placeTotal = h('span', { class: 'timing__place-total' });
@@ -235,6 +262,10 @@ export class Hud {
   private readonly medalValue = h('span', { class: 'timing__value' });
   private readonly medalRow = h('div', { class: 'timing__row timing__row--medal' }, this.medalLabel, this.medalValue);
   private readonly sectors: HTMLSpanElement[] = [0, 1, 2].map(() => h('span', { class: 'timing__sector' }));
+  /** Bandera que le toca al jugador (amarilla, azul, blanca y negra), con su texto. */
+  private readonly flagText = h('span', { class: 'timing__flag-text' });
+  private readonly flag = h('div', { class: 'timing__flag' }, h('span', { class: 'timing__flag-cloth' }), this.flagText);
+  private flagKey = '';
 
   // Tablero.
   private readonly leds: HTMLSpanElement[] = [];
@@ -311,13 +342,14 @@ export class Hud {
     const timing = h(
       'div',
       { class: 'hud__timing timing' },
-      h('div', { class: 'timing__head' }, this.place, this.invalid),
+      h('div', { class: 'timing__head' }, this.place, this.status),
       h('div', { class: 'timing__main' }, this.lapTime, this.delta),
       h('div', { class: 'timing__sectors' }, ...this.sectors),
       row('ÚLTIMA', this.lastValue),
       row('MEJOR', this.bestValue),
       row('RÉCORD', this.pbValue),
       this.medalRow,
+      this.flag,
     );
 
     const dash = h(
@@ -426,7 +458,7 @@ export class Hud {
             : `VUELTA ${Math.min(state.lap, total)}/${total}`,
     );
     setText(this.lapTime, state.lapTime === null ? '–:––.–––' : formatLapTime(state.lapTime));
-    toggle(this.invalid, 'is-visible', state.lap > 0 && !state.lapValid);
+    this.updateStatus(state);
     if (state.delta === null) {
       setText(this.delta, '');
       toggle(this.delta, 'is-visible', false);
@@ -458,6 +490,48 @@ export class Hud {
       }
     }
     toggle(this.wrongWay, 'is-visible', state.wrongWay);
+  }
+
+  /**
+   * Banderas: los sectores amarillos en el minimapa y, debajo de los tiempos,
+   * la que le toca al jugador (la más importante).
+   */
+  setFlags(flags: HudFlags): void {
+    this.minimap.setYellow(flags.yellow);
+    const kind = flags.blue ? 'blue' : flags.yellowHere !== null ? 'yellow' : flags.blackWhite ? 'blackWhite' : '';
+    const text = flags.blue
+      ? `AZUL · DEJA PASAR A ${flags.blue}`
+      : flags.yellowHere !== null
+        ? `AMARILLA · SECTOR ${flags.yellowHere + 1}`
+        : flags.blackWhite
+          ? 'BLANCA Y NEGRA · LÍMITES'
+          : '';
+    const key = `${kind}|${text}`;
+    if (key === this.flagKey) return;
+    this.flagKey = key;
+    setText(this.flagText, text);
+    this.flag.dataset.flag = kind;
+    toggle(this.flag, 'is-visible', kind !== '');
+  }
+
+  /** Distintivo junto a la posición: sanción, advertencias o vuelta sin récord. */
+  private updateStatus(state: HudState): void {
+    let text = '';
+    let tone = '';
+    if (state.penalty > 0) {
+      text = `+${state.penalty} s`;
+      tone = 'is-penalty';
+    } else if (state.warnings !== null && state.warnings > 0) {
+      text = `⚠ ${state.warnings}/${TRACK_LIMIT_WARNINGS}`;
+      tone = 'is-warning';
+    } else if (state.warnings === null && state.lap > 0 && !state.lapValid) {
+      text = 'SIN RÉCORD';
+      tone = 'is-warning';
+    }
+    setText(this.status, text);
+    toggle(this.status, 'is-visible', text !== '');
+    toggle(this.status, 'is-penalty', tone === 'is-penalty');
+    toggle(this.status, 'is-warning', tone === 'is-warning');
   }
 
   /** Colorea un sector (violeta = mejor de la sesión, amarillo = más lento). */
@@ -493,6 +567,7 @@ export class Hud {
   /** Enciende `lit` luces del semáforo en pantalla (0 = apagado). */
   setLights(lit: number): void {
     toggle(this.lights, 'is-visible', lit > 0);
+    toggle(this.root, 'has-lights', lit > 0);
     this.lamps.forEach((lamp, i) => {
       const on = Math.floor(i / 2) < lit;
       if (on && !lamp.classList.contains('is-on') && !prefersReducedMotion()) {
@@ -515,6 +590,7 @@ export class Hud {
         ease: 'power2.in',
         onComplete: () => {
           toggle(this.lights, 'is-visible', false);
+          toggle(this.root, 'has-lights', false);
           gsap.set(this.lights, { clearProps: 'opacity,transform' });
         },
       }),
@@ -621,7 +697,8 @@ export class Hud {
     toggle(this.mirror, 'is-alone', behind === null);
     setText(this.mirrorBehind, behind ? behind.code : 'NADIE CERCA');
     this.mirrorBehind.style.setProperty('--team', behind?.color ?? 'transparent');
-    setText(this.mirrorGap, behind && behind.gap !== null ? `a ${behind.gap.toFixed(1)} s` : '');
+    // Pegado (rueda a rueda o en la largada) no se escribe "a 0.0 s".
+    setText(this.mirrorGap, behind && behind.gap !== null ? (behind.gap < 0.05 ? 'pegado' : `a ${behind.gap.toFixed(1)} s`) : '');
   }
 
   dispose(): void {
