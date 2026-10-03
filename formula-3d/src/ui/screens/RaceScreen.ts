@@ -30,6 +30,7 @@ import { liveryFromSetup } from '../../garage/setup';
 import { difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
 import { applyXp, computeXp, snapshotOf } from '../../progression/xp';
 import { recordSession } from '../../progression/career';
+import { applyUpgrades, devPointsFor } from '../../progression/upgrades';
 import type { RivalCar } from '../../race/render/RivalFleet';
 import { DrivingInput, type DrivingEvent } from '../../race/input/DrivingInput';
 import { F1_SPEC } from '../../race/physics/CarSpec';
@@ -338,6 +339,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         F1_SPEC,
         record,
         {
+          playerSpec: applyUpgrades(F1_SPEC, game.save.data.workshop.levels),
           mode: this.params.mode,
           laps,
           rivals: { drivers: rivals, difficulty: this.params.difficulty ?? difficultyValue(race) },
@@ -673,6 +675,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         case 'lapCompleted':
           hud.setSector(2, event.sector3);
           if (event.personalBest) this.saveRecord(event.lap.time);
+          if (event.lap.valid) this.saveSectors(event.lap.sectors);
           if (!session.isRace) {
             if (event.lap.valid) this.soloLaps++;
             if (event.personalBest) this.soloPersonalBest = true;
@@ -912,9 +915,19 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       assistMultiplier: xpMultiplier(settings.assists),
       seasonPosition,
     });
+    const devPoints = devPointsFor({
+      mode: this.params.mode,
+      position: result?.position ?? 1,
+      starters: result?.starters ?? 1,
+      laps: result ? (this.params.laps ?? DEFAULT_RACE_LAPS) : this.soloLaps,
+      personalBest: result ? personalBest : this.soloPersonalBest,
+      difficulty,
+      seasonPosition,
+    });
     this.game.save.update((data) => {
       data.progression = gain.progression;
       data.stats = stats;
+      data.workshop = { ...data.workshop, points: data.workshop.points + devPoints, earned: data.workshop.earned + devPoints };
     });
     const track = this.track?.def;
     const modeLabel =
@@ -938,6 +951,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       before,
       after: snapshotOf(gain.progression),
       rewards: gain.rewards,
+      devPoints: { gained: devPoints, available: this.game.save.data.workshop.points },
       podium: this.podiumEntries(),
     };
   }
@@ -1003,6 +1017,26 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const visible = this.ghostPlayer !== null && timer.lap > 0 && this.ghostPlayer.poseAt(timer.lapTime, this.ghostPose);
     const pose = session.vehicle;
     car.update(visible ? this.ghostPose : null, pose.x, pose.z);
+  }
+
+  /** Guarda los mejores sectores del circuito (de cualquier vuelta válida). */
+  private saveSectors(sectors: readonly [number, number, number]): void {
+    const id = this.params.trackId;
+    const current = this.game.save.data.records[id]?.bestSectors;
+    const better = sectors.some((time, i) => {
+      const best = current?.[i];
+      return best === null || best === undefined || time < best;
+    });
+    if (!better) return;
+    this.game.save.update((data) => {
+      const record = data.records[id] ?? { bestLap: null };
+      const previous = record.bestSectors ?? [null, null, null];
+      const merged = sectors.map((time, i) => {
+        const best = previous[i];
+        return best === null || best === undefined || time < best ? time : best;
+      }) as [number, number, number];
+      data.records[id] = { ...record, bestSectors: merged };
+    });
   }
 
   private saveRecord(time: number): void {

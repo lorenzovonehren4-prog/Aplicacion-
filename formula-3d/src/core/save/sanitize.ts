@@ -10,6 +10,7 @@ import { ACHIEVEMENTS, createDefaultStats, type CareerStats, type TrackStats } f
 import { DRIVE_ACTIONS, isBindableKey, type KeyBindings } from '../input/bindings';
 import { getItem, isItemId, STARTER_ITEM_IDS, type ItemKind } from '../../progression/items';
 import { MAX_LEVEL, xpToNextLevel } from '../../progression/levels';
+import { createDefaultWorkshop, UPGRADE_IDS, UPGRADE_MAX_LEVEL, type Workshop } from '../../progression/upgrades';
 import { PASS_MAX_XP, passRewardsBetween, SEASON } from '../../progression/seasonPass';
 import { FPS_TARGETS, QUALITY_LEVELS, SHADOW_LEVELS } from '../render/quality';
 import {
@@ -268,9 +269,32 @@ function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): R
     if (plausibleLap(ghost.time) && base64(ghost.poses) && base64(ghost.trace)) {
       entry.ghost = { time: ghost.time, poses: ghost.poses, trace: ghost.trace };
     }
+    if (Array.isArray(r.bestSectors) && r.bestSectors.length === 3) {
+      const sector = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) && value >= 2 && value <= 300 ? value : null);
+      const sectors: [number | null, number | null, number | null] = [sector(r.bestSectors[0]), sector(r.bestSectors[1]), sector(r.bestSectors[2])];
+      if (sectors.some((value) => value !== null)) entry.bestSectors = sectors;
+    }
     records[key] = entry;
   }
   return records;
+}
+
+/**
+ * Taller: niveles 0–5 por área y puntos enteros. Un guardado de antes de la
+ * Versión 2.2 (sin taller) recibe los puntos de bienvenida más 2 por carrera
+ * ya corrida (hasta 40): el que venía jugando arranca con mejoras para elegir.
+ */
+function sanitizeWorkshop(raw: unknown, stats: CareerStats): Workshop {
+  if (!isRecord(raw)) {
+    const welcome = createDefaultWorkshop().points + Math.min(40, stats.races * 2);
+    return createDefaultWorkshop(welcome);
+  }
+  const levels = record(raw.levels);
+  const workshop = createDefaultWorkshop(0);
+  for (const id of UPGRADE_IDS) workshop.levels[id] = num(levels[id], 0, 0, UPGRADE_MAX_LEVEL, true);
+  workshop.points = num(raw.points, 0, 0, MAX_COUNT, true);
+  workshop.earned = Math.max(workshop.points, num(raw.earned, workshop.points, 0, MAX_COUNT, true));
+  return workshop;
 }
 
 /** Teclas del manejo: válidas y sin repetir (una repetida vuelve a la de fábrica). */
@@ -363,6 +387,7 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
   const createdAt = num(r.createdAt, defaults.createdAt, 0, Number.MAX_SAFE_INTEGER, true);
   const settings = record(r.settings);
   const progression = sanitizeProgression(r.progression, defaults.progression);
+  const stats = sanitizeStats(r.stats);
   const rawProfile = sanitizeProfile(r.profile, defaults.profile);
   const profile: Profile = {
     ...rawProfile,
@@ -386,7 +411,8 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
     records: sanitizeRecords(r.records, defaults.records),
     championship: sanitizeChampionship(r.championship),
     garage: sanitizeGarage(r.garage, defaults.garage, progression),
-    stats: sanitizeStats(r.stats),
+    stats,
     achievements: sanitizeAchievements(r.achievements),
+    workshop: sanitizeWorkshop(r.workshop, stats),
   };
 }

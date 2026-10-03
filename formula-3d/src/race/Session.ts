@@ -54,6 +54,8 @@ export interface SessionConfig {
   player?: PlayerIdentity;
   /** Contrarreloj: fantasma guardado (la referencia a batir). */
   ghost?: GhostLap | null;
+  /** Auto del jugador con sus mejoras (sin esto, el mismo de los rivales). */
+  playerSpec?: CarSpec;
 }
 
 /** Un auto en pista: el jugador o un bot. */
@@ -200,7 +202,7 @@ export class Session {
     const model = performanceModel(spec);
     this.ghost = config.ghost ?? null;
     const identity = config.player ?? { name: 'PILOTO', code: 'PIL', number: 7 };
-    this.vehicle = new Vehicle(spec, track);
+    this.vehicle = new Vehicle(config.playerSpec ?? spec, track);
     const playerTeam = teamOf({ teamId: PLAYER_TEAM_ID });
 
     // Bots, ordenados por ritmo: los más rápidos adelante.

@@ -249,6 +249,37 @@
   text-shadow: 0 0 24px rgba(245, 197, 66, 0.45);
 }
 
+.res__dev {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 5px 14px;
+  background: linear-gradient(90deg, rgba(41, 216, 255, 0.16), rgba(41, 216, 255, 0.02));
+  box-shadow: inset 4px 0 0 #29d8ff;
+}
+
+.res__dev-label {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.res__dev-note {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--c-text-2);
+}
+
+.res__dev-value {
+  font-family: var(--font-num);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  color: #29d8ff;
+  text-shadow: 0 0 18px rgba(41, 216, 255, 0.4);
+}
+
 .res__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -14,8 +14,9 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    // Three.js ocupa ~700 kB minificado: es esperable y no amerita aviso.
-    chunkSizeWarningLimit: 1600,
+    // Three.js ocupa ~700 kB minificado y los trazados de las 24 pistas otro
+    // tanto: un paquete de ~1.8 MB es esperable y no amerita aviso.
+    chunkSizeWarningLimit: 2400,
     assetsInlineLimit: 0,
   },
   test: {

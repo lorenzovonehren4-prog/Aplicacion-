@@ -254,7 +254,7 @@ interface Orbit {
 }
 
 /** Encuadres del garaje: la cámara se acerca a la pieza que se está editando. */
-export type StudioShot = 'overview' | 'side' | 'front' | 'wheel' | 'rear' | 'helmet';
+export type StudioShot = 'overview' | 'side' | 'front' | 'wheel' | 'rear' | 'helmet' | 'engine' | 'floor';
 
 interface ShotDef {
   angle: number;
@@ -272,6 +272,10 @@ const SHOTS: Readonly<Record<StudioShot, ShotDef>> = {
   wheel: { angle: -1.95, radius: 3.1, height: 0.62, look: [-0.8, 0.36, -1.78] },
   rear: { angle: 0.62, radius: 4.8, height: 1.75, look: [0, 0.8, 2.3] },
   helmet: { angle: -2.45, radius: 2.5, height: 1.35, look: [0, 0.74, -0.2] },
+  /** Cubierta del motor y pontones, en tres cuartos de atrás. */
+  engine: { angle: 0.95, radius: 4.2, height: 1.55, look: [0, 0.62, 1.2] },
+  /** Bajo y de costado: fondo plano, suspensión y caja (atrás). */
+  floor: { angle: 1.75, radius: 4.6, height: 0.38, look: [0, 0.3, 1.0] },
 };
 
 /**
@@ -445,6 +449,11 @@ export class StudioScene implements RenderView {
     this.orbitTarget.radius = def.radius;
     this.orbitTarget.height = def.height;
     this.lookTarget.set(def.look[0], def.look[1] + PODIUM_HEIGHT, def.look[2]);
+  }
+
+  /** Pulso celeste en el piso (una mejora recién comprada). */
+  burst(): void {
+    this.atmosphere?.burst();
   }
 
   /** Acercamiento cinematográfico de entrada: arranca cerca y bajo y se abre. */

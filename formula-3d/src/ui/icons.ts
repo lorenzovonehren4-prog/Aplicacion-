@@ -32,6 +32,20 @@ export const ICONS = {
   chevronRight: stroke('<path d="M9 5l7 7-7 7"/>'),
   chevronLeft: stroke('<path d="M15 5l-7 7 7 7"/>'),
   reset: stroke('<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4.5h4.5"/>'),
+  /** Rayo: motor (mejoras). */
+  bolt: stroke('<path d="M13 2.5 5 13.5h6l-1 8 8-11h-6z"/>'),
+  /** Alerón visto de costado: aerodinámica. */
+  wing: stroke('<path d="M3 9.5c4.5-2.5 13.5-2.5 18 0"/><path d="M5 14h14"/><path d="M8 9v8M16 9v8"/><path d="M5 17h14"/>'),
+  /** Disco de freno con su pinza: frenos. */
+  disc: stroke('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 5.5v1.5M17.6 9l-1.3.8M17.6 15l-1.3-.8M6.4 9l1.3.8M6.4 15l1.3-.8"/><path d="M16.5 3.5c2.4 1.2 4 3.3 4.5 5.8"/>'),
+  /** Dos engranajes: caja de cambios. */
+  gears: stroke(
+    '<circle cx="9" cy="10" r="3"/><path d="M9 4.5v1.6M9 13.9v1.6M3.5 10h1.6M12.9 10h1.6M5.1 6.1l1.1 1.1M11.8 12.8l1.1 1.1M5.1 13.9l1.1-1.1M11.8 7.2l1.1-1.1"/><circle cx="17" cy="17" r="2.2"/><path d="M17 13v1M17 20v1M13 17h1M20 17h1"/>',
+  ),
+  /** Chasis visto desde arriba: chasis y suspensión. */
+  chassis: stroke('<path d="M9 3h6l1.5 5v8L15 21H9l-1.5-5V8z"/><path d="M4 6h3.5M16.5 6H20M4 18h3.5M16.5 18H20"/><path d="M4 4.5v3M20 4.5v3M4 16.5v3M20 16.5v3"/>'),
+  /** Mapa de un circuito: guía de circuitos. */
+  circuit: stroke('<path d="M6 19c-2 0-3-1.5-3-3.5S4 12 6 12h3c1.5 0 2-1 2-2s-.5-2-2-2H8c-1.5 0-2-1-2-2s1-2 2.5-2H17c2.5 0 4 1.5 4 4v7c0 3-2 6-5 6z"/><path d="M14 15.5h3"/>'),
   /** Marca del juego: la trazada pasando por el ápice de una curva. */
   logoMark: `<svg viewBox="0 0 64 64" fill="none"><path d="M6 54C18 52 26 14 32 12s14 40 26 42" stroke="#ff2a3c" stroke-width="7" stroke-linecap="round"/><path d="M14 58C24 56 28 30 32 28" stroke="#ffffff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="12.5" r="4.6" fill="#ffffff"/></svg>`,
 } as const;

@@ -89,6 +89,8 @@ const DUST_FRAGMENT = /* glsl */ `
 `;
 
 const PULSE_PERIOD = 4.5;
+const PULSE_TINT = new Color(1, 0.16, 0.24);
+const BURST_TINT = new Color(0.16, 0.85, 1);
 
 export class StudioAtmosphere {
   readonly root = new Group();
@@ -98,6 +100,8 @@ export class StudioAtmosphere {
   private readonly pulse: Mesh;
   private readonly pulseMaterial: ShaderMaterial;
   private time = 0;
+  /** Pulso extra disparado a mano (una mejora comprada): segundos desde que salió, o −1. */
+  private burstTime = -1;
 
   /**
    * @param lights focos (posición y a dónde apuntan) que llevan cono visible
@@ -174,8 +178,8 @@ export class StudioAtmosphere {
     this.pulseMaterial = this.own.own(
       new ShaderMaterial({
         vertexShader: /* glsl */ `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-        fragmentShader: /* glsl */ `uniform float opacity; void main() { gl_FragColor = vec4(vec3(1.0, 0.16, 0.24) * 2.2 * opacity, 1.0); }`,
-        uniforms: { opacity: { value: 0 } },
+        fragmentShader: /* glsl */ `uniform float opacity; uniform vec3 tint; void main() { gl_FragColor = vec4(tint * 2.2 * opacity, 1.0); }`,
+        uniforms: { opacity: { value: 0 }, tint: { value: new Color(1, 0.16, 0.24) } },
         transparent: true,
         blending: AdditiveBlending,
         depthWrite: false,
@@ -203,16 +207,30 @@ export class StudioAtmosphere {
     const time = this.dust.uniforms.time;
     if (time) time.value = this.time;
     // El pulso sale del borde de la plataforma y se abre mientras se apaga.
-    const t = (this.time % PULSE_PERIOD) / 2.2;
+    // Un pulso disparado a mano (celeste) reemplaza al periódico mientras dura.
+    const tint = this.pulseMaterial.uniforms.tint?.value as Color | undefined;
+    let t = (this.time % PULSE_PERIOD) / 2.2;
+    if (this.burstTime >= 0) {
+      this.burstTime += dt;
+      t = this.burstTime / 1.4;
+      if (t > 1) this.burstTime = -1;
+    }
+    const bursting = this.burstTime >= 0;
+    tint?.copy(bursting ? BURST_TINT : PULSE_TINT);
     const base = this.pulse.userData.base as number;
     const opacity = this.pulseMaterial.uniforms.opacity;
     if (t <= 1) {
       this.pulse.visible = true;
       this.pulse.scale.setScalar(base * (1 + t * 1.8));
-      if (opacity) opacity.value = (1 - t) * (1 - t) * 0.5;
+      if (opacity) opacity.value = (1 - t) * (1 - t) * (bursting ? 1 : 0.5);
     } else {
       this.pulse.visible = false;
     }
+  }
+
+  /** Dispara un pulso celeste ya mismo (al comprar una mejora). */
+  burst(): void {
+    this.burstTime = 0;
   }
 
   dispose(): void {

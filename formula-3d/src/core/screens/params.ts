@@ -61,6 +61,8 @@ export interface ResultsParams {
   after: ProgressSnapshot;
   /** Ítems nuevos del pase. */
   rewards: string[];
+  /** Puntos de desarrollo ganados (para las mejoras del auto) y total disponible. */
+  devPoints?: { gained: number; available: number };
   /** Los tres primeros (vacío sin rivales): para la pantalla del podio. */
   podium: PodiumEntry[];
 }

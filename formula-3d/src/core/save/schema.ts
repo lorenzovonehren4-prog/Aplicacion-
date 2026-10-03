@@ -14,6 +14,7 @@ import {
 import { STARTER_ITEM_IDS } from '../../progression/items';
 import { createDefaultGarage, type GarageSetup } from '../../garage/setup';
 import { createDefaultStats, type CareerStats } from '../../progression/career';
+import { createDefaultWorkshop, type Workshop } from '../../progression/upgrades';
 import { createDefaultBindings, type KeyBindings } from '../input/bindings';
 
 export const SAVE_VERSION = 2;
@@ -149,6 +150,8 @@ export interface Settings {
 export interface TrackRecord {
   /** Mejor vuelta (s) o null si todavía no completó ninguna. */
   bestLap: number | null;
+  /** Mejor tiempo de cada sector en vueltas válidas (s), aunque sean de vueltas distintas. */
+  bestSectors?: [number | null, number | null, number | null];
   /**
    * Fantasma de la mejor vuelta de contrarreloj: tiempo y datos en base64
    * (ver `race/session/Ghost.ts`).
@@ -195,6 +198,8 @@ export interface SaveData {
   stats: CareerStats;
   /** Logros conseguidos: id → fecha (ms). */
   achievements: Record<string, number>;
+  /** Taller: puntos de desarrollo y mejoras del auto (Versión 2.2). */
+  workshop: Workshop;
 }
 
 /** Resultado de un piloto en una carrera del campeonato. */
@@ -289,5 +294,6 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
     garage: createDefaultGarage(),
     stats: createDefaultStats(),
     achievements: {},
+    workshop: createDefaultWorkshop(),
   };
 }

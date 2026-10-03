@@ -68,6 +68,16 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
   private readonly multiplierRows: HTMLElement[] = [];
   private readonly totalValue = h('span', { class: 'res__total-value', text: '0' });
   private readonly totalRow = h('div', { class: 'res__total' }, h('span', { class: 'res__total-label', text: 'XP GANADA' }), this.totalValue);
+  /** Puntos de desarrollo ganados (para las mejoras del auto). */
+  private readonly devValue = h('span', { class: 'res__dev-value', text: '+0' });
+  private readonly devNote = h('span', { class: 'res__dev-note' });
+  private readonly devRow = h(
+    'div',
+    { class: 'res__dev' },
+    h('span', { class: 'res__dev-label', text: 'PUNTOS DE DESARROLLO' }),
+    this.devNote,
+    this.devValue,
+  );
   private readonly levelNumber = h('span', { class: 'res__level-number' });
   private readonly levelBar = h('div', { class: 'res__bar' }, h('i'));
   private readonly levelText = h('span', { class: 'res__bar-text' });
@@ -178,6 +188,7 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
         ),
       );
     }
+    if (p.devPoints) this.devNote.textContent = `${p.devPoints.available} para gastar en el Garaje`;
     this.buildActions();
     this.main.append(
       h(
@@ -190,6 +201,7 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
       h('h3', { class: 'res__section', text: 'Experiencia' }),
       h('div', { class: 'res__lines' }, ...this.lineRows, ...this.multiplierRows),
       this.totalRow,
+      ...(p.devPoints ? [this.devRow] : []),
       this.actions,
     );
   }
@@ -359,6 +371,13 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
     );
     at += 1.1;
     if (p.award.total > 0) tl.call(() => this.burstAt(this.totalValue, GOLD, 26), undefined, at - 0.1);
+    // Puntos de desarrollo: cuentan después de la XP.
+    if (p.devPoints) {
+      const dev = { v: 0 };
+      tl.from(this.devRow, { y: 12, opacity: 0, duration: 0.3 }, at - 0.2);
+      tl.to(dev, { v: p.devPoints.gained, duration: 0.5, ease: 'power2.out', onUpdate: () => (this.devValue.textContent = `+${Math.round(dev.v)}`) }, at);
+      at += 0.45;
+    }
 
     // Barra de nivel.
     at = this.animateLevel(tl, at);
@@ -529,6 +548,7 @@ export class ResultsScreen extends BaseScreen<ResultsParams> {
       gsap.set(card, { opacity: 1, y: 0, scale: 1 });
     }
     this.totalValue.textContent = formatInteger(p.award.total);
+    if (p.devPoints) this.devValue.textContent = `+${p.devPoints.gained}`;
     if (this.rewardCards.length > 0) this.sound(this.rewardCards.some((card) => card.classList.contains('rcard--legendary') || card.classList.contains('rcard--epic')) ? 'rewardBig' : 'reward');
   }
 

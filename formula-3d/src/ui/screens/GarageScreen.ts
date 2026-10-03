@@ -1,7 +1,9 @@
 /**
  * Garaje: el monoplaza en el estudio del menú, con la cámara acercándose a lo
- * que se edita. Pestañas (Q / E): Pintura, Material, Llantas, Alerón, Casco,
- * Número y Festejo (cómo se celebra en el podio).
+ * que se edita. Pestañas (Q / E): Mejoras (los puntos de desarrollo se
+ * invierten en cinco áreas que cambian la física del auto), Pintura,
+ * Material, Llantas, Alerón, Casco, Número y Festejo (cómo se celebra en el
+ * podio).
  * - Enfocar un ítem lo muestra en el auto (también los bloqueados, para ver
  *   cómo quedan); ENTER lo equipa si está desbloqueado. Al salir de la
  *   pestaña o del garaje vuelve lo equipado.
@@ -24,6 +26,24 @@ import {
   type GarageSetup,
 } from '../../garage/setup';
 import { ITEMS, KIND_INFO, RARITY_INFO, type Item, type ItemKind } from '../../progression/items';
+import {
+  applyUpgrades,
+  buyUpgrade,
+  carStats,
+  MAX_STATS,
+  STOCK_STATS,
+  totalLevels,
+  UPGRADE_IDS,
+  UPGRADE_MAX_LEVEL,
+  UPGRADES,
+  upgradeCost,
+  type CarStats,
+  type UpgradeDef,
+  type UpgradeId,
+  type Workshop,
+} from '../../progression/upgrades';
+import { F1_SPEC } from '../../race/physics/CarSpec';
+import { formatInteger } from '../../core/utils/format';
 import { SEASON } from '../../progression/seasonPass';
 import { finished } from '../anim/finished';
 import { ControlHints } from '../components/ControlHints';
@@ -33,9 +53,10 @@ import { ICONS } from '../icons';
 import { BaseScreen } from './BaseScreen';
 import { uiWidth } from '../scale';
 
-type GarageTab = 'paint' | 'material' | 'rims' | 'wing' | 'helmet' | 'number' | 'celebration';
+type GarageTab = 'upgrades' | 'paint' | 'material' | 'rims' | 'wing' | 'helmet' | 'number' | 'celebration';
 
 const TABS: ReadonlyArray<{ id: GarageTab; label: string; shot: StudioShot }> = [
+  { id: 'upgrades', label: 'Mejoras', shot: 'overview' },
   { id: 'paint', label: 'Pintura', shot: 'side' },
   { id: 'material', label: 'Material', shot: 'overview' },
   { id: 'rims', label: 'Llantas', shot: 'wheel' },
@@ -53,6 +74,33 @@ const SLOT: Partial<Record<ItemKind, 'material' | 'rims' | 'wing' | 'helmet' | '
   helmet: 'helmet',
   celebration: 'celebration',
 };
+
+/** La cámara mira la pieza de cada área de mejora. */
+const UPGRADE_SHOT: Readonly<Record<UpgradeId, StudioShot>> = {
+  engine: 'engine',
+  aero: 'front',
+  brakes: 'wheel',
+  gearbox: 'floor',
+  chassis: 'side',
+};
+
+/** Filas de la ficha del auto. */
+const STAT_ROWS: ReadonlyArray<{ id: keyof CarStats; label: string; format: (value: number) => string; lowerIsBetter?: boolean }> = [
+  { id: 'power', label: 'Potencia', format: (v) => `${formatInteger(v)} CV` },
+  { id: 'topSpeed', label: 'Velocidad punta', format: (v) => `${Math.round(v)} km/h` },
+  { id: 'cornering', label: 'Curva a 200 km/h', format: (v) => `${v.toFixed(2)} g` },
+  { id: 'braking', label: 'Frenada a 200 km/h', format: (v) => `${v.toFixed(2)} g` },
+  { id: 'shift', label: 'Cambio de marcha', format: (v) => `${Math.round(v)} ms`, lowerIsBetter: true },
+];
+
+/** Largo de la barra (0–1): el auto de fábrica llena un tercio y el completo, todo. */
+function statFill(id: keyof CarStats, value: number, lowerIsBetter = false): number {
+  const stock = STOCK_STATS[id];
+  const max = MAX_STATS[id];
+  const span = lowerIsBetter ? stock - max : max - stock;
+  const t = span === 0 ? 0 : (lowerIsBetter ? stock - value : value - stock) / span;
+  return Math.max(0.05, Math.min(1, 0.34 + 0.66 * t));
+}
 
 /** Pintura de fábrica (no es un ítem: son los colores del equipo). */
 const FACTORY_PAINT = { pattern: 'solid', colors: ['#c8102e', '#111317', '#f2f2f0'] } as const;
@@ -76,7 +124,10 @@ export class GarageScreen extends BaseScreen {
   private readonly infoMeta = h('div', { class: 'garage__info-meta' });
   private readonly infoText = h('p', { class: 'garage__info-text' });
   private readonly infoStatus = h('span', { class: 'garage__status' });
-  private readonly info = h('aside', { class: 'garage__info' }, this.infoTitle, this.infoMeta, this.infoText, this.infoStatus);
+  /** Ficha del auto con barras (sólo en Mejoras). */
+  private readonly stats = h('div', { class: 'garage__stats' });
+  private readonly statRows = new Map<keyof CarStats, { fill: HTMLElement; ghost: HTMLElement; value: HTMLElement; delta: HTMLElement }>();
+  private readonly info = h('aside', { class: 'garage__info' }, this.infoTitle, this.infoMeta, this.infoText, this.stats, this.infoStatus);
   private readonly panel = h('div', { class: 'garage__panel' });
   private hints: ControlHints | null = null;
   /** Lo que se ve en el auto ahora (lo equipado o una vista previa). */
@@ -92,7 +143,7 @@ export class GarageScreen extends BaseScreen {
       [
         { keys: [{ keyboard: 'Q', gamepad: 'LB' }, { keyboard: 'E', gamepad: 'RB' }], label: 'Pestaña' },
         { keys: [{ keyboard: '↑↓←→', gamepad: '✚' }], label: 'Elegir' },
-        { keys: [{ keyboard: 'ENTER', gamepad: 'A' }], label: 'Equipar' },
+        { keys: [{ keyboard: 'ENTER', gamepad: 'A' }], label: 'Confirmar' },
         { keys: [{ keyboard: 'ESC', gamepad: 'B' }], label: 'Volver' },
       ],
       this.game.input.lastDevice,
@@ -113,6 +164,7 @@ export class GarageScreen extends BaseScreen {
       this.content,
     );
     this.root.append(this.panel, this.info, h('footer', { class: 'garage__footer' }, this.hints.element, back));
+    this.buildStats();
 
     try {
       this.studio = await this.game.getStudio();
@@ -123,7 +175,7 @@ export class GarageScreen extends BaseScreen {
     this.game.render.setView(this.studio);
     this.studio?.setFrameShift(this.frameShift());
     this.own.listen(window, 'resize', () => this.studio?.setFrameShift(this.frameShift()));
-    this.selectTab('paint', false);
+    this.selectTab('upgrades', false);
   }
 
   reveal(): void {
@@ -215,6 +267,8 @@ export class GarageScreen extends BaseScreen {
     this.show(this.setup);
     const def = TABS.find((t) => t.id === tab);
     if (def) this.studio?.setShot(def.shot);
+    this.stats.hidden = tab !== 'upgrades';
+    this.info.classList.toggle('garage__info--stats', tab === 'upgrades');
     this.content.replaceChildren(...this.buildTab(tab));
     this.nav.focusFirst();
     if (!prefersReducedMotion()) {
@@ -224,6 +278,8 @@ export class GarageScreen extends BaseScreen {
 
   private buildTab(tab: GarageTab): HTMLElement[] {
     switch (tab) {
+      case 'upgrades':
+        return this.upgradesTab();
       case 'paint':
         return [
           h('h3', { class: 'rsel__section', text: 'Pinturas listas' }),
@@ -247,6 +303,179 @@ export class GarageScreen extends BaseScreen {
           this.itemGrid('celebration'),
           h('p', { class: 'garage__note', text: 'En el podio siempre hay un poco de todo; el festejo equipado es el que se luce (y el que suena más fuerte).' }),
         ];
+    }
+  }
+
+  // ─── Mejoras ───────────────────────────────────────────────────────────
+
+  private get workshop(): DeepReadonly<Workshop> {
+    return this.game.save.data.workshop;
+  }
+
+  private upgradesTab(): HTMLElement[] {
+    const points = h('span', { class: 'wshop__points', text: String(this.workshop.points) });
+    const progressFill = h('i', { class: 'wshop__progress-fill' });
+    const progressText = h('span', { class: 'wshop__progress-text' });
+    const header = h(
+      'div',
+      { class: 'wshop' },
+      h('span', { class: 'wshop__icon' }, svg(ICONS.wrench)),
+      h(
+        'span',
+        { class: 'wshop__text' },
+        h('span', { class: 'wshop__label', text: 'Puntos de desarrollo' }),
+        h('span', { class: 'wshop__sub', text: 'Se ganan en cada carrera: mejor puesto, más vueltas y rivales más duros dan más.' }),
+      ),
+      points,
+      h('span', { class: 'wshop__progress' }, h('span', { class: 'wshop__progress-bar' }, progressFill), progressText),
+    );
+    let shownPoints = this.workshop.points;
+    const refreshHeader = (): void => {
+      const total = totalLevels(this.workshop.levels);
+      const max = UPGRADE_IDS.length * UPGRADE_MAX_LEVEL;
+      progressFill.style.transform = `scaleX(${total / max})`;
+      progressText.textContent = `Auto ${total}/${max}`;
+      const target = this.workshop.points;
+      if (target === shownPoints) return;
+      const counter = { v: shownPoints };
+      shownPoints = target;
+      points.classList.remove('is-spent');
+      void points.offsetWidth;
+      points.classList.add('is-spent');
+      this.own.tween(
+        gsap.to(counter, {
+          v: target,
+          duration: prefersReducedMotion() ? 0.01 : 0.45,
+          ease: 'power2.out',
+          onUpdate: () => (points.textContent = String(Math.round(counter.v))),
+        }),
+      );
+    };
+    refreshHeader();
+    this.refreshers.push(refreshHeader);
+    const rows = UPGRADES.map((def) => this.upgradeRow(def));
+    return [header, h('div', { class: 'uplist' }, ...rows)];
+  }
+
+  private upgradeRow(def: UpgradeDef): HTMLElement {
+    const pips = h('span', { class: 'uprow__pips' }, ...Array.from({ length: UPGRADE_MAX_LEVEL }, () => h('i')));
+    const stage = h('span', { class: 'uprow__stage' });
+    const cost = h('span', { class: 'uprow__cost' });
+    const row = h(
+      'button',
+      { class: 'uprow', attrs: { type: 'button', 'aria-label': def.name }, style: { '--up': def.color } },
+      h('span', { class: 'uprow__icon' }, svg(ICONS[def.icon])),
+      h('span', { class: 'uprow__body' }, h('span', { class: 'uprow__name', text: def.name }), stage, pips),
+      cost,
+    );
+    const refresh = (): void => {
+      const level = this.workshop.levels[def.id];
+      const price = upgradeCost(level);
+      [...pips.children].forEach((pip, i) => pip.classList.toggle('is-on', i < level));
+      stage.textContent = level === 0 ? 'De fábrica' : `Nivel ${level} · ${def.stages[level - 1] ?? ''}`;
+      row.classList.toggle('is-max', price === null);
+      row.classList.toggle('is-affordable', price !== null && price <= this.workshop.points);
+      cost.replaceChildren(
+        ...(price === null ? [h('b', { text: 'MÁX' })] : [h('b', { text: String(price) }), h('small', { text: price === 1 ? 'punto' : 'puntos' })]),
+      );
+    };
+    refresh();
+    this.refreshers.push(refresh);
+    this.nav.add(row, {
+      onFocus: () => {
+        this.describeUpgrade(def);
+        this.studio?.setShot(UPGRADE_SHOT[def.id]);
+      },
+      onConfirm: () => {
+        const next = buyUpgrade(this.workshop, def.id);
+        if (!next) {
+          this.game.playUi('locked');
+          cost.classList.remove('is-denied');
+          void cost.offsetWidth;
+          cost.classList.add('is-denied');
+          return;
+        }
+        this.game.playUi('levelUp');
+        this.game.save.update((data) => {
+          data.workshop = next;
+        });
+        for (const refreshOne of this.refreshers) refreshOne();
+        // El punto nuevo se enciende con un destello y el piso del estudio late.
+        const pip = pips.children[next.levels[def.id] - 1];
+        pip?.classList.add('is-new');
+        row.classList.remove('is-bought');
+        void row.offsetWidth;
+        row.classList.add('is-bought');
+        this.studio?.burst();
+        this.describeUpgrade(def);
+      },
+    });
+    return row;
+  }
+
+  private describeUpgrade(def: UpgradeDef): void {
+    const level = this.workshop.levels[def.id];
+    const price = upgradeCost(level);
+    this.infoTitle.textContent = def.name;
+    this.infoMeta.replaceChildren(
+      h('span', { class: 'garage__tag', text: `Nivel ${level}/${UPGRADE_MAX_LEVEL}`, style: { color: def.color, 'border-color': def.color } }),
+      h('span', { class: 'garage__tag', text: price === null ? 'Completo' : `Próximo: ${def.stages[level] ?? ''}` }),
+    );
+    this.infoText.textContent = `${def.description} Cada nivel: ${def.perLevel}.`;
+    const preview = price === null ? null : { ...this.workshop.levels, [def.id]: level + 1 };
+    this.showStats(preview);
+    if (price === null) this.setStatus('Al máximo', 'is-used');
+    else if (price <= this.workshop.points) this.setStatus(`ENTER: mejorar por ${price} ${price === 1 ? 'punto' : 'puntos'}`, 'is-ready');
+    else {
+      const missing = price - this.workshop.points;
+      this.setStatus(`Faltan ${missing} ${missing === 1 ? 'punto' : 'puntos'}: corre para ganar más`, 'is-locked');
+    }
+  }
+
+  private buildStats(): void {
+    this.stats.append(h('span', { class: 'garage__stats-title', text: 'Ficha del auto' }));
+    for (const row of STAT_ROWS) {
+      const fill = h('i', { class: 'gstat__fill' });
+      const ghost = h('i', { class: 'gstat__ghost' });
+      const value = h('span', { class: 'gstat__value' });
+      const delta = h('span', { class: 'gstat__delta' });
+      this.stats.append(
+        h(
+          'div',
+          { class: 'gstat' },
+          h('span', { class: 'gstat__label', text: row.label }),
+          h('span', { class: 'gstat__numbers' }, value, delta),
+          h('span', { class: 'gstat__bar' }, fill, ghost),
+        ),
+      );
+      this.statRows.set(row.id, { fill, ghost, value, delta });
+    }
+    this.stats.hidden = true;
+  }
+
+  /** Barras con el auto actual y, si hay, la vista previa del próximo nivel. */
+  private showStats(preview: Record<UpgradeId, number> | null): void {
+    const current = carStats(applyUpgrades(F1_SPEC, this.workshop.levels));
+    const next = preview ? carStats(applyUpgrades(F1_SPEC, preview)) : null;
+    for (const row of STAT_ROWS) {
+      const parts = this.statRows.get(row.id);
+      if (!parts) continue;
+      const now = statFill(row.id, current[row.id], row.lowerIsBetter);
+      parts.fill.style.transform = `scaleX(${now})`;
+      parts.value.textContent = row.format(current[row.id]);
+      const after = next ? statFill(row.id, next[row.id], row.lowerIsBetter) : now;
+      const change = next ? next[row.id] - current[row.id] : 0;
+      const better = row.lowerIsBetter ? change < 0 : change > 0;
+      // Cambios menores a lo que se ve en el número no cuentan.
+      const visible = next !== null && row.format(next[row.id]) !== row.format(current[row.id]);
+      parts.ghost.style.left = `${Math.min(now, after) * 100}%`;
+      parts.ghost.style.width = visible ? `${Math.abs(after - now) * 100}%` : '0%';
+      parts.delta.textContent = visible && next ? `→ ${row.format(next[row.id])}` : '';
+      // El color sólo cambia si hay cambio: la vista previa que se achica conserva el suyo.
+      if (visible) {
+        parts.ghost.className = `gstat__ghost${better ? ' is-gain' : ' is-loss'}`;
+        parts.delta.className = `gstat__delta${better ? ' is-gain' : ' is-loss'}`;
+      }
     }
   }
 
