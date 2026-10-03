@@ -17,6 +17,9 @@ import type { UiAction } from '../../core/input/actions';
 import type { ScreenParams } from '../../core/screens/params';
 import { formatDelta, formatLapTime } from '../../core/utils/format';
 import { CHAMPIONSHIPS, LEVEL_LABEL, TRACK_DIFFICULTY } from '../../data/championships';
+import { LEVEL_INFO } from '../../assists/presets';
+import type { AssistLevel } from '../../core/save/schema';
+import type { TrackRow } from '../../online/leaderboard';
 import { MEDALS, MEDAL_INFO, medalFor, medalTimes, nextMedal } from '../../progression/medals';
 import { CORNER_KIND_LABEL, trackAnalysis, trackInsight, type CornerInfo, type TrackInsight } from '../../tracks/insight';
 import { TRACKS } from '../../tracks/registry';
@@ -29,13 +32,19 @@ import { h, prefersReducedMotion, svg } from '../dom';
 import { ICONS } from '../icons';
 import { BaseScreen } from './BaseScreen';
 
-type CircuitTab = 'sheet' | 'corners' | 'times';
+type CircuitTab = 'sheet' | 'corners' | 'times' | 'records';
 
 const TABS: ReadonlyArray<{ id: CircuitTab; label: string }> = [
   { id: 'sheet', label: 'Ficha técnica' },
   { id: 'corners', label: 'Curva por curva' },
   { id: 'times', label: 'Tus tiempos' },
+  { id: 'records', label: 'Récords' },
 ];
+
+/** Nivel de ayudas en la tabla de récords: sigla corta (el nombre completo va en el título). */
+const ASSIST_TAG: Readonly<Record<AssistLevel, string>> = { beginner: 'PRIN', intermediate: 'INT', advanced: 'AVZ', custom: 'PERS' };
+/** Filas de la tabla de récords (después, si el jugador está más abajo, su fila aparte). */
+const RECORD_ROWS = 10;
 
 const KIND_COLOR: Readonly<Record<CornerInfo['kind'], string>> = {
   hairpin: '#ff3b4a',
@@ -158,6 +167,12 @@ export class CircuitsScreen extends BaseScreen<ScreenParams['circuits']> {
       h('footer', { class: 'rsel__footer' }, this.hints.element, back),
     );
     this.selectTab('sheet', false);
+    // La tabla de récords se actualiza en vivo (otros jugadores, la conexión).
+    this.own.add(
+      this.game.online.onChange(() => {
+        if (this.tab === 'records') this.renderPane(false);
+      }),
+    );
     const row = this.rows.get(this.track.id);
     if (row) this.nav.focus(row);
   }
@@ -290,6 +305,9 @@ export class CircuitsScreen extends BaseScreen<ScreenParams['circuits']> {
       case 'times':
         this.pane.replaceChildren(...this.times());
         break;
+      case 'records':
+        this.pane.replaceChildren(...this.records());
+        break;
     }
     if (animate && !prefersReducedMotion()) {
       this.own.tween(gsap.from(this.pane.children, { y: 12, opacity: 0, stagger: 0.05, duration: 0.3, ease: 'power2.out' }));
@@ -416,6 +434,132 @@ export class CircuitsScreen extends BaseScreen<ScreenParams['circuits']> {
         ),
       ),
     );
+  }
+
+  /**
+   * Récords en línea del circuito: los diez mejores de todos los que abren el
+   * link (con medalla, ayudas y diferencia con el primero), tu puesto si estás
+   * más abajo y el botón para correr contra el fantasma del récord.
+   */
+  private records(): HTMLElement[] {
+    const online = this.game.online;
+    const def = this.track;
+    const status = online.status;
+    if (status === 'connecting') return [this.recordsNote('Conectando con la tabla de récords…')];
+    if (status === 'offline') {
+      return [
+        this.recordsNote(
+          'La tabla de récords se ve al abrir el juego desde su link de claude.ai con tu cuenta iniciada. Sin cuenta el juego funciona igual, sólo que sin tablas.',
+        ),
+      ];
+    }
+    const rows = online.trackRows(def.id);
+    const me = online.myId;
+    const leader = rows[0];
+    const mine = me ? rows.find((row) => row.entry.id === me) : undefined;
+    const out: HTMLElement[] = [];
+    if (status === 'readonly') {
+      out.push(
+        this.recordsNote(
+          'Puedes ver la tabla y correr contra el récord, pero con esta cuenta tus tiempos no se anotan (hace falta ser de la organización del dueño del link).',
+        ),
+      );
+    }
+    if (!leader) {
+      out.push(this.recordsNote(`Nadie marcó tiempo todavía en ${def.short}. Haz una vuelta válida y quedas primero.`));
+    } else {
+      const list = h('ol', { class: 'crecords' }, ...rows.slice(0, RECORD_ROWS).map((row) => this.recordRow(row, leader.time, me)));
+      if (mine && mine.rank > RECORD_ROWS) list.append(h('li', { class: 'crecord is-gap', text: '···' }), this.recordRow(mine, leader.time, me));
+      out.push(list);
+    }
+    const best = this.game.save.data.records[def.id]?.bestLap ?? null;
+    if (status === 'online' && !mine && best !== null) out.push(this.recordsNote(`Tu mejor vuelta (${formatLapTime(best)}) se anota sola en unos segundos.`));
+    const ghost = online.recordGhost(def.id);
+    if (ghost) {
+      const button = h(
+        'button',
+        { class: 'crecords__ghost', attrs: { type: 'button' } },
+        svg(ICONS.helmet, 'icon'),
+        h('span', { text: 'Correr contra el récord' }),
+        h('b', { text: `${ghost.entry.name} · ${formatLapTime(ghost.time)}` }),
+      );
+      this.own.listen(button, 'click', () => void this.raceRecordGhost(ghost.entry.id, ghost.entry.name, button));
+      out.push(button);
+    }
+    if (online.isOwner) {
+      const hidden = online.hiddenEntries();
+      if (hidden.length > 0) {
+        const box = h('div', { class: 'crecords__hidden' }, h('span', { text: 'Ocultos por ti:' }));
+        for (const entry of hidden) {
+          const show = h('button', { class: 'crecords__mod', attrs: { type: 'button' }, text: 'Mostrar' });
+          this.own.listen(show, 'click', () => void online.setHidden(entry.id, false));
+          box.append(h('span', { class: 'crecords__hidden-name', text: entry.name }), show);
+        }
+        out.push(box);
+      }
+    }
+    out.push(h('p', { class: 'crecords__foot', text: `${rows.length} ${rows.length === 1 ? 'piloto' : 'pilotos'} en este circuito · se actualiza en vivo` }));
+    return out;
+  }
+
+  /** Una fila de la tabla: puesto, medalla, nombre, ayudas, tiempo y diferencia con el primero. */
+  private recordRow(row: TrackRow, leaderTime: number, me: string | null): HTMLElement {
+    const def = this.track;
+    const medal = medalFor(def, row.time);
+    const disc = h('span', { class: `crecord__medal${medal ? ' is-set' : ''}` });
+    if (medal) {
+      disc.style.setProperty('--tone', MEDAL_INFO[medal].color);
+      disc.title = `Medalla de ${MEDAL_INFO[medal].label}`;
+    }
+    const isMe = row.entry.id === me;
+    const tag = row.assists ? h('span', { class: 'crecord__assists', text: ASSIST_TAG[row.assists], attrs: { title: `Ayudas: ${LEVEL_INFO[row.assists].name}` } }) : h('span');
+    const item = h(
+      'li',
+      { class: `crecord${isMe ? ' is-me' : ''}${row.rank <= 3 ? ` is-top is-p${row.rank}` : ''}` },
+      h('span', { class: 'crecord__rank', text: String(row.rank) }),
+      disc,
+      h('span', { class: 'crecord__name', text: isMe ? `${row.entry.name} (tú)` : row.entry.name }),
+      tag,
+      h('span', { class: 'crecord__time', text: formatLapTime(row.time) }),
+      h('span', { class: 'crecord__gap', text: row.rank === 1 ? '' : formatDelta(row.time - leaderTime) }),
+    );
+    // El dueño del link puede ocultar a alguien (nombre ofensivo, tiempo tramposo): pide confirmar.
+    if (this.game.online.isOwner && !isMe) {
+      const hide = h('button', { class: 'crecords__mod', attrs: { type: 'button', title: 'Ocultar de las tablas de todos' }, text: 'Ocultar' });
+      let armed = false;
+      this.own.listen(hide, 'click', () => {
+        if (!armed) {
+          armed = true;
+          hide.textContent = '¿Seguro?';
+          hide.classList.add('is-armed');
+          return;
+        }
+        void this.game.online.setHidden(row.entry.id, true);
+      });
+      item.append(hide);
+    }
+    return item;
+  }
+
+  private recordsNote(text: string): HTMLElement {
+    return h('p', { class: 'crecords__note', text });
+  }
+
+  /** Baja el fantasma del récord y arranca la contrarreloj contra él. */
+  private async raceRecordGhost(playerId: string, name: string, button: HTMLButtonElement): Promise<void> {
+    if (button.disabled) return;
+    this.game.playUi('confirm');
+    button.disabled = true;
+    const trackId = this.track.id;
+    const ghost = await this.game.online.fetchGhost(playerId, trackId);
+    if (!ghost) {
+      button.disabled = false;
+      this.game.playUi('locked');
+      button.querySelector('span')?.replaceChildren('No se pudo bajar el fantasma: prueba otra vez');
+      return;
+    }
+    this.game.updateSettings((s) => (s.race.trackId = trackId));
+    void this.game.screens.goTo('race', { trackId, mode: 'timeTrial', rivalGhost: { name, ghost } });
   }
 
   /** Tus tiempos en el circuito: medallas, vuelta, sectores, vuelta ideal y resultados. */

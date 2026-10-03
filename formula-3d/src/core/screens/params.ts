@@ -6,6 +6,7 @@
 
 import type { LiveryConfig } from '../../garage/livery';
 import type { ProgressSnapshot, XpAward } from '../../progression/xp';
+import type { StoredGhost } from '../../race/session/Ghost';
 import type { Weather } from '../save/schema';
 
 export type SettingsTab = 'graphics' | 'audio' | 'controls' | 'assists' | 'game';
@@ -36,6 +37,8 @@ export interface RaceParams {
   startLast?: boolean;
   /** Desafío del día que se está corriendo (su fecha, AAAA-MM-DD). */
   daily?: string;
+  /** Contrarreloj contra el fantasma de otro jugador (el del récord de la tabla en línea). */
+  rivalGhost?: { name: string; ghost: StoredGhost };
 }
 
 /** Un piloto del podio (lo necesario para dibujar su auto y su cartel). */

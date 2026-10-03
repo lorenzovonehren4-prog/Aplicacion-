@@ -13,7 +13,8 @@ import type { Game } from '../../core/Game';
 import { DEFAULT_PILOT_NAME, PROFILE_NAME_MAX_LENGTH } from '../../core/save/schema';
 import { formatInteger, formatLapTime } from '../../core/utils/format';
 import { achievementContext, ACHIEVEMENTS } from '../../progression/career';
-import { MEDAL_INFO, medalFor, medalTally } from '../../progression/medals';
+import type { MedalRow } from '../../online/leaderboard';
+import { MEDALS, MEDAL_INFO, medalFor, medalTally } from '../../progression/medals';
 import { passProgress, SEASON } from '../../progression/seasonPass';
 import { TRACKS } from '../../tracks/registry';
 import { finished } from '../anim/finished';
@@ -63,6 +64,8 @@ export class ProfileScreen extends BaseScreen {
   private readonly panel = h('div', { class: 'profile__panel' });
   private readonly side = h('div', { class: 'profile__side' });
   private readonly cardSlot = h('div', { class: 'profile__card' });
+  /** Ranking de medallas en línea (se actualiza en vivo). */
+  private readonly ranking = h('div', { class: 'profile__ranking' });
   private hints: ControlHints | null = null;
 
   constructor(game: Game) {
@@ -84,6 +87,8 @@ export class ProfileScreen extends BaseScreen {
     this.root.append(h('div', { class: 'rsel__backdrop fx-backdrop' }), this.panel, this.side, h('footer', { class: 'rsel__footer' }, this.hints.element, back));
     this.buildPanel();
     this.buildSide();
+    this.renderRanking();
+    this.own.add(this.game.online.onChange(() => this.renderRanking()));
   }
 
   reveal(): void {
@@ -167,10 +172,60 @@ export class ProfileScreen extends BaseScreen {
       h('div', { class: 'profile__identity' }, this.cardSlot, edit),
       h('h3', { class: 'rsel__section', text: 'Estadísticas' }),
       grid,
+      h('h3', { class: 'rsel__section', text: 'Ranking de medallas' }),
+      this.ranking,
       h('h3', { class: 'rsel__section', text: 'Récords por circuito' }),
       records,
     );
     this.nav.focus(edit);
+  }
+
+  /**
+   * Ranking de medallas de todos los que abren el link: los diez primeros
+   * (platinos, oros, platas y bronces) y tu puesto si estás más abajo.
+   */
+  private renderRanking(): void {
+    const online = this.game.online;
+    const note = (text: string): HTMLElement => h('p', { class: 'pranking__note', text });
+    if (online.status === 'connecting') {
+      this.ranking.replaceChildren(note('Conectando con el ranking…'));
+      return;
+    }
+    if (online.status === 'offline') {
+      this.ranking.replaceChildren(note('El ranking se ve al abrir el juego desde su link de claude.ai con tu cuenta iniciada.'));
+      return;
+    }
+    const rows = online.medalRows();
+    const me = online.myId;
+    const items: HTMLElement[] = [];
+    const row = (r: MedalRow): HTMLElement => {
+      const isMe = r.entry.id === me;
+      return h(
+        'li',
+        { class: `pranking__row${isMe ? ' is-me' : ''}` },
+        h('span', { class: 'pranking__rank', text: String(r.rank) }),
+        h('span', { class: 'pranking__name', text: isMe ? `${r.entry.name} (tú)` : r.entry.name }),
+        h(
+          'span',
+          { class: 'pranking__medals' },
+          ...[...MEDALS].reverse().map((medal) => {
+            const cell = h('span', { class: `pranking__medal${r.tally[medal] > 0 ? '' : ' is-zero'}`, text: String(r.tally[medal]), attrs: { title: MEDAL_INFO[medal].label } });
+            cell.style.setProperty('--tone', MEDAL_INFO[medal].color);
+            return cell;
+          }),
+        ),
+      );
+    };
+    if (rows.length === 0) {
+      items.push(note('Todavía nadie ganó medallas. Gana la primera en Contrarreloj y quedas arriba.'));
+    } else {
+      const list = h('ol', { class: 'pranking__list' }, ...rows.slice(0, 10).map(row));
+      const mine = me ? rows.find((r) => r.entry.id === me) : undefined;
+      if (mine && mine.rank > 10) list.append(h('li', { class: 'pranking__gap', text: '···' }), row(mine));
+      items.push(list);
+    }
+    if (online.status === 'readonly') items.push(note('Con esta cuenta ves el ranking, pero tus medallas no se anotan (hace falta ser de la organización del dueño del link).'));
+    this.ranking.replaceChildren(...items);
   }
 
   private renderCard(): void {

@@ -14,6 +14,8 @@ import { AchievementToasts } from '../ui/components/AchievementToast';
 import { FpsMeter } from '../ui/components/FpsMeter';
 import { applyUiScale } from '../ui/scale';
 import { achievementContext, getAchievement, newAchievements } from '../progression/career';
+import { OnlineRecords } from '../online/OnlineRecords';
+import { TRACKS } from '../tracks/registry';
 import { EventBus } from './EventBus';
 import type { GameEvents } from './events';
 import { GameLoop } from './GameLoop';
@@ -42,6 +44,8 @@ export class Game {
   readonly events = new EventBus<GameEvents>();
   readonly screens: ScreenManager<ScreenParams>;
   readonly loop: GameLoop;
+  /** Récords en línea (tablas compartidas del link; sin conexión fuera de claude.ai). */
+  readonly online: OnlineRecords;
   private readonly fpsMeter: FpsMeter;
   private readonly toasts: AchievementToasts;
   /** Música de los menús (se apaga en la pista). */
@@ -89,6 +93,12 @@ export class Game {
       }),
     );
     this.own.add(this.events.on('screen:changed', () => this.updateMusic()));
+
+    // Récords en línea: se conectan sin frenar el arranque y no suben nada mientras se corre.
+    this.online = new OnlineRecords(save, TRACKS);
+    this.own.add(() => this.online.dispose());
+    this.own.add(this.events.on('screen:changed', () => this.online.setActive(!this.screens.stackIds.includes('race'))));
+    void this.online.start();
     this.own.add(() => this.music?.stop());
     this.own.add(input.onAction((action) => this.screens.dispatch(action)));
     this.own.add(input.onDeviceChange((device) => this.events.emit('input:device', { device })));

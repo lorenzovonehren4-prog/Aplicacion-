@@ -3,7 +3,7 @@
 import type { IconName } from '../ui/icons';
 
 export const GAME_NAME = 'ÁPICE GP';
-export const GAME_VERSION = '2.4.0';
+export const GAME_VERSION = '2.5.0';
 
 export type MenuItemId =
   | 'practice'
@@ -67,7 +67,7 @@ export const MAIN_MENU: readonly MenuGroup[] = [
         id: 'circuits',
         label: 'Circuitos',
         icon: 'circuit',
-        description: 'Las 24 pistas a fondo: ficha técnica, guía curva por curva con consejos y tus tiempos en cada una.',
+        description: 'Las 24 pistas a fondo: ficha técnica, guía curva por curva, tus tiempos y la tabla de récords de todos los que juegan con el link.',
         phase: 10,
       },
     ],

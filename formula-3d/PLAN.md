@@ -1664,6 +1664,59 @@ para que la gente quiera jugar el juego".
 - [x] Logros nuevos: Oro puro, Platino, Gira completa (medalla en las 24),
       Constancia (3 días seguidos) e Imparable (7).
 
+
+### Versión 2.5 — Récords en línea con el mismo link ✅
+
+Pedido: "si se puede hacer con ese mismo link y no afectaría nada, hay que
+hacerlo; pregúntame cosas". Respuestas del usuario: **mejor vuelta por
+circuito** y **ranking de medallas**, con el **nombre de piloto** del juego,
+**una sola tabla con el nivel de ayudas** al lado de cada tiempo y **correr
+contra el fantasma del récord**.
+
+**Cómo funciona** (`online/`)
+
+- [x] El link publicado declara una base de datos compartida (`db`) y la
+      identidad del visor (`user`) de claude.ai. Fuera de claude.ai (o sin
+      iniciar sesión) no hay base: el juego funciona igual y las pantallas
+      dicen por qué no hay tablas.
+- [x] Cada jugador escribe sólo lo suyo: `laps/<id>` (nombre de piloto,
+      mejor vuelta y nivel de ayudas por circuito, y el tiempo de los
+      fantasmas que subió) y `ghosts/<id>/tracks/<circuito>` (cada fantasma
+      aparte: pesa ~30 KB y los 24 juntos no entran en un documento).
+      Reglas: todos los que entran leen; cada uno escribe su `{self}`; el
+      resto de la base sólo el dueño.
+- [x] Se sube solo: cuando el guardado mejora (una vuelta récord, un
+      fantasma nuevo, el nombre) se mezcla con lo que ya estaba en la base
+      (si jugó en otro dispositivo, queda lo más rápido) y se escribe de a
+      una vez, primero el fantasma y después el registro que lo anuncia. En
+      la pista no se sube nada. Sin cambios no se escribe.
+- [x] Los registros ajenos se validan al leerlos: nombre sin caracteres de
+      control ni invisibles (16 como máximo), tiempos posibles para cada
+      circuito (no más rápidos que el 85 % del récord real), niveles de
+      ayudas conocidos y fantasmas con la forma correcta.
+- [x] Quien sólo puede leer (cuentas fuera de la organización del dueño:
+      es una regla de claude.ai) ve las tablas y corre contra el récord; la
+      primera escritura rechazada lo deja en sólo lectura sin reintentar.
+- [x] Moderación: el dueño del link ve "Ocultar" en cada fila (pide
+      confirmar). Un jugador oculto desaparece de las tablas de todos y su
+      juego deja de subir; el dueño lo puede volver a mostrar.
+
+**Pantallas**
+
+- [x] Circuitos → pestaña **Récords**: los diez mejores de todos (puesto,
+      medalla, nombre, sigla de ayudas, tiempo y diferencia con el primero),
+      tu fila resaltada (y aparte si estás más abajo), en vivo, y el botón
+      **Correr contra el récord** que baja el fantasma más rápido del
+      circuito y arranca la contrarreloj ("CONTRA EL RÉCORD · ANA").
+- [x] Perfil → **Ranking de medallas**: platinos, oros, platas y bronces de
+      cada jugador (la mejor medalla de cada circuito), los diez primeros y
+      tu puesto.
+- [x] Cada mejor vuelta guarda con qué nivel de ayudas se hizo (Principiante,
+      Intermedio, Avanzado o Personalizado).
+- [x] Pruebas (`tests/online.test.ts`) con una base simulada en memoria:
+      validación, mezcla, tablas, subida en orden, sin escribir de más,
+      pausa en la pista, sólo lectura, ocultos y fantasmas dañados.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1758,3 +1811,4 @@ para que la gente quiera jugar el juego".
 - **Versión 2.2**: piloto 3D animado en el menú, mejoras del auto con puntos de desarrollo y guía de circuitos con ficha técnica, curva por curva y tus tiempos (pedido del usuario).
 - **Versión 2.3**: carreras sin parpadeos de posición ni fantasmas encimados, sin tirones de sombreadores, calidad Media más liviana y retrovisor en pantalla con quién viene detrás (pedido del usuario).
 - **Versión 2.4**: ritmo de cuadros parejo, posprocesado en una pasada, menos llamadas de dibujo, medallas de tiempo por circuito y desafío del día con racha (pedido del usuario).
+- **Versión 2.5**: récords en línea con el mismo link: tabla por circuito, ranking de medallas y fantasma del récord (pedido del usuario).

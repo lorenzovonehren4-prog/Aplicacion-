@@ -160,6 +160,8 @@ export interface TrackRecord {
    * (ver `race/session/Ghost.ts`).
    */
   ghost?: { time: number; poses: string; trace: string };
+  /** Nivel de ayudas con el que se hizo la mejor vuelta (para las tablas de récords). */
+  assists?: AssistLevel;
 }
 
 export interface Profile {

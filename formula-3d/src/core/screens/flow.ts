@@ -46,8 +46,8 @@ export const SCREEN_FLOW: FlowTable = {
     tutorial: ['menu'],
     menu: ['garage', 'circuits', 'pass', 'profile', 'raceSelect', 'championship', 'race'],
     garage: ['menu'],
-    // Desde la guía se puede ir a correr en el circuito elegido.
-    circuits: ['menu', 'raceSelect'],
+    // Desde la guía se puede ir a correr en el circuito elegido (o directo contra el fantasma del récord).
+    circuits: ['menu', 'raceSelect', 'race'],
     pass: ['menu'],
     profile: ['menu'],
     // Ajustes y el Manual siempre se apilan y vuelven con `pop`.

@@ -352,7 +352,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       const race = settings.race;
       const rivals = this.params.mode === 'race' ? this.rivalDrivers(this.params.rivals ?? race.rivals) : [];
       const pilot = game.save.data.profile.name;
-      const storedGhost = this.params.mode === 'timeTrial' ? game.save.data.records[track.def.id]?.ghost : undefined;
+      // Contrarreloj: el fantasma del récord en línea si se eligió, si no el propio.
+      const storedGhost = this.params.mode === 'timeTrial' ? (this.params.rivalGhost?.ghost ?? game.save.data.records[track.def.id]?.ghost) : undefined;
       const session = new Session(
         track,
         F1_SPEC,
@@ -622,10 +623,15 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.hud.message('A LA PARRILLA', 'Acelera para subir las vueltas del motor y espera las luces', 'info');
     } else if (this.session?.isTimeTrial) {
       const ghost = this.session.ghost;
+      const rival = this.params.rivalGhost;
       this.hud.message(
-        'CONTRARRELOJ',
-        ghost ? `Tu fantasma (${formatLapTime(ghost.time)}) sale contigo al cruzar la línea` : 'Marca una vuelta válida: será tu fantasma',
-        'info',
+        rival && ghost ? `CONTRA EL RÉCORD · ${rival.name}` : 'CONTRARRELOJ',
+        rival && ghost
+          ? `Su fantasma (${formatLapTime(ghost.time)}) sale contigo al cruzar la línea`
+          : ghost
+            ? `Tu fantasma (${formatLapTime(ghost.time)}) sale contigo al cruzar la línea`
+            : 'Marca una vuelta válida: será tu fantasma',
+        rival && ghost ? 'gold' : 'info',
       );
     } else {
       this.hud.message('A PISTA', 'Vuelta de salida: el cronómetro arranca en la línea de meta', 'info');
@@ -1101,8 +1107,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     this.game.save.update((data) => {
       const record = data.records[id];
       const current = record?.bestLap ?? null;
-      // Conserva el fantasma guardado (si lo hay).
-      if (current === null || time < current) data.records[id] = { ...record, bestLap: time };
+      // Conserva el fantasma guardado (si lo hay); anota las ayudas con que se hizo (tablas de récords).
+      if (current === null || time < current) data.records[id] = { ...record, bestLap: time, assists: this.game.settings.assists.level };
     });
   }
 

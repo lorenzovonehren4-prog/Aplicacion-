@@ -65,7 +65,14 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.4.0: más fluido y con motivos para volver. El juego ya no pierde
+Versión 2.5.0: **récords en línea** con el mismo link. Quien abre el juego
+desde claude.ai con su cuenta ve, en Circuitos → Récords, los diez mejores
+tiempos de cada circuito (con medalla y nivel de ayudas) y puede **correr
+contra el fantasma del récord**; en el Perfil está el **ranking de
+medallas**. Los tiempos se suben solos al mejorar. Sin cuenta, el juego
+funciona igual, sin tablas.
+
+Desde la 2.4.0: más fluido y con motivos para volver. El juego ya no pierde
 cuadros por el ruido de los tiempos del navegador y mueve el auto al ritmo
 exacto del monitor; el posprocesado se hace en una sola pasada (dos menos a
 pantalla completa por cuadro) y la escena pide un 20 % menos de llamadas de

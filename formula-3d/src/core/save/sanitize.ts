@@ -32,6 +32,7 @@ import {
   RIVALS_MIN,
   SPEED_UNITS,
   LANGUAGES,
+  type AssistLevel,
   type AssistSettings,
   type AudioSettings,
   type ControlSettings,
@@ -267,6 +268,9 @@ function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): R
     const entry: TrackRecord = {
       bestLap: plausibleLap(lap) ? lap : null,
     };
+    if (entry.bestLap !== null && typeof r.assists === 'string' && (ASSIST_LEVELS as readonly string[]).includes(r.assists)) {
+      entry.assists = r.assists as AssistLevel;
+    }
     const ghost = record(r.ghost);
     if (plausibleLap(ghost.time) && base64(ghost.poses) && base64(ghost.trace)) {
       entry.ghost = { time: ghost.time, poses: ghost.poses, trace: ghost.trace };
