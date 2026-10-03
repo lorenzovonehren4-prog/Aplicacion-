@@ -65,7 +65,17 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.5.0: **récords en línea** con el mismo link. Quien abre el juego
+Versión 2.6.0: carreras como en la transmisión. Al terminar puedes **ver la
+repetición** con cámaras de TV, helicóptero, a bordo y un director que corta
+solo (pausa, velocidad, saltos y elegir a quién seguir). En la largada,
+acelerar antes de que se apaguen las luces es **salida en falso** (+5 s) y se
+mide tu reacción. Las gomas se gastan y los golpes dañan el alerón: con **B**
+pides **boxes** (o te metes en el desvío) y el equipo te cambia todo. Salirte
+de la pista ya no anula la vuelta: son **advertencias** y, desde la cuarta,
+**+5 s**. Hay **banderas amarillas** por sector y **azules** al que van a
+doblar.
+
+Desde la 2.5.0: **récords en línea** con el mismo link. Quien abre el juego
 desde claude.ai con su cuenta ve, en Circuitos → Récords, los diez mejores
 tiempos de cada circuito (con medalla y nivel de ayudas) y puede **correr
 contra el fantasma del récord**; en el Perfil está el **ranking de

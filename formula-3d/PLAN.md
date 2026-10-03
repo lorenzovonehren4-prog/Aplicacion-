@@ -1717,6 +1717,84 @@ contra el fantasma del récord**.
       validación, mezcla, tablas, subida en orden, sin escribir de más,
       pausa en la pista, sólo lectura, ocultos y fantasmas dañados.
 
+### Versión 2.6 — Carreras de transmisión: repetición, largada, boxes y banderas ✅
+
+Pedido: "las repeticiones al final de la partida; después mejorar la salida
+del comienzo: si aceleras antes de que se apague, pierdes o algo así;
+después boxes automáticos: entras y te mejora todo; las banderas me gustan;
+que las vueltas no digan vuelta anulada si te sales, sólo advertencias o
+sanciones".
+
+**Largada** (`race/Session.ts`)
+
+- [x] Acelerar con el semáforo encendido es **salida en falso**: el auto se
+      escapa un poco (hasta ~1 m, como en la realidad) y se suman **5 s** de
+      sanción; antes de la primera luz sólo avisa ("¡Espera las luces!").
+- [x] Al apagarse las luces se mide el **tiempo de reacción** ("REACCIÓN
+      0,167 s · ¡Reacción perfecta!").
+- [x] En la parrilla no se ve la trazada (cruzaba los autos de adelante),
+      las teclas sólo se muestran a quien recién empieza (y se van con la
+      largada) y los avisos bajan para no tapar el semáforo.
+
+**Límites de pista, sanciones y banderas** (`race/session/Flags.ts`)
+
+- [x] Ya no hay "vuelta anulada". En carrera, cada salida con las cuatro
+      ruedas afuera es una **advertencia** (la tercera, con bandera blanca y
+      negra) y desde la cuarta, **+5 s**. Fuera de carrera la vuelta sólo
+      queda sin récord ("SIN RÉCORD"), sin cartel de anulada.
+- [x] Las sanciones se ven en la torre ("+5s"), en los tiempos y en la
+      clasificación final: los que terminaron se ordenan por su tiempo con la
+      sanción sumada, y el panel final espera a los que crucen la meta dentro
+      del tiempo sancionado.
+- [x] **Bandera amarilla** por sector (un auto detenido o despistado): el
+      sector parpadea en amarillo en el minimapa y se avisa si es el tuyo o el
+      que viene. **Bandera azul** al que van a doblar; los bots se corren y
+      dejan pasar.
+
+**Boxes automáticos** (`tracks/PitLane.ts`, `race/session/PitStop.ts`)
+
+- [x] Cada circuito tiene **calle de boxes de verdad**: desvío de entrada y
+      de salida (asfalto que se abre de a poco, sin escalones, más corto si
+      hay una curva cerrada hacia ese lado), muro de boxes con punta y final,
+      líneas de entrada y salida, división de carriles, líneas del límite de
+      velocidad y un lugar amarillo por equipo.
+- [x] Las **gomas se gastan** (más al derrapar, bloquear o patinar) y pierden
+      agarre de a poco, con un precipicio al final; los **golpes dañan el
+      alerón** (menos agarre adelante y más arrastre). En las carreras de 5
+      vueltas o más no llegan al final sin parar; en las cortas, sí.
+- [x] Con **B** (o la cruceta abajo) se piden boxes; también basta con
+      meterse en el desvío. El auto entra solo, baja a **80 km/h** en la zona
+      del límite, para en su box, **ocho mecánicos** del color del equipo
+      cambian las gomas y arreglan el daño (toma de TV del box, con la barra
+      del servicio) y sale de vuelta a la pista renovado.
+- [x] Los bots paran cerca de la mitad de las carreras largas (o antes si el
+      auto ya no da) y bajan el ritmo con las gomas gastadas; la torre
+      muestra **BOX**. Panel del auto (gomas y alerón con colores) y avisos
+      de radio cuando conviene parar.
+- [x] La tecla nueva llega a los guardados viejos sin pisar las elegidas (si
+      la B ya estaba usada, toma una libre).
+
+**Repetición** (`race/session/Replay.ts`, `race/ReplayPlayer.ts`, `race/camera/ReplayCamera.ts`)
+
+- [x] Toda la carrera se graba (20 cuadros por segundo, ~6 KB/s con 20
+      autos): pose, velocidad, pedales, humo, marcha y boxes de cada auto,
+      más el semáforo, la bandera, los choques y las vueltas.
+- [x] **Ver repetición** en el panel final: la carrera queda en pausa (se
+      guarda el estado de cada auto para seguir después) y se ve desde 3 s
+      antes de la largada hasta la vuelta de enfriamiento.
+- [x] Cámaras: **torres de TV** al costado de la pista con zoom,
+      **helicóptero**, **persecución**, **a bordo** y un **director** que va
+      cortando entre ellas.
+- [x] Pausa, velocidad (0,25× a 4×), ±10 s, línea de tiempo con las vueltas
+      (clic o arrastre para saltar), elegir a quién seguir (← →) y la torre
+      de posiciones de ese momento; sonido del auto que se sigue.
+
+**Pruebas**: salida en falso, reacción, advertencias y sanciones,
+clasificación con sanciones, banderas, calle de boxes en los 24 circuitos,
+parada completa del jugador (sin cruzar el muro y sin pasar los 80 km/h),
+paradas de los bots, desgaste, teclas en guardados viejos, grabación y
+reproducción, y guardar y volver al estado de un auto.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1812,3 +1890,4 @@ contra el fantasma del récord**.
 - **Versión 2.3**: carreras sin parpadeos de posición ni fantasmas encimados, sin tirones de sombreadores, calidad Media más liviana y retrovisor en pantalla con quién viene detrás (pedido del usuario).
 - **Versión 2.4**: ritmo de cuadros parejo, posprocesado en una pasada, menos llamadas de dibujo, medallas de tiempo por circuito y desafío del día con racha (pedido del usuario).
 - **Versión 2.5**: récords en línea con el mismo link: tabla por circuito, ranking de medallas y fantasma del récord (pedido del usuario).
+- **Versión 2.6**: repetición con cámaras de TV, salida en falso y tiempo de reacción, boxes automáticos con desgaste y daño, advertencias y sanciones en vez de vueltas anuladas, y banderas amarilla y azul (pedido del usuario).
