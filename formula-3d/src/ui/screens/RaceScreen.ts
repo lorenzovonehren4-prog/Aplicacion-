@@ -67,6 +67,10 @@ const SLOW_MOTION_HOLD = 1.3;
 const SLOW_MOTION_RAMP = 0.9;
 /** Frecuencia de la torre de posiciones (s) y de los rivales en el minimapa (s). */
 const STANDINGS_INTERVAL = 0.25;
+/** Hasta cuántos segundos detrás se nombra al que viene en el retrovisor. */
+const MIRROR_NEAR = 3;
+/** El retrovisor aparece este tiempo (s) después de la largada, cuando ya se fue el semáforo. */
+const MIRROR_AFTER_START = 2.5;
 const MINIMAP_INTERVAL = 0.05;
 /** Tiempo mínimo entre dos mensajes de radio por cambios de posición (ms). */
 const POSITION_RADIO_GAP = 12_000;
@@ -155,6 +159,11 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private covered = false;
   private readonly governor = new PerformanceGovernor();
   private standingsTimer = 0;
+  /** Retrovisor a la vista (null = volver a medir su lugar). */
+  private mirrorShown: boolean | null = null;
+  private mirrorTimer = 0;
+  /** Segundos que faltan para mostrar el retrovisor tras la largada. */
+  private mirrorDelay = 0;
   private minimapTimer = 0;
   private lastPositionRadio = -Infinity;
   private readonly rivalDots: Array<{ x: number; z: number }> = [];
@@ -363,6 +372,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       }
       this.session = session;
       this.world = world;
+      world.setHudMirror(settings.game.mirror);
       this.effectCars = session.cars.map((car) => car.vehicle);
       world.raceCamera.shakeEnabled = !prefersReducedMotion();
       world.motionEffects = !prefersReducedMotion();
@@ -507,6 +517,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         { keys: [{ keyboard: `${keyLabel(keys.left)}${keyLabel(keys.right)}`, gamepad: 'L' }], label: 'Doblar' },
         { keys: [{ keyboard: keyLabel(keys.drs), gamepad: 'X' }], label: 'DRS' },
         { keys: [{ keyboard: keyLabel(keys.camera), gamepad: 'Y' }], label: 'Cámara' },
+        { keys: [{ keyboard: keyLabel(keys.mirror), gamepad: '▲' }], label: 'Retrovisor' },
         { keys: [{ keyboard: keyLabel(keys.reset), gamepad: 'SELECT' }], label: 'Volver a pista' },
         { keys: [{ keyboard: 'ESC', gamepad: 'START' }], label: 'Pausa' },
       ],
@@ -526,8 +537,14 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         this.session?.setAssists(assists);
         this.world?.configureLine(assists.line, assists.lineType);
         this.hud?.configure(session.config.laps, hudAssists(assists));
+        this.world?.setHudMirror(next.game.mirror);
+        this.mirrorShown = null;
       }),
     );
+    // El retrovisor se dibuja en el 3D justo debajo de su marco del HUD: se vuelve a medir al cambiar el tamaño.
+    this.own.listen(window, 'resize', () => {
+      this.mirrorShown = null;
+    });
     // Si la ventana pierde el foco en plena vuelta, se pausa.
     this.own.listen(window, 'blur', () => {
       if (this.phase === 'running') this.setPaused(true);
@@ -619,6 +636,13 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         this.game.playUi('tab');
         break;
       }
+      case 'mirror': {
+        const on = !this.game.settings.game.mirror;
+        this.game.updateSettings((s) => (s.game.mirror = on));
+        this.hud?.showCamera(on ? 'Retrovisor encendido' : 'Retrovisor apagado');
+        this.game.playUi('tab');
+        break;
+      }
       case 'reset': {
         if (session.phase !== 'running') break;
         this.handleSessionEvents(session.resetToTrack());
@@ -661,6 +685,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           this.audio.cue('light');
           break;
         case 'lightsOut':
+          this.mirrorDelay = MIRROR_AFTER_START;
           hud.lightsOut();
           world.setStartLights(0);
           this.audio.cue('lightsOut');
@@ -1230,11 +1255,55 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     }
   }
 
+  /**
+   * Retrovisor de la pantalla: visible en carrera (no en la parrilla, donde
+   * está el semáforo) si el jugador lo tiene encendido. El 3D lo dibuja en el
+   * rectángulo de su marco; se mide sólo al aparecer o al cambiar el tamaño.
+   */
+  private updateMirror(dt: number): void {
+    const session = this.session;
+    const world = this.world;
+    const hud = this.hud;
+    if (!session || !world || !hud) return;
+    // Después de la largada espera a que se vaya el semáforo (ocupa el mismo lugar).
+    this.mirrorDelay = Math.max(0, this.mirrorDelay - dt);
+    // Con la pausa o el panel final el HUD se oculta: el retrovisor también (si no, quedaría sin marco).
+    const visible = this.game.settings.game.mirror && this.phase === 'running' && session.phase !== 'grid' && this.mirrorDelay <= 0;
+    if (visible !== this.mirrorShown) {
+      this.mirrorShown = visible;
+      hud.setMirror(visible);
+      if (visible) {
+        const glass = hud.mirrorGlass.getBoundingClientRect();
+        const canvas = this.game.render.canvas.getBoundingClientRect();
+        world.setMirrorRect({ x: glass.left - canvas.left, y: glass.top - canvas.top, width: glass.width, height: glass.height });
+        this.mirrorTimer = 0;
+      } else {
+        world.setMirrorRect(null);
+      }
+    }
+    if (!visible) return;
+    // Quién viene detrás (4 veces por segundo).
+    this.mirrorTimer -= dt;
+    if (this.mirrorTimer > 0) return;
+    this.mirrorTimer = 0.25;
+    const order = session.order;
+    const me = order?.runners[session.player.index];
+    const behindIndex = me && order ? order.order[me.position] : undefined;
+    const behind = behindIndex === undefined ? undefined : session.cars[behindIndex];
+    const gap = behindIndex === undefined || !order ? null : order.interval(behindIndex);
+    if (!behind || !gap || gap.laps > 0 || (gap.seconds !== null && gap.seconds > MIRROR_NEAR)) {
+      hud.setMirrorBehind(null);
+      return;
+    }
+    hud.setMirrorBehind({ code: behind.code, color: behind.team.primary, gap: gap.seconds });
+  }
+
   private updateHud(dt: number): void {
     const session = this.session;
     const world = this.world;
     const hud = this.hud;
     if (!session || !world || !hud) return;
+    this.updateMirror(dt);
     const vehicle = session.vehicle;
     const tel = vehicle.telemetry;
     const timer = session.timer;

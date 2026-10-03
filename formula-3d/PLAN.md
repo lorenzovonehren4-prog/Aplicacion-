@@ -1509,6 +1509,84 @@ récords y guía curva por curva**.
       `tests/insight.test.ts` (fichas y guías de las 24 pistas, marchas,
       Mónaco contra Monza). La prueba de humo compra una mejora.
 
+### Versión 2.3 — Carreras sin fallos, Media más fluida y retrovisor ✅
+
+Pedido: "en las partidas se sigue bugueando de vez en cuando y hay que
+mejorar ese código para que no se bugue; en calidad juego en Media pero que
+el juego fluya más; mejorar las cámaras para ver en un espejo quién está
+detrás".
+
+**Cacería de fallos con simulación**
+
+- [x] Un banco de pruebas sin pantalla corrió las 24 pistas con el auto del
+      jugador manejado de tres formas (prolijo, a los volantazos y
+      embistiendo al de adelante) y con ayudas de principiante, intermedio y
+      avanzado, vigilando en cada paso: números no finitos, autos que
+      atraviesan muros o saltan, proyección sobre la pista que salta, vueltas
+      imposibles, posiciones repetidas, bots trabados y autos encimados.
+      La física salió limpia; aparecieron tres fallos de la sesión:
+  - **La posición parpadeaba** rueda a rueda (en Montreal, 6 cambios en
+    0,13 s): el orden comparaba los centros de los autos, que se adelantan
+    y atrasan centímetros a cada paso, y con eso saltaban la torre, el
+    número grande y los avisos. Ahora el orden parte del anterior y dos
+    autos sólo se cambian con 1,2 m de ventaja (`OVERTAKE_MARGIN`).
+  - **El fantasma terminaba encima de otro auto**: al volver a la pista
+    (R o el rescate de un bot) el auto queda 3,5 s sin choques; si justo
+    tenía a otro encima, el choque los separaba de golpe. Ahora, si al
+    terminar hay alguien a menos de 6,4 m, sigue fantasma de a 0,25 s hasta
+    quedar libre.
+  - **El fantasma titilaba** a 7 Hz (molesto y difícil de seguir): ahora se
+    apaga un instante dos veces y media por segundo.
+- [x] Pruebas nuevas en `tests/race.test.ts`: rueda a rueda la posición
+      cambia una sola vez (sin el margen cambiaba 163 veces) y el fantasma
+      no termina encima de otro auto.
+
+**Tirones a mitad de carrera**
+
+- [x] La causa: three.js usa un solo material de profundidad para las
+      sombras y le cambia el lado y la textura según la pieza, sin pedir
+      otro sombreador; según el orden en que entraban las piezas al mapa de
+      sombras, alguna variante se compilaba recién en carrera (un tirón de
+      cientos de ms, por ejemplo con los techos de las tribunas).
+      `stabilizeShadowDepth` le da a cada pieza que proyecta sombra un
+      material de profundidad propio y fijo (uno por combinación de lado y
+      textura), y la precarga ensancha la luz del sol a todo el circuito para
+      que todas las piezas pasen por el mapa de sombras antes de largar.
+      Medido: 54 → 54 programas en Media y 56 → 56 en Alta durante la
+      carrera (antes se agregaban 2 o 3).
+
+**Calidad Media más fluida**
+
+- [x] Densidad de píxeles máxima 1,5 → 1,25: en las notebooks con la
+      pantalla escalada al 150 % dibuja un 30 % menos (con MSAA los bordes
+      siguen limpios).
+- [x] El brillo (bloom) se calcula a la mitad de su resolución de siempre
+      (un cuarto de los píxeles): un brillo difuso no lo nota nadie.
+- [x] El retrovisor en Media se dibuja a 512 px de ancho, un cuadro sí y uno
+      no.
+
+**Retrovisor** (`race/render/RearMirrors.ts`, `race/render/MirrorOverlay.ts`)
+
+- [x] Arriba al centro, en las tres cámaras: una cámara mirando hacia atrás
+      desde la cabeza del piloto dibuja una imagen 4:1 (sin recalcular las
+      sombras), y se pinta invertida como un espejo, con esquinas
+      redondeadas, bordes apenas más oscuros y un brillo de vidrio, después
+      del posprocesado (el desenfoque de velocidad no la borronea).
+- [x] Debajo dice **quién viene detrás** con el color de su equipo y a
+      cuántos segundos ("DETRÁS KOV a 0.4 s"), o "NADIE CERCA" si el de atrás
+      está a más de 3 s o doblado.
+- [x] Aparece 2,5 s después de la largada (el semáforo usa ese lugar) y se
+      prende o apaga con M (cruceta ↑ en el gamepad) o en Ajustes → Juego →
+      Retrovisor. Los avisos bajan un poco para dejarle lugar.
+- [x] Sin sombreadores nuevos: en Media, Alta y Ultra la imagen es lineal y
+      el retrovisor le aplica el tono y el sRGB; en Baja (que dibuja directo
+      al lienzo) la imagen se guarda ya terminada con la misma variante de
+      los materiales.
+- [x] En Alta y Ultra los espejos del auto en la cabina muestran la misma
+      imagen (cada uno su mitad); en Baja y Media, el reflejo pintado. En
+      Ultra se actualiza todos los cuadros; en el resto, uno sí y uno no, y
+      si el ajuste automático baja la carga, a menos resolución.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1601,3 +1679,4 @@ récords y guía curva por curva**.
 - **Versión 2.0**: las 24 pistas del calendario 2026, análisis y clasificación por dificultad, 5 campeonatos y menú principal nuevo (pedido del usuario).
 - **Versión 2.1**: trazada que el auto puede seguir, bots que aprenden la pista y no se salen, largadas limpias (pedido del usuario).
 - **Versión 2.2**: piloto 3D animado en el menú, mejoras del auto con puntos de desarrollo y guía de circuitos con ficha técnica, curva por curva y tus tiempos (pedido del usuario).
+- **Versión 2.3**: carreras sin parpadeos de posición ni fantasmas encimados, sin tirones de sombreadores, calidad Media más liviana y retrovisor en pantalla con quién viene detrás (pedido del usuario).

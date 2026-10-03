@@ -5,7 +5,7 @@
  * para que nunca se pueda quedar sin forma de volver.
  */
 
-export const DRIVE_ACTIONS = ['throttle', 'brake', 'left', 'right', 'drs', 'camera', 'reset', 'pause'] as const;
+export const DRIVE_ACTIONS = ['throttle', 'brake', 'left', 'right', 'drs', 'camera', 'mirror', 'reset', 'pause'] as const;
 export type DriveAction = (typeof DRIVE_ACTIONS)[number];
 
 export type KeyBindings = Record<DriveAction, string>;
@@ -17,6 +17,7 @@ export const DRIVE_ACTION_LABELS: Readonly<Record<DriveAction, string>> = {
   right: 'Doblar a la derecha',
   drs: 'DRS',
   camera: 'Cambiar cámara',
+  mirror: 'Retrovisor',
   reset: 'Volver a la pista',
   pause: 'Pausa',
 };
@@ -29,6 +30,7 @@ export function createDefaultBindings(): KeyBindings {
     right: 'ArrowRight',
     drs: 'KeyD',
     camera: 'KeyC',
+    mirror: 'KeyM',
     reset: 'KeyR',
     pause: 'KeyP',
   };

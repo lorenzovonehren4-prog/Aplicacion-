@@ -29,10 +29,10 @@ export interface DrivingControls {
   steer: number;
 }
 
-export type DrivingEvent = 'camera' | 'drs' | 'reset' | 'pause';
+export type DrivingEvent = 'camera' | 'mirror' | 'drs' | 'reset' | 'pause';
 
 /** Acciones de un toque (las teclas vienen de los ajustes; Esc llega como "volver" y también pausa). */
-const KEY_EVENTS: ReadonlyArray<DrivingEvent> = ['camera', 'drs', 'reset', 'pause'];
+const KEY_EVENTS: ReadonlyArray<DrivingEvent> = ['camera', 'mirror', 'drs', 'reset', 'pause'];
 
 /** Botones del gamepad (mapeo estándar) → evento. */
 const PAD_EVENTS: ReadonlyArray<readonly [number, DrivingEvent]> = [
@@ -40,6 +40,7 @@ const PAD_EVENTS: ReadonlyArray<readonly [number, DrivingEvent]> = [
   [3, 'camera'], // Y / Triángulo
   [8, 'reset'], // Select / Share
   [9, 'pause'], // Start / Options
+  [12, 'mirror'], // Cruceta arriba
 ];
 
 const THROTTLE_UP = 6;

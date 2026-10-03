@@ -497,6 +497,16 @@ export class SettingsScreen extends BaseScreen<ScreenParams['settings']> {
         get: () => gm().defaultCamera,
         set: (camera) => this.game.updateSettings((s) => (s.game.defaultCamera = camera)),
       }),
+      selectorRow<boolean>(ctx, {
+        label: 'Retrovisor',
+        help: 'Un espejo arriba al centro de la pantalla para ver quién viene detrás (y a cuánto), con cualquier cámara. En carrera se prende y apaga con su tecla (M de fábrica) o la cruceta arriba del gamepad.',
+        options: [
+          { value: true, label: 'Encendido' },
+          { value: false, label: 'Apagado' },
+        ],
+        get: () => gm().mirror,
+        set: (mirror) => this.game.updateSettings((s) => (s.game.mirror = mirror)),
+      }),
       selectorRow<Language>(ctx, {
         label: 'Idioma',
         help: 'El juego está hecho en español (textos, radio del equipo y manual).',

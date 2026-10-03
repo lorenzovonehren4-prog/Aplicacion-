@@ -1033,6 +1033,75 @@
   }
 }
 
+/* Retrovisor: el marco y el cartel de quién viene detrás. La imagen la
+   dibuja el 3D debajo, en el rectángulo de `.hud__mirror-glass`. */
+
+.hud__mirror {
+  position: absolute;
+  top: calc(var(--gutter) * 0.45);
+  left: 50%;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: clamp(240px, 32%, 430px);
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.hud.has-mirror .hud__mirror {
+  display: flex;
+}
+
+.hud__mirror-glass {
+  width: 100%;
+  aspect-ratio: 4;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 3px rgba(10, 11, 15, 0.92),
+    0 0 0 4px rgba(255, 255, 255, 0.14),
+    0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.hud__mirror-caption {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  background: rgba(10, 11, 15, 0.78);
+}
+
+.hud__mirror-label {
+  color: var(--c-text-3);
+}
+
+.hud__mirror-who {
+  padding-left: 6px;
+  font-family: var(--font-num);
+  color: #fff;
+  border-left: 3px solid var(--team, transparent);
+}
+
+.hud__mirror-gap {
+  font-family: var(--font-num);
+  color: #ffd21f;
+}
+
+.hud__mirror.is-alone .hud__mirror-who {
+  padding-left: 0;
+  font-family: var(--font-text);
+  color: var(--c-text-2);
+}
+
+/* Con el retrovisor, los avisos del centro bajan un poco. */
+.hud.has-mirror .hud__messages {
+  top: calc(18% + 5%);
+}
+
 /* Avisos */
 
 .hud__messages {

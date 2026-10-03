@@ -27,6 +27,29 @@ import type { GraphicsSettings } from '../save/schema';
 import { QUALITY_PRESETS } from './quality';
 import { SpeedPass, type SpeedFx } from './SpeedPass';
 
+/**
+ * Bloom con resolución ajustable: el de three.js trabaja a la mitad de la
+ * pantalla; en calidad Media se lo achica otra mitad (un cuarto de los
+ * píxeles), que en un brillo difuso casi no se nota y alivia la GPU.
+ */
+class ScaledBloomPass extends UnrealBloomPass {
+  private scale = 1;
+  private fullWidth = 1;
+  private fullHeight = 1;
+
+  override setSize(width: number, height: number): void {
+    this.fullWidth = width;
+    this.fullHeight = height;
+    super.setSize(Math.max(2, Math.round(width * this.scale)), Math.max(2, Math.round(height * this.scale)));
+  }
+
+  setScale(scale: number): void {
+    if (scale === this.scale) return;
+    this.scale = scale;
+    this.setSize(this.fullWidth, this.fullHeight);
+  }
+}
+
 /** Lo que una pantalla 3D entrega para dibujar. */
 export interface RenderView {
   readonly scene: Scene;
@@ -51,6 +74,8 @@ export interface RenderView {
   onResize?(width: number, height: number, pixelRatio: number): void;
   /** Alivio inmediato sin recompilar sombreadores (ver `RenderHost.lighten`). */
   onLighten?(): void;
+  /** Lo que se dibuja encima del cuadro terminado (el retrovisor de la carrera). */
+  overlay?(renderer: WebGLRenderer): void;
 }
 
 export interface RenderStats {
@@ -65,7 +90,7 @@ export class RenderHost {
   readonly renderer: WebGLRenderer;
   private composer: EffectComposer;
   private readonly renderPass: RenderPass;
-  private readonly bloomPass: UnrealBloomPass;
+  private readonly bloomPass: ScaledBloomPass;
   private readonly outputPass: OutputPass;
   private readonly speedPass = new SpeedPass();
   private view: RenderView | null = null;
@@ -109,7 +134,7 @@ export class RenderHost {
 
     // Escena vacía hasta que una pantalla entregue su vista.
     this.renderPass = new RenderPass(new Scene(), new PerspectiveCamera());
-    this.bloomPass = new UnrealBloomPass(new Vector2(256, 256), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
+    this.bloomPass = new ScaledBloomPass(new Vector2(256, 256), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
     this.outputPass = new OutputPass();
     this.composer = this.createComposer(0);
     this.applyGraphics(graphics);
@@ -199,6 +224,7 @@ export class RenderHost {
       this.composer = this.createComposer(preset.msaaSamples);
     }
     this.bloomPass.enabled = graphics.postprocessing;
+    this.bloomPass.setScale(preset.bloomScale);
     this.directRender = !graphics.postprocessing && preset.msaaSamples === 0;
     this.resize(this.width, this.height);
     this.view?.onGraphicsChanged?.(graphics);
@@ -264,6 +290,7 @@ export class RenderHost {
       this.speedPass.apply(this.view.speedFx, this.graphics.postprocessing);
       this.composer.render();
     }
+    this.view.overlay?.(this.renderer);
     this.lastStats = {
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,

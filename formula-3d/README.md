@@ -39,6 +39,7 @@ El ratón también funciona en todos los menús.
 | Doblar | ← / → | Stick izquierdo |
 | DRS (en las zonas) | D | X |
 | Cambiar cámara | C | Y |
+| Retrovisor (prender / apagar) | M | Cruceta ↑ |
 | Volver a la pista | R | Select |
 | Pausa | Esc o P | Start (o B) |
 
@@ -64,7 +65,18 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.2.0: en el menú hay un **piloto 3D** junto al auto, con el traje
+Versión 2.3.0: las carreras son más estables y fluidas. Rueda a rueda, la
+posición ya no parpadea (cambia cuando uno pasa de verdad, con 1,2 m de
+ventaja), un auto que vuelve a la pista ya no reaparece encima de otro (si
+al terminar el modo fantasma tiene a alguien encima, lo espera) y deja de
+titilar. Se terminaron los tirones a mitad de carrera: las sombras de cada
+pieza se preparan todas durante la carga. La calidad **Media** dibuja menos
+píxeles y el brillo a un cuarto de resolución, sin que se note. Y hay un
+**retrovisor** arriba al centro de la pantalla, en todas las cámaras, con
+quién viene detrás y a cuánto (M para prenderlo o apagarlo); en Alta y
+Ultra los espejos del auto en la cabina reflejan lo mismo.
+
+Desde la 2.2.0: en el menú hay un **piloto 3D** junto al auto, con el traje
 del equipo y el casco elegido en el garaje, que respira, mira a la cámara,
 saluda y reacciona a cada tarjeta (señala el auto, levanta el pulgar, se
 cruza de brazos en el Perfil). El auto se **mejora**: cada carrera da puntos

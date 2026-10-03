@@ -185,6 +185,7 @@ function sanitizeGame(raw: unknown, defaults: GameSettings): GameSettings {
     defaultCamera: oneOf(r.defaultCamera, CAMERA_MODES, defaults.defaultCamera),
     units: oneOf(r.units, SPEED_UNITS, defaults.units),
     language: oneOf(r.language, LANGUAGES, defaults.language),
+    mirror: bool(r.mirror, defaults.mirror),
   };
 }
 

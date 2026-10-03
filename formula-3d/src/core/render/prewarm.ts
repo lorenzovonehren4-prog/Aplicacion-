@@ -15,7 +15,12 @@
  */
 
 import {
+  BackSide,
+  DoubleSide,
+  FrontSide,
   Mesh,
+  MeshDepthMaterial,
+  type Side,
   type InstancedMesh,
   type LOD,
   Vector4,
@@ -27,6 +32,48 @@ import {
   type Texture,
   type WebGLRenderer,
 } from 'three';
+
+/** Cara que dibuja la sombra según la del material (lo mismo que hace three.js). */
+const SHADOW_SIDE: Readonly<Record<number, Side>> = { [FrontSide]: BackSide, [BackSide]: FrontSide, [DoubleSide]: DoubleSide };
+
+/**
+ * Materiales de profundidad estables para las sombras. three.js usa un único
+ * material de profundidad para casi todo lo que proyecta sombra y le cambia
+ * la cara y la textura objeto por objeto; como eso no siempre provoca un
+ * cambio de programa, qué variantes se compilan depende del orden de dibujo:
+ * a mitad de carrera aparecía una combinación nueva y se compilaba ahí (un
+ * tirón). Con un material por combinación (cara × textura), cada uno dibuja
+ * siempre la misma variante y el precalentamiento las compila todas.
+ * @returns libera los materiales creados
+ */
+export function stabilizeShadowDepth(root: Object3D): () => void {
+  const cache = new Map<string, MeshDepthMaterial>();
+  root.traverse((object) => {
+    if (!(object instanceof Mesh) || !object.castShadow || object.customDepthMaterial) return;
+    const material = object.material as Material | Material[];
+    if (Array.isArray(material)) return;
+    const source = material as Material & {
+      map?: Texture | null;
+      alphaMap?: Texture | null;
+      displacementMap?: Texture | null;
+      clippingPlanes?: unknown[] | null;
+    };
+    // Los que necesitan su propia copia (recorte por alfa, desplazamiento…) ya la tienen en three.js.
+    if (source.alphaTest > 0 || source.alphaToCoverage || source.displacementMap || (source.clippingPlanes?.length ?? 0) > 0) return;
+    const side = source.shadowSide ?? SHADOW_SIDE[source.side] ?? BackSide;
+    const key = `${side}:${source.map ? 1 : 0}`;
+    let depth = cache.get(key);
+    if (!depth) {
+      depth = new MeshDepthMaterial();
+      cache.set(key, depth);
+    }
+    object.customDepthMaterial = depth;
+  });
+  return () => {
+    for (const material of cache.values()) material.dispose();
+    cache.clear();
+  };
+}
 
 /** Todas las texturas de un material (map, normalMap, envMap, uniforms…). */
 function texturesOf(material: Material, out: Set<Texture>): void {

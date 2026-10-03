@@ -106,7 +106,8 @@ describe('sanitizeSave', () => {
       level: 'beginner',
       custom: { braking: 'low', traction: 'medium', abs: true, line: 'corners', lineType: 'dynamic' },
     });
-    expect(data.settings.game).toEqual({ defaultCamera: 'cockpit', units: 'mph', language: 'es' });
+    // Los guardados de antes del retrovisor lo traen encendido.
+    expect(data.settings.game).toEqual({ defaultCamera: 'cockpit', units: 'mph', language: 'es', mirror: true });
     expect(data.records).toEqual({ australia: { bestLap: 81.5 }, monza: { bestLap: null } });
   });
 

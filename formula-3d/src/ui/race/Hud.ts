@@ -266,6 +266,17 @@ export class Hud {
   private readonly messages = h('div', { class: 'hud__messages' });
   private readonly wrongWay = h('div', { class: 'hud__wrongway', text: 'SENTIDO CONTRARIO' });
   private readonly cameraLabel = h('div', { class: 'hud__camera' });
+  // Retrovisor: el marco (la imagen la dibuja el 3D debajo, en este mismo lugar) y quién viene detrás.
+  private readonly mirrorBehind = h('span', { class: 'hud__mirror-who' });
+  private readonly mirrorGap = h('span', { class: 'hud__mirror-gap' });
+  /** Hueco del retrovisor: su rectángulo es donde se dibuja la imagen trasera. */
+  readonly mirrorGlass = h('div', { class: 'hud__mirror-glass' });
+  private readonly mirror = h(
+    'div',
+    { class: 'hud__mirror', attrs: { 'aria-hidden': 'true' } },
+    this.mirrorGlass,
+    h('div', { class: 'hud__mirror-caption' }, h('span', { class: 'hud__mirror-label', text: 'DETRÁS' }), this.mirrorBehind, this.mirrorGap),
+  );
 
   private lastGear = Number.NaN;
   private units: SpeedUnit;
@@ -354,6 +365,7 @@ export class Hud {
       this.radioBox,
       this.wrongWay,
       this.cameraLabel,
+      this.mirror,
     );
     setText(this.unitLabel, units === 'kmh' ? 'KM/H' : 'MPH');
   }
@@ -577,6 +589,22 @@ export class Hud {
 
   setVisible(visible: boolean): void {
     toggle(this.root, 'is-hidden', !visible);
+  }
+
+  /** Muestra u oculta el retrovisor (los avisos de arriba se corren para no taparse). */
+  setMirror(visible: boolean): void {
+    toggle(this.root, 'has-mirror', visible);
+  }
+
+  /**
+   * Quién viene detrás: código, color y distancia (null = nadie cerca o sin rivales).
+   * @param gap segundos detrás (null si todavía no se puede medir)
+   */
+  setMirrorBehind(behind: { code: string; color: string; gap: number | null } | null): void {
+    toggle(this.mirror, 'is-alone', behind === null);
+    setText(this.mirrorBehind, behind ? behind.code : 'NADIE CERCA');
+    this.mirrorBehind.style.setProperty('--team', behind?.color ?? 'transparent');
+    setText(this.mirrorGap, behind && behind.gap !== null ? `a ${behind.gap.toFixed(1)} s` : '');
   }
 
   dispose(): void {

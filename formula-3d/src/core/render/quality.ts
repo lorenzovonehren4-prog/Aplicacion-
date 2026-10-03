@@ -22,6 +22,12 @@ export interface QualityPreset {
   shadows: ShadowLevel;
   /** Postprocesado con el que arranca este nivel. */
   postprocessing: boolean;
+  /**
+   * Resolución del bloom respecto de la de siempre (la mitad de la pantalla):
+   * 0,5 = un cuarto de los píxeles. Un brillo difuso a menos resolución casi
+   * no se distingue y cuesta bastante menos.
+   */
+  bloomScale: number;
   /** Resolución de los reflejos planos (fracción del tamaño de pantalla); 0 = sin reflejos. */
   reflectionScale: number;
   /** Multiplicador de partículas (Fase 9). */
@@ -47,6 +53,7 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     msaaSamples: 0,
     shadows: 'off',
     postprocessing: false,
+    bloomScale: 1,
     reflectionScale: 0,
     particles: 0.3,
     sceneryDensity: 0.35,
@@ -54,10 +61,13 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     rivalLod: { nearDistance: 60, maxNear: 5, nearDetail: 0.3 },
   },
   medium: {
-    maxPixelRatio: 1.5,
+    // 1,25 y no 1,5: en las notebooks con la pantalla escalada al 150 % dibuja
+    // un 30 % menos de píxeles (con MSAA los bordes siguen limpios).
+    maxPixelRatio: 1.25,
     msaaSamples: 2,
     shadows: 'low',
     postprocessing: true,
+    bloomScale: 0.5,
     reflectionScale: 0.5,
     particles: 0.6,
     sceneryDensity: 0.6,
@@ -69,6 +79,7 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     msaaSamples: 4,
     shadows: 'high',
     postprocessing: true,
+    bloomScale: 1,
     reflectionScale: 0.5,
     particles: 1,
     sceneryDensity: 1,
@@ -80,6 +91,7 @@ export const QUALITY_PRESETS: Readonly<Record<QualityLevel, QualityPreset>> = {
     msaaSamples: 4,
     shadows: 'high',
     postprocessing: true,
+    bloomScale: 1,
     reflectionScale: 1,
     particles: 1.3,
     sceneryDensity: 1.2,

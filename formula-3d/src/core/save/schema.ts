@@ -73,6 +73,8 @@ export interface GameSettings {
   units: SpeedUnit;
   /** Idioma de la interfaz (por ahora sólo español). */
   language: Language;
+  /** Retrovisor arriba al centro de la pantalla (se cambia en carrera con su tecla). */
+  mirror: boolean;
 }
 
 // ─── Rivales (ver PLAN.md §5.5) ───────────────────────────────────────────
@@ -257,7 +259,7 @@ export function createDefaultAssists(): AssistSettings {
 }
 
 export function createDefaultGame(): GameSettings {
-  return { defaultCamera: 'cockpit', units: 'kmh', language: 'es' };
+  return { defaultCamera: 'cockpit', units: 'kmh', language: 'es', mirror: true };
 }
 
 export function createDefaultProgression(): Progression {

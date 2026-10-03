@@ -5,7 +5,7 @@
  */
 
 import { MathUtils, PerspectiveCamera, Scene, Vector3, type Object3D, type WebGLRenderer } from 'three';
-import { prewarm } from '../core/render/prewarm';
+import { prewarm, stabilizeShadowDepth } from '../core/render/prewarm';
 import type { RenderView } from '../core/render/RenderHost';
 import { QUALITY_PRESETS, shadowMapSize, type QualityPreset } from '../core/render/quality';
 import { createSpeedFx, HAZE_POINTS } from '../core/render/SpeedPass';
@@ -19,7 +19,8 @@ import { performanceModel } from './physics/CarSpec';
 import type { Telemetry, Vehicle } from './physics/Vehicle';
 import { CarRig } from './render/CarRig';
 import { CarShadows } from './render/CarShadow';
-import { RearMirrors } from './render/RearMirrors';
+import { MirrorOverlay } from './render/MirrorOverlay';
+import { RearMirrors, type RearViewMode } from './render/RearMirrors';
 import { CheckeredFlag } from './render/CheckeredFlag';
 import { GhostCar } from './render/GhostCar';
 import { RivalFleet, type RivalCar } from './render/RivalFleet';
@@ -63,8 +64,17 @@ export class RaceWorld implements RenderView {
   private readonly flag = new CheckeredFlag();
   /** Sombras de contacto bajo el auto del jugador y los rivales. */
   private readonly carShadows = new CarShadows();
-  /** Retrovisores del auto del jugador. */
+  /** Vista trasera del auto del jugador (espejos del cockpit y retrovisor de la pantalla). */
   private readonly mirrors = new RearMirrors();
+  /** Retrovisor de la pantalla: la imagen trasera encima del cuadro. */
+  private readonly mirrorOverlay = new MirrorOverlay();
+  /** El jugador quiere el retrovisor de la pantalla (ajuste del juego). */
+  private hudMirror = true;
+  /** Cómo se configuró la vista trasera con los últimos ajustes gráficos. */
+  private rearView: { mode: RearViewMode; width: number; glass: boolean; every: number } = { mode: 'off', width: 0, glass: false, every: 2 };
+  private lastGraphics: GraphicsSettings | null = null;
+  private readonly releaseShadowDepth: () => void;
+  private lightened = false;
   /** Lo que no se dibuja en los espejos (se arma una vez). */
   private mirrorHidden: Object3D[] = [];
   private readonly probe = new Vector3();
@@ -117,6 +127,8 @@ export class RaceWorld implements RenderView {
     const towardZ = -pitSign * tangent.x;
     this.flag.root.rotation.y = Math.atan2(-towardZ, towardX);
     this.scene.add(this.flag.root);
+    // Sombras: un material de profundidad estable por combinación (ver `stabilizeShadowDepth`).
+    this.releaseShadowDepth = stabilizeShadowDepth(this.scene);
   }
 
   /** La bandera a cuadros sale a flamear (el jugador terminó). */
@@ -185,9 +197,61 @@ export class RaceWorld implements RenderView {
     overhead.position.set((minX + maxX) / 2, height, (minZ + maxZ) / 2);
     overhead.lookAt((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
     overhead.updateMatrixWorld();
-    prewarm(renderer, this.scene, overhead, toCanvas);
+    // La zona de sombras sigue al auto: lo que proyecta sombra lejos de la
+    // parrilla compilaba su variante de profundidad recién al acercarse (un
+    // tirón a mitad de carrera). Durante el precalentamiento cubre todo el circuito.
+    const restoreShadows = this.widenShadows((minX + maxX) / 2, (minZ + maxZ) / 2, radius);
+    try {
+      prewarm(renderer, this.scene, overhead, toCanvas);
+    } finally {
+      restoreShadows();
+    }
     // Y desde la cámara de verdad (las sombras y los reflejos de su encuadre).
     prewarm(renderer, this.scene, this.camera, toCanvas);
+    // Los sombreadores del retrovisor de la pantalla (chiquitos, pero mejor ahora que en pista).
+    this.mirrorOverlay.compile(renderer);
+  }
+
+  /**
+   * Agranda la zona de sombras del sol para que abarque el círculo (cx, cz, r).
+   * @returns la función que la deja como estaba
+   */
+  private widenShadows(cx: number, cz: number, radius: number): () => void {
+    const sun = this.trackScene.sky.sun;
+    const camera = sun.shadow.camera;
+    const saved = {
+      left: camera.left,
+      right: camera.right,
+      top: camera.top,
+      bottom: camera.bottom,
+      far: camera.far,
+      position: sun.position.clone(),
+      target: sun.target.position.clone(),
+    };
+    const direction = saved.position.clone().sub(saved.target).normalize();
+    const distance = radius + 500;
+    sun.target.position.set(cx, 0, cz);
+    sun.position.set(cx + direction.x * distance, direction.y * distance, cz + direction.z * distance);
+    camera.left = -radius;
+    camera.right = radius;
+    camera.top = radius;
+    camera.bottom = -radius;
+    camera.far = distance + radius * 2;
+    camera.updateProjectionMatrix();
+    sun.updateMatrixWorld();
+    sun.target.updateMatrixWorld();
+    return () => {
+      camera.left = saved.left;
+      camera.right = saved.right;
+      camera.top = saved.top;
+      camera.bottom = saved.bottom;
+      camera.far = saved.far;
+      camera.updateProjectionMatrix();
+      sun.position.copy(saved.position);
+      sun.target.position.copy(saved.target);
+      sun.updateMatrixWorld();
+      sun.target.updateMatrixWorld();
+    };
   }
 
   /** Duración total de la presentación (s): depende de si hay parrilla que mostrar. */
@@ -349,27 +413,64 @@ export class RaceWorld implements RenderView {
     const shadowSize = shadowMapSize(graphics.shadows, graphics.quality);
     this.trackScene.sky.setShadowMapSize(shadowSize);
     this.carShadows.setShadowMapActive(shadowSize > 0);
-    // Reflejo de verdad en Alta y Ultra, siempre que la escena ya se dibuje en una
-    // textura (posprocesado o MSAA): así usa los mismos sombreadores y no compila nada nuevo.
-    const preset = QUALITY_PRESETS[graphics.quality];
-    const offscreen = graphics.postprocessing || preset.msaaSamples > 0;
-    this.mirrors.setLive(offscreen && (graphics.quality === 'high' || graphics.quality === 'ultra'));
+    this.lastGraphics = graphics;
+    this.lightened = false;
+    this.configureRearView();
+  }
+
+  /** Prende o apaga el retrovisor de la pantalla (ajuste del juego). */
+  setHudMirror(on: boolean): void {
+    this.hudMirror = on;
+    this.configureRearView();
+  }
+
+  /** Dónde va el retrovisor de la pantalla (píxeles CSS del lienzo), o null si no se ve. */
+  setMirrorRect(rect: { x: number; y: number; width: number; height: number } | null): void {
+    this.mirrorOverlay.setRect(this.hudMirror ? rect : null);
   }
 
   /**
-   * Imagen de los retrovisores (sólo en el cockpit, que es donde se ven).
-   * Va después de `update` y antes de dibujar el cuadro.
+   * La vista trasera: el retrovisor de la pantalla en cualquier calidad y los
+   * espejos del cockpit con imagen de verdad en Alta y Ultra. Usa la misma
+   * variante de los sombreadores que la carrera (búfer o lienzo): nada que
+   * compilar en pista.
+   */
+  private configureRearView(): void {
+    const graphics = this.lastGraphics;
+    if (!graphics) return;
+    const preset = QUALITY_PRESETS[graphics.quality];
+    const offscreen = graphics.postprocessing || preset.msaaSamples > 0;
+    const glass = offscreen && !this.lightened && (graphics.quality === 'high' || graphics.quality === 'ultra');
+    const mode: RearViewMode = this.hudMirror || glass ? (offscreen ? 'linear' : 'encoded') : 'off';
+    // Ancho de la imagen trasera (px) y cada cuántos cuadros se dibuja.
+    const width = this.lightened ? 400 : { low: 400, medium: 512, high: 640, ultra: 768 }[graphics.quality];
+    const every = graphics.quality === 'ultra' && !this.lightened ? 1 : 2;
+    this.rearView = { mode, width, glass, every };
+    this.mirrors.configure(mode, width, glass);
+  }
+
+  /**
+   * Imagen trasera: si se ve el retrovisor de la pantalla o, en el cockpit,
+   * los espejos del auto. Va después de `update` y antes de dibujar el cuadro.
    */
   renderMirrors(renderer: WebGLRenderer): void {
     if (!this.mirrors.live || this.frozen || this.introTime >= 0) return;
-    if (this.raceCamera.currentMode !== 'cockpit') return;
-    this.mirrors.render(renderer, this.scene, this.mirrorHidden);
+    const glass = this.mirrors.glassLive && this.raceCamera.currentMode === 'cockpit';
+    if (!glass && !this.mirrorOverlay.visible) return;
+    this.mirrors.render(renderer, this.scene, this.mirrorHidden, this.rearView.every);
   }
 
-  /** Alivio sin recompilar: sombras más chicas (el sol las sigue proyectando). */
+  /** El retrovisor de la pantalla, encima del cuadro terminado. */
+  overlay(renderer: WebGLRenderer): void {
+    if (this.introTime >= 0) return;
+    this.mirrorOverlay.render(renderer, this.mirrors.image);
+  }
+
+  /** Alivio sin recompilar: sombras más chicas (el sol las sigue proyectando) y vista trasera más liviana. */
   onLighten(): void {
     this.trackScene.sky.lightenShadows();
-    this.mirrors.setLive(false);
+    this.lightened = true;
+    this.configureRearView();
   }
 
   onResize(width: number, height: number, pixelRatio: number): void {
@@ -384,8 +485,10 @@ export class RaceWorld implements RenderView {
     this.rivals?.dispose();
     this.racingLine.dispose();
     this.mirrors.dispose();
+    this.mirrorOverlay.dispose();
     this.rig.dispose();
     this.carShadows.dispose();
+    this.releaseShadowDepth();
     this.trackScene.dispose();
     this.scene.clear();
   }
