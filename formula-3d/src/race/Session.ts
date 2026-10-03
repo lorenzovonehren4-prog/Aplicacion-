@@ -147,6 +147,10 @@ const SLIPSTREAM_WIDTH = 1.7;
 const CONTACT_SPEED = 1.5;
 /** Tiempo sin choques tras volver a la pista (s): así no reaparece encima de nadie. */
 const GHOST_TIME = 3.5;
+/** Si al terminar el fantasma hay un auto encima, sigue fantasma de a este tiempo (s) hasta quedar libre. */
+const GHOST_EXTEND = 0.25;
+/** Distancia entre centros (m) desde la que dos autos ya no pueden tocarse (largo de un auto y algo más). */
+const GHOST_CLEARANCE = 6.4;
 
 export class Session {
   readonly vehicle: Vehicle;
@@ -399,7 +403,10 @@ export class Session {
     // Los fantasmas no chocan ni cuentan como tráfico para los bots.
     this.visible.length = 0;
     for (const car of this.cars) {
+      const wasGhost = car.ghost > 0;
       car.ghost = Math.max(0, car.ghost - dt);
+      // El fantasma no termina encima de otro auto: el choque los separaba de golpe.
+      if (wasGhost && car.ghost === 0 && this.overlapsAnyone(car)) car.ghost = GHOST_EXTEND;
       this.solid[car.index] = car.ghost <= 0;
       if (car.ghost <= 0) this.visible.push(car.vehicle);
     }
@@ -605,6 +612,18 @@ export class Session {
       car.slipstream += (target - car.slipstream) * Math.min(1, dt * 3);
       v.slipstream = car.slipstream;
     }
+  }
+
+  /** ¿Hay otro auto tan cerca que podrían tocarse (en el mismo tramo de la pista)? */
+  private overlapsAnyone(car: Competitor): boolean {
+    const v = car.vehicle;
+    const g = this.track.geometry;
+    for (const other of this.cars) {
+      if (other === car) continue;
+      const o = other.vehicle;
+      if (Math.hypot(o.x - v.x, o.z - v.z) < GHOST_CLEARANCE && Math.abs(g.deltaS(v.projection.s, o.projection.s)) < GHOST_CLEARANCE * 2) return true;
+    }
+    return false;
   }
 
   /** Bots detenidos (contra un muro, en la grava): vuelven a la trazada como fantasmas. */

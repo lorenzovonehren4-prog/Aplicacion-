@@ -9,7 +9,7 @@ import { resolveCarCollisions } from '../src/race/physics/CarCollisions';
 import { F1_SPEC, performanceModel } from '../src/race/physics/CarSpec';
 import { Vehicle } from '../src/race/physics/Vehicle';
 import { Session, type SessionEvent } from '../src/race/Session';
-import { RaceOrder } from '../src/race/session/RaceOrder';
+import { OVERTAKE_MARGIN, RaceOrder } from '../src/race/session/RaceOrder';
 import { AUSTRALIA } from '../src/tracks/data/australia';
 import { Track } from '../src/tracks/Track';
 
@@ -130,6 +130,30 @@ describe('orden de carrera', () => {
     expect(order.runners[0]?.lapsDone).toBe(2);
     expect(order.runners[1]?.lapsDone).toBeLessThan(2);
     expect(order.gapToLeader(1).laps).toBeGreaterThan(0);
+  });
+
+  it('rueda a rueda la posición no parpadea: cambia una sola vez, cuando uno pasa de verdad', () => {
+    const L = 1000;
+    const order = new RaceOrder(L, 3, [995, 994]);
+    const distances = [995, 994];
+    const swaps: number[] = [];
+    let leader = order.order[0];
+    for (let step = 0; step < 400; step++) {
+      // Lado a lado: B se adelanta y se atrasa hasta 70 cm a cada paso…
+      const wobble = Math.sin(step * 1.7) * 0.7;
+      distances[0] = (995 + step * 0.5) % L;
+      // …y al final pasa de verdad (3 m adelante).
+      distances[1] = (995 + step * 0.5 + wobble + (step > 300 ? 3 : 0)) % L;
+      order.update(0.01, distances);
+      if (order.order[0] !== leader) {
+        swaps.push(step);
+        leader = order.order[0];
+      }
+    }
+    expect(swaps).toHaveLength(1);
+    expect(swaps[0]).toBeGreaterThan(300);
+    expect(order.runners[1]?.position).toBe(1);
+    expect(OVERTAKE_MARGIN).toBeGreaterThan(0.7);
   });
 });
 
@@ -252,5 +276,33 @@ describe('carrera con rivales', () => {
     expect(solo.hasRivals).toBe(false);
     expect(session.hasRivals).toBe(true);
     expect(session.drsState).toBe('off');
+  });
+
+  it('al volver a la pista el fantasma no termina encima de otro auto', () => {
+    const session = new Session(
+      track,
+      F1_SPEC,
+      null,
+      { mode: 'race', laps: 3, rivals: { drivers: pickRivals(1), difficulty: 40 } },
+      NO_ASSISTS,
+      () => 0,
+    );
+    const idle = { throttle: 0, brake: 0, steer: 0, drs: false };
+    for (let t = 0; t < 20 && session.phase !== 'running'; t += STEP) session.step(STEP, idle, false);
+    expect(session.phase).toBe('running');
+    const me = session.player;
+    const rival = session.cars.find((car) => !car.isPlayer);
+    if (!rival) throw new Error('falta el rival');
+    const s = track.startS + 600;
+    // El fantasma está por terminar y el rival quedó justo encima: sigue fantasma.
+    me.vehicle.placeAt(s, 0);
+    rival.vehicle.placeAt(s + 1, 0);
+    me.ghost = STEP / 2;
+    session.step(STEP, idle, false);
+    expect(me.ghost).toBeGreaterThan(0);
+    // Con el camino libre, termina enseguida (y no vuelve).
+    rival.vehicle.placeAt(s + 120, 0);
+    for (let t = 0; t < 0.5; t += STEP) session.step(STEP, idle, false);
+    expect(me.ghost).toBe(0);
   });
 });

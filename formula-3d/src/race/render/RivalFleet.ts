@@ -68,8 +68,8 @@ const FAR_DETAIL = 0.1;
 const MODEL_OFFSET = 0.2;
 const PITCH_PER_ACCEL = 0.0011;
 const ROLL_PER_ACCEL = 0.0013;
-/** Parpadeo de un auto "fantasma" (recién vuelto a la pista), en Hz. */
-const GHOST_BLINK = 7;
+/** Pulsos por segundo de un auto "fantasma" (recién vuelto a la pista); con 7 parecía una falla. */
+const GHOST_PULSE = 2.5;
 /** Atlas de números: columnas × filas de celdas de `NUMBER_CELL` píxeles. */
 const NUMBER_COLUMNS = 5;
 const NUMBER_ROWS = 4;
@@ -610,8 +610,8 @@ export class RivalFleet {
       if (!state) continue;
       const car = state.car;
       const v = car.vehicle;
-      // Fantasma: parpadea.
-      if (car.ghost > 0 && Math.floor(this.time * GHOST_BLINK) % 2 === 0) continue;
+      // Fantasma: un pulso suave (se oculta un cuarto de cada ciclo), no un estrobo.
+      if (car.ghost > 0 && (this.time * GHOST_PULSE) % 1 < 0.25) continue;
 
       // Pose interpolada + inclinación por fuerzas G.
       const x = state.previous.x + (v.x - state.previous.x) * t;

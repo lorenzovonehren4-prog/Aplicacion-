@@ -16,6 +16,13 @@
 export const TIMING_STEP = 25;
 /** Margen de la línea para detectar el cruce (m): evita confundir saltos con cruces. */
 const CROSS_WINDOW = 250;
+/**
+ * Ventaja (m) con la que un auto pasa a otro en el orden. Rueda a rueda los
+ * centros de gravedad se adelantan y atrasan unos centímetros a cada paso: sin
+ * margen la posición parpadeaba (P8 → P9 → P8… varias veces por segundo) y
+ * con ella la torre, el número grande y los avisos.
+ */
+export const OVERTAKE_MARGIN = 1.2;
 
 export interface RunnerState {
   /** Índice del auto (el mismo que en la lista de la sesión). */
@@ -196,18 +203,38 @@ export class RaceOrder {
     for (let k = point; k >= 0 && (passings[k] ?? 0) < 0; k--) passings[k] = this.time;
   }
 
+  /**
+   * Ordena partiendo del orden anterior: dos autos vecinos sólo cambian de
+   * lugar si el de atrás quedó adelante por más de `OVERTAKE_MARGIN` (así un
+   * rueda a rueda no hace parpadear la posición). Las pasadas se repiten hasta
+   * que nadie se mueve, por si alguien avanzó o retrocedió varios lugares.
+   */
   private sort(): void {
     const runners = this.runners;
-    this.order.sort((a, b) => {
-      const ra = runners[a];
-      const rb = runners[b];
-      if (!ra || !rb) return 0;
+    const order = this.order;
+    // ¿`a` tiene que ir delante de `b`?
+    const before = (a: RunnerState, b: RunnerState): boolean => {
       // Los que terminaron van primero, en el orden en que recibieron la bandera.
-      if (ra.finished !== rb.finished) return ra.finished ? -1 : 1;
-      if (ra.finished && rb.finished) return ra.position - rb.position;
-      return rb.progress - ra.progress;
-    });
-    this.order.forEach((index, i) => {
+      if (a.finished !== b.finished) return a.finished;
+      if (a.finished && b.finished) return a.position < b.position;
+      return a.progress > b.progress + OVERTAKE_MARGIN;
+    };
+    let moved = true;
+    for (let pass = 0; moved && pass < order.length; pass++) {
+      moved = false;
+      for (let i = 0; i + 1 < order.length; i++) {
+        const first = order[i] ?? 0;
+        const second = order[i + 1] ?? 0;
+        const a = runners[first];
+        const b = runners[second];
+        if (a && b && before(b, a)) {
+          order[i] = second;
+          order[i + 1] = first;
+          moved = true;
+        }
+      }
+    }
+    order.forEach((index, i) => {
       const runner = runners[index];
       if (runner && !runner.finished) runner.position = i + 1;
     });
