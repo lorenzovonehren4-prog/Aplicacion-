@@ -28,6 +28,7 @@ import { DRIVERS, liveryOf, pickRivals, playerCode, wordmarkOf, type DriverDef }
 import { isFinished, PLAYER_ID, pointsFor, recordRound, standings as championshipStandings } from '../../race/championship';
 import { liveryFromSetup } from '../../garage/setup';
 import { difficultyLabel, difficultyValue } from '../../race/ai/difficulty';
+import { completeDaily, DAILY_COLOR, dailyChallenge, dailyCompleted, dailyReward, doneToday, type DailyChallenge } from '../../progression/daily';
 import { MEDAL_INFO, medalsEarned, nextMedal, type Medal } from '../../progression/medals';
 import { applyXp, computeXp, snapshotOf, type XpLine } from '../../progression/xp';
 import { recordSession } from '../../progression/career';
@@ -43,7 +44,7 @@ import type { Vehicle } from '../../race/physics/Vehicle';
 import { CAMERA_LABELS } from '../../race/camera/RaceCamera';
 import { RaceWorld, type IntroShot } from '../../race/RaceWorld';
 import { BuildCancelled } from '../../tracks/TrackBuilder';
-import { getTrack } from '../../tracks/registry';
+import { getTrack, TRACKS } from '../../tracks/registry';
 import { Track } from '../../tracks/Track';
 import { h, prefersReducedMotion } from '../dom';
 import { ControlHints } from '../components/ControlHints';
@@ -180,6 +181,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   private soloPersonalBest = false;
   /** Medallas del circuito ganadas en esta sesión (para la XP de los resultados). */
   private readonly medalsWon: Medal[] = [];
+  /** Desafío del día que se corre en esta sesión (null si es una sesión común). */
+  private daily: DailyChallenge | null = null;
+  /** Contrarreloj del desafío: ya se bajó el tiempo pedido. */
+  private dailyMet = false;
   /** Resultados listos (XP ya sumada) para la pantalla siguiente. */
   private results: ResultsParams | null = null;
   private readonly ghostPose: GhostPose = { x: 0, z: 0, heading: 0 };
@@ -192,6 +197,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
   enter(params: RaceParams): void {
     this.params = params;
+    this.daily = params.daily ? this.dailyFor(params.daily) : null;
+    this.dailyMet = false;
     const def = getTrack(params.trackId);
     // Los datos del circuito se calculan en milisegundos; las mallas se arman después, por etapas.
     const track = Track.load(def, F1_SPEC);
@@ -357,6 +364,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
           rivals: { drivers: rivals, difficulty: this.params.difficulty ?? difficultyValue(race) },
           player: { name: pilot, code: playerCode(pilot), number: game.save.data.garage.number },
           ghost: storedGhost ? decodeGhost(storedGhost) : null,
+          ...(this.params.startLast ? { startLast: true } : {}),
         },
         assists,
       );
@@ -606,6 +614,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       tl.to(hints, { opacity: 0, duration: 0.8 }, '+=7');
       this.own.tween(tl);
     }
+    if (this.daily) {
+      const goal = this.daily.goal;
+      this.own.timeout(() => this.hud?.message(`DESAFÍO DEL DÍA · ${this.daily?.title.toUpperCase() ?? ''}`, goal, 'gold'), 3200);
+    }
     if (this.session?.isRace) {
       this.hud.message('A LA PARRILLA', 'Acelera para subir las vueltas del motor y espera las luces', 'info');
     } else if (this.session?.isTimeTrial) {
@@ -709,6 +721,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
             if (event.lap.valid) this.soloLaps++;
             if (event.personalBest) this.soloPersonalBest = true;
           }
+          if (event.lap.valid) this.checkDailyLap(event.lap.time);
           if (!finishing) this.announceLap(event.lap.number, event.lap.time, event.lap.valid, event.personalBest, event.bestOfSession);
           break;
         case 'invalidated':
@@ -805,6 +818,14 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   /** Bandera a cuadros: mensaje, radio y, al rato, el panel de fin de carrera. */
   private onFinished(result: RaceResult): void {
     const withRivals = result.starters > 1;
+    const daily = this.daily;
+    if (daily && daily.kind !== 'medal') {
+      const met = dailyCompleted(daily, this.dailyOutcome(result));
+      this.own.timeout(
+        () => this.hud?.message(met ? '¡DESAFÍO CUMPLIDO!' : 'DESAFÍO NO CUMPLIDO', met ? daily.title : `${daily.goal} Prueba otra vez desde los resultados.`, met ? 'best' : 'bad'),
+        1800,
+      );
+    }
     this.audio.cue('flag');
     this.world?.showCheckeredFlag();
     // Cámara lenta al cruzar la línea (no con "reducir movimiento").
@@ -908,6 +929,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       // Última carrera: premio según la tabla final.
       if (isFinished(season)) seasonPosition = championshipStandings(season).find((row) => row.id === PLAYER_ID)?.position ?? null;
     }
+    const dailyClaim = this.claimDaily(result);
     const award = computeXp(
       {
         mode: this.params.mode,
@@ -924,7 +946,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         seasonPosition,
       },
       { difficulty: difficultyLabel(difficulty), assists: LEVEL_INFO[settings.assists.level].name },
-      this.sessionBonuses(),
+      dailyClaim ? [...this.sessionBonuses(), dailyClaim.line] : this.sessionBonuses(),
     );
     const before = snapshotOf(this.game.save.data.progression);
     const gain = applyXp(this.game.save.data.progression, award.total);
@@ -945,7 +967,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       assistMultiplier: xpMultiplier(settings.assists),
       seasonPosition,
     });
-    const devPoints = devPointsFor({
+    const devPoints = (dailyClaim?.points ?? 0) + devPointsFor({
       mode: this.params.mode,
       position: result?.position ?? 1,
       starters: result?.starters ?? 1,
@@ -961,7 +983,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     });
     const track = this.track?.def;
     const modeLabel =
-      round !== undefined
+      this.params.daily
+        ? 'Desafío del día'
+        : round !== undefined
         ? `Campeonato · Ronda ${round + 1}`
         : this.params.mode === 'race'
           ? 'Carrera rápida'
@@ -1115,6 +1139,51 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       xp: MEDAL_INFO[medal].xp,
       color: MEDAL_INFO[medal].color,
     }));
+  }
+
+  /** El desafío de una fecha, con la dificultad y los tiempos de este jugador. */
+  private dailyFor(date: string): DailyChallenge {
+    const data = this.game.save.data;
+    return dailyChallenge(date, TRACKS, (id) => data.records[id]?.bestLap, difficultyValue(this.game.settings.race));
+  }
+
+  /** Cómo terminó la sesión, para ver si se cumplió el desafío. */
+  private dailyOutcome(result: RaceResult | null): { bestLap: number | null; position: number | null; contacts: number; allValid: boolean } {
+    const best = result ? result.laps.filter((lap) => lap.valid).reduce<number | null>((min, lap) => (min === null || lap.time < min ? lap.time : min), null) : null;
+    return {
+      bestLap: this.dailyMet && this.daily?.target !== undefined ? this.daily.target : (best ?? this.session?.timer.bestLap?.time ?? null),
+      position: result && result.starters > 1 ? result.position : null,
+      contacts: result?.contacts ?? 0,
+      allValid: result ? result.laps.every((lap) => lap.valid) : true,
+    };
+  }
+
+  /** Contrarreloj del desafío: aviso en cuanto una vuelta válida baja el tiempo pedido. */
+  private checkDailyLap(time: number): void {
+    const daily = this.daily;
+    if (!daily || daily.kind !== 'medal' || this.dailyMet || daily.target === undefined || time > daily.target) return;
+    this.dailyMet = true;
+    this.own.timeout(() => {
+      this.hud?.message('¡DESAFÍO CUMPLIDO!', `${daily.title}: vuelve a los resultados para cobrar el premio`, 'best');
+      this.game.playUi('rewardBig');
+    }, 1600);
+  }
+
+  /**
+   * Si la sesión cumplió el desafío del día (y todavía no se cobró), anota la
+   * racha y devuelve el premio para los resultados.
+   */
+  private claimDaily(result: RaceResult | null): { line: XpLine; points: number } | null {
+    const daily = this.daily;
+    const state = this.game.save.data.daily;
+    if (!daily || doneToday(state, daily.date) || !dailyCompleted(daily, this.dailyOutcome(result))) return null;
+    const next = completeDaily(state, daily.date);
+    const reward = dailyReward(next.streak);
+    this.game.save.update((data) => {
+      data.daily = next;
+    });
+    const streak = next.streak > 1 ? ` · racha de ${next.streak} días` : '';
+    return { line: { label: 'Desafío del día', detail: `${daily.title}${streak}`, xp: reward.xp, color: DAILY_COLOR }, points: reward.points };
   }
 
   // ─── Rendimiento ───────────────────────────────────────────────────────

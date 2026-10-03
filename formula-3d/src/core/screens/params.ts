@@ -32,6 +32,10 @@ export interface RaceParams {
   weather?: Weather;
   /** Carrera del campeonato en curso (índice en el calendario). */
   championshipRound?: number;
+  /** El jugador larga último (desafío de remontada). */
+  startLast?: boolean;
+  /** Desafío del día que se está corriendo (su fecha, AAAA-MM-DD). */
+  daily?: string;
 }
 
 /** Un piloto del podio (lo necesario para dibujar su auto y su cartel). */

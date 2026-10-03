@@ -10,6 +10,7 @@ import { ACHIEVEMENTS, createDefaultStats, type CareerStats, type TrackStats } f
 import { DRIVE_ACTIONS, isBindableKey, type KeyBindings } from '../input/bindings';
 import { getItem, isItemId, STARTER_ITEM_IDS, type ItemKind } from '../../progression/items';
 import { MAX_LEVEL, xpToNextLevel } from '../../progression/levels';
+import { createDailyState, type DailyState } from '../../progression/daily';
 import { createDefaultWorkshop, UPGRADE_IDS, UPGRADE_MAX_LEVEL, type Workshop } from '../../progression/upgrades';
 import { PASS_MAX_XP, passRewardsBetween, SEASON } from '../../progression/seasonPass';
 import { FPS_TARGETS, QUALITY_LEVELS, SHADOW_LEVELS } from '../render/quality';
@@ -280,6 +281,17 @@ function sanitizeRecords(raw: unknown, defaults: Record<string, TrackRecord>): R
   return records;
 }
 
+/** Desafío del día: fecha AAAA-MM-DD (o null) y contadores enteros; lo inválido arranca de cero. */
+function sanitizeDaily(raw: unknown): DailyState {
+  const daily = createDailyState();
+  if (!isRecord(raw)) return daily;
+  daily.last = typeof raw.last === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.last) ? raw.last : null;
+  daily.streak = daily.last === null ? 0 : num(raw.streak, 0, 0, MAX_COUNT, true);
+  daily.best = Math.max(daily.streak, num(raw.best, 0, 0, MAX_COUNT, true));
+  daily.total = Math.max(daily.best, num(raw.total, 0, 0, MAX_COUNT, true));
+  return daily;
+}
+
 /**
  * Taller: niveles 0–5 por área y puntos enteros. Un guardado de antes de la
  * Versión 2.2 (sin taller) recibe los puntos de bienvenida más 2 por carrera
@@ -415,5 +427,6 @@ export function sanitizeSave(raw: unknown, defaults: SaveData): SaveData {
     stats,
     achievements: sanitizeAchievements(r.achievements),
     workshop: sanitizeWorkshop(r.workshop, stats),
+    daily: sanitizeDaily(r.daily),
   };
 }

@@ -278,6 +278,19 @@ describe('carrera con rivales', () => {
     expect(session.drsState).toBe('off');
   });
 
+  it('en la remontada el jugador larga último', () => {
+    const session = new Session(
+      track,
+      F1_SPEC,
+      null,
+      { mode: 'race', laps: 3, rivals: { drivers: pickRivals(11), difficulty: 40 }, startLast: true },
+      NO_ASSISTS,
+      () => 0,
+    );
+    expect(session.position).toBe(12);
+    expect(session.player.index).toBe(11);
+  });
+
   it('al volver a la pista el fantasma no termina encima de otro auto', () => {
     const session = new Session(
       track,

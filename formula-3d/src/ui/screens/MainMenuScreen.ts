@@ -20,9 +20,10 @@ import { GAME_VERSION, MAIN_MENU, type MenuItem, type MenuItemId } from '../../d
 import type { DriverGesture, DriverPose } from '../../garage/DriverModel';
 import type { StudioScene, StudioShot } from '../../garage/StudioScene';
 import { formatInteger } from '../../core/utils/format';
+import { currentStreak, DAILY_COLOR, dailyChallenge, dailyReward, dateKey, doneToday } from '../../progression/daily';
 import { medalTally } from '../../progression/medals';
 import { applyUpgrades, carStats, totalLevels, UPGRADE_IDS, UPGRADE_MAX_LEVEL } from '../../progression/upgrades';
-import { DIFFICULTY_INFO } from '../../race/ai/difficulty';
+import { DIFFICULTY_INFO, difficultyValue } from '../../race/ai/difficulty';
 import { F1_SPEC } from '../../race/physics/CarSpec';
 import { isFinished, nextRound } from '../../race/championship';
 import { getTrack, TRACKS } from '../../tracks/registry';
@@ -95,15 +96,16 @@ interface Feature {
   open: Opener | undefined;
   card: HTMLButtonElement;
   /** Qué acceso es (para el gesto del piloto). */
-  id: MenuItemId | 'continue';
+  id: MenuItemId | 'continue' | 'daily';
 }
 
 /**
  * Lo que hace el piloto del estudio al enfocar cada tarjeta: un gesto, una
  * pose fija y, para el perfil, la cámara se acerca a él.
  */
-const STAGING: Readonly<Record<MenuItemId | 'continue', { gesture?: DriverGesture; pose?: DriverPose; shot?: StudioShot }>> = {
+const STAGING: Readonly<Record<MenuItemId | 'continue' | 'daily', { gesture?: DriverGesture; pose?: DriverPose; shot?: StudioShot }>> = {
   continue: { gesture: 'helmet' },
+  daily: { gesture: 'thumbsUp' },
   practice: { gesture: 'thumbsUp' },
   quickRace: { gesture: 'helmet' },
   timeTrial: { gesture: 'helmet', pose: 'hips' },
@@ -217,8 +219,10 @@ export class MainMenuScreen extends BaseScreen {
       h('div', { class: 'menu__top-right' }, this.chips, h('div', { class: 'menu__player' }, this.card.element)),
     );
 
-    // Riel: "Continuar" y los accesos por grupo; las opciones van arriba, como botones redondos.
+    // Riel: "Continuar" y los accesos por grupo; las opciones van arriba, como botones redondos
+    // (el desafío del día primero, con su racha).
     this.rail.append(this.group('Ahora', 2, this.createContinue()));
+    this.chips.append(this.createDaily());
     for (const group of MAIN_MENU) {
       if (group.title === 'Opciones') {
         for (const item of group.items) this.chips.append(this.createTile(item, group.title, 'chip'));
@@ -341,7 +345,7 @@ export class MainMenuScreen extends BaseScreen {
   }
 
   /** El piloto (y la cámara) reaccionan a la tarjeta si el foco se queda en ella. */
-  private stage(id: MenuItemId | 'continue'): void {
+  private stage(id: MenuItemId | 'continue' | 'daily'): void {
     if (this.stageTimer) clearTimeout(this.stageTimer);
     this.stageTimer = setTimeout(() => {
       this.stageTimer = null;
@@ -500,6 +504,53 @@ export class MainMenuScreen extends BaseScreen {
       id: 'continue',
     }));
     return card;
+  }
+
+  /**
+   * Botón del desafío del día (arriba, antes de las opciones): con la racha y
+   * un punto que late mientras no se cumplió el de hoy. El panel grande
+   * muestra el objetivo, el circuito, el premio y cuánto falta para que cambie.
+   */
+  private createDaily(): HTMLButtonElement {
+    const data = this.game.save.data;
+    const today = dateKey(new Date());
+    const challenge = dailyChallenge(today, TRACKS, (id) => data.records[id]?.bestLap, difficultyValue(this.game.settings.race));
+    const done = doneToday(data.daily, today);
+    const streak = currentStreak(data.daily, today);
+    // El premio si lo cumple hoy (la racha sube un día).
+    const reward = dailyReward(done ? streak : streak + 1);
+    const track = getTrack(challenge.trackId);
+    const chip = h(
+      'button',
+      { class: `mchip mtile mchip--daily${done ? ' is-done' : ''}`, attrs: { type: 'button', 'aria-label': 'Desafío del día' }, style: { '--card-accent': DAILY_COLOR } },
+      svg(ICONS.flame, 'icon mchip__icon'),
+      h('span', { class: 'mchip__label', text: done ? 'Cumplido' : 'Desafío' }),
+      streak > 0 ? h('span', { class: 'mchip__streak', text: String(streak), attrs: { title: `Racha de ${streak} ${streak === 1 ? 'día' : 'días'}` } }) : null,
+    );
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const hours = Math.max(1, Math.ceil((midnight.getTime() - now.getTime()) / 3_600_000));
+    this.register(chip, () => ({
+      group: done ? 'Desafío del día · cumplido' : 'Desafío del día',
+      icon: 'flame',
+      title: challenge.title,
+      text: done
+        ? `Ya cumpliste el de hoy en ${track.short}. Puedes correrlo otra vez por diversión; mañana hay otro y, si lo cumples, la racha sube a ${streak + 1} días.`
+        : `${challenge.goal} Premio: ${reward.xp} XP y ${reward.points} puntos de desarrollo${streak > 0 ? `; la racha sube a ${streak + 1} días` : ''}.`,
+      stats: [
+        ['Circuito', track.short],
+        ['Racha', `${streak} ${streak === 1 ? 'día' : 'días'}`],
+        done ? ['Cumplidos', data.daily.total] : ['Premio', `${reward.xp} XP`],
+        ['Mejor racha', data.daily.best],
+      ],
+      action: done ? 'Correr otra vez' : 'Aceptar desafío',
+      note: done ? 'El de mañana sale a la medianoche.' : `Quedan ${hours} h para cumplirlo.`,
+      accent: DAILY_COLOR,
+      open: (game) => game.screens.goTo('race', challenge.race),
+      card: chip,
+      id: 'daily',
+    }));
+    return chip;
   }
 
   private confirm(feature: Feature): void {

@@ -14,6 +14,7 @@ import {
 import { STARTER_ITEM_IDS } from '../../progression/items';
 import { createDefaultGarage, type GarageSetup } from '../../garage/setup';
 import { createDefaultStats, type CareerStats } from '../../progression/career';
+import { createDailyState, type DailyState } from '../../progression/daily';
 import { createDefaultWorkshop, type Workshop } from '../../progression/upgrades';
 import { createDefaultBindings, type KeyBindings } from '../input/bindings';
 
@@ -202,6 +203,8 @@ export interface SaveData {
   achievements: Record<string, number>;
   /** Taller: puntos de desarrollo y mejoras del auto (Versión 2.2). */
   workshop: Workshop;
+  /** Desafío del día: último día cumplido y racha (Versión 2.4). */
+  daily: DailyState;
 }
 
 /** Resultado de un piloto en una carrera del campeonato. */
@@ -297,5 +300,6 @@ export function createDefaultSave(now: number, quality: QualityLevel): SaveData 
     stats: createDefaultStats(),
     achievements: {},
     workshop: createDefaultWorkshop(),
+    daily: createDailyState(),
   };
 }

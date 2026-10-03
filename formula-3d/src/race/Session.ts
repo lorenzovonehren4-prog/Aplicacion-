@@ -56,6 +56,8 @@ export interface SessionConfig {
   ghost?: GhostLap | null;
   /** Auto del jugador con sus mejoras (sin esto, el mismo de los rivales). */
   playerSpec?: CarSpec;
+  /** El jugador larga último (el desafío de remontada); si no, en la mitad de la parrilla. */
+  startLast?: boolean;
 }
 
 /** Un auto en pista: el jugador o un bot. */
@@ -234,8 +236,8 @@ export class Session {
         ghost: 0,
       };
     });
-    // El jugador larga en la mitad de la parrilla.
-    const playerSlot = Math.floor((grid.length + 1) / 2);
+    // El jugador larga en la mitad de la parrilla (o último, si se pide).
+    const playerSlot = config.startLast ? grid.length : Math.floor((grid.length + 1) / 2);
     grid.splice(playerSlot, 0, {
       index: 0,
       vehicle: this.vehicle,

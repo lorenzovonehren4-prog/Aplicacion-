@@ -32,6 +32,10 @@ export const ICONS = {
   chevronRight: stroke('<path d="M9 5l7 7-7 7"/>'),
   chevronLeft: stroke('<path d="M15 5l-7 7 7 7"/>'),
   reset: stroke('<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4.5h4.5"/>'),
+  /** Llama: desafío del día y su racha. */
+  flame: stroke(
+    '<path d="M12 21c-3.9 0-6.5-2.6-6.5-6.1 0-3.4 2.3-5.3 3.6-7.6.4 1.9 1.4 3 2.5 3.4C11.2 7.4 12.9 4.6 15.4 3c-.3 2.9 1.2 4.9 2.3 6.6 1 1.5 1.8 3 1.8 5.1C19.5 18.4 16 21 12 21z"/><path d="M12 21c-1.7 0-2.9-1.2-2.9-2.8 0-1.9 1.6-2.8 2.5-4.4.9 1.4 3.3 2.5 3.3 4.6 0 1.5-1.2 2.6-2.9 2.6z"/>',
+  ),
   /** Rayo: motor (mejoras). */
   bolt: stroke('<path d="M13 2.5 5 13.5h6l-1 8 8-11h-6z"/>'),
   /** Alerón visto de costado: aerodinámica. */

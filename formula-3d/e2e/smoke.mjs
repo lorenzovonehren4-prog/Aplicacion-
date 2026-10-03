@@ -90,6 +90,10 @@ async function main() {
     await page.screenshot({ path: `${shots}02-menu.png` });
     const locked = await page.locator('.mtile.is-locked').count();
     log(`menú visible (${locked} accesos bloqueados para fases futuras)`);
+    // Desafío del día: arriba, sin cumplir en una partida nueva.
+    await expectText(page, '.mchip--daily .mchip__label', 'Desafío');
+    if ((await page.locator('.mchip--daily.is-done').count()) !== 0) throw new Error('El desafío del día figura cumplido en una partida nueva.');
+    log('desafío del día visible y pendiente');
 
     step = 'ajustes';
     // Tarjetas del menú: clic en Ajustes (el clic confirma).
