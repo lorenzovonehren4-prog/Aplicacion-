@@ -8,11 +8,12 @@ import { MathUtils, PerspectiveCamera, Scene, Vector3, type Object3D, type WebGL
 import { prewarm, stabilizeShadowDepth } from '../core/render/prewarm';
 import type { RenderView } from '../core/render/RenderHost';
 import { QUALITY_PRESETS, shadowMapSize, type QualityPreset } from '../core/render/quality';
-import { createSpeedFx, HAZE_POINTS } from '../core/render/SpeedPass';
+import { createSpeedFx, HAZE_POINTS } from '../core/render/FinalPass';
 import { RacingLineMesh } from '../assists/RacingLineMesh';
 import type { CameraMode, GraphicsSettings, LineMode, LineType } from '../core/save/schema';
 import { clamp } from '../core/utils/math';
 import type { LiveryConfig } from '../garage/livery';
+import { DISTANT_LAYER } from '../tracks/build/context';
 import { buildTrackScene, type BuildOptions, type TrackScene } from '../tracks/TrackBuilder';
 import { RaceCamera } from './camera/RaceCamera';
 import { performanceModel } from './physics/CarSpec';
@@ -104,6 +105,8 @@ export class RaceWorld implements RenderView {
     this.rig.root.add(this.carShadows.createSingle());
     this.rig.root.add(this.mirrors.root);
     this.raceCamera = new RaceCamera(this.rig, cameraMode);
+    // La cámara de la carrera ve lo lejano (los árboles a cientos de metros); el retrovisor, no.
+    this.raceCamera.camera.layers.enable(DISTANT_LAYER);
     this.racingLine = new RacingLineMesh(vehicle.track.racingLine, performanceModel(vehicle.spec));
     this.scene.add(this.racingLine.mesh);
     this.rivals = rivals.length > 0 ? new RivalFleet(rivals, anisotropy, preset.rivalLod, this.carShadows) : null;
@@ -194,6 +197,7 @@ export class RaceWorld implements RenderView {
     const radius = Math.hypot(maxX - minX, maxZ - minZ) / 2 + 400;
     const height = radius / Math.tan(MathUtils.degToRad(35));
     const overhead = new PerspectiveCamera(70, 1, 10, height + 2000);
+    overhead.layers.enable(DISTANT_LAYER);
     overhead.position.set((minX + maxX) / 2, height, (minZ + maxZ) / 2);
     overhead.lookAt((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
     overhead.updateMatrixWorld();

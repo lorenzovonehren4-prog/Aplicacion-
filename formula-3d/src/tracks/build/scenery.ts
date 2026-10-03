@@ -30,7 +30,7 @@ import {
   type BufferGeometry,
   type Texture,
 } from 'three';
-import { addChunkedInstances, addChunkedLodInstances, addMerged, addMesh, mergeAll, type BuildContext, type InstanceItem } from './context';
+import { DISTANT_LAYER, addChunkedInstances, addChunkedLodInstances, addMerged, addMesh, mergeAll, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
 import { createDistanceBoards, createLeafAtlas, createSpectator, createWaterNormals, createWindows } from './textures';
 import { createTreeDepthMaterial, createTreeMaterial, treeSpecies } from './trees';
@@ -132,10 +132,18 @@ export function insidePolygon(x: number, z: number, polygon: ReadonlyArray<reado
 const TREE_CELL = 200;
 /**
  * Distancia (m, desde el centro de cada celda de árboles) a la que se pasa al
- * detalle medio y al lejano. Con celdas de 200 m, todo árbol a menos de
- * ~240 m de la cámara se dibuja con el detalle completo.
+ * detalle medio. Con celdas de 200 m, todo árbol a menos de ~240 m de la
+ * cámara se dibuja con el detalle completo.
  */
-const TREE_LOD_DISTANCES = [0, 380, 900] as const;
+const TREE_LOD_DISTANCES = [0, 380] as const;
+/**
+ * Desde esta distancia (m, de la cámara a cada árbol) va el bulto lejano. Los
+ * lejanos son la mayoría de los que se ven y cada uno es casi nada: en celdas
+ * de 200 m costaban ~120 llamadas de dibujo por cuadro (casi todo preparar
+ * cada llamada). Van aparte, en celdas grandes de `TREE_FAR_CELL`.
+ */
+const TREE_FAR_START = 700;
+const TREE_FAR_CELL = 800;
 const CROWD_CELL = 120;
 
 export interface KeepOut {
@@ -199,20 +207,39 @@ export function buildTrees(ctx: BuildContext, allowed: KeepOut): void {
   const time = { value: 0 };
   ctx.tickers.push((seconds) => (time.value = seconds));
   const atlas = ctx.own.own(createLeafAtlas(ctx.anisotropy));
-  const material = ctx.own.own(createTreeMaterial(time, atlas));
+  // Cerca y a media distancia, por celdas con nivel de detalle; lejos, en celdas grandes.
+  // Cada material dibuja sólo los árboles de su lado de `TREE_FAR_START` (ver `createTreeMaterial`).
+  const material = ctx.own.own(createTreeMaterial(time, atlas, 'near', TREE_FAR_START));
+  const farMaterial = ctx.own.own(createTreeMaterial(time, atlas, 'far', TREE_FAR_START));
   const depthMaterial = ctx.detailShadows ? ctx.own.own(createTreeDepthMaterial(atlas)) : undefined;
   for (const geometry of [...near, ...mid, ...far]) ctx.own.own(geometry);
   for (let kind = 0; kind < 3; kind++) {
     const list = placements[kind] ?? [];
-    const levels = [near[kind], mid[kind], far[kind]];
-    if (list.length === 0 || levels.some((level) => !level)) continue;
+    const levels = [near[kind], mid[kind]];
+    const distant = far[kind];
+    if (list.length === 0 || !distant || levels.some((level) => !level)) continue;
     addChunkedLodInstances(
       ctx,
       levels.map((geometry, i) => ({ geometry: geometry as BufferGeometry, distance: TREE_LOD_DISTANCES[i] ?? 0 })),
       material,
       list,
-      { cell: TREE_CELL, name: `arboles-${kind}`, cast: ctx.detailShadows, receive: false, ...(depthMaterial ? { depthMaterial } : {}) },
+      {
+        cell: TREE_CELL,
+        name: `arboles-${kind}`,
+        cast: ctx.detailShadows,
+        receive: false,
+        until: TREE_FAR_START,
+        ...(depthMaterial ? { depthMaterial } : {}),
+      },
     );
+    // A cientos de metros las sombras de los árboles ya no caen en el mapa de sombras (sigue al auto).
+    addChunkedInstances(ctx, distant, farMaterial, list, {
+      cell: TREE_FAR_CELL,
+      name: `arboles-lejos-${kind}`,
+      cast: false,
+      receive: false,
+      layer: DISTANT_LAYER,
+    });
   }
 }
 

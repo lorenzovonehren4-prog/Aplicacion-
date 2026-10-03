@@ -334,9 +334,16 @@ const LEAF_ALPHA_TEST = 0.5;
  * - Las normales de copa valen para los dos lados de cada tarjeta.
  * - De lejos el mipmap promedia las hojas con el fondo transparente y el
  *   recorte las "comería": se compensa la opacidad según el nivel de mipmap.
+ * - Reparto por distancia, árbol por árbol: el material `near` dibuja sólo
+ *   los árboles a menos de `farStart` metros de la cámara, y el `far` sólo
+ *   los que están más lejos (el resto se achica a un punto y no se dibuja).
+ *   Así los lejanos van en pocas mallas grandes sin huecos ni árboles
+ *   repetidos en el borde.
  * @param time uniforme con los segundos (lo avanza el circuito)
+ * @param range qué árboles dibuja este material (ver arriba)
+ * @param farStart distancia (m) a la cámara desde la que un árbol es lejano
  */
-export function createTreeMaterial(time: IUniform<number>, atlas: Texture): MeshStandardMaterial {
+export function createTreeMaterial(time: IUniform<number>, atlas: Texture, range: 'near' | 'far', farStart: number): MeshStandardMaterial {
   const material = new MeshStandardMaterial({
     vertexColors: true,
     map: atlas,
@@ -355,14 +362,22 @@ export function createTreeMaterial(time: IUniform<number>, atlas: Texture): Mesh
         '#include <begin_vertex>',
         `#include <begin_vertex>
         #ifdef USE_INSTANCING
-          vec2 treeAt = (modelMatrix * instanceMatrix[3]).xz;
+          vec3 treeWorld = (modelMatrix * instanceMatrix[3]).xyz;
         #else
-          vec2 treeAt = vec2(0.0);
+          vec3 treeWorld = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
         #endif
+        vec2 treeAt = treeWorld.xz;
         float phase = dot(treeAt, vec2(0.071, 0.053));
         float gust = 0.6 + 0.4 * sin(windTime * 0.37 + phase * 0.2);
         transformed.x += sway * gust * (0.35 * sin(windTime * 1.3 + phase) + 0.12 * sin(windTime * 3.1 + phase * 1.7 + position.y));
-        transformed.z += sway * gust * 0.22 * sin(windTime * 1.1 + phase * 1.3);`,
+        transformed.z += sway * gust * 0.22 * sin(windTime * 1.1 + phase * 1.3);
+        // Reparto cerca / lejos: el árbol que no le toca se achica a un punto (triángulos vacíos).
+        float treeDistance = distance(treeWorld, cameraPosition);
+        #ifdef TREE_FAR
+          if (treeDistance <= ${farStart.toFixed(1)}) transformed = vec3(0.0);
+        #else
+          if (treeDistance > ${farStart.toFixed(1)}) transformed = vec3(0.0);
+        #endif`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(
@@ -383,7 +398,8 @@ export function createTreeMaterial(time: IUniform<number>, atlas: Texture): Mesh
         nonPerturbedNormal = normal;`,
       );
   };
-  material.customProgramCacheKey = () => 'arboles-hojas';
+  if (range === 'far') material.defines = { TREE_FAR: '' };
+  material.customProgramCacheKey = () => `arboles-hojas-${range}`;
   return material;
 }
 

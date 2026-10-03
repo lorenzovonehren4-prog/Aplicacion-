@@ -34,6 +34,11 @@ const MAX_DT = 0.1;
 /** Tolerancia al limitar FPS (los timestamps de rAF tienen algo de ruido). */
 const LIMIT_TOLERANCE_MS = 1.5;
 const FPS_WINDOW_MS = 500;
+/** Ruido máximo de los tiempos de rAF que se alisa (ms) y cuánto se devuelve por cuadro. */
+const SNAP_TOLERANCE_MS = 4;
+const SNAP_PAYBACK_MS = 0.1;
+/** Lo máximo que el reloj del juego se separa del real al alisar (ms). */
+const SNAP_MAX_DEBT_MS = 8;
 
 export class GameLoop {
   private handle: number | null = null;
@@ -43,6 +48,8 @@ export class GameLoop {
   private lastRafTime: number | null = null;
   private refreshMs = 0;
   private accumulator = 0;
+  /** Diferencia guardada entre el tiempo real y el ajustado al monitor (ms, ver `snap`). */
+  private timeDebt = 0;
   private minFrameMs = 0;
   /**
    * Velocidad del tiempo del juego (1 = normal; menos = cámara lenta). Afecta
@@ -85,6 +92,7 @@ export class GameLoop {
     this.lastTime = null;
     this.lastFrameTime = null;
     this.lastRafTime = null;
+    this.timeDebt = 0;
     this.handle = this.scheduler.request(this.onFrame);
   }
 
@@ -114,13 +122,15 @@ export class GameLoop {
       const refresh = this.refreshMs > 0 ? this.refreshMs : this.minFrameMs;
       const every = Math.max(1, Math.floor((this.minFrameMs + LIMIT_TOLERANCE_MS) / refresh));
       const sinceLast = time - this.lastFrameTime;
-      if (sinceLast < every * refresh - LIMIT_TOLERANCE_MS) return;
+      // Si el monitor no pasa del objetivo (60 Hz con 60 pedidos) no hay nada que limitar:
+      // saltear un cuadro que llegó un poco antes (Firefox da tiempos irregulares) era un tirón.
+      if (every > 1 && sinceLast < every * refresh - LIMIT_TOLERANCE_MS) return;
       this.lastFrameTime = time;
     } else {
       this.lastFrameTime = time;
     }
 
-    const realDt = this.lastTime === null ? 0 : Math.min(MAX_DT, Math.max(0, (time - this.lastTime) / 1000));
+    const realDt = this.lastTime === null ? 0 : Math.min(MAX_DT, Math.max(0, this.snap(time - this.lastTime) / 1000));
     this.lastTime = time;
     const dt = realDt * Math.max(0, this.timeScale);
 
@@ -140,6 +150,40 @@ export class GameLoop {
     this.callbacks.update(dt, alpha);
     this.callbacks.render();
     this.measure(time, realDt);
+  }
+
+  /**
+   * Tiempo entre cuadros ajustado al monitor: la pantalla muestra los cuadros
+   * a intervalos exactos, pero los tiempos de rAF traen ruido (±1–2 ms en
+   * algunos navegadores). Si el auto se mueve según el ruido, se ve a
+   * saltitos aunque no se pierda ningún cuadro. Cuando la diferencia con un
+   * múltiplo del período del monitor es sólo ruido se usa el período, y lo
+   * que sobra se guarda y se devuelve de a poco: el reloj del juego nunca se
+   * separa del real más de un par de milisegundos.
+   * @param deltaMs tiempo medido desde el cuadro anterior (ms)
+   */
+  private snap(deltaMs: number): number {
+    const refresh = this.refreshMs;
+    if (refresh <= 0) return deltaMs;
+    const ideal = Math.round(deltaMs / refresh) * refresh;
+    if (ideal <= 0 || Math.abs(deltaMs - ideal) > Math.min(SNAP_TOLERANCE_MS, refresh * 0.4)) {
+      // Un salto de verdad (un cuadro perdido, la pestaña oculta): se usa tal cual.
+      const total = deltaMs + this.timeDebt;
+      this.timeDebt = 0;
+      return total;
+    }
+    this.timeDebt += deltaMs - ideal;
+    // Si lo guardado crece, el período estimado no es el de verdad (cambió el monitor,
+    // una racha de cuadros perdidos): se devuelve todo de una vez.
+    if (Math.abs(this.timeDebt) > SNAP_MAX_DEBT_MS) {
+      const total = ideal + this.timeDebt;
+      this.timeDebt = 0;
+      return total;
+    }
+    // Lo acumulado vuelve de a un poco por cuadro (si no, se correría el reloj).
+    const payback = Math.max(-SNAP_PAYBACK_MS, Math.min(SNAP_PAYBACK_MS, this.timeDebt));
+    this.timeDebt -= payback;
+    return ideal + payback;
   }
 
   private measure(time: number, dt: number): void {

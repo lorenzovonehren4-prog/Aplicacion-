@@ -2,7 +2,8 @@
  * Renderer único del juego. Ver PLAN.md §4.4.
  *
  * Con posprocesado o MSAA dibuja a través de un `EffectComposer` (RenderPass
- * con MSAA → bloom → OutputPass con tone mapping y sRGB). En calidad Baja dibuja
+ * con MSAA → bloom → pasada final con efectos, tone mapping y sRGB, ver
+ * `FinalPass`). En calidad Baja dibuja
  * directo al lienzo, que tiene su propio antialiasing (el del contexto WebGL,
  * barato): así hasta en Baja los bordes se ven limpios. La calidad cambia en
  * caliente sin recrear el contexto.
@@ -12,6 +13,7 @@ import {
   ACESFilmicToneMapping,
   HalfFloatType,
   PCFShadowMap,
+  type Texture,
   PerspectiveCamera,
   Scene,
   SRGBColorSpace,
@@ -20,22 +22,87 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { GraphicsSettings } from '../save/schema';
 import { QUALITY_PRESETS } from './quality';
-import { SpeedPass, type SpeedFx } from './SpeedPass';
+import { FinalPass, type SpeedFx } from './FinalPass';
 
 /**
- * Bloom con resolución ajustable: el de three.js trabaja a la mitad de la
- * pantalla; en calidad Media se lo achica otra mitad (un cuarto de los
- * píxeles), que en un brillo difuso casi no se nota y alivia la GPU.
+ * Bloom de three.js con dos cambios:
+ * - Resolución ajustable: trabaja a la mitad de la pantalla; en calidad Media
+ *   se lo achica otra mitad (un cuarto de los píxeles), que en un brillo
+ *   difuso casi no se nota y alivia la GPU.
+ * - No se mezcla con la imagen: deja el brillo en `texture` y lo suma la
+ *   pasada final. Así se ahorra una pasada a pantalla completa.
  */
-class ScaledBloomPass extends UnrealBloomPass {
+/** Direcciones del difuminado (las de three.js, que sus tipos no declaran). */
+const BLUR_X = new Vector2(1, 0);
+const BLUR_Y = new Vector2(0, 1);
+
+class BloomPass extends UnrealBloomPass {
   private scale = 1;
   private fullWidth = 1;
   private fullHeight = 1;
+  private readonly quad = new FullScreenQuad();
+
+  /** El brillo del último cuadro (a la resolución del bloom). */
+  get texture(): Texture | null {
+    return this.renderTargetsHorizontal[0]?.texture ?? null;
+  }
+
+  /** Como el de three.js, menos la mezcla final con la imagen (la hace `FinalPass`). */
+  override render(renderer: WebGLRenderer, _writeBuffer: WebGLRenderTarget, readBuffer: WebGLRenderTarget): void {
+    const autoClear = renderer.autoClear;
+    renderer.autoClear = false;
+    const quad = this.quad;
+    // 1. Lo que brilla.
+    const highPass = this.materialHighPassFilter.uniforms;
+    if (highPass.tDiffuse) highPass.tDiffuse.value = readBuffer.texture;
+    if (highPass.luminosityThreshold) highPass.luminosityThreshold.value = this.threshold;
+    quad.material = this.materialHighPassFilter;
+    renderer.setRenderTarget(this.renderTargetBright);
+    renderer.clear();
+    quad.render(renderer);
+    // 2. Difuminado en cada nivel (horizontal y vertical).
+    let input = this.renderTargetBright;
+    for (let i = 0; i < this.nMips; i++) {
+      const blur = this.separableBlurMaterials[i];
+      const horizontal = this.renderTargetsHorizontal[i];
+      const vertical = this.renderTargetsVertical[i];
+      if (!blur || !horizontal || !vertical) break;
+      quad.material = blur;
+      if (blur.uniforms.colorTexture) blur.uniforms.colorTexture.value = input.texture;
+      if (blur.uniforms.direction) blur.uniforms.direction.value = BLUR_X;
+      renderer.setRenderTarget(horizontal);
+      renderer.clear();
+      quad.render(renderer);
+      if (blur.uniforms.colorTexture) blur.uniforms.colorTexture.value = horizontal.texture;
+      if (blur.uniforms.direction) blur.uniforms.direction.value = BLUR_Y;
+      renderer.setRenderTarget(vertical);
+      renderer.clear();
+      quad.render(renderer);
+      input = vertical;
+    }
+    // 3. Todos los niveles juntos, en el primer búfer horizontal (lo lee `texture`).
+    const composite = this.compositeMaterial.uniforms;
+    if (composite.bloomStrength) composite.bloomStrength.value = this.strength;
+    if (composite.bloomRadius) composite.bloomRadius.value = this.radius;
+    quad.material = this.compositeMaterial;
+    const output = this.renderTargetsHorizontal[0];
+    if (output) {
+      renderer.setRenderTarget(output);
+      renderer.clear();
+      quad.render(renderer);
+    }
+    renderer.autoClear = autoClear;
+  }
+
+  override dispose(): void {
+    super.dispose();
+    this.quad.dispose();
+  }
 
   override setSize(width: number, height: number): void {
     this.fullWidth = width;
@@ -90,9 +157,8 @@ export class RenderHost {
   readonly renderer: WebGLRenderer;
   private composer: EffectComposer;
   private readonly renderPass: RenderPass;
-  private readonly bloomPass: ScaledBloomPass;
-  private readonly outputPass: OutputPass;
-  private readonly speedPass = new SpeedPass();
+  private readonly bloomPass: BloomPass;
+  private readonly finalPass = new FinalPass();
   private view: RenderView | null = null;
   private graphics: GraphicsSettings;
   private width = 1;
@@ -134,8 +200,7 @@ export class RenderHost {
 
     // Escena vacía hasta que una pantalla entregue su vista.
     this.renderPass = new RenderPass(new Scene(), new PerspectiveCamera());
-    this.bloomPass = new ScaledBloomPass(new Vector2(256, 256), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
-    this.outputPass = new OutputPass();
+    this.bloomPass = new BloomPass(new Vector2(256, 256), BLOOM.strength, BLOOM.radius, BLOOM.threshold);
     this.composer = this.createComposer(0);
     this.applyGraphics(graphics);
   }
@@ -287,7 +352,7 @@ export class RenderHost {
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.view.scene, this.view.camera);
     } else {
-      this.speedPass.apply(this.view.speedFx, this.graphics.postprocessing);
+      this.finalPass.apply(this.view.speedFx, this.graphics.postprocessing, this.bloomPass.enabled ? this.bloomPass.texture : null);
       this.composer.render();
     }
     this.view.overlay?.(this.renderer);
@@ -300,8 +365,7 @@ export class RenderHost {
   dispose(): void {
     this.composer.dispose();
     this.bloomPass.dispose();
-    this.speedPass.dispose();
-    this.outputPass.dispose();
+    this.finalPass.dispose();
     this.renderer.dispose();
   }
 
@@ -311,8 +375,7 @@ export class RenderHost {
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(this.renderPass);
     composer.addPass(this.bloomPass);
-    composer.addPass(this.speedPass);
-    composer.addPass(this.outputPass);
+    composer.addPass(this.finalPass);
     return composer;
   }
 }

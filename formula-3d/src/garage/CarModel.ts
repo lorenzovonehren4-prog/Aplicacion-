@@ -572,12 +572,34 @@ function tireProfile(width: number): Vector2[] {
   return points;
 }
 
+/**
+ * Perfil mínimo del neumático para los autos lejanos: banda y flancos rectos.
+ * A más de 90 m el abombado y los talones no se distinguen.
+ */
+function simpleTireProfile(width: number): Vector2[] {
+  const { wheelRadius: r, rimRadius: rim } = CAR_DIMENSIONS;
+  const h = width / 2;
+  return [
+    new Vector2(rim, -h),
+    new Vector2(r - 0.01, -h),
+    new Vector2(r, -h + 0.03),
+    new Vector2(r, h - 0.03),
+    new Vector2(r - 0.01, h),
+    new Vector2(rim, h),
+  ];
+}
+
+/**
+ * @param simple rueda mínima (autos lejanos): neumático de pocos lados y la tapa, sin
+ *   el interior de la llanta (de lejos no se ve y era casi la mitad del modelo)
+ */
 function buildWheel(
   width: number,
   side: 1 | -1,
   materials: Record<MaterialKey, Material>,
   own: Disposer,
   seg: (full: number, min: number) => number,
+  simple = false,
 ): WheelRig {
   const steer = new Group();
   const mount = new Group();
@@ -588,11 +610,15 @@ function buildWheel(
   mount.add(spin);
 
   const { rimRadius: rim } = CAR_DIMENSIONS;
-  const tire = own.own(new LatheGeometry(tireProfile(width), seg(72, 16)));
+  const tire = own.own(new LatheGeometry(simple ? simpleTireProfile(width) : tireProfile(width), simple ? 12 : seg(72, 16)));
   tire.rotateZ(-Math.PI / 2);
-  const cover = own.own(new CircleGeometry(rim - 0.004, seg(48, 12)));
+  const cover = own.own(new CircleGeometry(rim - 0.004, simple ? 10 : seg(48, 12)));
   cover.rotateY(Math.PI / 2);
   cover.translate(width / 2 - 0.02, 0, 0);
+  if (simple) {
+    spin.add(new Mesh(tire, materials.tire), new Mesh(cover, materials.cover));
+    return { steer, spin, side };
+  }
   const barrel = own.own(new CylinderGeometry(rim - 0.002, rim - 0.002, width - 0.03, seg(40, 10), 1, true));
   barrel.rotateZ(Math.PI / 2);
   const inner = own.own(new CircleGeometry(rim, seg(32, 10)));
@@ -1051,11 +1077,13 @@ export class CarModel {
       this.root.add(rig.steer);
       return rig;
     };
+    // El modelo más liviano (los rivales lejanos) lleva ruedas mínimas.
+    const simple = this.detail < 0.2;
     return {
-      fl: place(buildWheel(d.frontTireWidth, -1, materials, this.own, this.seg), -d.frontTrackHalf, d.frontAxleZ),
-      fr: place(buildWheel(d.frontTireWidth, 1, materials, this.own, this.seg), d.frontTrackHalf, d.frontAxleZ),
-      rl: place(buildWheel(d.rearTireWidth, -1, materials, this.own, this.seg), -d.rearTrackHalf, d.rearAxleZ),
-      rr: place(buildWheel(d.rearTireWidth, 1, materials, this.own, this.seg), d.rearTrackHalf, d.rearAxleZ),
+      fl: place(buildWheel(d.frontTireWidth, -1, materials, this.own, this.seg, simple), -d.frontTrackHalf, d.frontAxleZ),
+      fr: place(buildWheel(d.frontTireWidth, 1, materials, this.own, this.seg, simple), d.frontTrackHalf, d.frontAxleZ),
+      rl: place(buildWheel(d.rearTireWidth, -1, materials, this.own, this.seg, simple), -d.rearTrackHalf, d.rearAxleZ),
+      rr: place(buildWheel(d.rearTireWidth, 1, materials, this.own, this.seg, simple), d.rearTrackHalf, d.rearAxleZ),
     };
   }
 }

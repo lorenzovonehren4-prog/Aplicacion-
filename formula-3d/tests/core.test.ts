@@ -242,6 +242,42 @@ describe('GameLoop', () => {
     expect(spread).toBeLessThan(1.5);
   });
 
+  it('a 60 Hz con 60 FPS pedidos no saltea cuadros aunque los tiempos de rAF sean irregulares', () => {
+    const render = vi.fn();
+    const loop = new GameLoop({ update: vi.fn(), render }, manualScheduler());
+    loop.setFpsTarget(60);
+    // Como Firefox: cada cuadro llega hasta 2 ms antes o después.
+    for (let i = 0; i <= 120; i++) loop.frame((i * 1000) / 60 + Math.sin(i * 2.3) * 2);
+    expect(render).toHaveBeenCalledTimes(121);
+  });
+
+  it('alisa el ruido de los tiempos de rAF sin que el reloj del juego se separe del real', () => {
+    const dts: number[] = [];
+    const loop = new GameLoop({ update: (dt) => dts.push(dt * 1000), render: vi.fn() }, manualScheduler());
+    let last = 0;
+    for (let i = 0; i <= 600; i++) {
+      last = (i * 1000) / 60 + Math.sin(i * 2.3) * 1.5;
+      loop.frame(last);
+    }
+    // Pasado el arranque (mientras mide el monitor), cada cuadro avanza casi exactamente 16,67 ms.
+    const steady = dts.slice(120);
+    expect(Math.max(...steady) - Math.min(...steady)).toBeLessThan(0.5);
+    // Y en total el juego avanzó lo mismo que el reloj real (±4 ms en 10 s).
+    const total = dts.reduce((sum, dt) => sum + dt, 0);
+    expect(Math.abs(total - last)).toBeLessThan(4);
+  });
+
+  it('si el monitor cambia de frecuencia, el reloj del juego sigue al real', () => {
+    let total = 0;
+    const loop = new GameLoop({ update: (dt) => (total += dt * 1000), render: vi.fn() }, manualScheduler());
+    let now = 0;
+    // 60 Hz y de golpe 75 Hz (el período estimado tarda en ajustarse).
+    for (let i = 0; i <= 120; i++) loop.frame((now = (i * 1000) / 60));
+    const start = now;
+    for (let i = 1; i <= 300; i++) loop.frame((now = start + (i * 1000) / 75));
+    expect(Math.abs(total - now)).toBeLessThanOrEqual(8.5);
+  });
+
   it('mide los FPS', () => {
     const loop = new GameLoop({ update: vi.fn(), render: vi.fn() }, manualScheduler());
     for (let i = 0; i <= 120; i++) loop.frame((i * 1000) / 60);

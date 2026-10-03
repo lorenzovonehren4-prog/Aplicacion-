@@ -19,7 +19,7 @@ import {
   Vector3,
   type BufferGeometry,
 } from 'three';
-import { addChunkedInstances, addMesh, mergeAll, type BuildContext, type InstanceItem } from './context';
+import { addChunkedLodInstances, addMesh, mergeAll, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, spansWhere, wallSpans, type ProfilePoint } from './ribbon';
 import { createFence, createWall } from './textures';
 
@@ -33,6 +33,12 @@ const FENCE_LEAN = 0.6;
 const TYRE_RADIUS = 0.31;
 const TYRE_HEIGHT = 0.3;
 const TYRES_PER_STACK = 3;
+/**
+ * Desde esta distancia (m, al centro de cada celda de 160 m) las pilas son la
+ * versión simple: a más de ~100 m miden pocos píxeles y eran el escenario con
+ * más vértices después de los árboles.
+ */
+const TYRE_SIMPLE_DISTANCE = 180;
 
 /**
  * Pila de neumáticos (instanciada): una sola pieza torneada con las cinturas
@@ -40,16 +46,22 @@ const TYRES_PER_STACK = 3;
  * ve): ~90 triángulos. Negra, con la goma de arriba blanca para que el color
  * de cada pila (rojo o blanco) pinte la cinta.
  */
-function tyreStack(): BufferGeometry {
-  const profile: Vector2[] = [new Vector2(0.001, 0)];
-  for (let k = 0; k < TYRES_PER_STACK; k++) {
-    const y = k * TYRE_HEIGHT;
-    profile.push(new Vector2(TYRE_RADIUS * 0.9, y + 0.005), new Vector2(TYRE_RADIUS, y + TYRE_HEIGHT * 0.5));
-  }
+function tyreStack(simple = false): BufferGeometry {
   const top = TYRES_PER_STACK * TYRE_HEIGHT;
-  profile.push(new Vector2(TYRE_RADIUS * 0.9, top), new Vector2(TYRE_RADIUS * 0.45, top), new Vector2(0.001, top - 0.06));
+  const profile: Vector2[] = [];
+  if (simple) {
+    // De lejos: un cilindro con el corte de la goma de arriba (para la cinta de color) y la tapa.
+    profile.push(new Vector2(TYRE_RADIUS, 0), new Vector2(TYRE_RADIUS, top - TYRE_HEIGHT + 0.005), new Vector2(TYRE_RADIUS, top), new Vector2(0.001, top));
+  } else {
+    profile.push(new Vector2(0.001, 0));
+    for (let k = 0; k < TYRES_PER_STACK; k++) {
+      const y = k * TYRE_HEIGHT;
+      profile.push(new Vector2(TYRE_RADIUS * 0.9, y + 0.005), new Vector2(TYRE_RADIUS, y + TYRE_HEIGHT * 0.5));
+    }
+    profile.push(new Vector2(TYRE_RADIUS * 0.9, top), new Vector2(TYRE_RADIUS * 0.45, top), new Vector2(0.001, top - 0.06));
+  }
   // Media vuelta: la cara +X mira a la pista (se orienta con el giro de cada pila).
-  const lathe = new LatheGeometry(profile, 5, 0, Math.PI).toNonIndexed();
+  const lathe = new LatheGeometry(profile, simple ? 4 : 5, 0, Math.PI).toNonIndexed();
   const position = lathe.getAttribute('position');
   const colors: number[] = [];
   for (let i = 0; i < position.count; i++) {
@@ -154,13 +166,23 @@ export function buildWalls(ctx: BuildContext): void {
     addMesh(ctx, concrete, new MeshStandardMaterial({ map: texture, roughness: 0.8 }), { cast: true, name: 'muros' });
   }
   if (stacks.length > 0) {
-    // Por celdas (como los árboles): sólo se dibujan las barreras a la vista.
+    // Por celdas (como los árboles): sólo se dibujan las barreras a la vista; de lejos, más simples.
     const geometry = ctx.own.own(tyreStack());
+    const distant = ctx.own.own(tyreStack(true));
     const material = ctx.own.own(new MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0 }));
     const red = new Color('#d6202a');
     const white = new Color('#f2f2ee');
     const items: InstanceItem[] = stacks.map((stack) => ({ x: stack.x, y: -0.02, z: stack.z, yaw: stack.yaw, sx: 1, sy: 1, sz: 1, color: stack.red ? red : white }));
-    addChunkedInstances(ctx, geometry, material, items, { cell: 160, name: 'neumáticos', cast: true, receive: true });
+    addChunkedLodInstances(
+      ctx,
+      [
+        { geometry, distance: 0 },
+        { geometry: distant, distance: TYRE_SIMPLE_DISTANCE },
+      ],
+      material,
+      items,
+      { cell: 160, name: 'neumáticos', cast: true, receive: true },
+    );
   }
   if (top) addMesh(ctx, top, new MeshStandardMaterial({ color: '#8d8e8b', roughness: 0.85 }), { name: 'muros-tapa' });
 }

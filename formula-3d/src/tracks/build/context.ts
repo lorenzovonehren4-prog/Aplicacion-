@@ -1,10 +1,17 @@
 /** Contexto compartido por las etapas de construcción del escenario del circuito. */
 
-import { InstancedMesh, LOD, Matrix4, Mesh, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material, type Object3D, type Texture } from 'three';
+import { InstancedMesh, LOD, Matrix4, Mesh, Object3D, Quaternion, Vector3, type BufferGeometry, type Color, type Group, type Material, type Texture } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Disposer } from '../../core/utils/Disposer';
 import type { Random } from '../../core/utils/random';
 import type { Track } from '../Track';
+
+/**
+ * Capa de lo que sólo se ve de lejos (los árboles a cientos de metros): la
+ * cámara de la carrera la ve; la del retrovisor, que no mira tan lejos, no la
+ * dibuja.
+ */
+export const DISTANT_LAYER = 1;
 
 export interface BuildContext {
   track: Track;
@@ -107,7 +114,7 @@ export function addChunkedInstances(
   geometry: BufferGeometry,
   material: Material,
   items: readonly InstanceItem[],
-  options: { cell: number; name: string; cast: boolean; receive: boolean; depthMaterial?: Material },
+  options: { cell: number; name: string; cast: boolean; receive: boolean; depthMaterial?: Material; layer?: number },
 ): void {
   const cells = new Map<string, InstanceItem[]>();
   for (const item of items) {
@@ -136,6 +143,7 @@ export function addChunkedInstances(
     mesh.receiveShadow = options.receive;
     mesh.name = options.name;
     mesh.matrixAutoUpdate = false;
+    if (options.layer !== undefined) mesh.layers.set(options.layer);
     mesh.computeBoundingSphere();
     ctx.root.add(mesh);
   }
@@ -148,13 +156,16 @@ export function addChunkedInstances(
  * distancia se ven igual. Las instancias se guardan relativas al centro de
  * la celda, que es desde donde el LOD mide la distancia.
  * @param levels geometría de cada nivel y la distancia (m) desde la que se usa
+ * @param options.until si se da, la celda deja de dibujarse cuando todos sus
+ *   objetos quedan a más de esa distancia (m) de la cámara: más lejos se
+ *   encarga otra malla (ver los árboles lejanos en `scenery.ts`)
  */
 export function addChunkedLodInstances(
   ctx: BuildContext,
   levels: ReadonlyArray<{ geometry: BufferGeometry; distance: number }>,
   material: Material,
   items: readonly InstanceItem[],
-  options: { cell: number; name: string; cast: boolean; receive: boolean; depthMaterial?: Material },
+  options: { cell: number; name: string; cast: boolean; receive: boolean; depthMaterial?: Material; until?: number },
 ): void {
   const cells = new Map<string, InstanceItem[]>();
   for (const item of items) {
@@ -198,7 +209,16 @@ export function addChunkedLodInstances(
       mesh.name = options.name;
       mesh.matrixAutoUpdate = false;
       mesh.computeBoundingSphere();
-      lod.addLevel(mesh, level.distance, level.distance * 0.05);
+      // La histéresis de three es una fracción de la distancia (5 %), no metros: con metros
+      // el umbral de vuelta quedaba negativo y el nivel no cambiaba más (árboles pegados en
+      // el detalle medio o lejano aunque la cámara pasara al lado).
+      lod.addLevel(mesh, level.distance, 0.05);
+    }
+    if (options.until !== undefined) {
+      // Nivel vacío: a esta distancia del centro, hasta el objeto más cercano de la celda ya está más allá de `until`.
+      let reach = 0;
+      for (const item of list) reach = Math.max(reach, Math.hypot(item.x - cx, item.z - cz));
+      lod.addLevel(new Object3D(), options.until + reach + 1, 0);
     }
     ctx.root.add(lod);
   }
