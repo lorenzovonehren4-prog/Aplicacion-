@@ -3,6 +3,8 @@ import { createDefaultBindings, isBindableKey, keyLabel } from '../src/core/inpu
 import { sanitizeSave } from '../src/core/save/sanitize';
 import { createDefaultSave } from '../src/core/save/schema';
 import { achievementContext, ACHIEVEMENTS, createDefaultStats, newAchievements, recordSession, type SessionSummary } from '../src/progression/career';
+import { medalTimes } from '../src/progression/medals';
+import { TRACKS } from '../src/tracks/registry';
 
 const NOW = 1_700_000_000_000;
 
@@ -50,6 +52,17 @@ describe('estadísticas de la trayectoria', () => {
     const have = Object.fromEntries(fresh.map((id) => [id, NOW]));
     expect(newAchievements(achievementContext(data), have)).toEqual([]);
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
+  });
+
+  it('logros de medallas y de la racha del desafío del día', () => {
+    const data = createDefaultSave(NOW, 'high');
+    const monza = TRACKS.find((t) => t.id === 'monza') ?? TRACKS[0]!;
+    data.records = { monza: { bestLap: medalTimes(monza).gold } };
+    data.daily = { last: '2026-10-03', streak: 3, best: 3, total: 3 };
+    const fresh = newAchievements(achievementContext(data), {});
+    expect(fresh).toEqual(expect.arrayContaining(['medal-gold', 'daily-3']));
+    expect(fresh).not.toContain('medal-platinum');
+    expect(fresh).not.toContain('daily-7');
   });
 
   it('el saneo descarta logros desconocidos y estadísticas inválidas', () => {

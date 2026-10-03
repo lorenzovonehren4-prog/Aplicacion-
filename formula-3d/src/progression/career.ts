@@ -9,6 +9,8 @@ import type { SaveData } from '../core/save/schema';
 import type { DeepReadonly } from '../core/utils/types';
 import { createDefaultGarage } from '../garage/setup';
 import type { SessionMode } from '../core/screens/params';
+import { TRACKS } from '../tracks/registry';
+import { medalTally, type Medal } from './medals';
 import { PASS_MAX_XP } from './seasonPass';
 
 /** Estadísticas de un circuito. */
@@ -132,6 +134,10 @@ export interface AchievementContext {
   customized: boolean;
   /** ¿Hay algún fantasma de contrarreloj guardado? */
   hasGhost: boolean;
+  /** Pistas con cada medalla de tiempo o mejor (ver `medals.ts`). */
+  medals: Record<Medal, number>;
+  /** La racha más larga del desafío del día. */
+  dailyBest: number;
 }
 
 export interface Achievement {
@@ -167,6 +173,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'level-10', name: 'Del paddock', description: 'Llega al nivel 10 de piloto.', tier: 'silver', progress: (c) => count(c.level, 10) },
   { id: 'level-50', name: 'Veterano', description: 'Llega al nivel 50 de piloto.', tier: 'gold', progress: (c) => count(c.level, 50) },
   { id: 'pass-complete', name: 'Ignición completa', description: 'Completa los 50 niveles del pase de temporada.', tier: 'gold', progress: (c) => count(c.passXp, PASS_MAX_XP) },
+  { id: 'medal-gold', name: 'Oro puro', description: 'Gana una medalla de oro en un circuito.', tier: 'silver', progress: (c) => count(c.medals.gold, 1) },
+  { id: 'medal-platinum', name: 'Platino', description: 'Gana una medalla de platino en un circuito.', tier: 'gold', progress: (c) => count(c.medals.platinum, 1) },
+  { id: 'medals-all', name: 'Gira completa', description: 'Gana una medalla en los 24 circuitos.', tier: 'gold', progress: (c) => count(c.medals.bronze, TRACKS.length) },
+  { id: 'daily-3', name: 'Constancia', description: 'Cumple el desafío del día 3 días seguidos.', tier: 'bronze', progress: (c) => count(c.dailyBest, 3) },
+  { id: 'daily-7', name: 'Imparable', description: 'Cumple el desafío del día 7 días seguidos.', tier: 'gold', progress: (c) => count(c.dailyBest, 7) },
 ];
 
 const byId = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
@@ -188,5 +199,7 @@ export function achievementContext(data: DeepReadonly<SaveData>): AchievementCon
     passXp: data.progression.pass.xp,
     customized: JSON.stringify(data.garage) !== JSON.stringify(createDefaultGarage()),
     hasGhost: Object.values(data.records).some((record) => record.ghost !== undefined),
+    medals: medalTally(TRACKS, (id) => data.records[id]?.bestLap),
+    dailyBest: data.daily.best,
   };
 }

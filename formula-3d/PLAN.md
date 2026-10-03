@@ -1587,6 +1587,83 @@ detrás".
       Ultra se actualiza todos los cuadros; en el resto, uno sí y uno no, y
       si el ajuste automático baja la carga, a menos resolución.
 
+### Versión 2.4 — Fluidez a fondo, medallas y desafío del día ✅
+
+Pedido: "lo que más me importa es que todo esté fluido; algo más que se
+pueda mejorar para eso u otras cosas" y "mira otras cosas que puedes mejorar
+para que la gente quiera jugar el juego".
+
+**Ritmo de cuadros** (`core/GameLoop.ts`)
+
+- [x] Con 60 FPS pedidos en un monitor de 60 Hz, el limitador salteaba un
+      cuadro cada vez que rAF llegaba un poco antes (Firefox y otros dan
+      tiempos con ±1–2 ms de ruido): con ±2 ms se perdían 44 de 121 cuadros.
+      Si el monitor no pasa del objetivo, ya no se limita nada.
+- [x] El `dt` se ajusta al período del monitor cuando la diferencia es sólo
+      ruido (hasta 4 ms) y lo que sobra se devuelve de a 0,1 ms por cuadro:
+      el auto se mueve parejo y el reloj del juego nunca se separa del real
+      más de 8 ms (si el monitor cambia de frecuencia, se corrige de una vez).
+
+**GPU: el posprocesado en una pasada** (`core/render/FinalPass.ts`)
+
+- [x] Antes: el bloom se mezclaba con la imagen (una pasada a pantalla
+      completa), después la pasada de velocidad y después la de salida (tone
+      mapping y sRGB): tres lecturas y escrituras de media precisión de toda
+      la pantalla. Ahora el bloom deja su imagen y una sola pasada final hace
+      desenfoque, aire caliente, bloom, gradación, tono y sRGB. En Media,
+      Alta y Ultra se ahorran dos pasadas por cuadro (de lo que más cuesta en
+      las GPU integradas). El desenfoque tampoco toma muestras en el centro,
+      donde no mueve nada.
+
+**Menos llamadas de dibujo y vértices**
+
+- [x] El detalle por distancia de los árboles (y de todo lo que usa celdas
+      con LOD) tenía la histéresis en metros en vez de fracción: el umbral de
+      vuelta quedaba negativo y cada celda se quedaba trabada en el nivel al
+      que había pasado (bultos lejanos al lado de la pista, o el detalle
+      medio para siempre). Corregido.
+- [x] Árboles lejanos (más de 700 m, decidido árbol por árbol en el
+      sombreador) en celdas grandes de 800 m: en Monza la escena pasó de 201
+      a 161 llamadas de dibujo por cuadro. El corte cerca/lejos es exacto (no
+      hay huecos ni árboles dobles) y el retrovisor no dibuja los lejanos.
+- [x] Pilas de neumáticos con versión simple de lejos (cilindro de 4 lados
+      con la cinta de color) y rivales lejanos con ruedas mínimas (18 000 →
+      11 000 vértices por auto).
+
+**Medallas de tiempo** (`progression/medals.ts`)
+
+- [x] Bronce, plata, oro y platino en cada circuito, según la mejor vuelta
+      válida (de práctica, contrarreloj o carrera). Los tiempos salen del
+      ritmo de un piloto profesional medido con el piloto automático en las
+      24 pistas (el récord real solo no sirve: Bakú queda a 1,07× y Madrid a
+      1,26× con el auto del juego): bronce +12 %, plata +6 %, oro +2 % y
+      platino −1 % respecto de ese ritmo.
+- [x] HUD de práctica y contrarreloj con la próxima medalla y su tiempo;
+      aviso "¡MEDALLA DE ORO!" al ganarla y XP fija (100/150/250/400) en los
+      resultados, que no multiplican dificultad ni ayudas.
+- [x] Escalera de medallas en Circuitos → Tus tiempos (cuánto falta para la
+      próxima), disco de color en la lista, próxima medalla en la selección,
+      medallas en el perfil y en la tarjeta de Contrarreloj del menú.
+- [x] `tests/medals.test.ts` vuelve a medir el ritmo en tres pistas: si
+      cambia la física, avisa que hay que recalibrar.
+
+**Desafío del día** (`progression/daily.ts`)
+
+- [x] Un desafío por día (el mismo para la misma fecha; cambia a la
+      medianoche del jugador) en una pista que nunca repite la de ayer y con
+      clima del día: vuelta de medalla en contrarreloj, podio, remontada
+      largando último (`startLast`), carrera limpia o victoria. Las carreras
+      usan la dificultad elegida (o el nivel con nombre de abajo).
+- [x] Botón "Desafío" arriba en el menú con la racha y un punto que late si
+      falta el de hoy; el panel grande muestra objetivo, circuito, premio,
+      mejor racha y las horas que quedan.
+- [x] En pista, el objetivo al empezar, "¡Desafío cumplido!" en cuanto se
+      logra y aviso si no se cumplió al terminar. Premio: 300 XP + 60 por día
+      de racha (hasta el quinto) y 2 puntos de desarrollo (3 desde el tercer
+      día), una vez por día.
+- [x] Logros nuevos: Oro puro, Platino, Gira completa (medalla en las 24),
+      Constancia (3 días seguidos) e Imparable (7).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1680,3 +1757,4 @@ detrás".
 - **Versión 2.1**: trazada que el auto puede seguir, bots que aprenden la pista y no se salen, largadas limpias (pedido del usuario).
 - **Versión 2.2**: piloto 3D animado en el menú, mejoras del auto con puntos de desarrollo y guía de circuitos con ficha técnica, curva por curva y tus tiempos (pedido del usuario).
 - **Versión 2.3**: carreras sin parpadeos de posición ni fantasmas encimados, sin tirones de sombreadores, calidad Media más liviana y retrovisor en pantalla con quién viene detrás (pedido del usuario).
+- **Versión 2.4**: ritmo de cuadros parejo, posprocesado en una pasada, menos llamadas de dibujo, medallas de tiempo por circuito y desafío del día con racha (pedido del usuario).

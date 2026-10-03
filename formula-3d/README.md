@@ -65,7 +65,16 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.3.0: las carreras son más estables y fluidas. Rueda a rueda, la
+Versión 2.4.0: más fluido y con motivos para volver. El juego ya no pierde
+cuadros por el ruido de los tiempos del navegador y mueve el auto al ritmo
+exacto del monitor; el posprocesado se hace en una sola pasada (dos menos a
+pantalla completa por cuadro) y la escena pide un 20 % menos de llamadas de
+dibujo. Cada circuito tiene **medallas de tiempo** (bronce, plata, oro y
+platino), con la próxima a la vista mientras corres, y hay un **desafío del
+día** (vuelta de medalla, podio, remontada, carrera limpia o victoria) con
+racha de días seguidos que sube el premio.
+
+Desde la 2.3.0: las carreras son más estables y fluidas. Rueda a rueda, la
 posición ya no parpadea (cambia cuando uno pasa de verdad, con 1,2 m de
 ventaja), un auto que vuelve a la pista ya no reaparece encima de otro (si
 al terminar el modo fantasma tiene a alguien encima, lo espera) y deja de
