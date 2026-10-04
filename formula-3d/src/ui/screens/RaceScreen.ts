@@ -46,7 +46,9 @@ import { RaceWorld, type IntroShot } from '../../race/RaceWorld';
 import type { CrewStop } from '../../race/render/PitCrew';
 import { REPLAY_CAMERA_LABELS, REPLAY_CAMERA_ORDER, ReplayCamera, type ReplayTarget } from '../../race/camera/ReplayCamera';
 import { ReplayPlayer } from '../../race/ReplayPlayer';
-import { ReplayRecorder, type ReplaySource } from '../../race/session/Replay';
+import { ReplayRecorder, type PitMark, type ReplaySource } from '../../race/session/Replay';
+import { gunStarts, jackHits, servicePose } from '../../race/session/PitService';
+import type { PitStop } from '../../race/session/PitStop';
 import type { VehicleState } from '../../race/physics/Vehicle';
 import { ReplayOverlay, type ReplayRow } from '../race/ReplayOverlay';
 import { BuildCancelled } from '../../tracks/TrackBuilder';
@@ -56,7 +58,7 @@ import { h, prefersReducedMotion } from '../dom';
 import { ControlHints } from '../components/ControlHints';
 import { createCountryFlag } from '../components/CountryFlag';
 import { FinishPanel } from '../race/FinishPanel';
-import { Hud, type HudAssists } from '../race/Hud';
+import { Hud, type HudAssists, type HudPit } from '../race/Hud';
 import { LoadingOverlay } from '../race/LoadingOverlay';
 import { PauseMenu, type PauseChoice } from '../race/PauseMenu';
 import { BaseScreen } from './BaseScreen';
@@ -98,6 +100,9 @@ const RADIO_IMPACT_GAP = 20_000;
 const QUALITY_LABELS = { low: 'Baja', medium: 'Media', high: 'Alta', ultra: 'Ultra' } as const;
 /** Grabación mínima (cuadros) para ofrecer la repetición. */
 const REPLAY_HZ_MIN = 40;
+/** Parada (servicio, s): hasta acá es perfecta y hasta acá, buena. */
+const PIT_BEST = 2.15;
+const PIT_GOOD = 2.5;
 
 /** Filas de la torre de la repetición: todas si entran; si no, los primeros y alrededor del auto que se sigue. */
 function pickReplayRows(rows: ReplayRow[]): ReplayRow[] {
@@ -221,7 +226,12 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   /** Ya avisó por radio de neumáticos gastados o del alerón dañado (hasta la próxima parada). */
   private carWarned = { tyres: false, wing: false };
   private carTimer = 0;
+  /** Paradas en boxes en curso (una por box) y los objetos que se reutilizan (uno por auto). */
   private readonly crewStops: CrewStop[] = [];
+  private readonly crewPool: CrewStop[] = [];
+  /** Reloj de la parada del jugador en el cuadro anterior (para los sonidos de pistolas y gatos). */
+  private pitSoundAt = -1;
+  private readonly pitPanel: HudPit = { title: '', detail: '', timer: null, tone: 'live', progress: null };
   /** Repetición: la grabación (en carrera), el reproductor y lo que se guarda para volver. */
   private recorder: ReplayRecorder | null = null;
   private readonly replaySources: ReplaySource[] = [];
@@ -278,9 +288,14 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       return;
     }
     session.cars.forEach((car, i) => {
-      const source = this.replaySources[i] ?? (this.replaySources[i] = { vehicle: car.vehicle, progress: 0, pit: 0 });
+      const source =
+        this.replaySources[i] ?? (this.replaySources[i] = { vehicle: car.vehicle, progress: 0, pit: 0, pitTime: 0, pitDuration: 0, pitRepair: false });
       source.progress = order.runners[i]?.progress ?? 0;
-      source.pit = car.pit ? (car.pit.phase === 'stop' ? 2 : 1) : 0;
+      const pit = car.pit;
+      source.pit = pitMark(pit);
+      source.pitTime = pit ? (pit.phase === 'stop' ? pit.serviceElapsed : pit.sinceRelease) : 0;
+      source.pitDuration = pit?.serviceTime ?? 0;
+      source.pitRepair = pit?.repair ?? false;
     });
     recorder.record(step, this.replaySources);
   }
@@ -311,7 +326,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
     const simulating = this.phase === 'running' || this.phase === 'results';
     world.update(dt, simulating ? alpha : 1, tel);
-    this.updateCrews(session, world);
+    this.updateCrews(simulating ? dt : 0, session, world);
     if (simulating) session.takeContacts(this.contactBurst);
     world.updateEffects(dt, this.effectCars, simulating);
     world.renderMirrors(this.game.render.renderer);
@@ -851,12 +866,6 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         case 'pitEntry':
           if (event.index === session.player.index) world.racingLine.setHidden(true);
           break;
-        case 'pitService':
-          if (event.index === session.player.index) world.showPitStop(session.player.box);
-          break;
-        case 'pitRelease':
-          if (event.index === session.player.index) world.showPitStop(null);
-          break;
         case 'pitExit':
           if (event.index === session.player.index) {
             world.racingLine.setHidden(false);
@@ -1127,7 +1136,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const target: ReplayTarget = { x: 0, z: 0, heading: 0, s: 0, speed: 0 };
     this.replay = { player, camera, target, saved, uiTimer: 0 };
     world.racingLine.setHidden(true);
-    world.showPitStop(null);
+    world.setPitView(null);
     world.effects.clear();
     world.setMirrorRect(null);
     this.mirrorShown = null;
@@ -1211,17 +1220,28 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     // Chispas de los choques (sólo reproduciendo hacia adelante y no muy rápido).
     if (player.playing && player.speed <= 2) player.burstsBetween(before, player.time, (x, z, speed) => world.effects.burst(x, z, speed));
     world.updateEffects(player.playing ? dt * player.speed : 0, this.effectCars, player.playing);
-    // Equipos de boxes de lo grabado.
+    // Equipos de boxes de lo grabado (y los autos levantados por los gatos).
     const stops = this.crewStops;
     stops.length = 0;
     const pit = session.track.pitLane;
     session.cars.forEach((car, i) => {
       const pose = player.cars[i];
-      if (!pose || pose.pit === 0) return;
-      const box = pit.boxes[car.box] ?? 0;
-      stops.push({ box: car.box, color: car.team.primary, toBox: session.track.geometry.deltaS(car.vehicle.projection.s, box), working: pose.pit === 2 });
+      if (!pose || pose.pit === 0) {
+        servicePose(null, 0, car.vehicle.pitPose);
+        return;
+      }
+      const stop = this.crewStopFor(i);
+      stop.box = car.box;
+      stop.color = car.team.primary;
+      stop.phase = pose.pit === 1 ? 'in' : pose.pit === 2 ? 'stop' : 'out';
+      stop.toBox = session.track.geometry.deltaS(car.vehicle.projection.s, pit.boxes[car.box] ?? 0);
+      stop.time = pose.pitTime;
+      stop.duration = pose.pitDuration;
+      stop.repair = pose.pitRepair;
+      servicePose(stop.phase === 'stop' ? stop.time : null, stop.duration, car.vehicle.pitPose);
+      stops.push(stop);
     });
-    world.updateCrew(stops);
+    world.updateCrew(onePerBox(stops), player.playing ? dt * player.speed : 0);
     // Sonido: el motor del auto que se sigue (sólo a velocidad normal).
     const audible = player.playing && player.speed === 1;
     this.audio.setMuted(!audible);
@@ -1695,7 +1715,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       this.setPaused(false);
     }
     world.racingLine.setHidden(session.phase === 'grid');
-    world.showPitStop(null);
+    world.setPitView(null);
     this.carWarned = { tyres: false, wing: false };
     if (session.isRace) this.hud?.message('A LA PARRILLA', 'Nueva largada: no aceleres hasta que se apaguen las luces', 'info');
     else this.hud?.message('SESIÓN REINICIADA', 'Vuelta de salida', 'info');
@@ -1703,16 +1723,77 @@ export class RaceScreen extends BaseScreen<RaceParams> {
 
   // ─── HUD y vibración ───────────────────────────────────────────────────
 
-  /** Equipos de boxes: los de las paradas en curso. */
-  private updateCrews(session: Session, world: RaceWorld): void {
+  /** Objeto reutilizado para la parada del auto `index`. */
+  private crewStopFor(index: number): CrewStop {
+    let stop = this.crewPool[index];
+    if (!stop) {
+      stop = { box: 0, color: '', phase: 'in', toBox: 0, time: 0, duration: 0, repair: false };
+      this.crewPool[index] = stop;
+    }
+    return stop;
+  }
+
+  /**
+   * Equipos de boxes de las paradas en curso, la pose de cada auto (gatos y
+   * ruedas sacadas), la toma de TV de la parada del jugador y sus sonidos.
+   */
+  private updateCrews(dt: number, session: Session, world: RaceWorld): void {
     const stops = this.crewStops;
     stops.length = 0;
+    let own: CrewStop | null = null;
     for (const car of session.cars) {
       const pit = car.pit;
-      if (!pit) continue;
-      stops.push({ box: car.box, color: car.team.primary, toBox: pit.toBox, working: pit.phase === 'stop' });
+      if (!pit) {
+        servicePose(null, 0, car.vehicle.pitPose);
+        continue;
+      }
+      const stop = this.crewStopFor(car.index);
+      stop.box = car.box;
+      stop.color = car.team.primary;
+      stop.phase = pit.phase === 'stop' ? 'stop' : pit.phase === 'in' ? 'in' : 'out';
+      stop.toBox = pit.toBox;
+      stop.time = pit.phase === 'stop' ? pit.serviceElapsed : pit.sinceRelease;
+      stop.duration = pit.serviceTime;
+      stop.repair = pit.repair;
+      servicePose(stop.phase === 'stop' ? stop.time : null, stop.duration, car.vehicle.pitPose);
+      stops.push(stop);
+      if (car.isPlayer) own = stop;
     }
-    world.updateCrew(stops);
+    world.updateCrew(onePerBox(stops), dt);
+    world.setPitView(own);
+    // Pistolas y gatos de la parada del jugador.
+    if (own?.phase === 'stop') {
+      const from = Math.max(0, this.pitSoundAt);
+      if (gunStarts(from, own.time)) this.audio.cue('gun');
+      if (jackHits(from, own.time, own.duration)) this.audio.cue('jack');
+      this.pitSoundAt = own.time;
+    } else {
+      this.pitSoundAt = -1;
+    }
+  }
+
+  /** Panel de la parada del jugador, como el gráfico de la transmisión. */
+  private pitPanelFor(pit: PitStop): HudPit {
+    const panel = this.pitPanel;
+    panel.progress = null;
+    panel.timer = null;
+    panel.tone = 'live';
+    if (pit.phase === 'in') {
+      panel.title = 'BOXES';
+      panel.detail = pit.limited ? 'LIMITADOR · 80 km/h' : 'Entrando a la calle de boxes';
+    } else if (pit.phase === 'stop') {
+      panel.title = 'PARADA';
+      panel.detail = pit.repair ? 'Gomas nuevas · alerón nuevo' : 'Cuatro gomas nuevas';
+      panel.timer = pit.serviceElapsed.toFixed(1);
+      panel.progress = pit.serviceElapsed / pit.serviceTime;
+    } else {
+      const time = pit.serviceTime;
+      panel.tone = pit.repair ? 'good' : time <= PIT_BEST ? 'best' : time <= PIT_GOOD ? 'good' : 'slow';
+      panel.title = pit.repair ? 'ALERÓN NUEVO' : panel.tone === 'best' ? '¡PARADA PERFECTA!' : panel.tone === 'good' ? 'BUENA PARADA' : 'PARADA LENTA';
+      panel.detail = pit.limited ? 'LIMITADOR · 80 km/h hasta la línea' : 'De vuelta a la pista';
+      panel.timer = `${time.toFixed(1)} s`;
+    }
+    return panel;
   }
 
   /** Motores de los rivales en 3D, oídos desde la cámara. */
@@ -1769,20 +1850,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
    */
   private updateCar(dt: number, session: Session, hud: Hud): void {
     const pit = session.player.pit;
-    if (pit) {
-      const box = pit.phase === 'stop';
-      hud.setPit({
-        title: box ? 'PARADA EN BOXES' : pit.phase === 'out' ? 'SALIDA DE BOXES' : 'ENTRANDO A BOXES',
-        detail: box
-          ? `${pit.serviceLeft.toFixed(1)} s · ${pit.repair ? 'gomas nuevas y alerón' : 'gomas nuevas'}`
-          : pit.limited
-            ? 'LIMITADOR · 80 km/h'
-            : 'El equipo maneja por la calle',
-        progress: box ? 1 - pit.serviceLeft / pit.serviceTime : null,
-      });
-    } else {
-      hud.setPit(null);
-    }
+    hud.setPit(pit ? this.pitPanelFor(pit) : null);
     this.carTimer -= dt;
     if (this.carTimer > 0) return;
     this.carTimer = 0.25;
@@ -1945,4 +2013,24 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const actuator = this.game.input.gamepad?.vibrationActuator;
     actuator?.reset().catch(() => undefined);
   }
+}
+
+/** Marca de la parada para la repetición. */
+function pitMark(pit: PitStop | null): PitMark {
+  if (!pit) return 0;
+  return pit.phase === 'in' ? 1 : pit.phase === 'stop' ? 2 : 3;
+}
+
+/**
+ * Un solo equipo por box: si dos autos del mismo equipo están en boxes, el
+ * que está parado (o el que llega primero) se queda con los mecánicos.
+ */
+function onePerBox(stops: CrewStop[]): CrewStop[] {
+  const rank = (stop: CrewStop): number => (stop.phase === 'stop' ? 0 : stop.phase === 'in' ? 1 + Math.max(0, stop.toBox) / 1000 : 3);
+  for (let i = stops.length - 1; i >= 0; i--) {
+    const stop = stops[i];
+    if (!stop) continue;
+    if (stops.some((other, k) => k !== i && other.box === stop.box && (rank(other) < rank(stop) || (rank(other) === rank(stop) && k < i)))) stops.splice(i, 1);
+  }
+  return stops;
 }

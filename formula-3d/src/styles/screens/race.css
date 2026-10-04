@@ -1066,24 +1066,33 @@
   display: inline-block;
 }
 
-/* Parada en boxes: panel arriba al centro (en el lugar del semáforo y del retrovisor, que no se ven en boxes). */
+/* Parada en boxes: panel arriba al centro (en el lugar del semáforo y del retrovisor, que no se ven en boxes),
+   como el gráfico de la transmisión: texto a la izquierda y el reloj de la parada a la derecha. */
 .pitbox {
   position: absolute;
   left: 50%;
   top: calc(var(--gutter) + 8px);
   display: none;
-  flex-direction: column;
+  grid-template-columns: auto auto;
   align-items: center;
-  gap: 4px;
+  column-gap: 22px;
+  row-gap: 6px;
   min-width: 260px;
   padding: 10px 22px 12px;
-  background: rgba(10, 11, 15, 0.9);
+  background: linear-gradient(90deg, rgba(10, 11, 15, 0.94), rgba(18, 20, 28, 0.9));
   border-top: 3px solid #1f6bff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   translate: -50% 0;
 }
 
 .pitbox.is-visible {
+  display: grid;
+}
+
+.pitbox__text {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .pitbox__title {
@@ -1099,11 +1108,51 @@
   color: var(--c-text-2);
 }
 
+.pitbox__timer {
+  display: none;
+  min-width: 3.4ch;
+  font-family: var(--font-num);
+  font-size: 36px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pitbox.has-timer .pitbox__timer {
+  display: block;
+}
+
+.pitbox[data-tone='best'] {
+  border-top-color: #b26bff;
+}
+
+.pitbox[data-tone='best'] .pitbox__timer {
+  color: #c48bff;
+}
+
+.pitbox[data-tone='good'] {
+  border-top-color: #27e06b;
+}
+
+.pitbox[data-tone='good'] .pitbox__timer {
+  color: #3cf07e;
+}
+
+.pitbox[data-tone='slow'] {
+  border-top-color: #ffb02e;
+}
+
+.pitbox[data-tone='slow'] .pitbox__timer {
+  color: #ffc04d;
+}
+
 .pitbox__bar {
   display: none;
+  grid-column: 1 / -1;
   width: 100%;
   height: 4px;
-  margin-top: 4px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.1);
 }

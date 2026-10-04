@@ -3,8 +3,9 @@
  *
  * Cada auto se graba `REPLAY_HZ` veces por segundo: posición, rumbo y
  * progreso en la carrera (números con coma) y el resto en un byte cada uno
- * (velocidad, dirección, DRS, pedales, humo, tierra, marcha, régimen,
- * boxes). Se guarda en bloques de 30 s: con 20 autos son ~6 KB por segundo.
+ * (velocidad, dirección, DRS, pedales, humo, tierra, marcha, régimen y la
+ * parada en boxes: fase, reloj, duración y si cambian el alerón). Se guarda
+ * en bloques de 30 s: con 20 autos son ~7 KB por segundo.
  * Además, los momentos (semáforo, bandera, choques, vueltas) con su hora.
  *
  * Al mostrar, cada cuadro se interpola entre los dos grabados más cercanos.
@@ -20,14 +21,16 @@ const STEP = 1 / REPLAY_HZ;
 const CHUNK = 600;
 /** Valores con coma por auto y cuadro: x, z, rumbo, progreso. */
 const FLOATS = 4;
-/** Valores de un byte por auto y cuadro (ver `write`). */
-const BYTES = 14;
+/** Valores de un byte por auto y cuadro (ver `record`). */
+const BYTES = 17;
 /** Escala de la velocidad (m/s por unidad) y del régimen (rpm por unidad). */
 const SPEED_UNIT = 0.4;
 const RPM_UNIT = 64;
+/** Reloj y duración de la parada: unidades por segundo (hasta 12,75 s). */
+const PIT_TIME_UNITS = 20;
 
-/** Estado de un auto en boxes: 0 en pista, 1 en la calle, 2 parado con el equipo trabajando. */
-export type PitMark = 0 | 1 | 2;
+/** Estado de un auto en boxes: 0 en pista, 1 llegando al box, 2 parado con el equipo trabajando, 3 saliendo. */
+export type PitMark = 0 | 1 | 2 | 3;
 
 /** Un momento de la carrera (sin la hora). */
 export type ReplayMark =
@@ -43,17 +46,25 @@ export type ReplayMark =
 /** Un momento con su hora (s desde el primer cuadro). */
 export type ReplayEvent = ReplayMark & { t: number };
 
-/** Lo que se lee de un auto en un instante (pose para mostrar, progreso y boxes). */
-export interface ReplayCar extends ShownPose {
-  progress: number;
+/** La parada en boxes de un auto en un instante. */
+export interface ReplayPit {
   pit: PitMark;
+  /** Segundos desde que paró (2) o desde que salió (3). */
+  pitTime: number;
+  /** Segundos de servicio y si cambian el alerón. */
+  pitDuration: number;
+  pitRepair: boolean;
+}
+
+/** Lo que se lee de un auto en un instante (pose para mostrar, progreso y boxes). */
+export interface ReplayCar extends ShownPose, ReplayPit {
+  progress: number;
 }
 
 /** Lo que la grabación necesita de cada auto en cada cuadro. */
-export interface ReplaySource {
+export interface ReplaySource extends ReplayPit {
   vehicle: Vehicle;
   progress: number;
-  pit: PitMark;
 }
 
 const lerpAngle = (a: number, b: number, t: number): number => {
@@ -128,6 +139,9 @@ export class ReplayRecorder {
       bytes[b + 11] = clamp(Math.round(t.rpm / RPM_UNIT), 0, 255);
       bytes[b + 12] = source.pit;
       bytes[b + 13] = byte(0.5 + clamp(v.yawRate / 4, -0.5, 0.5));
+      bytes[b + 14] = clamp(Math.round(source.pitTime * PIT_TIME_UNITS), 0, 255);
+      bytes[b + 15] = clamp(Math.round(source.pitDuration * PIT_TIME_UNITS), 0, 255);
+      bytes[b + 16] = source.pitRepair ? 1 : 0;
     });
     this.frames++;
   }
@@ -187,6 +201,11 @@ export class ReplayRecorder {
     out.rpm = mix(bytes0[b0 + 11] ?? 0, bytes1[b1 + 11] ?? 0) * RPM_UNIT;
     out.pit = (near[bn + 12] ?? 0) as PitMark;
     out.yawRate = ((near[bn + 13] ?? 128) / 255 - 0.5) * 4;
+    // El reloj de la parada avanza suave entre cuadros (si los dos están en la misma fase).
+    const samePhase = (bytes0[b0 + 12] ?? 0) === (bytes1[b1 + 12] ?? 0);
+    out.pitTime = (samePhase ? mix(bytes0[b0 + 14] ?? 0, bytes1[b1 + 14] ?? 0) : (near[bn + 14] ?? 0)) / PIT_TIME_UNITS;
+    out.pitDuration = (near[bn + 15] ?? 0) / PIT_TIME_UNITS;
+    out.pitRepair = (near[bn + 16] ?? 0) === 1;
     return out;
   }
 
@@ -217,5 +236,8 @@ export function emptyReplayCar(): ReplayCar {
     rpm: 0,
     progress: 0,
     pit: 0,
+    pitTime: 0,
+    pitDuration: 0,
+    pitRepair: false,
   };
 }

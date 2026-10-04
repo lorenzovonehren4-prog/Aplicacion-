@@ -6,7 +6,7 @@
  */
 
 import type { Group } from 'three';
-import { CarModel } from '../../garage/CarModel';
+import { CAR_DIMENSIONS, CarModel } from '../../garage/CarModel';
 import type { LiveryConfig } from '../../garage/livery';
 import { clamp, damp } from '../../core/utils/math';
 import type { Vehicle } from '../physics/Vehicle';
@@ -17,6 +17,9 @@ const MODEL_OFFSET = 0.2;
 /** Inclinación visual (rad) por m/s² de aceleración. */
 const PITCH_PER_ACCEL = 0.0011;
 const ROLL_PER_ACCEL = 0.0013;
+/** Entre ejes del modelo (m) y altura del origen (z = 0) entre los dos gatos. */
+const WHEELBASE = CAR_DIMENSIONS.rearAxleZ - CAR_DIMENSIONS.frontAxleZ;
+const ORIGIN_FROM_REAR = CAR_DIMENSIONS.rearAxleZ / WHEELBASE;
 
 export interface PoseSnapshot {
   x: number;
@@ -109,12 +112,21 @@ export class CarRig {
     const root = this.model.root;
     const sin = Math.sin(heading);
     const cos = Math.cos(heading);
+    // En boxes, los gatos levantan la trompa y la cola (cada eje a su altura).
+    const jacks = v.pitPose;
+    const raise = jacks.liftRear + (jacks.liftFront - jacks.liftRear) * ORIGIN_FROM_REAR;
+    const tilt = Math.atan2(jacks.liftFront - jacks.liftRear, WHEELBASE);
     // Adelante = (−sin ψ, −cos ψ).
-    root.position.set(x - sin * MODEL_OFFSET, 0.001, z - cos * MODEL_OFFSET);
-    root.rotation.set(this.pitch, heading, this.roll, 'YXZ');
+    root.position.set(x - sin * MODEL_OFFSET, 0.001 + raise, z - cos * MODEL_OFFSET);
+    root.rotation.set(this.pitch + tilt, heading, this.roll, 'YXZ');
 
     // Ruedas: giro de rodado (derecha gira en −X local; la izquierda está espejada).
+    // Las que el equipo sacó no se ven (las lleva un mecánico).
     const wheels = this.model.wheels;
+    wheels.fl.steer.visible = (jacks.wheelsOff & 1) === 0;
+    wheels.fr.steer.visible = (jacks.wheelsOff & 2) === 0;
+    wheels.rl.steer.visible = (jacks.wheelsOff & 4) === 0;
+    wheels.rr.steer.visible = (jacks.wheelsOff & 8) === 0;
     for (const rig of [wheels.fl, wheels.fr]) rig.spin.rotation.x = -v.wheelSpinFront * rig.side;
     for (const rig of [wheels.rl, wheels.rr]) rig.spin.rotation.x = -v.wheelSpinRear * rig.side;
     this.model.setSteer(v.steerAngle);

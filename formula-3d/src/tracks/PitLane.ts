@@ -31,12 +31,18 @@ const RAMP_MIN = 50;
  */
 const RAMP_BEND = 0.55;
 /** Separación entre los lugares de parada de los equipos (m): la normal y la mínima (calles cortas). */
-const BOX_SPACING = 16;
+const BOX_SPACING = 14;
 const BOX_MIN_SPACING = 9;
 /** Zona con límite de velocidad: desde antes del primer box hasta después del último (m). */
-const LIMIT_MARGIN = 60;
+const LIMIT_MARGIN = 18;
 /** Lugares de parada (uno por equipo). */
 export const PIT_BOXES = 10;
+/**
+ * Semáforo de cada box: cuelga de un pórtico delante del auto parado (m
+ * adelante del lugar de parada, hacia el garaje desde el centro del carril
+ * de trabajo y de alto). El poste está del lado del garaje.
+ */
+export const PIT_LIGHT = { ahead: 4.2, out: 0.3, height: 2.75, post: 2.9 } as const;
 
 export interface PitLane {
   side: Side;

@@ -724,6 +724,12 @@ export class Session {
     const pit = car.pit;
     if (!pit) return;
     const phase = pit.phase;
+    // Box ocupado por el compañero (parado, o llegando antes): espera detrás.
+    if (pit.phase === 'in') {
+      pit.holdShort = this.cars.some(
+        (other) => other !== car && other.box === car.box && other.pit !== null && (other.pit.phase === 'stop' || (other.pit.phase === 'in' && other.pit.toBox < pit.toBox)),
+      );
+    }
     pit.step(dt, car.vehicle);
     if (phase !== 'stop' && pit.phase === 'stop') events.push({ kind: 'pitService', index: car.index, time: pit.serviceTime });
     if (phase === 'stop' && pit.phase !== 'stop') events.push({ kind: 'pitRelease', index: car.index });

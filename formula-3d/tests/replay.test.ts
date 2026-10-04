@@ -17,7 +17,7 @@ const NO_ASSISTS = { ...ASSIST_PRESETS.intermediate, braking: 'off' as const };
 function recordedRace(seconds: number): { session: Session; recorder: ReplayRecorder; snapshots: Array<{ time: number; x: number; z: number }> } {
   const session = new Session(track, F1_SPEC, null, { mode: 'race', laps: 3, rivals: { drivers: pickRivals(3), difficulty: 50 } }, NO_ASSISTS, () => 0.3);
   const recorder = new ReplayRecorder(session.cars.length);
-  const sources: ReplaySource[] = session.cars.map((car) => ({ vehicle: car.vehicle, progress: 0, pit: 0 }));
+  const sources: ReplaySource[] = session.cars.map((car) => ({ vehicle: car.vehicle, progress: 0, pit: 0, pitTime: 0, pitDuration: 0, pitRepair: false }));
   const snapshots: Array<{ time: number; x: number; z: number }> = [];
   for (let t = 0; t < seconds; t += STEP) {
     const input = session.phase === 'grid' ? { throttle: 0, brake: 0, steer: 0 } : autopilot(session.vehicle, track);

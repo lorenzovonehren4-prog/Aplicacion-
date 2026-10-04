@@ -239,6 +239,18 @@ class Minimap {
   }
 }
 
+/** Panel de la parada en boxes. */
+export interface HudPit {
+  title: string;
+  detail: string;
+  /** Reloj de la parada ("2.4") o null. */
+  timer: string | null;
+  /** Color del reloj: en vivo, récord, buena o lenta. */
+  tone: 'live' | 'best' | 'good' | 'slow';
+  /** Avance del servicio (0–1) o null. */
+  progress: number | null;
+}
+
 export class Hud {
   readonly root: HTMLDivElement;
   private readonly own = new Disposer();
@@ -307,12 +319,13 @@ export class Hud {
   // Parada en boxes: qué está pasando y, en el box, cuánto falta.
   private readonly pitTitle = h('span', { class: 'pitbox__title' });
   private readonly pitDetail = h('span', { class: 'pitbox__detail' });
+  private readonly pitTimer = h('span', { class: 'pitbox__timer' });
   private readonly pitBar = h('span', { class: 'pitbox__bar-fill' });
   private readonly pitBox = h(
     'div',
     { class: 'hud__pitbox pitbox', attrs: { role: 'status' } },
-    this.pitTitle,
-    this.pitDetail,
+    h('span', { class: 'pitbox__text' }, this.pitTitle, this.pitDetail),
+    this.pitTimer,
     h('span', { class: 'pitbox__bar' }, this.pitBar),
   );
   private pitKey = '';
@@ -466,20 +479,27 @@ export class Hud {
     toggle(this.boxChip, 'is-on', state.boxRequested);
   }
 
-  /** Panel de la parada en boxes (null = no está en boxes). `progress` 0–1 durante el servicio. */
-  setPit(state: { title: string; detail: string; progress: number | null } | null): void {
+  /**
+   * Panel de la parada en boxes, como el de la transmisión (null = no está en
+   * boxes): título, detalle, el reloj de la parada (`timer`, con su color:
+   * en vivo, récord, buena o lenta) y `progress` 0–1 durante el servicio.
+   */
+  setPit(state: HudPit | null): void {
     toggle(this.pitBox, 'is-visible', state !== null);
     toggle(this.root, 'has-pit', state !== null);
     if (!state) {
       this.pitKey = '';
       return;
     }
-    const key = `${state.title}|${state.detail}`;
+    const key = `${state.title}|${state.detail}|${state.tone}`;
     if (key !== this.pitKey) {
       this.pitKey = key;
       setText(this.pitTitle, state.title);
       setText(this.pitDetail, state.detail);
+      this.pitBox.dataset.tone = state.tone;
     }
+    toggle(this.pitBox, 'has-timer', state.timer !== null);
+    if (state.timer !== null) setText(this.pitTimer, state.timer);
     toggle(this.pitBox, 'has-progress', state.progress !== null);
     if (state.progress !== null) setTransform(this.pitBar, `scaleX(${Math.max(0, Math.min(1, state.progress)).toFixed(3)})`);
   }

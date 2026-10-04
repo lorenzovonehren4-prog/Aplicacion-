@@ -68,6 +68,9 @@ const FAR_DETAIL = 0.1;
 const MODEL_OFFSET = 0.2;
 const PITCH_PER_ACCEL = 0.0011;
 const ROLL_PER_ACCEL = 0.0013;
+/** Como en `CarRig`: entre ejes y altura del origen entre los dos gatos de boxes. */
+const WHEELBASE = CAR_DIMENSIONS.rearAxleZ - CAR_DIMENSIONS.frontAxleZ;
+const ORIGIN_FROM_REAR = CAR_DIMENSIONS.rearAxleZ / WHEELBASE;
 /** Pulsos por segundo de un auto "fantasma" (recién vuelto a la pista); con 7 parecía una falla. */
 const GHOST_PULSE = 2.5;
 /** Atlas de números: columnas × filas de celdas de `NUMBER_CELL` píxeles. */
@@ -624,7 +627,11 @@ export class RivalFleet {
         state.pitch = damp(state.pitch, clamp(-v.telemetry.ax * PITCH_PER_ACCEL, -0.035, 0.035), 8, dt);
         state.roll = damp(state.roll, clamp(v.telemetry.ay * ROLL_PER_ACCEL, -0.04, 0.04), 8, dt);
       }
-      this.composeCar(x - Math.sin(heading) * MODEL_OFFSET, z - Math.cos(heading) * MODEL_OFFSET, state.pitch, heading, state.roll);
+      // En boxes, los gatos levantan la trompa y la cola.
+      const jacks = v.pitPose;
+      const raise = jacks.liftRear + (jacks.liftFront - jacks.liftRear) * ORIGIN_FROM_REAR;
+      const tilt = Math.atan2(jacks.liftFront - jacks.liftRear, WHEELBASE);
+      this.composeCar(x - Math.sin(heading) * MODEL_OFFSET, z - Math.cos(heading) * MODEL_OFFSET, state.pitch + tilt, heading, state.roll, raise);
       this.shadows?.setMatrixAt(shadowCount++, this.carMatrix);
 
       const near = nearCount < this.lod.maxNear && (this.distances[index] ?? Infinity) < this.lod.nearDistance;
@@ -691,11 +698,11 @@ export class RivalFleet {
     return mesh;
   }
 
-  private composeCar(x: number, z: number, pitch: number, heading: number, roll: number): void {
+  private composeCar(x: number, z: number, pitch: number, heading: number, roll: number, raise = 0): void {
     // Rotación YXZ (rumbo, cabeceo, rolido), como `CarRig`.
     this.rotation.set(pitch, heading, roll, 'YXZ');
     this.quaternion.setFromEuler(this.rotation);
-    this.position.set(x, 0.001, z);
+    this.position.set(x, 0.001 + raise, z);
     this.scale.set(1, 1, 1);
     this.carMatrix.compose(this.position, this.quaternion, this.scale);
   }
@@ -710,7 +717,7 @@ export class RivalFleet {
     accent?.setXYZ(slot, state.accent.r, state.accent.g, state.accent.b);
   }
 
-  /** Ruedas del auto en `slot`: posición, dirección (delanteras) y giro de rodado. */
+  /** Ruedas del auto en `slot`: posición, dirección (delanteras) y giro de rodado (las sacadas en boxes, sin tamaño). */
   private writeWheels(slot: number, v: Vehicle): void {
     const tires = this.tires;
     const covers = this.covers;
@@ -723,7 +730,8 @@ export class RivalFleet {
       // Local: posición del eje → dirección → (lado izquierdo girado 180°) → rodado → ancho.
       this.quaternion.setFromAxisAngle(AXIS_Y, steer + (wheel.side < 0 ? Math.PI : 0));
       this.quaternion.multiply(SPIN.setFromAxisAngle(AXIS_X, spin));
-      this.scale.set(wheel.front ? frontScale : 1, 1, 1);
+      if ((v.pitPose.wheelsOff & (1 << i)) !== 0) this.scale.set(0, 0, 0);
+      else this.scale.set(wheel.front ? frontScale : 1, 1, 1);
       this.localMatrix.compose(wheel.position, this.quaternion, this.scale);
       this.partMatrix.multiplyMatrices(this.carMatrix, this.localMatrix);
       tires.setMatrixAt(slot * 4 + i, this.partMatrix);

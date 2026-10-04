@@ -8,13 +8,16 @@
 import {
   BoxGeometry,
   CanvasTexture,
+  BufferGeometry,
   CatmullRomCurve3,
   Color,
+  CylinderGeometry,
   DoubleSide,
   Float32BufferAttribute,
   InstancedMesh,
   Matrix4,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   Object3D,
@@ -27,9 +30,11 @@ import {
   SRGBColorSpace,
   Vector2,
   Vector3,
-  type BufferGeometry,
   type Texture,
 } from 'three';
+import { TEAMS } from '../../data/teams';
+import { PIT_LIGHT, type PitLane } from '../PitLane';
+import type { TrackGeometry } from '../TrackGeometry';
 import { DISTANT_LAYER, addChunkedInstances, addChunkedLodInstances, addMerged, addMesh, mergeAll, type BuildContext, type InstanceItem } from './context';
 import { buildRibbon, mirrorLeftSideUV, type ProfilePoint } from './ribbon';
 import { createDistanceBoards, createLeafAtlas, createSpectator, createWaterNormals, createWindows } from './textures';
@@ -504,6 +509,180 @@ function garageTexture(anisotropy: number): CanvasTexture {
   return texture;
 }
 
+/** Fila de garajes abiertos: uno por box, centrado detrás de su lugar de parada. */
+interface GarageRow {
+  /** Tramo de la fila (s) y centro de cada garaje (s). */
+  start: number;
+  end: number;
+  doors: number[];
+  /** Medio ancho de cada puerta (m). */
+  half: number;
+}
+
+function garageRow(pit: PitLane, g: TrackGeometry, from: number): GarageRow {
+  const first = pit.boxes[0] ?? from;
+  const last = pit.boxes[pit.boxes.length - 1] ?? from;
+  const spacing = pit.boxes.length > 1 ? g.wrapS((pit.boxes[1] ?? first) - first) : 14;
+  return {
+    start: g.wrapS(first - spacing / 2),
+    end: g.wrapS(last + spacing / 2),
+    doors: [...pit.boxes],
+    half: Math.min(4.8, spacing / 2 - 1.2),
+  };
+}
+
+const rgb = (hex: string): readonly [number, number, number] => {
+  const c = new Color(hex);
+  return [c.r, c.g, c.b];
+};
+
+/** Geometría lista para fusionar: sin índices, sin UV y con color por vértice. */
+function paintedPart(geometry: BufferGeometry, color?: readonly [number, number, number]): BufferGeometry {
+  const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+  if (flat !== geometry) geometry.dispose();
+  flat.deleteAttribute('uv');
+  if (color || !flat.getAttribute('color')) {
+    const [r, gr, b] = color ?? [1, 1, 1];
+    const count = flat.getAttribute('position').count;
+    const values = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) values.set([r, gr, b], i * 3);
+    flat.setAttribute('color', new Float32BufferAttribute(values, 3));
+  }
+  if (!flat.getAttribute('normal')) flat.computeVertexNormals();
+  return flat;
+}
+
+/**
+ * Garajes abiertos de los equipos, uno detrás de cada box: puerta con el
+ * cartel del color del equipo, piso, techo con luces, paredes, la franja
+ * del equipo al fondo y pilas de gomas. Delante de cada uno, el pórtico del
+ * semáforo de salida (las luces las prende el equipo de boxes).
+ * Todo en dos mallas: piezas pintadas por vértice y las luces del techo.
+ */
+function buildGarages(ctx: BuildContext, facade: number, height: number, row: GarageRow, sign: 1 | -1): void {
+  const track = ctx.track;
+  const g = track.geometry;
+  const pit = track.pitLane;
+  const depth = 7;
+  const door = 4.6;
+  const parts: BufferGeometry[] = [];
+  const lights: BufferGeometry[] = [];
+  const grey = rgb('#c4c8ce');
+  const pillar = rgb('#a9aeb6');
+  const floor = rgb('#7d838c');
+  const ceiling = rgb('#26282d');
+  const back = rgb('#33363d');
+  const trim = rgb('#eef0f2');
+  const steel = rgb('#4a4e56');
+  const rubber = rgb('#151619');
+  const point = { x: 0, z: 0 };
+  const tangent = { x: 0, z: 0 };
+  /** Pared vertical a distancia `d` del centro, mirando a la pista (colores abajo y arriba). */
+  const wall = (d: number, points: ReadonlyArray<readonly [number, readonly [number, number, number]]>): ProfilePoint[] =>
+    sign > 0 ? points.map(([y, c]) => [d, y, c] as const) : [...points].reverse().map(([y, c]) => [-d, y, c] as const);
+  /** Plano horizontal entre `d0` y `d1` a la altura `y`, mirando hacia arriba o hacia abajo. */
+  const level = (d0: number, d1: number, y: number, c: readonly [number, number, number], up: boolean): ProfilePoint[] => {
+    const a = sign * d0;
+    const b = sign * d1;
+    const [left, right] = a < b ? [a, b] : [b, a];
+    return up
+      ? [
+          [left, y, c],
+          [right, y, c],
+        ]
+      : [
+          [right, y, c],
+          [left, y, c],
+        ];
+  };
+  const ribbon = (a: number, b: number, profile: ProfilePoint[], into = parts): void => {
+    if (g.wrapS(b - a) < 0.05) return;
+    into.push(paintedPart(buildRibbon(g, { from: a, to: b, step: 2, profile: () => profile, vLength: 10 })));
+  };
+  /** Pared de costado (cruza la calle) en `s`, con la cara hacia +s (`toward` 1) o −s (−1). */
+  const crossWall = (s: number, d0: number, d1: number, y0: number, y1: number, toward: 1 | -1, c: readonly [number, number, number]): void => {
+    const corners = [
+      [d0, y0],
+      [d1, y0],
+      [d1, y1],
+      [d0, y1],
+    ].map(([d, y]) => {
+      g.pointAt(s, sign * (d ?? 0), point, tangent);
+      return new Vector3(point.x, y, point.z);
+    });
+    g.pointAt(s, sign * d0, point, tangent);
+    const [A, B, C, D] = corners as [Vector3, Vector3, Vector3, Vector3];
+    const normal = new Vector3().subVectors(B, A).cross(new Vector3().subVectors(C, A));
+    const forward = normal.x * tangent.x + normal.z * tangent.z > 0 ? 1 : -1;
+    const order = forward === toward ? [A, B, C, A, C, D] : [A, C, B, A, D, C];
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new Float32BufferAttribute(order.flatMap((v) => [v.x, v.y, v.z]), 3));
+    parts.push(paintedPart(geometry, c));
+  };
+  /** Una pieza (caja, cilindro) en (s, d) a la altura `y`, girada con la pista. */
+  const placed = (geometry: BufferGeometry, s: number, d: number, y: number, c: readonly [number, number, number], yaw = 0): void => {
+    g.pointAt(s, sign * d, point, tangent);
+    geometry.rotateY(Math.atan2(tangent.x, tangent.z) + yaw);
+    geometry.translate(point.x, y, point.z);
+    parts.push(paintedPart(geometry, c));
+  };
+
+  // Frente: la franja de arriba a lo largo de toda la fila y los pilares entre puertas.
+  ribbon(row.start, row.end, wall(facade, [
+    [door, grey],
+    [height, grey],
+  ]));
+  const edges = [row.start, ...row.doors.flatMap((s) => [g.wrapS(s - row.half), g.wrapS(s + row.half)]), row.end];
+  for (let k = 0; k + 1 < edges.length; k += 2) {
+    ribbon(edges[k] ?? 0, edges[k + 1] ?? 0, wall(facade, [
+      [-0.05, pillar],
+      [door, pillar],
+    ]));
+  }
+
+  row.doors.forEach((center, index) => {
+    const team = rgb(TEAMS[index]?.primary ?? '#6d6f75');
+    const a = g.wrapS(center - row.half);
+    const b = g.wrapS(center + row.half);
+    // Cartel del equipo sobre la puerta, con un filete claro abajo.
+    ribbon(a, b, wall(facade - 0.06, [
+      [door, trim],
+      [door + 0.14, trim],
+      [door + 0.14, team],
+      [door + 1.15, team],
+    ]));
+    // Adentro: piso, techo, fondo (franja del equipo abajo) y paredes de los costados.
+    ribbon(a, b, level(facade, facade + depth, 0.015, floor, true));
+    ribbon(a, b, level(facade, facade + depth, door, ceiling, false));
+    ribbon(a, b, wall(facade + depth, [
+      [0, team],
+      [1.3, team],
+      [1.3, back],
+      [door, back],
+    ]));
+    crossWall(a, facade, facade + depth, 0, door, 1, back);
+    crossWall(b, facade, facade + depth, 0, door, -1, back);
+    // Luces del techo: dos tiras a lo ancho.
+    for (const d of [facade + 1.8, facade + 4.8]) ribbon(g.wrapS(a + 0.8), g.wrapS(b - 0.8), level(d, d + 0.35, door - 0.03, [1, 1, 1], false), lights);
+    // Pilas de gomas en los rincones del fondo.
+    for (const s of [g.wrapS(a + 0.75), g.wrapS(b - 0.75)]) placed(new CylinderGeometry(0.36, 0.36, 1.25, 12), s, facade + depth - 0.75, 0.625, rubber);
+    // Pórtico del semáforo: poste del lado del garaje y brazo sobre el auto; la caja de las luces.
+    const s = g.wrapS(center + PIT_LIGHT.ahead);
+    const post = pit.box + PIT_LIGHT.post;
+    const tip = pit.box + PIT_LIGHT.out - 0.45;
+    placed(new BoxGeometry(0.16, PIT_LIGHT.height + 0.12, 0.16), s, post, (PIT_LIGHT.height + 0.12) / 2, steel);
+    placed(new BoxGeometry(post - tip, 0.12, 0.12), s, (post + tip) / 2, PIT_LIGHT.height + 0.06, steel);
+    placed(new BoxGeometry(0.76, 0.3, 0.12), s, pit.box + PIT_LIGHT.out, PIT_LIGHT.height - 0.16, ceiling);
+  });
+
+  const merged = mergeAll(parts);
+  for (const part of parts) part.dispose();
+  if (merged) addMesh(ctx, merged, new MeshStandardMaterial({ vertexColors: true, roughness: 0.7 }), { cast: true, name: 'boxes-garajes' });
+  const glow = mergeAll(lights);
+  for (const part of lights) part.dispose();
+  if (glow) addMesh(ctx, glow, new MeshBasicMaterial({ color: '#f4f7ff' }), { name: 'boxes-garajes-luces' });
+}
+
 export function buildPitBuilding(ctx: BuildContext, lane: { inner: number; outer: number }): StandZone {
   const track = ctx.track;
   const g = track.geometry;
@@ -513,28 +692,41 @@ export function buildPitBuilding(ctx: BuildContext, lane: { inner: number; outer
   const inner = lane.outer + 0.5;
   const outer = inner + 16;
   const height = 8;
-  const facade = buildRibbon(g, {
-    from,
-    to,
-    step: 6,
-    profile: (): ProfilePoint[] =>
-      sign > 0
-        ? [
-            [inner, -0.05],
-            [inner, height],
-          ]
-        : [
-            [-inner, height],
-            [-inner, -0.05],
-          ],
-    vLength: g.wrapS(to - from),
-  });
-  if (sign < 0) mirrorLeftSideUV(facade);
+  const row = garageRow(track.pitLane, g, from);
+  // Fachada con garajes cerrados (la textura) a los dos lados de la fila de garajes abiertos.
+  const pieces: BufferGeometry[] = [];
+  for (const [a, b] of [
+    [from, row.start],
+    [row.end, to],
+  ] as const) {
+    if (g.wrapS(b - a) < 1) continue;
+    const piece = buildRibbon(g, {
+      from: a,
+      to: b,
+      step: 6,
+      profile: (): ProfilePoint[] =>
+        sign > 0
+          ? [
+              [inner, -0.05],
+              [inner, height],
+            ]
+          : [
+              [-inner, height],
+              [-inner, -0.05],
+            ],
+      vLength: g.wrapS(to - from),
+    });
+    if (sign < 0) mirrorLeftSideUV(piece);
+    pieces.push(piece);
+  }
+  const facade = mergeAll(pieces);
+  for (const piece of pieces) piece.dispose();
   const texture = ctx.own.own(garageTexture(ctx.anisotropy));
   // En el mundo la fachada va a lo largo de V: se rota la textura.
   texture.rotation = Math.PI / 2;
   texture.center.set(0.5, 0.5);
-  addMesh(ctx, facade, new MeshStandardMaterial({ map: texture, roughness: 0.6 }), { cast: true, name: 'boxes-fachada' });
+  if (facade) addMesh(ctx, facade, new MeshStandardMaterial({ map: texture, roughness: 0.6 }), { cast: true, name: 'boxes-fachada' });
+  buildGarages(ctx, inner, height, row, sign);
   const roof = buildRibbon(g, {
     from,
     to,

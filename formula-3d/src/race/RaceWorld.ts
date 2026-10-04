@@ -35,6 +35,8 @@ export const INTRO_DURATION = 4.2;
 const FLY_DURATION = 4.8;
 /** Paneo por la parrilla (s). */
 const GRID_DURATION = 3.6;
+/** Parada del jugador: la toma de TV sigue tanto después de la salida (s). */
+const PIT_RELEASE_HOLD = 0.9;
 
 export type IntroShot = 'flyover' | 'grid' | 'orbit';
 
@@ -58,7 +60,7 @@ export class RaceWorld implements RenderView {
   readonly effects: TrackEffects;
   /** Equipos de boxes (aparecen cuando su auto para). */
   readonly crew: PitCrew;
-  /** Toma de TV de la parada en boxes del jugador (box) o null. */
+  /** Toma de TV de la parada en boxes del jugador (su box) o null. */
   private pitShot: number | null = null;
   /** Repetición: su cámara y el auto que sigue (null en carrera). */
   private replay: { camera: ReplayCamera; target: ReplayTarget } | null = null;
@@ -123,7 +125,7 @@ export class RaceWorld implements RenderView {
     if (this.ghost) this.scene.add(this.ghost.root);
     this.effects = new TrackEffects(this.scene, preset.particles);
     this.crew = new PitCrew(vehicle.track);
-    for (const mesh of this.crew.meshes) this.scene.add(mesh);
+    this.scene.add(this.crew.root);
     // En el espejo no aparecen el propio auto, la línea de la trazada ni las partículas
     // (su tamaño está calculado para la pantalla, no para la imagen chica del espejo).
     this.mirrorHidden = [this.rig.root, this.racingLine.mesh, ...this.effects.objects];
@@ -155,17 +157,25 @@ export class RaceWorld implements RenderView {
   }
 
   /**
-   * Parada del jugador: mientras el equipo trabaja, una cámara de TV desde el
-   * box (adelante y del lado de los garajes); al terminar vuelve suave a la de carrera.
+   * Parada del jugador, como en la transmisión: llega con su cámara (y ve al
+   * equipo esperándolo en el box); mientras el equipo trabaja y un momento
+   * después de la salida, una cámara alta de tres cuartos; después vuelve
+   * suave a la de carrera.
+   * @param stop la parada del jugador (null: no está en boxes)
    */
-  showPitStop(box: number | null): void {
-    if (box === null && this.pitShot !== null) {
-      const camera = this.camera;
-      this.raceCamera.blendFrom(camera.position.clone(), camera.quaternion.clone(), camera.fov, 0.8);
-      this.rig.setDriverVisible(this.raceCamera.currentMode !== 'cockpit');
+  setPitView(stop: CrewStop | null): void {
+    const shot = stop !== null && !this.replay && (stop.phase === 'stop' || (stop.phase === 'out' && stop.time < PIT_RELEASE_HOLD));
+    if (!shot || !stop) {
+      if (this.pitShot !== null) {
+        const camera = this.camera;
+        this.raceCamera.blendFrom(camera.position.clone(), camera.quaternion.clone(), camera.fov, 0.8);
+        this.rig.setDriverVisible(this.raceCamera.currentMode !== 'cockpit');
+      }
+      this.pitShot = null;
+      return;
     }
-    if (box !== null) this.rig.setDriverVisible(true);
-    this.pitShot = box;
+    if (this.pitShot === null) this.rig.setDriverVisible(true);
+    this.pitShot = stop.box;
   }
 
   /**
@@ -183,9 +193,9 @@ export class RaceWorld implements RenderView {
     }
   }
 
-  /** Equipos de boxes de las paradas en curso. */
-  updateCrew(stops: readonly CrewStop[]): void {
-    this.crew.update(stops);
+  /** Equipos de boxes de las paradas en curso (`dt` anima los pasos y las pistolas). */
+  updateCrew(stops: readonly CrewStop[], dt = 0): void {
+    this.crew.update(stops, dt);
   }
 
   /** Muestra la línea de trazada según la ayuda elegida. */
@@ -546,19 +556,23 @@ export class RaceWorld implements RenderView {
     this.scene.clear();
   }
 
-  /** Toma de la parada: desde el carril rápido, adelante del box, mirando al auto y al equipo. */
+  /**
+   * Toma de la parada: alta y de tres cuartos, desde adelante y del lado del
+   * carril rápido (se ve al equipo de los dos lados), siguiendo al auto y con
+   * un leve vaivén de cámara al hombro.
+   */
   private pitCamera(box: number): void {
     const track = this.vehicle.track;
     const pit = track.pitLane;
     const s = pit.boxes[box] ?? pit.boxes[0] ?? 0;
-    const geometry = track.geometry;
-    geometry.pointAt(s + 8.5, pit.sign * (pit.inner + 1.2), this.point);
+    const sway = Math.sin(this.time * 0.9) * 0.05;
+    track.geometry.pointAt(s + 9.5, pit.sign * (pit.box - 4.4), this.point);
     const camera = this.camera;
-    camera.position.set(this.point.x, 1.9, this.point.z);
-    this.lookAt.set(this.rig.pose.x, 0.7, this.rig.pose.z);
+    camera.position.set(this.point.x + sway, 4.3 + sway * 0.4, this.point.z);
+    this.lookAt.set(this.rig.pose.x, 0.5, this.rig.pose.z);
     camera.up.set(0, 1, 0);
     camera.lookAt(this.lookAt);
-    this.setIntroFov(44);
+    this.setIntroFov(34);
   }
 
   /** Cámara de la presentación según la toma. */

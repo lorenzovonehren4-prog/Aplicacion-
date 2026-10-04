@@ -171,6 +171,80 @@ class EffectsGraph {
     };
   }
 
+  /**
+   * Pistola de boxes: el "brrrt" de la llave neumática (ruido agudo que
+   * vibra a ~50 Hz) con el silbido del motor de aire que sube.
+   */
+  gun(): void {
+    const now = this.ctx.currentTime;
+    const length = 0.24;
+    const rattle = this.ctx.createBufferSource();
+    rattle.buffer = this.noise;
+    const band = this.ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 2600;
+    band.Q.value = 1.4;
+    const chop = this.ctx.createGain();
+    chop.gain.value = 0.5;
+    const lfo = this.ctx.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.value = 52;
+    const depth = this.ctx.createGain();
+    depth.gain.value = 0.5;
+    lfo.connect(depth).connect(chop.gain);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.32, now + 0.015);
+    gain.gain.setValueAtTime(0.32, now + length - 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + length);
+    rattle.connect(band).connect(chop).connect(gain).connect(this.out);
+    const whine = this.ctx.createOscillator();
+    whine.type = 'sawtooth';
+    whine.frequency.setValueAtTime(1500, now);
+    whine.frequency.exponentialRampToValueAtTime(2700, now + length);
+    const whineGain = this.ctx.createGain();
+    whineGain.gain.setValueAtTime(0.0001, now);
+    whineGain.gain.exponentialRampToValueAtTime(0.035, now + 0.03);
+    whineGain.gain.exponentialRampToValueAtTime(0.001, now + length);
+    whine.connect(whineGain).connect(this.out);
+    rattle.start(now, Math.random() * 1.5, length + 0.02);
+    lfo.start(now);
+    lfo.stop(now + length + 0.02);
+    whine.start(now);
+    whine.stop(now + length + 0.02);
+    whine.onended = () => {
+      for (const node of [rattle, band, chop, lfo, depth, gain, whine, whineGain]) node.disconnect();
+    };
+  }
+
+  /** Gato de boxes: golpe metálico corto (al levantar y al bajar el auto). */
+  jack(): void {
+    const now = this.ctx.currentTime;
+    const thump = this.ctx.createOscillator();
+    thump.type = 'triangle';
+    thump.frequency.setValueAtTime(160, now);
+    thump.frequency.exponentialRampToValueAtTime(70, now + 0.12);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.45, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    thump.connect(gain).connect(this.out);
+    const click = this.ctx.createBufferSource();
+    click.buffer = this.noise;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 2500;
+    const clickGain = this.ctx.createGain();
+    clickGain.gain.setValueAtTime(0.18, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    click.connect(filter).connect(clickGain).connect(this.out);
+    thump.start(now);
+    thump.stop(now + 0.18);
+    click.start(now, Math.random(), 0.06);
+    thump.onended = () => {
+      for (const node of [thump, gain, click, filter, clickGain]) node.disconnect();
+    };
+  }
+
   /** El flap del DRS se abre: soplido neumático corto. */
   drs(): void {
     const now = this.ctx.currentTime;
@@ -375,8 +449,8 @@ export class RaceAudio {
     this.bots?.update(listener, bots);
   }
 
-  /** Sonidos de un momento de la carrera (semáforo, DRS, radio). */
-  cue(kind: 'light' | 'lightsOut' | 'drs' | 'radio' | 'flag'): void {
+  /** Sonidos de un momento de la carrera (semáforo, DRS, radio, boxes). */
+  cue(kind: 'light' | 'lightsOut' | 'drs' | 'radio' | 'flag' | 'gun' | 'jack'): void {
     this.ensure();
     const effects = this.effects;
     if (!effects) return;
@@ -395,6 +469,12 @@ export class RaceAudio {
         break;
       case 'flag':
         effects.flag();
+        break;
+      case 'gun':
+        effects.gun();
+        break;
+      case 'jack':
+        effects.jack();
         break;
     }
   }

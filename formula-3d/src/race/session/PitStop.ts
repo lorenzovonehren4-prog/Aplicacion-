@@ -20,17 +20,21 @@ export type PitPhase = 'in' | 'stop' | 'out' | 'done';
 /** Límite de velocidad en la calle de boxes (m/s): 80 km/h. */
 export const PIT_SPEED = 80 / 3.6;
 /** Velocidad en la calle fuera de la zona del límite (m/s). */
-const LANE_SPEED = 38;
+const LANE_SPEED = 60;
 /** Frenada, aceleración y aceleración lateral del piloto automático (m/s²). */
-const PIT_DECEL = 9;
-/** Frenada fuerte si entra más rápido de lo que pide el perfil (m/s², ~2 g). */
-const HARD_DECEL = 20;
-const PIT_ACCEL = 6;
-const PIT_LATERAL = 12;
+const PIT_DECEL = 15;
+/** Frenada fuerte si entra más rápido de lo que pide el perfil (m/s², ~3 g). */
+const HARD_DECEL = 30;
+const PIT_ACCEL = 11;
+const PIT_LATERAL = 14;
+/** Velocidad mínima al acercarse al box (m/s): llega siempre hasta la marca, sin quedarse a centímetros. */
+const CREEP_SPEED = 0.6;
+/** Con el box ocupado por el compañero, espera esta distancia antes de la marca (m). */
+const QUEUE_GAP = 9;
 /** Servicio: tiempo base, variación y lo que suma arreglar un auto destrozado (s). */
-const SERVICE_BASE = 2.2;
-const SERVICE_JITTER = 0.8;
-const REPAIR_TIME = 3.5;
+export const SERVICE_BASE = 1.9;
+const SERVICE_JITTER = 0.7;
+const REPAIR_TIME = 2.5;
 /** Tramo (m) en que pasa del carril rápido al de trabajo antes del box (y vuelve después). */
 const BOX_SWING = 24;
 /** Llega al carril rápido este tramo (m) antes de la punta del muro. */
@@ -39,7 +43,7 @@ const ENTRY_MARGIN = 10;
 const MERGE_INSET = 2;
 /** Resolución del perfil de velocidad (m). */
 const PROFILE_STEP = 1;
-/** Velocidad mínima para arrancar del box (m/s): el perfil empieza en 0. */
+/** Velocidad mínima para arrancar del box (m/s): la aceleración la pone `step`. */
 const LAUNCH_SPEED = 1.5;
 
 const smooth = (t: number): number => {
@@ -57,6 +61,10 @@ export class PitStop {
   serviceLeft: number;
   /** Se arregla el daño (además de los neumáticos). */
   readonly repair: boolean;
+  /** Segundos desde que salió del box (para que el equipo se vaya). */
+  sinceRelease = 0;
+  /** El box está ocupado (el compañero de equipo está parado o llega antes): espera detrás. */
+  holdShort = false;
   /** Dónde para (s) y de qué lado: para el equipo de boxes y la cámara. */
   readonly boxS: number;
   readonly pit: PitLane;
@@ -120,6 +128,7 @@ export class PitStop {
   step(dt: number, vehicle: Vehicle): void {
     if (this.phase === 'done') return;
     let accel = 0;
+    if (this.phase === 'out') this.sinceRelease += dt;
     if (this.phase === 'stop') {
       this.speed = 0;
       this.serviceLeft = Math.max(0, this.serviceLeft - dt);
@@ -129,17 +138,27 @@ export class PitStop {
       }
     } else {
       const before = this.speed;
-      // Mira también hasta dónde llega en este paso (no pasarse del límite al entrar a la zona),
-      // sin mirar más allá del box: ahí el perfil es cero y no llegaría nunca.
+      // Mira también hasta dónde llega en este paso (no pasarse del límite al entrar a la zona).
       const reach = this.along + before * dt;
-      let allowed = Math.min(this.allowedAt(this.along), this.allowedAt(this.phase === 'in' ? Math.min(reach, this.stopAt - 0.35) : reach));
+      let allowed = Math.min(this.allowedAt(this.along), this.allowedAt(reach));
       if (reach >= this.limitFrom && this.along <= this.limitTo) allowed = Math.min(allowed, PIT_SPEED);
-      const target = this.phase === 'out' ? Math.max(LAUNCH_SPEED, allowed) : allowed;
+      let target: number;
+      if (this.phase === 'in') {
+        // Frena para parar justo en la marca del box (y nunca se queda a centímetros);
+        // con el box ocupado, frena antes y espera ahí.
+        const queue = this.stopAt - QUEUE_GAP;
+        const waiting = this.holdShort && this.along < queue;
+        const left = Math.max(0, (waiting ? queue : this.stopAt) - this.along);
+        target = waiting && left < 0.05 ? 0 : Math.max(CREEP_SPEED, Math.min(allowed, Math.sqrt(2 * PIT_DECEL * left)));
+        if (waiting) target = Math.min(target, Math.sqrt(2 * PIT_DECEL * left));
+      } else {
+        target = Math.max(LAUNCH_SPEED, allowed);
+      }
       // Acelera de a poco; si viene pasado (entró rápido) frena fuerte, nunca de golpe.
       this.speed = clamp(target, before - HARD_DECEL * dt, before + PIT_ACCEL * dt);
       this.along += this.speed * dt;
       accel = (this.speed - before) / Math.max(1e-4, dt);
-      if (this.phase === 'in' && this.along >= this.stopAt - 0.3) {
+      if (this.phase === 'in' && this.along >= this.stopAt) {
         this.along = this.stopAt;
         this.speed = 0;
         this.phase = 'stop';
@@ -149,6 +168,11 @@ export class PitStop {
       }
     }
     this.place(vehicle, dt, accel);
+  }
+
+  /** Segundos desde que paró en el box (mientras el equipo trabaja). */
+  get serviceElapsed(): number {
+    return this.serviceTime - this.serviceLeft;
   }
 
   /** Metros que le faltan para llegar al box (negativo: ya lo pasó). */
@@ -207,8 +231,8 @@ export class PitStop {
 
   /**
    * Perfil de velocidad: límites de cada tramo (calle, zona del límite,
-   * curvas, el box) y, de atrás para adelante, frenadas para llegar a cada uno.
-   * Después del box el perfil empieza de cero (la aceleración la pone `step`).
+   * curvas) y, de atrás para adelante, frenadas para llegar a cada uno. La
+   * frenada hasta el box y la arrancada las calcula `step`.
    */
   private buildProfile(limitFrom: number, limitTo: number): Float32Array {
     const g = this.track.geometry;
@@ -224,9 +248,6 @@ export class PitStop {
       cap = Math.min(cap, along >= limitFrom && along <= limitTo ? PIT_SPEED : along > this.toExit ? exitCap : LANE_SPEED);
       profile[k] = cap;
     }
-    // El box: parado.
-    const stop = Math.round(this.stopAt / PROFILE_STEP);
-    profile[stop] = 0;
     for (let k = n - 2; k >= 0; k--) {
       const next = profile[k + 1] ?? 0;
       profile[k] = Math.min(profile[k] ?? 0, Math.sqrt(next * next + 2 * PIT_DECEL * PROFILE_STEP));

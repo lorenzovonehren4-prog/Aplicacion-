@@ -253,6 +253,11 @@ export class Vehicle {
   wearRate = 0;
   /** Los golpes dañan el auto. */
   damageEnabled = false;
+  /**
+   * Sólo para dibujar: los gatos de boxes (altura adelante y atrás, m) y las
+   * ruedas sacadas (un bit por rueda: 1 delantera izquierda … 8 trasera derecha).
+   */
+  readonly pitPose = { liftFront: 0, liftRear: 0, wheelsOff: 0 };
 
   private rpm: number;
   private damageCooldown = 0;

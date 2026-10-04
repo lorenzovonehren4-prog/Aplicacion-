@@ -4,7 +4,8 @@ import { pickRivals } from '../src/data/teams';
 import { F1_SPEC } from '../src/race/physics/CarSpec';
 import { tyreGrip } from '../src/race/physics/Vehicle';
 import { Session, type SessionEvent } from '../src/race/Session';
-import { PIT_SPEED } from '../src/race/session/PitStop';
+import { Vehicle } from '../src/race/physics/Vehicle';
+import { PIT_SPEED, PitStop } from '../src/race/session/PitStop';
 import { AUSTRALIA } from '../src/tracks/data/australia';
 import { TRACKS } from '../src/tracks/registry';
 import { Track } from '../src/tracks/Track';
@@ -100,6 +101,68 @@ describe('parada en boxes', () => {
     const after = drive(session, 30, () => false);
     expect(after.some((e) => e.kind === 'trackLimits')).toBe(false);
     expect(session.vehicle.telemetry.impact).toBe(0);
+  });
+
+  it('en los 24 circuitos llega siempre a su box y sale, entre en el punto que entre', () => {
+    for (const def of TRACKS) {
+      const t = Track.load(def);
+      const pit = t.pitLane;
+      for (const [box, offset] of [
+        [0, 0.13],
+        [5, 0.5],
+        [9, 0.87],
+        [3, 1.71],
+      ] as const) {
+        const vehicle = new Vehicle(F1_SPEC, t);
+        const s = pit.entry - offset;
+        vehicle.placeAt(s, 0);
+        vehicle.vx = t.racingLine.speedAt(s);
+        const stop = new PitStop(t, vehicle, box, () => 0.5);
+        let time = 0;
+        let stopped = false;
+        while (stop.phase !== 'done' && time < 60) {
+          stop.step(STEP, vehicle);
+          time += STEP;
+          if (stop.phase === 'stop') {
+            stopped = true;
+            // Parado justo en la marca de su box.
+            expect(Math.abs(t.geometry.deltaS(vehicle.projection.s, pit.boxes[box] ?? 0)), `${def.id} box ${box}`).toBeLessThan(0.3);
+          }
+        }
+        expect(stopped, `${def.id} box ${box}`).toBe(true);
+        expect(stop.phase, `${def.id} box ${box}`).toBe('done');
+        // Toda la calle (con el servicio) en menos de 40 s.
+        expect(time, `${def.id} box ${box}`).toBeLessThan(40);
+      }
+    }
+  }, 60_000);
+
+  it('con el box ocupado por el compañero, el segundo espera detrás y para cuando el primero sale', () => {
+    const pit = track.pitLane;
+    const cars = [0, 60].map((back) => {
+      const vehicle = new Vehicle(F1_SPEC, track);
+      const s = pit.entry - back;
+      vehicle.placeAt(s, 0);
+      vehicle.vx = track.racingLine.speedAt(s);
+      return { vehicle, stop: new PitStop(track, vehicle, 2, () => 0.5) };
+    });
+    const [first, second] = cars;
+    if (!first || !second) throw new Error('faltan autos');
+    let waited = false;
+    for (let t = 0; t < 60 && second.stop.phase !== 'done'; t += STEP) {
+      for (const car of cars) {
+        const other = car === first ? second : first;
+        if (car.stop.phase === 'in') car.stop.holdShort = other.stop.phase === 'stop' || (other.stop.phase === 'in' && other.stop.toBox < car.stop.toBox);
+        car.stop.step(STEP, car.vehicle);
+      }
+      if (first.stop.phase === 'stop') {
+        // Nunca encima del primero: espera por lo menos 8 m detrás de la marca.
+        expect(second.stop.toBox).toBeGreaterThan(8);
+        if (second.vehicle.speed === 0) waited = true;
+      }
+    }
+    expect(waited).toBe(true);
+    expect(second.stop.phase).toBe('done');
   });
 
   it('en contrarreloj no hay boxes ni desgaste', () => {
