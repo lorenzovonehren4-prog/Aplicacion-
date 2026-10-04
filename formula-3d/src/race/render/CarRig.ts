@@ -52,7 +52,7 @@ export class CarRig {
     anisotropy: number,
   ) {
     this.model = new CarModel({ livery, anisotropy });
-    this.wheel = new SteeringWheel();
+    this.wheel = new SteeringWheel({ suit: livery.primary, stripe: livery.secondary, accent: livery.accent });
     this.model.root.add(this.wheel.root);
     this.snap();
   }
@@ -80,6 +80,11 @@ export class CarRig {
   update(dt: number, alpha: number): void {
     this.time += dt;
     this.apply(alpha, dt);
+  }
+
+  /** Ángulo de las ruedas delanteras (rad, + izquierda): la cabeza del piloto mira hacia la curva. */
+  get steer(): number {
+    return this.vehicle.steerAngle;
   }
 
   /** Muestra u oculta el casco (en la cámara cockpit la cámara está adentro). */

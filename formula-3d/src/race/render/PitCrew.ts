@@ -771,6 +771,7 @@ export class PitCrew {
     mesh.receiveShadow = true;
     mesh.frustumCulled = false;
     mesh.count = 0;
+    mesh.visible = false;
     // Para que el material compile con colores por instancia desde el principio.
     if (colors) for (let i = 0; i < capacity; i++) mesh.setColorAt(i, this.color.set('#ffffff'));
     this.root.add(mesh);
@@ -779,6 +780,8 @@ export class PitCrew {
 
   private flush(mesh: InstancedMesh, count: number): void {
     mesh.count = count;
+    // Vacía no se dibuja (ni en las sombras); el precalentamiento la compila igual.
+    mesh.visible = count > 0;
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }

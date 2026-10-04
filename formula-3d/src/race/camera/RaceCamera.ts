@@ -1,7 +1,8 @@
 /**
  * Cámaras de carrera:
  * - cockpit: a la altura del casco, con el halo y el volante a la vista; la
- *   cabeza se mueve con las fuerzas G,
+ *   cabeza se mueve con las fuerzas G, se inclina un poco hacia adentro de
+ *   la curva y mira hacia donde dobla,
  * - T-cam: sobre la toma de aire, como en las transmisiones,
  * - persecución: detrás y arriba, con el rumbo retrasado para que se note el
  *   giro y el campo de visión que se abre con la velocidad.
@@ -46,6 +47,14 @@ function createPose(): Pose {
 }
 
 const UP = new Vector3(0, 1, 0);
+/** Eje de la mirada de la cámara (local): girar sobre él inclina la imagen. */
+const FORWARD_AXIS = new Vector3(0, 0, 1);
+/** Mirada hacia la curva: m de desvío (a 12 m) por radián de giro de las ruedas, y el máximo. */
+const LOOK_PER_STEER = 6;
+const LOOK_MAX = 1.3;
+/** Inclinación de la cabeza: rad por m/s² de aceleración lateral, y el máximo (~1,5°). */
+const TILT_PER_ACCEL = 0.0011;
+const TILT_MAX = 0.026;
 
 export class RaceCamera {
   readonly camera = new PerspectiveCamera(62, 16 / 9, NEAR.cockpit, FAR);
@@ -60,12 +69,16 @@ export class RaceCamera {
   private readonly local = new Vector3();
   private readonly carUp = new Vector3();
   private readonly carOrigin = new Vector3();
+  private readonly roll = new Quaternion();
   /** Rumbo retrasado de la cámara de persecución. */
   private chaseHeading = 0;
   private chaseSpeed = 0;
   /** Desplazamiento de la cabeza por fuerzas G (m, ejes del auto). */
   private headX = 0;
   private headZ = 0;
+  /** Mirada hacia la curva (m de desvío a 12 m) e inclinación de la cabeza (rad). */
+  private look = 0;
+  private tilt = 0;
   private shake = 0;
   private time = 0;
   /** Sensación de empuje (0–1) con el DRS abierto o en el rebufo: abre el FOV. */
@@ -130,6 +143,8 @@ export class RaceCamera {
     this.chaseHeading = this.rig.pose.heading;
     this.headX = 0;
     this.headZ = 0;
+    this.look = 0;
+    this.tilt = 0;
   }
 
   /** Empuje deseado (0–1): el DRS abierto o el rebufo de otro auto. */
@@ -151,6 +166,9 @@ export class RaceCamera {
     this.chaseSpeed = damp(this.chaseSpeed, speed, 2, dt);
     this.headX = damp(this.headX, clamp(telemetry.ay * 0.0035, -0.05, 0.05), 6, dt);
     this.headZ = damp(this.headZ, clamp(telemetry.ax * 0.0028, -0.045, 0.045), 6, dt);
+    // El piloto mira hacia donde dobla (más en las curvas lentas, donde gira más el volante).
+    this.look = damp(this.look, clamp(-this.rig.steer * LOOK_PER_STEER, -LOOK_MAX, LOOK_MAX), 3.5, dt);
+    this.tilt = damp(this.tilt, clamp(telemetry.ay * TILT_PER_ACCEL, -TILT_MAX, TILT_MAX), 5, dt);
     this.shake = Math.max(0, this.shake - dt * 3);
     this.rush = damp(this.rush, this.rushTarget, this.rushTarget > this.rush ? 2.5 : 1.5, dt);
 
@@ -203,7 +221,7 @@ export class RaceCamera {
         // cámara de cabina de los juegos de F1): el volante queda más chico y
         // abajo, y se ve más pista.
         this.toWorld(this.headX, 0.75 - Math.abs(this.headZ) * 0.2, -0.04 + this.headZ, pose.position);
-        this.toWorld(this.headX * 0.4, 0.62, -12, this.target);
+        this.toWorld(this.headX * 0.4 + this.look, 0.62, -12, this.target);
         pose.fov = 78 + clamp(speedKmh / 330, 0, 1) * 4;
         break;
       }
@@ -235,6 +253,8 @@ export class RaceCamera {
       this.toWorld(0, 1, 0, this.carUp).sub(this.carOrigin).normalize();
     }
     this.lookRotation(this.local, this.carUp, pose.quaternion);
+    // En el cockpit la cabeza se inclina hacia adentro de la curva (resiste la fuerza lateral).
+    if (mode === 'cockpit' && this.tilt !== 0) pose.quaternion.multiply(this.roll.setFromAxisAngle(FORWARD_AXIS, this.tilt));
   }
 
   /** Cuaternión de una cámara que mira hacia `forward` con `up` como arriba. */

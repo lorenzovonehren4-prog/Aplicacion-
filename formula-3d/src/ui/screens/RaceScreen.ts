@@ -51,6 +51,7 @@ import { gunStarts, jackHits, servicePose } from '../../race/session/PitService'
 import type { PitStop } from '../../race/session/PitStop';
 import type { VehicleState } from '../../race/physics/Vehicle';
 import { ReplayOverlay, type ReplayRow } from '../race/ReplayOverlay';
+import type { WheelFlag } from '../../race/render/SteeringWheel';
 import { BuildCancelled } from '../../tracks/TrackBuilder';
 import { getTrack, TRACKS } from '../../tracks/registry';
 import { Track } from '../../tracks/Track';
@@ -232,6 +233,8 @@ export class RaceScreen extends BaseScreen<RaceParams> {
   /** Reloj de la parada del jugador en el cuadro anterior (para los sonidos de pistolas y gatos). */
   private pitSoundAt = -1;
   private readonly pitPanel: HudPit = { title: '', detail: '', timer: null, tone: 'live', progress: null };
+  /** Bandera que muestran la pantalla y las luces del volante. */
+  private wheelFlag: WheelFlag = null;
   /** Repetición: la grabación (en carrera), el reproductor y lo que se guarda para volver. */
   private recorder: ReplayRecorder | null = null;
   private readonly replaySources: ReplaySource[] = [];
@@ -1878,12 +1881,10 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     const next = (here + 1) % yellow.length;
     const running = session.phase === 'running';
     const lapper = flags.blue[session.player.index];
-    hud.setFlags({
-      yellow,
-      yellowHere: !running ? null : yellow[here] ? here : yellow[next] ? next : null,
-      blue: running && lapper !== null && lapper !== undefined ? (session.cars[lapper]?.code ?? null) : null,
-      blackWhite: running && session.warnings === TRACK_LIMIT_WARNINGS,
-    });
+    const yellowHere = !running ? null : yellow[here] ? here : yellow[next] ? next : null;
+    const blue = running && lapper !== null && lapper !== undefined ? (session.cars[lapper]?.code ?? null) : null;
+    hud.setFlags({ yellow, yellowHere, blue, blackWhite: running && session.warnings === TRACK_LIMIT_WARNINGS });
+    this.wheelFlag = yellowHere !== null ? 'yellow' : blue !== null ? 'blue' : null;
   }
 
   /**
@@ -1985,6 +1986,11 @@ export class RaceScreen extends BaseScreen<RaceParams> {
       cars: session.cars.length,
       lap: Math.max(1, timer.lap),
       totalLaps: session.config.laps,
+      pitLimiter: session.player.pit?.limited ?? false,
+      flag: this.wheelFlag,
+      tyres: session.pitsOpen ? 100 * (1 - session.vehicle.tyreWear) : null,
+      wing: session.pitsOpen ? 100 * session.vehicle.damage : null,
+      box: session.pitRequested,
     });
   }
 

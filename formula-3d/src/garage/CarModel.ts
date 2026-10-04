@@ -14,6 +14,7 @@
 import {
   BoxGeometry,
   BufferGeometry,
+  CapsuleGeometry,
   CatmullRomCurve3,
   CircleGeometry,
   CylinderGeometry,
@@ -781,6 +782,35 @@ export class CarModel {
     const opening = body.buildPatch({ zFrom: -0.56, zTo: 0.03, tFrom: 0.395, tTo: 0.605, offset: 0.003 });
     scaleUv(opening, 0.28, 0.22);
     batch.add('carbonMatte', opening);
+
+    // Reborde de carbono alrededor de la abertura (desde el ojo del piloto enmarca la vista
+    // hacia el volante y tapa los brazos) y acolchados negros a los costados de los hombros.
+    const edge = new Vector3();
+    for (const t of [0.395, 0.605]) {
+      const points: Vector3[] = [];
+      for (let z = -0.56; z <= 0.031; z += 0.0655) {
+        body.pointAt(z, t, edge);
+        points.push(new Vector3(edge.x, edge.y + 0.014, edge.z));
+      }
+      const rim = new TubeGeometry(new CatmullRomCurve3(points), this.seg(24, 6), 0.021, this.seg(10, 5), false);
+      scaleUv(rim, 0.28, 0.07);
+      batch.add('carbonMatte', rim);
+    }
+    const front: Vector3[] = [];
+    for (let t = 0.395; t <= 0.6051; t += 0.035) {
+      body.pointAt(-0.56, t, edge);
+      front.push(new Vector3(edge.x, edge.y + 0.014, edge.z));
+    }
+    const lip = new TubeGeometry(new CatmullRomCurve3(front), this.seg(16, 4), 0.021, this.seg(10, 5), false);
+    scaleUv(lip, 0.16, 0.07);
+    batch.add('carbonMatte', lip);
+    for (const side of [-1, 1]) {
+      const pad = new CapsuleGeometry(0.034, 0.17, 4, this.seg(12, 6));
+      pad.rotateX(Math.PI / 2);
+      pad.scale(1, 1.15, 1);
+      pad.translate(side * 0.152, 0.615, -0.03);
+      batch.add('dark', pad);
+    }
 
     // Números: sobre el morro y a los lados de la cubierta del motor.
     batch.add(
