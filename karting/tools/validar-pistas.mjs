@@ -19,9 +19,9 @@ for (const r of res) {
 if (process.argv.includes('--mapa')) {
   const { chromium } = await import('playwright');
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-  const page = await b.newPage({ viewport: { width: 1600, height: 1600 } });
+  const page = await b.newPage({ viewport: { width: 2400, height: 1600 } });
   const src = ['vendor/three.min.js', 'src/data.js', 'src/track.js'].map(f => fs.readFileSync(new URL(f, dir), 'utf8')).join('\n;\n');
-  await page.setContent('<body style="margin:0;background:#111"><div id=g style="display:grid;grid-template-columns:1fr 1fr"></div></body>');
+  await page.setContent('<body style="margin:0;background:#111"><div id=g style="display:grid;grid-template-columns:1fr 1fr 1fr"></div></body>');
   await page.addScriptTag({ content: src });
   await page.evaluate(() => {
     for (const d of TRACKS) {

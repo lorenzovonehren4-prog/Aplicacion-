@@ -41,6 +41,22 @@ const TRACKS = [
       [0, 30, 6], [-30, 34, 6], [-56, 44, 5.4], [-74, 70, 4.4], [-62, 96, 1.6], [-34, 100], [0, 98], [30, 96], [56, 100],
       [84, 92], [96, 70], [92, 46], [70, 40], [40, 46], [-4, 54], [-36, 56], [-78, 26], [-94, 4], [-102, -24], [-106, -50], [-96, -66]],
   },
+  {
+    id: 't5', name: 'Pista 5', title: 'Dunas de Paracas', theme: 'desierto', indoor: false, width: 12, scale: 1.0,
+    barrier: ['#F28C28', '#F4F4F4'], tunnels: [[8, 10]], kerbs: true,
+    desc: 'Desierto al atardecer: rectas largas entre dunas, un túnel bajo la arena y un viaducto que cruza la meta.',
+    pts: [[-150, -100], [-60, -105], [30, -100], [110, -85], [155, -50], [165, 0], [140, 45], [95, 60], [70, 95], [80, 140], [55, 180],
+      [10, 190], [-25, 170], [-35, 130, 1.5], [-40, 80, 5], [-40, 20, 6], [-40, -40, 6], [-40, -105, 6], [-45, -150, 4], [-70, -180, 1],
+      [-110, -185], [-150, -170], [-180, -140], [-180, -110]],
+  },
+  {
+    id: 't6', name: 'Pista 6', title: 'Galpón Neón', theme: 'neon', indoor: true, width: 10, scale: 1.6,
+    barrier: ['#B026FF', '#2AF5FF'], tunnels: [[6, 8]],
+    desc: 'Galpón a oscuras con tubos de neón, un túnel de anillos de luz y un segundo piso que pasa sobre la largada.',
+    pts: [[-80, -60], [0, -60], [55, -56], [82, -38], [86, -8], [66, 12], [34, 12], [12, 26], [14, 50], [40, 58], [72, 60, 0.6],
+      [92, 76, 2.6], [88, 100, 4.6], [60, 110, 5.4], [20, 104, 5.6], [-12, 84, 5.6], [-30, 40, 5.6], [-36, -10, 5.4], [-40, -60, 5.2],
+      [-46, -92, 3.4], [-66, -108, 1], [-90, -110], [-101, -102], [-103, -86], [-96, -70]],
+  },
 ];
 
 const DIFFS = [
@@ -51,7 +67,7 @@ const DIFFS = [
 ];
 
 const LAP_OPTIONS = [2, 3, 5];
-const CHAMP_TRACKS = ['t1', 't2', 't3', 't4'];
+const CHAMP_TRACKS = ['t1', 't2', 't3', 't4', 't5', 't6'];
 const POINTS = [10, 7, 5, 3, 2, 1];
 const COINS_BY_POS = [120, 80, 60, 40, 30, 20];
 const XP_BY_POS = [70, 55, 45, 35, 28, 22];

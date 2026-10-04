@@ -34,6 +34,7 @@ function goTitle() {
   W.hemi.color.set('#B7A8FF'); W.hemi.groundColor.set('#2A2230'); W.hemi.intensity = 0.35;
   W.sun.color.set('#ffffff'); W.sun.intensity = 1.8; W.sunDir = new THREE.Vector3(0.4, 1, 0.6).normalize();
   W.scene.environment = makeEnv('garaje'); W.renderer.toneMappingExposure = 1.0;
+  setPostLook({ bloom: 0.45, threshold: 2.2, vignette: 0.35 });
   refreshShowKart();
   refreshProfile();
   CAM.snapMenu = true;
@@ -644,14 +645,21 @@ function frame(now) {
   W.sun.position.set(c.x + sd.x * 60, sd.y * 60, c.z + sd.z * 60);
   if (!R.on && showKart) { showKart.rotation.y += dt * 0.3; if (showKart.userData.glowParts) poseKart(showKart, { x: 0, y: 0.12, z: 0, h: showKart.rotation.y, slope: 0, roll: 0, pitch: 0, steer: 0, wheelRot: 0 }, dt, now / 1000); }
   const tt = now / 1000; for (const f of W.anim) f(tt);
-  W.renderer.render(W.scene, W.camera);
+  // si la compu no da (menos de ~30 FPS por 4 s en carrera), se apaga el posprocesado
+  if (POST.on && R.on && !UI.paused) {
+    UI.slowT = (UI.slowT || 0) + (dt > 1 / 30 ? dt : -dt * 0.5);
+    UI.slowT = Math.max(0, UI.slowT);
+    if (UI.slowT > 4 && !navigator.webdriver) { POST.on = false; toast('Bajamos efectos para que el juego vaya fluido'); }
+  }
+  renderFrame(W.scene, W.camera);
 }
 
 // ---------- arranque ----------
 function boot() {
   initRenderer($('game'));
   resizeRenderer();
-  window.addEventListener('resize', resizeRenderer);
+  initPost();
+  window.addEventListener('resize', () => { resizeRenderer(); resizePost(); });
   buildGarage();
   FX.init(W.scene);
   UI.camMode = save.opt.cam | 0;

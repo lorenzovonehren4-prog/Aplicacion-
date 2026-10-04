@@ -16,6 +16,8 @@ const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 const check = (cond, msg) => { if (!cond) errors.push('FALLA: ' + msg); else console.log('ok -', msg); };
+// calidad baja: sin GPU el posprocesado hace que cada cuadro tarde mucho y la prueba es larga
+await page.addInitScript(() => { try { localStorage.setItem('kartodromo-save-v1', JSON.stringify({ opt: { quality: 'baja', vol: 0, cam: 0, names: true } })); } catch (e) {} });
 await page.goto(`http://localhost:${server.address().port}/index.html`);
 await page.waitForFunction(() => document.body.classList.contains('ready'));
 
