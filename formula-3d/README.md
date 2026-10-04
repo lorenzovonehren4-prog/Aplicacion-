@@ -65,7 +65,15 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.6.0: carreras como en la transmisión. Al terminar puedes **ver la
+Versión 2.7.0: boxes como en la transmisión y cabina profesional. Las
+paradas son más cortas (~15 s de pérdida) y se ven con una toma de TV: los
+gatos levantan el auto, los mecánicos sacan las ruedas viejas y ponen las
+nuevas, levantan los brazos y el semáforo se pone verde; cada equipo tiene su
+garaje. En la cabina ves tus manos en el volante, que ahora tiene perillas,
+rótulos, luces de bandera y una pantalla con gomas, alerón y el limitador de
+boxes; la cabeza mira hacia la curva.
+
+Desde la 2.6.0: carreras como en la transmisión. Al terminar puedes **ver la
 repetición** con cámaras de TV, helicóptero, a bordo y un director que corta
 solo (pausa, velocidad, saltos y elegir a quién seguir). En la largada,
 acelerar antes de que se apaguen las luces es **salida en falso** (+5 s) y se

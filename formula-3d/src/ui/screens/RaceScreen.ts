@@ -872,8 +872,9 @@ export class RaceScreen extends BaseScreen<RaceParams> {
         case 'pitExit':
           if (event.index === session.player.index) {
             world.racingLine.setHidden(false);
-            hud.message('¡DE VUELTA EN PISTA!', `Parada de ${event.time.toFixed(1)} s · neumáticos nuevos`, 'good');
-            this.own.timeout(() => this.radio('pitDone'), 600);
+            hud.message('¡DE VUELTA EN PISTA!', `Parada de ${event.time.toFixed(1)} s · ${event.repair ? 'gomas y alerón nuevos' : 'neumáticos nuevos'}`, 'good');
+            const moment = event.repair ? 'pitDone' : event.time <= PIT_BEST ? 'pitPerfect' : event.time > PIT_GOOD ? 'pitSlow' : 'pitDone';
+            this.own.timeout(() => this.radio(moment), 600);
             this.carWarned = { tyres: false, wing: false };
           }
           break;

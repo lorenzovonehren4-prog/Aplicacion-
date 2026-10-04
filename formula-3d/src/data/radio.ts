@@ -33,7 +33,9 @@ export type RadioMoment =
   | 'boxCancel'
   | 'tyresWorn'
   | 'wingDamage'
-  | 'pitDone';
+  | 'pitDone'
+  | 'pitPerfect'
+  | 'pitSlow';
 
 export const RADIO_LINES: Readonly<Record<RadioMoment, readonly string[]>> = {
   practiceStart: [
@@ -84,6 +86,8 @@ export const RADIO_LINES: Readonly<Record<RadioMoment, readonly string[]>> = {
   ],
   wingDamage: ['Tenemos daño en el alerón delantero. Si quieres, entra a boxes y lo cambiamos.'],
   pitDone: ['¡Buena parada! Gomas nuevas, a empujar.', 'Parada limpia. Ahora a recuperar posiciones.'],
+  pitPerfect: ['¡Parada perfecta! El equipo voló, a empujar.', '¡Qué parada! Récord del equipo, ahora te toca a ti.'],
+  pitSlow: ['Parada un poco lenta, perdimos unas décimas. Las recuperamos en pista.', 'Se trabó una tuerca, perdón. Gomas nuevas igual: a empujar.'],
   penaltyAtFinish: [
     'Cruzamos la meta, pero falta descontar la sanción. Veamos dónde quedamos.',
     'Bandera a cuadros. Ahora se suma la sanción al tiempo final.',

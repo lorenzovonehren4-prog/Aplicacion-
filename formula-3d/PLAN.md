@@ -1795,6 +1795,64 @@ parada completa del jugador (sin cruzar el muro y sin pasar los 80 km/h),
 paradas de los bots, desgaste, teclas en guardados viejos, grabación y
 reproducción, y guardar y volver al estado de un auto.
 
+### Versión 2.7 — Boxes de transmisión y cabina profesional ✅
+
+Pedido: "que los boxes duren menos segundos y mejores animaciones, después
+mejorar el interior del carro para que sea más profesional; arregla los
+detalles que faltan y mejóralos".
+
+**Paradas más cortas** (`race/session/PitStop.ts`, `tracks/PitLane.ts`)
+
+- [x] Fallo grave arreglado: en Miami, Zandvoort, México, Lusail y Abu Dabi
+      (según dónde entrara) el auto frenaba a centímetros del box y se
+      quedaba ahí para siempre. Ahora la frenada se calcula hasta la marca y
+      nunca baja de una velocidad mínima; una prueba hace entrar en los 24
+      circuitos, a distintos boxes y desde distintos puntos.
+- [x] Zona del límite más corta y boxes más juntos, calle más rápida fuera
+      de la zona, frenadas y arrancadas más fuertes y servicio de 1,9–2,6 s:
+      la pérdida promedio en boxes baja de ~23 s a ~15 s (sigue a 80 km/h).
+- [x] Si el compañero de equipo está parado en el box, el segundo espera
+      detrás hasta que salga.
+
+**Parada animada** (`race/session/PitService.ts`, `race/render/PitCrew.ts`)
+
+- [x] Coreografía: entra el gato delantero y levanta la trompa, entra el
+      trasero por detrás y levanta la cola, las pistolas aflojan, sale la
+      rueda vieja, entra la nueva, ajustan, bajan los gatos y semáforo verde.
+- [x] 18 mecánicos por auto con mono del equipo, casco con visor, guantes,
+      botas y franja reflectante, en siete posturas: salen del garaje
+      cuando el auto viene llegando, trabajan, levantan los brazos al
+      terminar y vuelven al garaje con las ruedas viejas. Ruedas sueltas,
+      pistolas, gatos y el semáforo de cada box.
+- [x] Los autos se levantan con los gatos y se quedan sin rueda mientras se
+      cambia (el del jugador y los rivales); la repetición graba el reloj de
+      la parada y muestra lo mismo.
+- [x] Garajes abiertos alineados con cada box, con el cartel del color del
+      equipo, luces, pilas de gomas y el pórtico del semáforo.
+- [x] Toma de TV alta de tres cuartos durante el servicio; panel con el reloj
+      de la parada y su nota (perfecta, buena o lenta), mensaje de radio
+      según cómo salió, y sonidos de pistolas y gatos.
+
+**Cabina** (`race/render/SteeringWheel.ts`, `garage/CarModel.ts`, `race/camera/RaceCamera.ts`)
+
+- [x] Volante: frente de carbono con rótulos (N, PIT, RAD, BOX, OK, DRS),
+      cuatro perillas, levas de cambio y de embrague y dos luces de bandera.
+- [x] Pantalla: franja del color de la bandera, gomas con barra, alerón,
+      pedido de boxes y una página azul para el limitador de boxes (los LEDs
+      parpadean en azul por mitades).
+- [x] Manos del piloto: guantes en las empuñaduras que giran con el volante
+      y antebrazos con la manga del mono que salen de la abertura.
+- [x] Reborde de carbono alrededor del cockpit y acolchados a los costados.
+- [x] La cabeza mira hacia donde dobla y se inclina un poco hacia adentro.
+- [x] Mismas llamadas de dibujo en la cabina (piezas fusionadas por
+      material); las mallas vacías del equipo no se dibujan.
+
+**Detalles**: la cámara de helicóptero de la repetición se queda del lado de
+la pista en la recta de boxes (el edificio tapaba el auto).
+
+**Pruebas**: parada en los 24 circuitos sin trabarse, espera del segundo
+auto, coreografía (gatos, ruedas y sonidos) y la repetición con la parada.
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1891,3 +1949,4 @@ reproducción, y guardar y volver al estado de un auto.
 - **Versión 2.4**: ritmo de cuadros parejo, posprocesado en una pasada, menos llamadas de dibujo, medallas de tiempo por circuito y desafío del día con racha (pedido del usuario).
 - **Versión 2.5**: récords en línea con el mismo link: tabla por circuito, ranking de medallas y fantasma del récord (pedido del usuario).
 - **Versión 2.6**: repetición con cámaras de TV, salida en falso y tiempo de reacción, boxes automáticos con desgaste y daño, advertencias y sanciones en vez de vueltas anuladas, y banderas amarilla y azul (pedido del usuario).
+- **Versión 2.7**: paradas más cortas (y sin autos trabados), equipo de boxes animado con gatos, ruedas, pistolas y semáforo, garajes por equipo, toma de TV y cabina profesional con manos, volante completo y pantalla del limitador (pedido del usuario).

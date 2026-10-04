@@ -132,9 +132,18 @@ export class ReplayCamera {
         break;
       }
       case 'heli': {
-        // Detrás y un poco al costado, girando despacio alrededor del auto.
-        const angle = target.heading + 0.5 + Math.sin(this.time * 0.15) * 0.6;
-        this.position.set(target.x + Math.sin(angle) * 32, 26, target.z + Math.cos(angle) * 32);
+        const pit = this.track.pitLane;
+        if (this.track.inRange(target.s, pit.entry, pit.exit)) {
+          // En la recta de boxes, siempre del lado de la pista: el edificio de boxes taparía el auto.
+          const swing = 0.85 + Math.sin(this.time * 0.15) * 0.25;
+          const back = Math.cos(swing) * 32;
+          const aside = Math.sin(swing) * 32 * -pit.sign;
+          this.position.set(target.x + sin * back + cos * aside, 26, target.z + cos * back - sin * aside);
+        } else {
+          // Detrás y un poco al costado, girando despacio alrededor del auto.
+          const angle = target.heading + 0.5 + Math.sin(this.time * 0.15) * 0.6;
+          this.position.set(target.x + Math.sin(angle) * 32, 26, target.z + Math.cos(angle) * 32);
+        }
         fov = 34;
         follow = 3;
         break;

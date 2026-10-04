@@ -165,7 +165,7 @@ export type SessionEvent =
   | { kind: 'pitService'; index: number; time: number }
   /** Terminó el servicio: el auto arranca del box. */
   | { kind: 'pitRelease'; index: number }
-  | { kind: 'pitExit'; index: number; time: number }
+  | { kind: 'pitExit'; index: number; time: number; repair: boolean }
   | { kind: 'lastLap' }
   | { kind: 'position'; from: number; to: number }
   | { kind: 'fastestLap'; index: number; time: number }
@@ -738,7 +738,7 @@ export class Session {
     car.stops++;
     car.rejoin = REJOIN_TIME;
     car.bot?.rejoin(car.vehicle);
-    events.push({ kind: 'pitExit', index: car.index, time: pit.serviceTime });
+    events.push({ kind: 'pitExit', index: car.index, time: pit.serviceTime, repair: pit.repair });
   }
 
   /**

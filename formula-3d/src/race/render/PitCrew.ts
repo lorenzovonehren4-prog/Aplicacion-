@@ -442,8 +442,8 @@ export class PitCrew {
   private readonly point = { x: 0, z: 0 };
   private readonly tangent = { x: 0, z: 0 };
   private readonly work: WheelWork = { gun: false, off: 0, on: 0, attached: true, done: false };
-  private readonly red = new Color(4, 0.18, 0.12);
-  private readonly green = new Color(0.25, 4, 0.6);
+  private readonly red = new Color(3.4, 0.05, 0.04);
+  private readonly green = new Color(0.1, 3.2, 0.35);
 
   constructor(private readonly track: Track) {
     this.pit = track.pitLane;
