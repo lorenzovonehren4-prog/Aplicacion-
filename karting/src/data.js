@@ -10,23 +10,23 @@ const SAVE_KEY = 'kartodromo-save-v1';
 // entre dos índices de puntos de control. Todas las pistas están libres desde el principio.
 const TRACKS = [
   {
-    id: 't1', name: 'Pista 1', title: 'Galpón Azul', theme: 'azul', indoor: true, width: 9,
+    id: 't1', name: 'Pista 1', title: 'Galpón Azul', theme: 'azul', indoor: true, width: 10, scale: 2.0,
     barrier: ['#2F6BE8', '#EEF2FA'],
     desc: 'Galpón de dos pisos: sube la rampa, cruza el puente sobre la recta y baja a la horquilla, la única curva donde hay que frenar.',
     pts: [[-60, -50], [0, -50], [35, -50], [58, -42], [68, -22, 0.4], [70, 2, 2.6], [64, 24, 4.6], [46, 38, 5], [20, 40, 5],
-      [4, 28, 5], [0, 4, 5], [0, -30, 5], [0, -64, 5], [0, -84, 2.8], [-1, -104, 0.4], [-8, -116], [-20, -116],
-      [-27, -104], [-30, -90], [-46, -86], [-68, -88], [-94, -82], [-110, -66], [-108, -46], [-88, -40]],
+      [4, 28, 5], [0, 4, 5], [0, -30, 5], [0, -64, 5], [0, -84, 2.8], [-1, -104, 0.3], [-6, -114],
+      [-15, -118], [-23, -110], [-24, -96], [-34, -86], [-46, -86], [-68, -88], [-94, -82], [-110, -66], [-108, -46], [-88, -40]],
   },
   {
-    id: 't2', name: 'Pista 2', title: 'Fábrica Roja', theme: 'fabrica', indoor: true, width: 9,
-    barrier: ['#E23B2E', '#FFD21F'], tunnels: [[10, 13]],
+    id: 't2', name: 'Pista 2', title: 'Fábrica Roja', theme: 'fabrica', indoor: true, width: 10, scale: 1.9,
+    barrier: ['#E23B2E', '#FFD21F'], tunnels: [[12, 15]],
     desc: 'Fábrica con túnel de contenedores, un segundo piso que pasa sobre la largada y llantas en cada curva.',
-    pts: [[-70, -40], [-20, -40], [15, -40], [42, -34], [58, -16], [58, 8], [42, 22], [20, 20], [0, 24], [-16, 38],
+    pts: [[-70, -40], [-20, -40], [15, -40], [50, -40], [55, -36], [56, -26], [57, -10], [58, 8], [42, 22], [20, 20], [0, 24], [-16, 38],
       [-18, 58], [0, 72], [30, 76], [56, 70], [74, 52, 0.6], [80, 28, 3], [76, 4, 5.2], [62, -18, 5.4], [40, -44, 5.4],
       [20, -62, 4.6], [-4, -74, 2.4], [-30, -80, 0.4], [-66, -82], [-84, -80], [-91, -67], [-84, -53]],
   },
   {
-    id: 't3', name: 'Pista 3', title: 'Parque del Litoral', theme: 'parque', indoor: false, width: 11,
+    id: 't3', name: 'Pista 3', title: 'Parque del Litoral', theme: 'parque', indoor: false, width: 12, scale: 1.35,
     barrier: ['#E23B2E', '#F4F4F4'], tunnels: [[7, 10]], kerbs: true,
     desc: 'Al aire libre junto al mar: túnel bajo el cerro, viaducto de segundo piso sobre la meta y curvas rápidas.',
     pts: [[-80, -90], [0, -90], [60, -90], [100, -76], [118, -42], [108, -8], [82, 12], [64, 36], [68, 66], [88, 88],
@@ -34,7 +34,7 @@ const TRACKS = [
       [10, -90, 6.5], [4, -120, 4], [-16, -140, 1], [-46, -150], [-84, -144], [-112, -126], [-120, -104], [-104, -92]],
   },
   {
-    id: 't4', name: 'Pista 4', title: 'Lima de Noche', theme: 'noche', indoor: false, width: 10,
+    id: 't4', name: 'Pista 4', title: 'Lima de Noche', theme: 'noche', indoor: false, width: 11, scale: 1.4,
     barrier: ['#FF2E88', '#2AD4FF'], tunnels: [[17, 20]], kerbs: true,
     desc: 'Ciudad de noche con letreros de neón, un paso a desnivel bajo los edificios y una vía expresa elevada.',
     pts: [[-76, -72], [-30, -70], [30, -70], [62, -62], [78, -40], [78, -10], [74, 8, 0.8], [58, 22, 3.2], [30, 28, 5.6],
@@ -44,10 +44,10 @@ const TRACKS = [
 ];
 
 const DIFFS = [
-  { id: 'facil', name: 'Fácil', pace: 0.78, top: 0.86, err: 1.0, coin: 0.8 },
-  { id: 'normal', name: 'Normal', pace: 0.86, top: 0.92, err: 0.6, coin: 1.0 },
-  { id: 'dificil', name: 'Difícil', pace: 0.93, top: 0.97, err: 0.3, coin: 1.4 },
-  { id: 'experto', name: 'Experto', pace: 0.98, top: 1.0, err: 0.1, coin: 1.9 },
+  { id: 'facil', name: 'Fácil', pace: 0.70, top: 0.80, err: 1.3, coin: 0.8, band: [25, 0.82], info: 'Bots tranquilos que te esperan' },
+  { id: 'normal', name: 'Normal', pace: 0.79, top: 0.88, err: 0.9, coin: 1.0, band: [45, 0.9], info: 'Para aprender las pistas' },
+  { id: 'dificil', name: 'Difícil', pace: 0.89, top: 0.95, err: 0.4, coin: 1.4, band: [90, 0.96], info: 'Rápidos, casi no fallan' },
+  { id: 'experto', name: 'Experto', pace: 0.97, top: 1.0, err: 0.1, coin: 1.9, band: null, info: 'Vueltas casi perfectas' },
 ];
 
 const LAP_OPTIONS = [2, 3, 5];

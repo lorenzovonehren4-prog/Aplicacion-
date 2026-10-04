@@ -41,6 +41,13 @@ function buildTrackData(def) {
     const i0 = nearestControl(T, def.pts[k0], sc), i1 = nearestControl(T, def.pts[k1], sc);
     for (let i = i0; i !== i1; i = (i + 1) % N) T.tunnel[i] = 1;
   }
+  // cuánta curva hay en los próximos ~16 m (para la ayuda de dirección)
+  T.curveF = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    let c = 0;
+    for (let o = -4; o <= 16; o++) c = Math.max(c, Math.abs(T.curv[(i + o + N) % N]));
+    T.curveF[i] = clamp((c - 1 / 90) / (1 / 28 - 1 / 90), 0, 1);
+  }
   computeRacingLine(T);
   T.vprof = speedProfile(T, 1);
   return T;
@@ -110,6 +117,18 @@ function speedProfile(T, pace) {
 
 // Curvas de la pista: velocidad de entrada, de vértice y cuántos metros hay que soltar el
 // acelerador para llegar sin frenar. Si son muchos metros, esa curva "es de freno".
+// Tiempo de vuelta estimado con aceleración real, usando "pace" del agarre
+function lapEstimate(T, pace) {
+  const N = T.N, v = speedProfile(T, pace);
+  let cur = v[0], t = 0;
+  for (let pass = 0; pass < 2; pass++) for (let i = 0; i < N; i++) {
+    const a = KART.accel * Math.max(0, 1 - (cur / KART.vmax) ** 2) - KART.roll - 0.0016 * cur * cur - 9.8 * T.grade[i];
+    cur = Math.min(v[i], Math.sqrt(Math.max(1, cur * cur + 2 * a)));
+    if (pass) t += 1 / cur;
+  }
+  return t;
+}
+
 function cornerReport(T) {
   const N = T.N, v = T.vprof;
   // perfil real: acelera lo que puede y frena justo antes de cada curva

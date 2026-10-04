@@ -65,11 +65,22 @@ const feel = await page.evaluate(() => {
     }
     return { giro: +((h0 - p.h) * 180 / Math.PI).toFixed(1), v: +(p.fwd * 3.6).toFixed(0), aLat: +maxLat.toFixed(1) };
   };
-  return { toque: run(0.1, 0, 1), sostenido: run(0, 2.5, 0) };
+  const toque = run(0.1, 0, 1), recta = run(0, 2.5, 0);
+  T.curveF.fill(1); // como si viniera una curva cerrada
+  return { toque, recta, curva: run(0, 2.5, 0) };
 });
+const wall = await page.evaluate(() => {
+  const T = R.T, i = 40, p = newPhys(T.px[i] + T.nx[i] * (T.hw - 1), T.pz[i] + T.nz[i] * (T.hw - 1), Math.atan2(T.tx[i], T.tz[i]) - 0.35);
+  p.vx = Math.sin(p.h) * 20; p.vz = Math.cos(p.h) * 20;
+  let idx = i, hits = 0;
+  for (let t = 0; t < 0.8; t += 1 / 120) { const r = stepPhys(p, { throttle: 1, brake: 0, steer: 0, handbrake: false }, 1 / 120, T, idx); idx = r.idx; if (r.hit) hits++; }
+  return { v: p.speed, hits };
+});
+check(wall.hits > 0 && wall.v > 15, 'rozar la pared a 72 km/h no arruina la carrera (sigue a ' + (wall.v * 3.6).toFixed(0) + ' km/h)');
 console.log('dirección a 80 km/h →', JSON.stringify(feel));
 check(feel.toque.giro < 4, 'un toque en recta gira poco (' + feel.toque.giro + '°)');
-check(feel.sostenido.aLat > 18, 'sostenido en curva usa el agarre (' + feel.sostenido.aLat + ' m/s²)');
+check(feel.recta.aLat < 14, 'en recta, aun sosteniendo, la dirección es suave (' + feel.recta.aLat + ' m/s²)');
+check(feel.curva.aLat > 22, 'en curva se gira con más agarre (' + feel.curva.aLat + ' m/s²)');
 console.log(errors.length ? 'ERRORES:\n' + errors.join('\n') : 'sin errores');
 await browser.close(); server.close();
 process.exit(errors.length ? 1 : 0);

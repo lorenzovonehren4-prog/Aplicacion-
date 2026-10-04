@@ -2,14 +2,14 @@
 // Interfaz: pantallas, controles (teclado y mando), cámara, HUD, garaje, campeonato y bucle principal.
 
 const $ = id => document.getElementById(id);
-const UI = { screen: null, stack: [], tab: 'body', sel: { track: null, diff: null, laps: 3 }, champ: null, paused: false, camMode: 0, toastT: 0 };
+const UI = { screen: null, stack: [], tab: 'body', sel: { track: null, diff: null, laps: 3, format: 'race' }, champ: null, paused: false, camMode: 0, toastT: 0 };
 
 // ---------- pantallas ----------
 function show(id, push) {
   if (push && UI.screen) UI.stack.push(UI.screen);
   document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === id || (id === 'pause' && s.id === 'hud') || (id === 'results' && s.id === 'hud') || (id === 'standings' && false)));
   UI.screen = id;
-  const first = document.querySelector('#' + id + ' .trk.on, #' + id + ' button:not(:disabled)');
+  const first = document.querySelector('#' + id + ' .tcard.on') || document.querySelector('#' + id + ' .mode') || document.querySelector('#' + id + ' button:not(:disabled)');
   if (first && id !== 'hud') first.focus({ preventScroll: true });
 }
 function back() {
@@ -44,7 +44,7 @@ function paintProfile(el) {
   if (!el) return;
   const li = levelInfo(save.xp);
   const fr = cosById('frame', save.eq.frame), bn = cosById('banner', save.eq.banner), ti = cosById('title', save.eq.title);
-  el.className = 'profile ' + bn.cls;
+  el.className = 'profile ' + bn.cls + (el.dataset.compact ? ' compact' : '');
   el.querySelector('.avatar').className = 'avatar ' + fr.cls;
   el.querySelector('.lvl').textContent = li.lvl;
   el.querySelector('.pname').textContent = save.name;
@@ -63,10 +63,16 @@ function refreshProfile() {
   const li = levelInfo(save.xp);
   $('pCoins').textContent = save.coins;
   $('gCoins').textContent = save.coins;
-  $('champSub').textContent = CHAMP_TRACKS.length + ' carreras · por puntos';
+  $('stRaces').textContent = save.stats.races; $('stWins').textContent = save.stats.wins; $('stCups').textContent = save.stats.cups;
+  // la próxima pieza que se desbloquea, para tener una meta
+  const lvl = playerLevel();
+  const next = Object.entries(COSMETICS).flatMap(([k, l]) => l.map(c => ({ k, c }))).filter(o => o.c.lvl > lvl).sort((a, b) => a.c.lvl - b.c.lvl || b.c.cost - a.c.cost)[0];
+  $('nextUnlock').innerHTML = next ? `<b class="gold">Nivel ${next.c.lvl}:</b> ${esc(next.c.name)} — ¡gana carreras para desbloquearlo!` : '<b class="gold">¡Todo desbloqueado!</b> Eres una leyenda.';
+  const body = cosById('body', save.eq.body);
+  $('kartPlate').querySelector('.kp-num').textContent = save.eq.num;
+  $('kartPlate').querySelector('.kp-name').textContent = body.name + (save.eq.glow !== 'ninguna' ? ' · ' + cosById('glow', save.eq.glow).name : '');
   paintProfile($('profileCard'));
   paintProfile($('gProfile'));
-  $('statLine').textContent = `${save.stats.races} carreras · ${save.stats.wins} victorias · ${save.stats.cups} copas`;
 }
 
 // ---------- elegir pista ----------
@@ -74,48 +80,59 @@ function openTracks(mode) {
   UI.mode = mode;
   UI.sel.track = UI.sel.track || save.last.track;
   UI.sel.diff = UI.sel.diff || save.last.diff;
+  UI.sel.format = mode === 'best' ? 'best' : 'race';
   UI.sel.laps = save.last.laps || 3;
-  $('trkHead').textContent = mode === 'champ' ? 'Campeonato · ' + CHAMP_TRACKS.length + ' carreras' : 'Elige tu pista';
+  $('trkMode').textContent = { quick: 'Carrera', best: 'Mejor vuelta', champ: 'Campeonato' }[mode];
+  $('trkHead').textContent = mode === 'champ' ? CHAMP_TRACKS.length + ' carreras, todas las pistas' : 'Elige tu pista';
   $('btnGo').textContent = mode === 'champ' ? 'Empezar campeonato' : 'Correr';
   renderTracks();
   show('tracks', true);
 }
+const LAPS_BEST = [3, 5, 8];
 function renderTracks() {
   const champ = UI.mode === 'champ';
   const list = $('trkList'); list.innerHTML = '';
   TRACKS.forEach((t, k) => {
+    const T = trackData(t), pb = save.pb[t.id];
     const b = document.createElement('button');
-    b.className = 'trk' + (t.id === UI.sel.track ? ' on' : '');
-    b.innerHTML = `${t.name}<span>${champ ? 'Carrera ' + (k + 1) : t.id === UI.sel.track ? 'Actual' : t.title}</span>`;
-    b.onclick = () => { SFX.click(); UI.sel.track = t.id; renderTracks(); };
-    b.onfocus = () => { if (!champ && !b.disabled && UI.sel.track !== t.id) { UI.sel.track = t.id; renderTrackInfo(); list.querySelectorAll('.trk').forEach(x => x.classList.toggle('on', x === b)); } };
+    b.className = 'tcard' + (t.id === UI.sel.track ? ' on' : '');
+    b.innerHTML = `<canvas width="480" height="270"></canvas><div class="tn"><b>${champ ? (k + 1) + '. ' : ''}${t.title}</b><span>${pb && pb.lap ? 'PB ' + fmtTime(pb.lap) : t.name}</span></div><div class="tags">${trackTags(t, T)}</div>`;
+    drawTrackPreview(b.querySelector('canvas'), t);
+    b.onclick = () => { SFX.click(); UI.sel.track = t.id; renderTracks(); $('btnGo').focus(); };
+    b.onfocus = () => { if (UI.sel.track !== t.id) { UI.sel.track = t.id; renderTrackInfo(); list.querySelectorAll('.tcard').forEach(x => x.classList.toggle('on', x === b)); } };
     list.appendChild(b);
   });
-  const dr = $('diffRow'); dr.innerHTML = '';
-  DIFFS.forEach(d => {
-    const c = document.createElement('button');
-    c.className = 'chip' + (d.id === UI.sel.diff ? ' on' : '');
-    c.textContent = d.name;
-    c.onclick = () => { SFX.click(); UI.sel.diff = d.id; renderTracks(); c.focus(); };
-    dr.appendChild(c);
-  });
-  const lr = $('lapsRow'); lr.innerHTML = '';
-  $('lapsLbl').style.display = lr.style.display = champ ? 'none' : '';
-  LAP_OPTIONS.forEach(n => {
-    const c = document.createElement('button');
-    c.className = 'chip' + (n === UI.sel.laps ? ' on' : '');
-    c.textContent = n + ' vueltas';
-    c.onclick = () => { SFX.click(); UI.sel.laps = n; renderTracks(); };
-    lr.appendChild(c);
-  });
+  const seg = (box, items, cur, set) => {
+    box.innerHTML = '';
+    items.forEach(([v, label]) => {
+      const c = document.createElement('button');
+      c.className = 'chip' + (v === cur ? ' on' : '');
+      c.textContent = label;
+      c.onclick = () => { SFX.click(); set(v); renderTracks(); const again = [...box.children].find(x => x.textContent === label); if (again) again.focus(); };
+      box.appendChild(c);
+    });
+  };
+  $('fmtWrap').style.display = champ ? 'none' : '';
+  seg($('fmtRow'), [['race', 'Carrera'], ['best', 'Mejor vuelta']], UI.sel.format, v => { UI.sel.format = v; });
+  seg($('diffRow'), DIFFS.map(d => [d.id, d.name]), UI.sel.diff, v => { UI.sel.diff = v; });
+  $('diffInfo').textContent = '· ' + diffById(UI.sel.diff).info;
+  $('lapsWrap').style.display = champ ? 'none' : '';
+  const laps = UI.sel.format === 'best' ? LAPS_BEST : LAP_OPTIONS;
+  if (!laps.includes(UI.sel.laps)) UI.sel.laps = laps[1];
+  seg($('lapsRow'), laps.map(n => [n, n + ' vueltas']), UI.sel.laps, v => { UI.sel.laps = v; });
   renderTrackInfo();
+}
+function trackTags(t, T) {
+  const tags = [`<span class="tag2">${t.indoor ? 'Bajo techo' : 'Al aire libre'}</span>`, `<span class="tag2">${(T.L / 1000).toFixed(1)} km</span>`];
+  if (T.py.some(y => y > 2.8)) tags.push('<span class="tag2 t-piso">Segundo piso</span>');
+  if (T.tunnel.some(Boolean)) tags.push('<span class="tag2 t-tunel">Túnel</span>');
+  return tags.join('');
 }
 function renderTrackInfo() {
   const t = trackById(UI.sel.track);
   $('trkName').textContent = t.name + ' · ' + t.title;
-  const T = trackData(t), tags = [t.indoor ? 'Bajo techo' : 'Al aire libre', Math.round(T.L) + ' m'];
-  if (T.py.some(y => y > 2.8)) tags.push('Segundo piso'); if (T.tunnel.some(Boolean)) tags.push('Túnel');
-  $('trkSub').textContent = tags.join(' · ');
+  const T = trackData(t);
+  $('trkSub').innerHTML = trackTags(t, T);
   $('trkDesc').textContent = UI.mode === 'champ' ? 'Las ' + CHAMP_TRACKS.length + ' pistas seguidas. Puntos: 10, 7, 5, 3, 2, 1. El campeón se lleva un premio grande.' : t.desc;
   const pb = save.pb[t.id];
   $('trkPb').textContent = pb && pb.lap ? fmtTime(pb.lap) : '--.---';
@@ -185,7 +202,7 @@ function playerEntry() { return { name: save.name, isPlayer: true, look: Object.
 
 function go() {
   SFX.init(); SFX.click();
-  save.last = { track: UI.sel.track, diff: UI.sel.diff, laps: UI.sel.laps };
+  save.last = { track: UI.sel.track, diff: UI.sel.diff, laps: UI.sel.laps, format: UI.sel.format };
   persist();
   if (UI.mode === 'champ') {
     const drivers = [...pickBots(5), playerEntry()];
@@ -193,8 +210,11 @@ function go() {
     startChampRace();
   } else {
     UI.champ = null;
-    UI.lastGrid = [...pickBots(5), playerEntry()];
-    launch(trackById(UI.sel.track), diffById(UI.sel.diff), UI.sel.laps, 'quick', UI.lastGrid);
+    // el jugador larga en el medio en Fácil y Normal, más atrás en las difíciles
+    const bots = pickBots(5), slot = { facil: 2, normal: 2, dificil: 3, experto: 5 }[UI.sel.diff];
+    bots.splice(slot, 0, playerEntry());
+    UI.lastGrid = bots;
+    launch(trackById(UI.sel.track), diffById(UI.sel.diff), UI.sel.laps, 'quick', UI.lastGrid, UI.sel.format);
   }
 }
 function startChampRace() {
@@ -205,12 +225,12 @@ function startChampRace() {
   UI.lastGrid = grid;
   launch(trackById(CHAMP_TRACKS[C.race]), diffById(C.diff), 3, 'champ', grid);
 }
-function launch(def, diff, laps, mode, grid) {
+function launch(def, diff, laps, mode, grid, format) {
   W.garage.visible = false;
   $('loading').textContent = 'Cargando ' + def.title + '…';
   document.body.classList.remove('ready');
   setTimeout(() => {
-    startRace(def, diff, laps, mode, grid);
+    startRace(def, diff, laps, mode, grid, format);
     CAM.snap = true;
     UI.paused = false;
     UI.stack = [];
@@ -232,7 +252,7 @@ function pause() {
 function resume() { UI.paused = false; show('hud'); }
 function restart() {
   UI.paused = false;
-  launch(R.def, R.diff, R.laps, R.mode, UI.lastGrid);
+  launch(R.def, R.diff, R.laps, R.mode, UI.lastGrid, R.format);
 }
 
 // ---------- resultados ----------
@@ -246,12 +266,15 @@ function showResults() {
   save.stats.races++; if (pos === 1) save.stats.wins++; if (pos <= 3) save.stats.podiums++;
   persist();
   const after = levelInfo(save.xp).lvl;
-  $('resTitle').textContent = pos === 1 ? '¡Ganaste!' : pos <= 3 ? '¡Podio! Llegaste ' + pos + '.º' : 'Llegaste ' + pos + '.º';
-  $('resSub').textContent = R.def.name + ' · ' + R.def.title + ' · ' + R.diff.name;
+  const best = R.format === 'best';
+  $('resTitle').textContent = pos === 1 ? (best ? '¡Mejor tiempo de todos!' : '¡Ganaste!') : pos <= 3 ? '¡Podio! Quedaste ' + pos + '.º' : 'Quedaste ' + pos + '.º';
+  $('resSub').textContent = (best ? 'Mejor vuelta · ' : '') + R.def.title + ' · ' + R.diff.name;
+  $('resTimeH').textContent = best ? 'Diferencia' : 'Tiempo';
   $('resPtsH').style.display = champ ? '' : 'none';
   const lead = R.finishOrder[0];
   $('resBody').innerHTML = R.finishOrder.map((k, i) => {
-    const t = k.finishTime == null ? 'No terminó' : i === 0 ? fmtTime(k.finishTime) : '+' + fmtTime(k.finishTime - lead.finishTime);
+    const t = best ? (k.bestLap == null ? 'Sin vuelta' : i === 0 ? '—' : '+' + fmtTime(k.bestLap - lead.bestLap))
+      : k.finishTime == null ? 'No terminó' : i === 0 ? fmtTime(k.finishTime) : '+' + fmtTime(k.finishTime - lead.finishTime);
     const pts = champ ? `<td>${POINTS[i]}</td>` : '';
     return `<tr class="${k.isPlayer ? 'me' : ''}"><td class="p">${i + 1}</td><td><span class="dot" style="background:${cosById('body', k.look.body.id || k.look.body).c}"></span>${esc(k.name)}</td><td>${fmtTime(k.bestLap)}</td><td>${t}</td>${pts}</tr>`;
   }).join('');
@@ -267,7 +290,7 @@ function showResults() {
     mk('Ver clasificación', 'go', showStandings);
   } else {
     mk('Correr otra vez', 'go', restart);
-    mk('Cambiar pista', 'ghost', () => { endRace(); goTitle(); openTracks('quick'); });
+    mk('Cambiar pista', 'ghost', () => { const m = R.format === 'best' ? 'best' : 'quick'; endRace(); goTitle(); openTracks(m); });
     mk('Menú', 'red', goTitle);
   }
   show('results');
@@ -462,9 +485,9 @@ function updateCamera(dt) {
   if (!R.on) {
     CAM.menuA += dt;
     const showcase = UI.screen === 'garage';
-    const lx = showcase ? 2.1 : -1.7;
-    CAM.look.lerp(_v3.set(lx, 0.45, 0), CAM.snapMenu ? 1 : 1 - Math.exp(-dt * 4)); CAM.snapMenu = false;
-    cam.position.set(Math.sin(CAM.menuA * 0.3) * 0.25, 1.75 + Math.sin(CAM.menuA * 0.5) * 0.05, 5.2);
+    const lx = showcase ? 2.1 : -0.5, ly = showcase ? 0.45 : 0.05;
+    CAM.look.lerp(_v3.set(lx, ly, 0), CAM.snapMenu ? 1 : 1 - Math.exp(-dt * 4)); CAM.snapMenu = false;
+    cam.position.set(Math.sin(CAM.menuA * 0.3) * 0.25, (showcase ? 1.75 : 1.55) + Math.sin(CAM.menuA * 0.5) * 0.05, showcase ? 5.2 : 5.6);
     cam.lookAt(CAM.look);
     cam.fov = 50; cam.updateProjectionMatrix();
     return;
@@ -525,8 +548,10 @@ function updateHud(dt) {
   $('wrong').classList.toggle('show', k.wrong > 40);
   // orden de carrera
   const order = R.karts.slice().sort((a, b) => a.pos - b.pos);
+  const lead = order[0];
   $('hOrder').innerHTML = order.map(o => {
-    const gap = o === k ? '' : ((o.dist - k.dist) > 0 ? '+' : '') + Math.round(o.dist - k.dist) + ' m';
+    const gap = R.format === 'best' ? (o.bestLap == null ? '--.---' : o === lead ? fmtTime(o.bestLap) : '+' + fmtTime(o.bestLap - lead.bestLap))
+      : o === k ? '' : ((o.dist - k.dist) > 0 ? '+' : '') + Math.round(o.dist - k.dist) + ' m';
     return `<div class="${o === k ? 'me' : ''}"><i>${o.pos}</i>${esc(o.name)}<span class="gap">${gap}</span></div>`;
   }).join('');
   // minimapa
@@ -636,6 +661,7 @@ function boot() {
     SFX.init();
     const a = b.dataset.act;
     if (a === 'quick') { SFX.click(); openTracks('quick'); }
+    if (a === 'best') { SFX.click(); openTracks('best'); }
     if (a === 'champ') { SFX.click(); UI.sel.track = 't1'; openTracks('champ'); }
     if (a === 'garage') { SFX.click(); openGarage(); }
     if (a === 'options') { SFX.click(); openOptions(); }

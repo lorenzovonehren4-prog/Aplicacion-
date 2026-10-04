@@ -15,9 +15,10 @@ function botLook() {
 }
 
 // grid: lista de { name, isPlayer, look } en orden de largada
-function startRace(def, diff, laps, mode, grid) {
+// format: 'race' (gana el primero en cruzar la meta) o 'best' (gana la mejor vuelta)
+function startRace(def, diff, laps, mode, grid, format) {
   endRace();
-  R.def = def; R.diff = diff; R.laps = laps; R.mode = mode;
+  R.def = def; R.diff = diff; R.laps = laps; R.mode = mode; R.format = format || 'race';
   R.T = buildTrackScene(def);
   R.prof = speedProfile(R.T, diff.pace);
   R.karts = []; R.finishOrder = []; R.events = [];
@@ -83,7 +84,7 @@ function botInput(k, dt) {
   // pure pursuit: giro que hace falta para llegar al punto, como fracción del giro máximo
   const sp = Math.max(v, 1.5);
   const yawNeed = sp * 2 * sideways / dl;
-  const yawMax = Math.min(sp / KART.wheelbase * Math.tan(KART.steerLow), KART.grip * 1.1 / sp);
+  const yawMax = steerLimits(T, k.idx, sp, false).yawMax;
   const frac = clamp(yawNeed / yawMax, -1, 1);
   let steer = Math.sign(frac) * Math.pow(Math.abs(frac), 1 / 1.3);
 
@@ -93,10 +94,12 @@ function botInput(k, dt) {
   const look = (k.idx + 2 + Math.round(v * 0.12)) % N;
   let vt = Math.min(R.prof[look], R.prof[k.idx]) * ai.err;
   vt = Math.min(vt, KART.vmax * R.diff.top);
-  // un poquito de goma elástica en las dificultades bajas
-  if (R.player && R.diff.id !== 'experto') {
-    const gap = k.dist - R.player.dist;
-    if (gap > 60) vt *= 0.96; else if (gap < -60) vt *= 1.03;
+  // goma elástica según la dificultad
+  // (en Fácil y Normal los bots esperan al jugador si se escapan mucho)
+  if (R.player && R.diff.band && R.format === 'race') {
+    const gap = k.dist - R.player.dist, [far, slow] = R.diff.band;
+    if (gap > far) vt *= slow; else if (gap > far * 0.5) vt *= lerp(1, slow, (gap - far * 0.5) / (far * 0.5));
+    else if (gap < -far * 2) vt *= 1.03;
   }
   if (k.finished) vt *= 0.7;
   let throttle = 0, brake = 0;
@@ -145,7 +148,7 @@ function updateRace(dt, playerInput) {
     if (k.p.slip > 2.2 && k.p.speed > 5) FX.skid(k, k.p.slip);
   }
   // posiciones
-  const order = R.karts.slice().sort((a, b) => {
+  const order = R.karts.slice().sort(R.format === 'best' ? byBestLap : (a, b) => {
     if (a.finished && b.finished) return a.finishTime - b.finishTime;
     if (a.finished) return -1; if (b.finished) return 1;
     return b.dist - a.dist;
@@ -155,7 +158,7 @@ function updateRace(dt, playerInput) {
   if (R.state === 'done') {
     R.endTimer += dt;
     const all = R.karts.every(k => k.finished);
-    if (all || R.endTimer > 18) finishAll();
+    if (all || R.endTimer > (R.format === 'best' ? 25 : 18)) finishAll();
   }
   FX.update(dt);
 }
@@ -193,7 +196,7 @@ function trackProgress(k, T) {
       if (k.lapsDone >= R.laps && !k.finished) {
         k.finished = true; k.finishTime = R.t;
         R.finishOrder.push(k);
-        if (k.isPlayer) { R.state = 'done'; R.events.push({ type: 'finish', pos: R.finishOrder.length }); }
+        if (k.isPlayer) { R.state = 'done'; R.events.push({ type: 'finish', pos: R.format === 'best' ? R.karts.slice().sort(byBestLap).indexOf(k) + 1 : R.finishOrder.length }); }
       } else if (k.isPlayer && k.lapsDone === R.laps - 1) R.events.push({ type: 'lastlap' });
       if (k.isPlayer) k.sec = [null, null, null];
     }
@@ -225,11 +228,19 @@ function onPlayerLap(lt) {
   persist();
 }
 
+// En "mejor vuelta" manda el mejor tiempo; sin vuelta completa, la distancia recorrida
+function byBestLap(a, b) {
+  const la = a.bestLap == null ? Infinity : a.bestLap, lb = b.bestLap == null ? Infinity : b.bestLap;
+  if (la !== lb) return la - lb;
+  return b.dist - a.dist;
+}
+
 function finishAll() {
   if (R.state === 'results') return;
   // los que no llegaron se ordenan por distancia recorrida
   const rest = R.karts.filter(k => !k.finished).sort((a, b) => b.dist - a.dist);
   for (const k of rest) { k.finished = true; k.finishTime = null; R.finishOrder.push(k); }
+  if (R.format === 'best') R.finishOrder.sort(byBestLap);
   R.state = 'results';
   R.events.push({ type: 'results' });
 }

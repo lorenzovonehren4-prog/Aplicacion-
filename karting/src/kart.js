@@ -122,8 +122,8 @@ function tube(len, r, m, x, y, z, axis) {
   me.castShadow = true; return me;
 }
 // caja con cantos redondeados (forma extruida con bisel)
-function roundBox(w, h, d, r, m, x, y, z) {
-  const me = new THREE.Mesh(geo('rb' + [w, h, d, r], () => {
+function roundBoxGeo(w, h, d, r) {
+  return geo('rb' + [w, h, d, r], () => {
     const s = new THREE.Shape(), hw = w / 2 - r, hh = h / 2 - r;
     s.moveTo(-hw, -h / 2); s.lineTo(hw, -h / 2); s.quadraticCurveTo(w / 2, -h / 2, w / 2, -hh); s.lineTo(w / 2, hh);
     s.quadraticCurveTo(w / 2, h / 2, hw, h / 2); s.lineTo(-hw, h / 2); s.quadraticCurveTo(-w / 2, h / 2, -w / 2, hh);
@@ -131,8 +131,26 @@ function roundBox(w, h, d, r, m, x, y, z) {
     const g = new THREE.ExtrudeGeometry(s, { depth: d - r * 2, bevelEnabled: true, bevelThickness: r, bevelSize: r * 0.6, bevelSegments: 3, curveSegments: 6 });
     g.translate(0, 0, -(d - r * 2) / 2);
     return g;
-  }), m);
+  });
+}
+function roundBox(w, h, d, r, m, x, y, z) {
+  const me = new THREE.Mesh(roundBoxGeo(w, h, d, r), m);
   me.position.set(x, y, z); me.castShadow = true; return me;
+}
+
+// Une varias geometrías (con posición, normal y uv) en una sola
+function mergeGeos(list) {
+  const parts = list.map(g => g.index ? g.toNonIndexed() : g);
+  const out = new THREE.BufferGeometry();
+  for (const name of ['position', 'normal', 'uv']) {
+    const size = parts[0].attributes[name].itemSize;
+    const total = parts.reduce((n, g) => n + g.attributes[name].count * size, 0);
+    const arr = new Float32Array(total);
+    let o = 0;
+    for (const g of parts) { arr.set(g.attributes[name].array, o); o += g.attributes[name].array.length; }
+    out.setAttribute(name, new THREE.BufferAttribute(arr, size));
+  }
+  return out;
 }
 
 // Crea el kart con la estética dada: { body, helmet, rims, glow, num }
@@ -241,6 +259,18 @@ function newPhys(x, z, h) {
   return { x, z, y: 0, h, vx: 0, vz: 0, yaw: 0, steer: 0, slip: 0, speed: 0, fwd: 0, lat: 0, hitT: 0, roll: 0, pitch: 0, slope: 0, wheelRot: 0 };
 }
 
+// Límites de la dirección. Ayuda de conducción: en recta (a velocidad) el volante tiene menos
+// autoridad, así un toque no te manda contra la pared; en las curvas que vienen hay más agarre
+// y giro. T.curveF[i] va de 0 (recta) a 1 (curva cerrada adelante).
+function steerLimits(T, idx, sp, handbrake) {
+  const f = T.curveF ? T.curveF[idx] : 1;
+  const grip = (handbrake ? KART.slideGrip : KART.grip) * lerp(1, 1.18, f);
+  const geoYaw = sp / KART.wheelbase * Math.tan(KART.steerLow);
+  const gripYaw = grip * (handbrake ? 2.0 : 1.1) / Math.max(sp, 1.5);
+  const auth = lerp(1, lerp(0.4, 1, f), clamp((sp - 6) / 10, 0, 1));
+  return { grip, yawMax: Math.min(geoYaw, gripYaw) * (handbrake ? 1 : auth) };
+}
+
 function stepPhys(p, inp, dt, T, idx) {
   const sh = Math.sin(p.h), ch = Math.cos(p.h);
   const fx = sh, fz = ch, rx = -ch, rz = sh;
@@ -271,10 +301,8 @@ function stepPhys(p, inp, dt, T, idx) {
   // dirección: el volante pide una fracción del giro máximo posible a esa velocidad.
   // A baja velocidad manda la geometría; a alta, el agarre. Así un toque en recta mueve poco
   // y a fondo en curva se aprovecha todo el agarre.
-  const gripMax = inp.handbrake ? KART.slideGrip : KART.grip;
-  const geoYaw = Math.abs(vf) / KART.wheelbase * Math.tan(KART.steerLow);
-  const gripYaw = gripMax * (inp.handbrake ? 2.0 : 1.1) / Math.max(sp, 1.5);
-  const yawMax = Math.min(geoYaw, gripYaw);
+  const L = steerLimits(T, idx, sp, inp.handbrake);
+  const gripMax = L.grip, yawMax = L.yawMax;
   const shaped = Math.sign(inp.steer) * Math.pow(Math.abs(inp.steer), 1.3);
   const yawWant = -Math.sign(vf) * shaped * yawMax;
   p.yaw = lerp(p.yaw, yawWant, 1 - Math.exp(-dt * 10));
@@ -312,14 +340,15 @@ function stepPhys(p, inp, dt, T, idx) {
     p.x -= T.nx[i] * s * push; p.z -= T.nz[i] * s * push;
     const vn = p.vx * T.nx[i] * s + p.vz * T.nz[i] * s;   // hacia la barrera
     if (vn > 0) {
-      p.vx -= T.nx[i] * s * vn * 1.3; p.vz -= T.nz[i] * s * vn * 1.3;
-      const keep = clamp(1 - vn * 0.04, 0.6, 0.97);
+      // roce suave: se quita la velocidad hacia la barrera (casi sin rebote) y se pierde poco
+      p.vx -= T.nx[i] * s * vn * 1.15; p.vz -= T.nz[i] * s * vn * 1.15;
+      const keep = clamp(1 - vn * 0.012, 0.86, 0.995);
       p.vx *= keep; p.vz *= keep;
       hit = vn;
-      // la barrera endereza un poco el kart
+      // la barrera endereza el kart para que siga andando
       const th = Math.atan2(T.tx[i], T.tz[i]);
       let d = th - p.h; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
-      if (Math.abs(d) < Math.PI / 2) p.h += d * clamp(vn * 0.05, 0, 0.35);
+      if (Math.abs(d) < Math.PI / 2) { p.h += d * clamp(0.25 + vn * 0.06, 0, 0.6); p.yaw *= 0.5; }
       p.hitT = 0.25;
     }
   }
