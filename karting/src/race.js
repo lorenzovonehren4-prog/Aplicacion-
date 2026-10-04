@@ -10,7 +10,8 @@ const R = {
 function botLook() {
   const b = BODIES[Math.floor(Math.random() * BODIES.length)];
   const h = HELMETS[Math.floor(Math.random() * HELMETS.length)];
-  return { body: b, helmet: h, rims: RIMS[Math.floor(Math.random() * 3)], num: 2 + Math.floor(Math.random() * 97) };
+  const g = Math.random() < 0.35 ? GLOWS[1 + Math.floor(Math.random() * (GLOWS.length - 1))] : null;
+  return { body: b, helmet: h, rims: RIMS[Math.floor(Math.random() * RIMS.length)], glow: g, num: 2 + Math.floor(Math.random() * 97) };
 }
 
 // grid: lista de { name, isPlayer, look } en orden de largada
@@ -79,9 +80,12 @@ function botInput(k, dt) {
   const dx = tx - p.x, dz = tz - p.z, dl = Math.hypot(dx, dz) || 1;
   const rx = -Math.cos(p.h), rz = Math.sin(p.h);
   const sideways = (dx * rx + dz * rz) / dl;
-  const steerMax = lerp(KART.steerLow, KART.steerHigh, clamp(v / KART.vmax, 0, 1));
-  const ang = Math.atan(2 * KART.wheelbase * sideways / dl);
-  let steer = clamp(ang / steerMax, -1, 1);
+  // pure pursuit: giro que hace falta para llegar al punto, como fracción del giro máximo
+  const sp = Math.max(v, 1.5);
+  const yawNeed = sp * 2 * sideways / dl;
+  const yawMax = Math.min(sp / KART.wheelbase * Math.tan(KART.steerLow), KART.grip * 1.1 / sp);
+  const frac = clamp(yawNeed / yawMax, -1, 1);
+  let steer = Math.sign(frac) * Math.pow(Math.abs(frac), 1 / 1.3);
 
   // velocidad objetivo según la curva que viene
   ai.errT -= dt;
@@ -127,7 +131,7 @@ function updateRace(dt, playerInput) {
     k.inp = inp;
     k.idx = res.idx;
     if (res.hit > 2) {
-      FX.sparks(k.p.x + T.nx[k.idx] * res.side * 0.7, k.p.z + T.nz[k.idx] * res.side * 0.7, res.hit);
+      FX.sparks(k.p.x + T.nx[k.idx] * res.side * 0.7, k.p.z + T.nz[k.idx] * res.side * 0.7, res.hit, k.p.y);
       if (k.isPlayer) R.events.push({ type: 'hit', v: res.hit });
     }
     trackProgress(k, T);
@@ -136,7 +140,7 @@ function updateRace(dt, playerInput) {
   for (const k of R.karts) {
     if (k.bump > 2 && (k.isPlayer)) R.events.push({ type: 'bump', v: k.bump });
     k.bump = 0;
-    poseKart(k.mesh, k.p, dt);
+    poseKart(k.mesh, k.p, dt, R.t);
     // humo y marcas al derrapar
     if (k.p.slip > 2.2 && k.p.speed > 5) FX.skid(k, k.p.slip);
   }
@@ -249,7 +253,7 @@ const FX = {
     this.sparksPts = new THREE.Points(g, new THREE.PointsMaterial({ color: '#FFC24D', size: 0.09, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     this.sparksPts.frustumCulled = false;
     scene.add(this.sparksPts);
-    for (let i = 0; i < n; i++) this.sparkData.push({ life: 0, x: 0, y: -10, z: 0, vx: 0, vy: 0, vz: 0 });
+    for (let i = 0; i < n; i++) this.sparkData.push({ life: 0, x: 0, y: -10, z: 0, vx: 0, vy: 0, vz: 0, floor: 0 });
     // humo
     const st = canvasTexture(64, 64, (c, w, h) => { const gr = c.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(230,230,240,.75)'); gr.addColorStop(1, 'rgba(230,230,240,0)'); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
     for (let i = 0; i < 40; i++) {
@@ -267,11 +271,11 @@ const FX = {
     for (const s of this.smoke) { s.life = 0; s.s.visible = false; }
     this.skids.count = 0; this.skidN = 0;
   },
-  sparks(x, z, power) {
+  sparks(x, z, power, y) {
     const n = Math.min(24, Math.round(power * 3));
     for (let i = 0, made = 0; i < this.sparkData.length && made < n; i++) {
       const d = this.sparkData[i]; if (d.life > 0) continue;
-      d.life = rand(0.2, 0.5); d.x = x; d.y = 0.3; d.z = z;
+      d.life = rand(0.2, 0.5); d.x = x; d.y = (y || 0) + 0.3; d.z = z; d.floor = y || 0;
       d.vx = rand(-4, 4); d.vy = rand(1, 4); d.vz = rand(-4, 4); made++;
     }
   },
@@ -285,7 +289,7 @@ const FX = {
       for (const sd of [-1, 1]) {
         const x = p.x + rx * 0.6 * sd - fx * 0.64, z = p.z + rz * 0.6 * sd - fz * 0.64;
         const qy = this._q.setFromAxisAngle(this._up, p.h).multiply(this._qx);
-        this._v.set(x, 0.03 + (this.skidN % 50) * 0.00004, z);
+        this._v.set(x, p.y + 0.03 + (this.skidN % 50) * 0.00004, z);
         this._m.compose(this._v, qy, this._s);
         this.skids.setMatrixAt(this.skidN % this.skidMax, this._m);
         this.skidN++;
@@ -295,14 +299,14 @@ const FX = {
     }
     if (k.skidT % 4 === 0 && slip > 3) {
       const s = this.smoke.find(o => o.life <= 0);
-      if (s) { s.life = 1; s.s.visible = true; s.s.position.set(p.x - Math.sin(p.h) * 0.9, 0.35, p.z - Math.cos(p.h) * 0.9); s.s.scale.setScalar(0.6); }
+      if (s) { s.life = 1; s.s.visible = true; s.s.position.set(p.x - Math.sin(p.h) * 0.9, p.y + 0.35, p.z - Math.cos(p.h) * 0.9); s.s.scale.setScalar(0.6); }
     }
   },
   update(dt) {
     const pos = this.sparksPts.geometry.attributes.position;
     this.sparkData.forEach((d, i) => {
       if (d.life > 0) {
-        d.life -= dt; d.vy -= 12 * dt; d.x += d.vx * dt; d.y = Math.max(0.02, d.y + d.vy * dt); d.z += d.vz * dt;
+        d.life -= dt; d.vy -= 12 * dt; d.x += d.vx * dt; d.y = Math.max(d.floor + 0.02, d.y + d.vy * dt); d.z += d.vz * dt;
         pos.setXYZ(i, d.x, d.life > 0 ? d.y : -10, d.z);
       } else pos.setXYZ(i, 0, -10, 0);
     });

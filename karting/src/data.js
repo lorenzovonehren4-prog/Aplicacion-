@@ -1,100 +1,160 @@
 'use strict';
-// Datos del juego: pistas, dificultades, bots, estética, constantes del kart y guardado.
+// Datos del juego: pistas, dificultades, bots, estética del kart y del perfil,
+// constantes del kart y guardado.
 
 const SAVE_KEY = 'kartodromo-save-v1';
 
-// Pistas. Los puntos son (x, z) en metros; se unen con una curva Catmull-Rom cerrada.
-// La carrera sale en el primer punto y va hacia el segundo.
+// Pistas. Los puntos son (x, z, altura) en metros; se unen con una curva Catmull-Rom cerrada.
+// La carrera sale en el primer punto y va hacia el segundo. Un tramo con altura >= 4,6 m
+// puede pasar por encima de otro (puente / segundo piso). "tunnels" marca tramos techados
+// entre dos índices de puntos de control. Todas las pistas están libres desde el principio.
 const TRACKS = [
   {
-    id: 't1', name: 'Pista 1', title: 'Galpón Azul', indoor: true, width: 8, scale: 1.4, unlock: 1,
-    barrier: ['#2F6BE8', '#EEF2FA'], floor: '#2A2733', fog: '#1C1626',
-    desc: 'Bajo techo, curvas cerradas y una horquilla al fondo. Ideal para aprender a frenar.',
-    pts: [[-30, -22], [20, -22], [40, -18], [46, -4], [36, 6], [14, 8], [4, 18], [14, 28], [42, 30], [50, 42],
-      [38, 52], [-14, 52], [-32, 46], [-34, 30], [-20, 22], [-14, 10], [-26, 0], [-44, -2], [-48, -14]],
+    id: 't1', name: 'Pista 1', title: 'Galpón Azul', theme: 'azul', indoor: true, width: 9,
+    barrier: ['#2F6BE8', '#EEF2FA'],
+    desc: 'Galpón de dos pisos: sube la rampa, cruza el puente sobre la recta y baja a la horquilla, la única curva donde hay que frenar.',
+    pts: [[-60, -50], [0, -50], [35, -50], [58, -42], [68, -22, 0.4], [70, 2, 2.6], [64, 24, 4.6], [46, 38, 5], [20, 40, 5],
+      [4, 28, 5], [0, 4, 5], [0, -30, 5], [0, -64, 5], [0, -84, 2.8], [-1, -104, 0.4], [-8, -116], [-20, -116],
+      [-27, -104], [-30, -90], [-46, -86], [-68, -88], [-94, -82], [-110, -66], [-108, -46], [-88, -40]],
   },
   {
-    id: 't2', name: 'Pista 2', title: 'Fábrica Roja', indoor: true, width: 8, scale: 1.4, unlock: 2,
-    barrier: ['#E23B2E', '#FFD21F'], floor: '#24222A', fog: '#140F1A', tires: true,
-    desc: 'Galpón grande con barreras rojas y amarillas, chicanas y llantas en cada curva.',
-    pts: [[-50, -40], [10, -40], [36, -36], [44, -22], [30, -12], [14, -16], [2, -14], [-4, -5], [2, 5], [14, 7], [40, 6], [56, 16],
-      [56, 34], [40, 44], [16, 40], [2, 50], [-16, 56], [-36, 50], [-40, 34], [-26, 22], [-34, 8], [-56, 4],
-      [-64, -12], [-62, -30]],
+    id: 't2', name: 'Pista 2', title: 'Fábrica Roja', theme: 'fabrica', indoor: true, width: 9,
+    barrier: ['#E23B2E', '#FFD21F'], tunnels: [[10, 13]],
+    desc: 'Fábrica con túnel de contenedores, un segundo piso que pasa sobre la largada y llantas en cada curva.',
+    pts: [[-70, -40], [-20, -40], [15, -40], [42, -34], [58, -16], [58, 8], [42, 22], [20, 20], [0, 24], [-16, 38],
+      [-18, 58], [0, 72], [30, 76], [56, 70], [74, 52, 0.6], [80, 28, 3], [76, 4, 5.2], [62, -18, 5.4], [40, -44, 5.4],
+      [20, -62, 4.6], [-4, -74, 2.4], [-30, -80, 0.4], [-66, -82], [-84, -80], [-91, -67], [-84, -53]],
   },
   {
-    id: 't3', name: 'Pista 3', title: 'Parque del Litoral', indoor: false, width: 10, scale: 1.3, unlock: 3,
-    barrier: ['#E23B2E', '#F4F4F4'], floor: '#4FA34A', fog: '#BFDDF2', kerbs: true,
-    desc: 'Al aire libre: rectas largas, curvas rápidas y una chicana antes de la meta.',
-    pts: [[-60, -70], [40, -70], [80, -62], [96, -40], [86, -14], [56, -6], [40, 14], [56, 36], [92, 46], [104, 72],
-      [86, 96], [40, 100], [0, 90], [-20, 64], [-50, 56], [-80, 64], [-104, 46], [-100, 14], [-76, -2], [-90, -30],
-      [-86, -58]],
+    id: 't3', name: 'Pista 3', title: 'Parque del Litoral', theme: 'parque', indoor: false, width: 11,
+    barrier: ['#E23B2E', '#F4F4F4'], tunnels: [[7, 10]], kerbs: true,
+    desc: 'Al aire libre junto al mar: túnel bajo el cerro, viaducto de segundo piso sobre la meta y curvas rápidas.',
+    pts: [[-80, -90], [0, -90], [60, -90], [100, -76], [118, -42], [108, -8], [82, 12], [64, 36], [68, 66], [88, 88],
+      [98, 116], [78, 140], [40, 140, 1.5], [8, 120, 5], [-6, 88, 6.5], [-4, 48, 6.5], [6, 8, 6.5], [10, -40, 6.5],
+      [10, -90, 6.5], [4, -120, 4], [-16, -140, 1], [-46, -150], [-84, -144], [-112, -126], [-120, -104], [-104, -92]],
+  },
+  {
+    id: 't4', name: 'Pista 4', title: 'Lima de Noche', theme: 'noche', indoor: false, width: 10,
+    barrier: ['#FF2E88', '#2AD4FF'], tunnels: [[17, 20]], kerbs: true,
+    desc: 'Ciudad de noche con letreros de neón, un paso a desnivel bajo los edificios y una vía expresa elevada.',
+    pts: [[-76, -72], [-30, -70], [30, -70], [62, -62], [78, -40], [78, -10], [74, 8, 0.8], [58, 22, 3.2], [30, 28, 5.6],
+      [0, 30, 6], [-30, 34, 6], [-56, 44, 5.4], [-74, 70, 4.4], [-62, 96, 1.6], [-34, 100], [0, 98], [30, 96], [56, 100],
+      [84, 92], [96, 70], [92, 46], [70, 40], [40, 46], [-4, 54], [-36, 56], [-78, 26], [-94, 4], [-102, -24], [-106, -50], [-96, -66]],
   },
 ];
 
 const DIFFS = [
-  { id: 'facil', name: 'Fácil', pace: 0.74, top: 0.82, err: 1.0, coin: 0.8, unlock: 1 },
-  { id: 'normal', name: 'Normal', pace: 0.84, top: 0.90, err: 0.6, coin: 1.0, unlock: 1 },
-  { id: 'dificil', name: 'Difícil', pace: 0.92, top: 0.96, err: 0.3, coin: 1.4, unlock: 2 },
-  { id: 'experto', name: 'Experto', pace: 0.98, top: 1.0, err: 0.1, coin: 1.9, unlock: 4 },
+  { id: 'facil', name: 'Fácil', pace: 0.78, top: 0.86, err: 1.0, coin: 0.8 },
+  { id: 'normal', name: 'Normal', pace: 0.86, top: 0.92, err: 0.6, coin: 1.0 },
+  { id: 'dificil', name: 'Difícil', pace: 0.93, top: 0.97, err: 0.3, coin: 1.4 },
+  { id: 'experto', name: 'Experto', pace: 0.98, top: 1.0, err: 0.1, coin: 1.9 },
 ];
 
 const LAP_OPTIONS = [2, 3, 5];
-const CHAMP_TRACKS = ['t1', 't2', 't3'];
-const CHAMP_UNLOCK = 3;            // nivel de piloto para el campeonato
+const CHAMP_TRACKS = ['t1', 't2', 't3', 't4'];
 const POINTS = [10, 7, 5, 3, 2, 1];
 const COINS_BY_POS = [120, 80, 60, 40, 30, 20];
 const XP_BY_POS = [70, 55, 45, 35, 28, 22];
-const CHAMP_BONUS = [500, 300, 180, 0, 0, 0];
+const CHAMP_BONUS = [600, 360, 220, 0, 0, 0];
 
 const BOT_NAMES = ['TurboCuy', 'LlamaDrift', 'ChichaRacer', 'PapaRellena', 'NeblinaGP', 'ElPicaronazo',
   'Choclito99', 'Ceviche_V8', 'MotoTaxiPro', 'Huayco'];
 
-// Estética: carrocería, casco y aros. "lvl" es el nivel de piloto que hace falta.
+// ---------- estética del kart ----------
+// Acabados: mate, brillo, metal, cromo, oro, perla (tornasol), neon (brilla en la oscuridad), carbono.
+// "lvl" es el nivel de piloto que hace falta; "cost" en monedas.
 const BODIES = [
-  { id: 'rojo', name: 'Rojo clásico', c: '#E8322F', cost: 0, lvl: 1 },
-  { id: 'azul', name: 'Azul eléctrico', c: '#2F6BE8', cost: 150, lvl: 1 },
-  { id: 'verde', name: 'Verde lima', c: '#36C24A', cost: 150, lvl: 1 },
-  { id: 'naranja', name: 'Naranja fuego', c: '#FF7A1A', cost: 220, lvl: 1 },
-  { id: 'amarillo', name: 'Amarillo pollito', c: '#FFD21F', cost: 220, lvl: 2 },
-  { id: 'morado', name: 'Morado chicha', c: '#8E44EC', cost: 320, lvl: 2 },
-  { id: 'rosa', name: 'Rosa neón', c: '#FF2E88', cost: 320, lvl: 3 },
-  { id: 'negro', name: 'Negro mate', c: '#2A2A33', cost: 450, lvl: 3 },
-  { id: 'blanco', name: 'Blanco perla', c: '#F2F2F2', cost: 450, lvl: 4 },
-  { id: 'dorado', name: 'Dorado campeón', c: '#D9AE3B', cost: 1500, lvl: 6, metal: true },
+  { id: 'rojo', name: 'Rojo clásico', c: '#E8322F', f: 'brillo', cost: 0, lvl: 1 },
+  { id: 'azul', name: 'Azul eléctrico', c: '#2F6BE8', f: 'brillo', cost: 120, lvl: 1 },
+  { id: 'verde', name: 'Verde lima', c: '#36C24A', f: 'brillo', cost: 120, lvl: 1 },
+  { id: 'naranja', name: 'Naranja fuego', c: '#FF7A1A', f: 'brillo', cost: 150, lvl: 1 },
+  { id: 'negro', name: 'Negro mate', c: '#24242C', f: 'mate', cost: 200, lvl: 2 },
+  { id: 'rosa', name: 'Rosa chicle', c: '#FF2E88', f: 'brillo', cost: 200, lvl: 2 },
+  { id: 'azul-metal', name: 'Azul metalizado', c: '#2457D6', f: 'metal', cost: 350, lvl: 2 },
+  { id: 'rojo-metal', name: 'Rojo candy', c: '#C4121F', f: 'metal', cost: 350, lvl: 3 },
+  { id: 'carbono', name: 'Fibra de carbono', c: '#1C1C22', f: 'carbono', cost: 500, lvl: 3 },
+  { id: 'perla', name: 'Perla tornasol', c: '#F2EEF8', f: 'perla', cost: 700, lvl: 4 },
+  { id: 'neon-verde', name: 'Neón tóxico', c: '#39FF6A', f: 'neon', cost: 800, lvl: 4 },
+  { id: 'neon-rosa', name: 'Neón rosa', c: '#FF3DCB', f: 'neon', cost: 800, lvl: 5 },
+  { id: 'cromo', name: 'Cromo espejo', c: '#E6E9EF', f: 'cromo', cost: 1200, lvl: 5 },
+  { id: 'oro-rosa', name: 'Oro rosa', c: '#E8A08C', f: 'oro', cost: 1400, lvl: 6 },
+  { id: 'dorado', name: 'Oro de campeón', c: '#F5C542', f: 'oro', cost: 2000, lvl: 7 },
 ];
 const HELMETS = [
   { id: 'franja-roja', name: 'Franja roja', p: 'franja', a: '#E8322F', b: '#F4F4F4', cost: 0, lvl: 1 },
   { id: 'liso-blanco', name: 'Liso blanco', p: 'liso', a: '#F4F4F4', b: '#F4F4F4', cost: 0, lvl: 1 },
-  { id: 'mitad-azul', name: 'Mitad azul', p: 'mitad', a: '#2F6BE8', b: '#F4F4F4', cost: 120, lvl: 1 },
-  { id: 'doble-verde', name: 'Doble franja verde', p: 'doble', a: '#F4F4F4', b: '#36C24A', cost: 200, lvl: 2 },
-  { id: 'franja-amarilla', name: 'Franja amarilla', p: 'franja', a: '#1E1E26', b: '#FFD21F', cost: 260, lvl: 2 },
-  { id: 'cuadros', name: 'Cuadros de meta', p: 'cuadros', a: '#1E1E26', b: '#F4F4F4', cost: 400, lvl: 3 },
-  { id: 'peru', name: 'Bicolor', p: 'mitad', a: '#D91E2A', b: '#F4F4F4', cost: 350, lvl: 3 },
-  { id: 'rayo', name: 'Rayo morado', p: 'rayo', a: '#8E44EC', b: '#FFD21F', cost: 600, lvl: 4 },
-  { id: 'oro', name: 'Casco de oro', p: 'doble', a: '#D9AE3B', b: '#1E1E26', cost: 1200, lvl: 5, metal: true },
+  { id: 'mitad-azul', name: 'Mitad azul', p: 'mitad', a: '#2F6BE8', b: '#F4F4F4', cost: 100, lvl: 1 },
+  { id: 'doble-verde', name: 'Doble franja verde', p: 'doble', a: '#F4F4F4', b: '#36C24A', cost: 150, lvl: 1 },
+  { id: 'franja-amarilla', name: 'Franja amarilla', p: 'franja', a: '#1E1E26', b: '#FFD21F', cost: 220, lvl: 2 },
+  { id: 'cuadros', name: 'Cuadros de meta', p: 'cuadros', a: '#1E1E26', b: '#F4F4F4', cost: 300, lvl: 2 },
+  { id: 'bicolor', name: 'Bicolor', p: 'mitad', a: '#D91E2A', b: '#F4F4F4', cost: 300, lvl: 3 },
+  { id: 'rayo', name: 'Rayo morado', p: 'rayo', a: '#8E44EC', b: '#FFD21F', cost: 500, lvl: 3 },
+  { id: 'neon', name: 'Casco neón', p: 'rayo', a: '#14141C', b: '#39FF6A', f: 'neon', cost: 700, lvl: 4 },
+  { id: 'cromo', name: 'Casco cromado', p: 'liso', a: '#E6E9EF', b: '#E6E9EF', f: 'cromo', cost: 1000, lvl: 5 },
+  { id: 'oro', name: 'Casco de oro', p: 'doble', a: '#F5C542', b: '#1E1E26', f: 'oro', cost: 1400, lvl: 6 },
 ];
 const RIMS = [
   { id: 'gris', name: 'Aros grises', c: '#B8BCC6', cost: 0, lvl: 1 },
-  { id: 'negro', name: 'Aros negros', c: '#2B2B30', cost: 100, lvl: 1 },
-  { id: 'blanco', name: 'Aros blancos', c: '#F4F4F4', cost: 120, lvl: 2 },
-  { id: 'rojo', name: 'Aros rojos', c: '#E8322F', cost: 180, lvl: 2 },
-  { id: 'dorado', name: 'Aros dorados', c: '#D9AE3B', cost: 600, lvl: 4, metal: true },
+  { id: 'negro', name: 'Aros negros', c: '#2B2B30', f: 'mate', cost: 80, lvl: 1 },
+  { id: 'blanco', name: 'Aros blancos', c: '#F4F4F4', cost: 100, lvl: 1 },
+  { id: 'rojo', name: 'Aros rojos', c: '#E8322F', cost: 150, lvl: 2 },
+  { id: 'cromo', name: 'Aros cromados', c: '#E6E9EF', f: 'cromo', cost: 450, lvl: 3 },
+  { id: 'dorado', name: 'Aros dorados', c: '#F5C542', f: 'oro', cost: 700, lvl: 4 },
 ];
-const COSMETICS = { body: BODIES, helmet: HELMETS, rims: RIMS };
+// Luces de neón debajo del kart (se ven en el piso)
+const GLOWS = [
+  { id: 'ninguna', name: 'Sin luces', c: null, cost: 0, lvl: 1 },
+  { id: 'azul', name: 'Neón azul', c: '#2AA8FF', cost: 300, lvl: 2 },
+  { id: 'morado', name: 'Neón morado', c: '#A04BFF', cost: 300, lvl: 2 },
+  { id: 'verde', name: 'Neón verde', c: '#39FF6A', cost: 400, lvl: 3 },
+  { id: 'rosa', name: 'Neón rosa', c: '#FF3DCB', cost: 400, lvl: 3 },
+  { id: 'dorado', name: 'Neón dorado', c: '#FFC933', cost: 900, lvl: 5 },
+  { id: 'arcoiris', name: 'Arcoíris', c: 'rainbow', cost: 1500, lvl: 6 },
+];
+
+// ---------- estética del perfil ----------
+const FRAMES = [
+  { id: 'basico', name: 'Marco básico', cls: 'fr-basico', cost: 0, lvl: 1 },
+  { id: 'bronce', name: 'Marco de bronce', cls: 'fr-bronce', cost: 150, lvl: 1 },
+  { id: 'plata', name: 'Marco de plata', cls: 'fr-plata', cost: 400, lvl: 2 },
+  { id: 'oro', name: 'Marco de oro', cls: 'fr-oro', cost: 900, lvl: 4 },
+  { id: 'neon', name: 'Marco neón', cls: 'fr-neon', cost: 1100, lvl: 5 },
+  { id: 'diamante', name: 'Marco diamante', cls: 'fr-diamante', cost: 1800, lvl: 7 },
+];
+const BANNERS = [
+  { id: 'noche', name: 'Noche', cls: 'bn-noche', cost: 0, lvl: 1 },
+  { id: 'galpon', name: 'Galpón azul', cls: 'bn-galpon', cost: 120, lvl: 1 },
+  { id: 'fuego', name: 'Fuego', cls: 'bn-fuego', cost: 250, lvl: 2 },
+  { id: 'cuadros', name: 'Bandera a cuadros', cls: 'bn-cuadros', cost: 350, lvl: 3 },
+  { id: 'neon', name: 'Ciudad neón', cls: 'bn-neon', cost: 600, lvl: 4 },
+  { id: 'oro', name: 'Oro brillante', cls: 'bn-oro', cost: 1500, lvl: 6 },
+];
+const TITLES = [
+  { id: 'novato', name: 'Novato del galpón', cost: 0, lvl: 1 },
+  { id: 'piloto', name: 'Piloto de fin de semana', cost: 80, lvl: 1 },
+  { id: 'derrape', name: 'Rey del derrape', cost: 300, lvl: 2 },
+  { id: 'curvas', name: 'Maestro de las curvas', cost: 450, lvl: 3 },
+  { id: 'tunel', name: 'Fantasma del túnel', cost: 600, lvl: 4 },
+  { id: 'segundo', name: 'Dueño del segundo piso', cost: 800, lvl: 5 },
+  { id: 'leyenda', name: 'Leyenda dorada', cost: 2000, lvl: 7, gold: true },
+];
+
+const COSMETICS = { body: BODIES, helmet: HELMETS, rims: RIMS, glow: GLOWS, frame: FRAMES, banner: BANNERS, title: TITLES };
 
 // Física del kart (metros, segundos). Los karts reales no tienen cambios: transmisión directa.
 const KART = {
-  vmax: 24,        // m/s (~86 km/h)
-  accel: 9.0,      // aceleración en arranque
-  brake: 18,       // frenada
-  reverse: 4.5,    // velocidad máxima en reversa
-  roll: 0.5,       // resistencia a la rodadura
-  grip: 14,        // aceleración lateral máxima con agarre (m/s²)
-  slideGrip: 5,  // agarre con el freno de mano
+  vmax: 25,         // m/s (~90 km/h)
+  accel: 9.5,       // aceleración en arranque
+  brake: 18,        // frenada
+  engineBrake: 2.6, // freno motor al soltar el acelerador
+  coastDecel: 3.4,  // desaceleración típica soltando el acelerador (para diseñar curvas)
+  reverse: 4.5,     // velocidad máxima en reversa
+  roll: 0.5,        // resistencia a la rodadura
+  grip: 22,         // aceleración lateral máxima con agarre (m/s²)
+  slideGrip: 8,     // agarre con el freno de mano
   wheelbase: 1.06,
-  steerLow: 0.62,  // ángulo de dirección máximo a baja velocidad (rad)
-  steerHigh: 0.17, // a velocidad punta
-  radius: 0.85,    // radio para choques entre karts
+  steerLow: 0.6,    // ángulo de dirección máximo a baja velocidad (rad)
+  radius: 0.85,     // radio para choques entre karts
 };
 
 const XP_BASE = 100, XP_STEP = 60;
@@ -106,9 +166,9 @@ function levelInfo(xp) {
 
 function defaultSave() {
   return {
-    v: 1, coins: 0, xp: 0, name: 'Piloto',
-    owned: { body: ['rojo'], helmet: ['franja-roja', 'liso-blanco'], rims: ['gris'] },
-    eq: { body: 'rojo', helmet: 'franja-roja', rims: 'gris', num: 7 },
+    v: 2, coins: 0, xp: 0, name: 'Piloto',
+    owned: { body: ['rojo'], helmet: ['franja-roja', 'liso-blanco'], rims: ['gris'], glow: ['ninguna'], frame: ['basico'], banner: ['noche'], title: ['novato'] },
+    eq: { body: 'rojo', helmet: 'franja-roja', rims: 'gris', glow: 'ninguna', frame: 'basico', banner: 'noche', title: 'novato', num: 7 },
     pb: {},          // por pista: { lap, sec: [s1, s2, s3] }
     stats: { races: 0, wins: 0, podiums: 0, cups: 0 },
     last: { track: 't1', diff: 'normal', laps: 3 },
@@ -123,6 +183,14 @@ function loadSave() {
     if (!raw) return base;
     const s = JSON.parse(raw);
     for (const k of ['owned', 'eq', 'stats', 'last', 'opt']) s[k] = Object.assign({}, base[k], s[k] || {});
+    // piezas que ya no existen vuelven a las de fábrica
+    for (const kind of Object.keys(COSMETICS)) {
+      s.owned[kind] = (s.owned[kind] || []).filter(id => COSMETICS[kind].some(c => c.id === id));
+      for (const id of base.owned[kind]) if (!s.owned[kind].includes(id)) s.owned[kind].push(id);
+      if (!s.owned[kind].includes(s.eq[kind])) s.eq[kind] = base.eq[kind];
+    }
+    if ((s.v || 1) < 2) s.pb = {}; // las pistas cambiaron
+    s.v = 2;
     return Object.assign(base, s);
   } catch (e) { return base; }
 }

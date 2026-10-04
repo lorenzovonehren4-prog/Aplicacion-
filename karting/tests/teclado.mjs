@@ -20,7 +20,8 @@ await page.screenshot({ path: 'tests/capturas/menu.png' });
 await page.keyboard.press('Enter'); // botón enfocado: carrera rápida
 await page.waitForSelector('#tracks.on');
 await page.click('#btnGo');
-await page.waitForFunction(() => R.on && R.state === 'race', null, { timeout: 30000 });
+await page.waitForFunction(() => R.on && UI.screen === 'hud', null, { timeout: 120000 });
+await page.evaluate(() => { while (R.state === 'countdown') updateRace(1 / 120, INPUT); });
 // simulamos a mano para no depender de la velocidad del navegador sin GPU
 const step = (sec, keys) => page.evaluate(([sec, keys]) => {
   KEYS.clear(); keys.forEach(k => KEYS.add(k));
@@ -49,6 +50,26 @@ console.log('cam', await page.evaluate(() => [UI.camMode, save.opt.cam])); await
 await page.evaluate(() => goTitle());
 await page.click('[data-act=garage]'); await page.waitForTimeout(400);
 await page.screenshot({ path: 'tests/capturas/garaje.png' });
+// sensación de la dirección medida en una pista enorme de prueba (sin barreras cerca)
+const feel = await page.evaluate(() => {
+  const T = buildTrackData({ id: 'x', width: 300, pts: [[0, 0], [800, 0], [800, 800], [0, 800]] });
+  const run = (tapSec, holdSec, throttle) => {
+    const p = newPhys(T.px[0], T.pz[0], Math.atan2(T.tx[0], T.tz[0])); p.vx = Math.sin(p.h) * 22; p.vz = Math.cos(p.h) * 22;
+    let idx = 0, ks = 0; const h0 = p.h; let maxLat = 0;
+    for (let t = 0; t < 2.5; t += 1 / 120) {
+      const press = t < tapSec || t < holdSec;
+      const target = press ? 1 : 0, rate = target === 0 ? 6.5 : 2.8;
+      ks += Math.max(-rate / 120, Math.min(rate / 120, target - ks));
+      idx = stepPhys(p, { throttle, brake: 0, steer: ks, handbrake: false }, 1 / 120, T, idx).idx;
+      maxLat = Math.max(maxLat, Math.abs(p.yaw * p.fwd));
+    }
+    return { giro: +((h0 - p.h) * 180 / Math.PI).toFixed(1), v: +(p.fwd * 3.6).toFixed(0), aLat: +maxLat.toFixed(1) };
+  };
+  return { toque: run(0.1, 0, 1), sostenido: run(0, 2.5, 0) };
+});
+console.log('dirección a 80 km/h →', JSON.stringify(feel));
+check(feel.toque.giro < 4, 'un toque en recta gira poco (' + feel.toque.giro + '°)');
+check(feel.sostenido.aLat > 18, 'sostenido en curva usa el agarre (' + feel.sostenido.aLat + ' m/s²)');
 console.log(errors.length ? 'ERRORES:\n' + errors.join('\n') : 'sin errores');
 await browser.close(); server.close();
 process.exit(errors.length ? 1 : 0);

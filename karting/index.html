@@ -48,9 +48,35 @@ button, input, select{ font-family:inherit; color:inherit; }
 #title .col{ position:absolute; left:6vw; top:50%; transform:translateY(-50%); width:min(420px, 86vw); display:flex; flex-direction:column; gap:10px; }
 .logo{ font-size:clamp(36px, 4.6vw, 58px); white-space:nowrap; line-height:.9; margin:0; background:linear-gradient(180deg,#fff, #C8B6FF); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 4px 0 rgba(124,77,255,.6)); }
 .tag{ color:var(--muted); margin:2px 0 14px; font-weight:600; letter-spacing:.04em; }
-.profile{ display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--panel); border:1px solid var(--line); border-radius:8px; margin-bottom:6px; }
-.lvl{ width:46px; height:46px; border-radius:50%; display:grid; place-items:center; background:var(--acc); font:700 20px Fredoka, sans-serif; flex:none; }
-.pname{ font-weight:800; }
+.profile{ position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--panel); border:1px solid var(--line); border-radius:10px; margin-bottom:6px; }
+.profile > *{ position:relative; }
+.avatar{ position:relative; flex:none; width:58px; height:58px; border-radius:50%; display:grid; place-items:center; padding:4px; background:#3A3646; }
+.avatar .lvl{ width:100%; height:100%; border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle at 35% 30%, #9C7BFF, #5A2FD6); font:700 21px Fredoka, sans-serif; color:#fff; text-shadow:0 2px 0 rgba(0,0,0,.3); }
+.pname{ font-weight:800; font-size:16px; }
+.ptitle{ font-size:12px; font-weight:700; color:#D9D5E6; letter-spacing:.03em; }
+.pxp{ font-size:11px; color:var(--muted); margin-top:2px; }
+/* marcos del avatar */
+.fr-basico{ background:#4A4658; }
+.fr-bronce{ background:conic-gradient(#8C5A2B, #E0A36A, #8C5A2B, #C9844A, #8C5A2B); }
+.fr-plata{ background:conic-gradient(#8E96A6, #F4F7FB, #8E96A6, #D6DCE6, #8E96A6); }
+.fr-oro{ background:conic-gradient(#A77B12, #FFE68A, #D9A425, #FFF4C2, #A77B12, #FFD24A, #A77B12); box-shadow:0 0 16px rgba(255,200,60,.65); animation:spin 4s linear infinite; }
+.fr-neon{ background:conic-gradient(#FF2E88, #2AD4FF, #39FF6A, #FFC933, #FF2E88); box-shadow:0 0 18px rgba(255,46,136,.7); animation:spin 3s linear infinite; }
+.fr-diamante{ background:conic-gradient(#BFEFFF, #fff, #9AD8FF, #E7D2FF, #fff, #BFEFFF); box-shadow:0 0 22px rgba(170,230,255,.9); animation:spin 2.4s linear infinite; }
+.fr-oro .lvl, .fr-neon .lvl, .fr-diamante .lvl{ animation:spin 4s linear infinite reverse; }
+.fr-neon .lvl{ animation-duration:3s; } .fr-diamante .lvl{ animation-duration:2.4s; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+/* fondos de perfil */
+.bn-noche{ background:linear-gradient(120deg, #1B1726, #262035); }
+.bn-galpon{ background:linear-gradient(120deg, #13235A, #2F6BE8 60%, #EEF2FA 160%); }
+.bn-fuego{ background:linear-gradient(120deg, #3A0A06, #E23B2E 55%, #FFB020); }
+.bn-cuadros{ background:repeating-conic-gradient(#111 0 25%, #EEE 0 50%) 0 0/22px 22px; }
+.bn-cuadros > div{ background:rgba(16,14,22,.82); border-radius:8px; padding:4px 8px; }
+.bn-neon{ background:linear-gradient(120deg, #120A2A, #3B1170 50%, #0B3A5A); box-shadow:inset 0 0 0 1px #FF2E88, inset 0 0 24px rgba(42,212,255,.5); }
+.bn-oro{ background:linear-gradient(110deg, #8A6410 0%, #F5C542 25%, #FFF3C4 40%, #D9A425 55%, #8A6410 80%, #F5C542 100%); background-size:250% 100%; animation:shine 3.5s linear infinite; color:#2A1E00; }
+.bn-oro .ptitle, .bn-oro .pxp{ color:#4A3500; }
+.bn-oro .ptitle.goldtxt{ background-image:linear-gradient(90deg, #4A2E00, #8A5A00, #4A2E00); } .bn-oro .coins{ color:#3A2A00; }
+@keyframes shine{ from{ background-position:0 0; } to{ background-position:-250% 0; } }
+.goldtxt{ background:linear-gradient(90deg, #B8860B, #FFE68A, #FFF8DC, #F5C542, #B8860B); background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent !important; animation:shine 2.5s linear infinite; font-weight:800; }
 .bar{ height:7px; border-radius:4px; background:rgba(255,255,255,.1); overflow:hidden; margin-top:6px; }
 .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--acc),var(--purple)); }
 .coins{ margin-left:auto; font-weight:800; color:var(--gold); white-space:nowrap; }
@@ -76,8 +102,9 @@ button, input, select{ font-family:inherit; color:inherit; }
 
 /* garaje */
 #garage .panel{ left:auto; right:3vw; transform:translateY(-50%); width:min(520px, 94vw); }
-.tabs{ display:flex; border-bottom:1px solid var(--line); }
-.tabs button{ flex:1; padding:14px 6px; background:none; border:none; border-bottom:3px solid transparent; font-weight:800; font-size:12px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; color:var(--muted); }
+.tabs{ display:flex; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--line); padding:0 8px; }
+.tabgrp{ font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--purple); padding:0 6px 0 8px; }
+.tabs button{ flex:none; padding:12px 8px; background:none; border:none; border-bottom:3px solid transparent; font-weight:800; font-size:12px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; color:var(--muted); }
 .tabs button.on{ color:#fff; border-bottom-color:var(--acc); }
 .tabs button:focus-visible{ outline:2px solid var(--gold); }
 .items{ display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:8px; padding:14px 16px; }
@@ -85,7 +112,23 @@ button, input, select{ font-family:inherit; color:inherit; }
 .item:hover, .item:focus-visible{ background:rgba(255,255,255,.1); outline:none; }
 .item:focus-visible{ box-shadow:0 0 0 2px var(--gold); }
 .item.eq{ border-color:var(--green); }
-.item .sw{ height:30px; border-radius:4px; }
+.item .sw{ height:34px; border-radius:4px; position:relative; overflow:hidden; }
+/* acabados: brillo animado en las muestras */
+.fin-brillo, .fin-metal, .fin-oro, .fin-cromo, .fin-perla{ background-image:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.55) 45%, transparent 60%); background-size:250% 100%; animation:shine 2.8s linear infinite; }
+.fin-metal{ box-shadow:inset 0 -10px 16px rgba(0,0,0,.35), inset 0 6px 10px rgba(255,255,255,.25); }
+.fin-oro{ background-color:#D9A425 !important; background-image:linear-gradient(105deg, #8A6410 0%, #F5C542 30%, #FFF6CF 45%, #E2B030 60%, #8A6410 100%); box-shadow:0 0 14px rgba(255,200,60,.6); }
+.fin-cromo{ background-image:linear-gradient(180deg, #fff 0%, #9AA3B2 45%, #3A4150 52%, #C9D0DB 70%, #fff 100%); }
+.fin-perla{ background-image:linear-gradient(110deg, #F7E6FF, #D8F4FF, #FFF0D9, #E6FFE9, #F7E6FF); background-size:300% 100%; }
+.fin-neon{ box-shadow:0 0 16px var(--c), inset 0 0 10px rgba(255,255,255,.6); }
+.fin-carbono{ background-image:repeating-linear-gradient(45deg, #2A2A32 0 4px, #16161B 4px 8px), repeating-linear-gradient(-45deg, transparent 0 4px, rgba(255,255,255,.05) 4px 8px) !important; }
+.fin-mate{ filter:saturate(.8); }
+.glowsw{ background:#15131C; }
+.glowsw i{ position:absolute; left:14%; right:14%; bottom:8px; height:5px; border-radius:3px; background:var(--c); box-shadow:0 0 14px 4px var(--c); }
+.glowsw.rainbow i{ background:linear-gradient(90deg, red, orange, yellow, lime, cyan, blue, magenta); background-size:200% 100%; animation:shine 2s linear infinite; box-shadow:0 0 14px 4px rgba(255,120,255,.6); }
+.framesw{ display:grid; place-items:center; height:62px !important; background:#15131C; }
+.framesw .avatar{ width:50px; height:50px; }
+.framesw .lvl{ font-size:17px; }
+.titlesw{ display:grid; place-items:center; background:#15131C; font-size:12px; font-weight:800; padding:0 6px; text-align:center; }
 .item .nm{ font-weight:700; font-size:13px; }
 .item .pr{ font-size:12px; font-weight:800; }
 .item.locked{ opacity:.5; }
@@ -162,17 +205,18 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
   <div class="col">
     <h1 class="logo h">KARTÓDROMO</h1>
     <p class="tag">Frena tarde. Sal rápido. Gana la copa.</p>
-    <div class="profile">
-      <div class="lvl" id="pLvl">1</div>
+    <div class="profile" id="profileCard">
+      <span class="avatar"><span class="lvl">1</span></span>
       <div style="flex:1;min-width:0">
-        <div class="pname" id="pName">Piloto</div>
-        <div class="muted" style="font-size:12px" id="pXp">0 / 100 XP</div>
-        <div class="bar"><i id="pBar" style="width:0%"></i></div>
+        <div class="pname">Piloto</div>
+        <div class="ptitle">Novato del galpón</div>
+        <div class="pxp">0 / 100 XP</div>
+        <div class="bar"><i style="width:0%"></i></div>
       </div>
       <div class="coins"><span class="coin"></span><span id="pCoins">0</span></div>
     </div>
     <button class="b" data-act="quick">Carrera rápida <small>vs 5 bots</small></button>
-    <button class="b" data-act="champ" id="btnChamp">Campeonato <small id="champSub">3 carreras</small></button>
+    <button class="b" data-act="champ" id="btnChamp">Campeonato <small id="champSub">4 carreras</small></button>
     <button class="b" data-act="garage">Garaje <small>personaliza tu kart</small></button>
     <button class="b" data-act="options">Opciones</button>
   </div>
@@ -218,10 +262,20 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
       <div class="h" style="font-size:24px">Garaje</div>
       <div class="coins"><span class="coin"></span><span id="gCoins">0</span></div>
     </div>
+    <div class="profile" id="gProfile" style="margin:0 16px 10px">
+      <span class="avatar"><span class="lvl">1</span></span>
+      <div style="flex:1;min-width:0"><div class="pname">Piloto</div><div class="ptitle">Novato del galpón</div></div>
+    </div>
     <div class="tabs" id="gTabs">
-      <button data-tab="body" class="on">Carrocería</button>
+      <span class="tabgrp">Kart</span>
+      <button data-tab="body" class="on">Pintura</button>
       <button data-tab="helmet">Casco</button>
       <button data-tab="rims">Aros</button>
+      <button data-tab="glow">Neón</button>
+      <span class="tabgrp">Perfil</span>
+      <button data-tab="frame">Marco</button>
+      <button data-tab="banner">Fondo</button>
+      <button data-tab="title">Título</button>
     </div>
     <div class="items" id="gItems"></div>
     <div class="field"><span class="lbl" style="margin:0">Nombre</span><input id="gName" maxlength="14"><span class="lbl" style="margin:0">N.º</span><input id="gNum" type="number" min="1" max="99" style="max-width:72px"></div>

@@ -19,17 +19,20 @@ const check = (cond, msg) => { if (!cond) errors.push('FALLA: ' + msg); else con
 await page.goto(`http://localhost:${server.address().port}/index.html`);
 await page.waitForFunction(() => document.body.classList.contains('ready'));
 
-check(await page.isDisabled('#btnChamp'), 'campeonato bloqueado al empezar');
+check(!(await page.isDisabled('#btnChamp')), 'campeonato libre desde el principio');
 await page.evaluate(() => { save.xp = 400; save.coins = 1000; persist(); goTitle(); });
-check(!(await page.isDisabled('#btnChamp')), 'campeonato se desbloquea con nivel');
 
 // garaje: comprar y equipar
 await page.click('[data-act=garage]');
 await page.click('#gItems .item:nth-child(2)');
-check(await page.evaluate(() => save.eq.body === 'azul' && save.coins === 850), 'comprar carrocería azul');
+check(await page.evaluate(() => save.eq.body === 'azul' && save.coins === 880), 'comprar pintura azul');
+await page.click('#gTabs [data-tab=frame]');
+await page.click('#gItems .item:nth-child(2)');
+check(await page.evaluate(() => save.eq.frame === 'bronce' && save.coins === 730 && document.querySelector('#profileCard .avatar').classList.contains('fr-bronce')), 'comprar marco de bronce para el perfil');
 await page.keyboard.press('Escape');
 check(await page.evaluate(() => UI.screen === 'title'), 'Esc vuelve al menú');
 
+const CH = await page.evaluate(() => CHAMP_TRACKS.length);
 await page.click('[data-act=champ]');
 await page.click('#btnGo');
 const sim = () => page.evaluate(async () => {
@@ -41,7 +44,7 @@ const sim = () => page.evaluate(async () => {
   }
   return R.state;
 });
-for (let race = 0; race < 3; race++) {
+for (let race = 0; race < CH; race++) {
   if (race === 0) {
     await page.waitForFunction(() => R.on && UI.screen === 'hud');
     await page.keyboard.press('Escape');
@@ -52,10 +55,10 @@ for (let race = 0; race < 3; race++) {
   await page.waitForSelector('#results.on', { timeout: 10000 });
   await page.click('#resBtns .b');
   await page.waitForSelector('#standings.on');
-  if (race < 2) await page.click('#stBtns .b.go');
+  if (race < CH - 1) await page.click('#stBtns .b.go');
 }
 const final = await page.evaluate(() => ({ title: document.getElementById('stTitle').textContent, rows: document.querySelectorAll('#stBody tr').length, races: save.stats.races }));
-check(final.title === 'Campeonato terminado' && final.rows === 6 && final.races === 3, 'clasificación final ' + JSON.stringify(final));
+check(final.title === 'Campeonato terminado' && final.rows === 6 && final.races === CH, 'clasificación final ' + JSON.stringify(final));
 console.log(errors.length ? 'ERRORES:\n' + errors.join('\n') : 'sin errores');
 await browser.close(); server.close();
 process.exit(errors.length ? 1 : 0);

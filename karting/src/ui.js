@@ -31,12 +31,27 @@ function goTitle() {
   UI.stack = []; UI.paused = false;
   W.garage.visible = true;
   W.scene.background = new THREE.Color('#15121C'); W.scene.fog = new THREE.Fog('#15121C', 12, 30);
-  W.hemi.color.set('#B7A8FF'); W.hemi.groundColor.set('#2A2230'); W.hemi.intensity = 0.7;
-  W.sun.intensity = 1.6; W.sunDir = new THREE.Vector3(0.4, 1, 0.6).normalize();
+  W.hemi.color.set('#B7A8FF'); W.hemi.groundColor.set('#2A2230'); W.hemi.intensity = 0.35;
+  W.sun.color.set('#ffffff'); W.sun.intensity = 1.8; W.sunDir = new THREE.Vector3(0.4, 1, 0.6).normalize();
+  W.scene.environment = makeEnv('garaje'); W.renderer.toneMappingExposure = 1.0;
   refreshShowKart();
   refreshProfile();
   CAM.snapMenu = true;
   show('title');
+}
+// Tarjeta de perfil: fondo, marco y título elegidos en el garaje
+function paintProfile(el) {
+  if (!el) return;
+  const li = levelInfo(save.xp);
+  const fr = cosById('frame', save.eq.frame), bn = cosById('banner', save.eq.banner), ti = cosById('title', save.eq.title);
+  el.className = 'profile ' + bn.cls;
+  el.querySelector('.avatar').className = 'avatar ' + fr.cls;
+  el.querySelector('.lvl').textContent = li.lvl;
+  el.querySelector('.pname').textContent = save.name;
+  const t = el.querySelector('.ptitle'); t.textContent = ti.name; t.classList.toggle('goldtxt', !!ti.gold);
+  const xp = el.querySelector('.pxp'); if (xp) xp.textContent = `Nivel ${li.lvl} · ${li.cur} / ${li.need} XP`;
+  const bar = el.querySelector('.bar i'); if (bar) bar.style.width = (li.cur / li.need * 100) + '%';
+  const hb = el.querySelector('.helm'); if (hb) { const h = cosById('helmet', save.eq.helmet); hb.style.background = `linear-gradient(90deg, ${h.a} 0 38%, ${h.b} 38% 62%, ${h.a} 62%)`; }
 }
 function refreshShowKart() {
   if (showKart) W.garage.remove(showKart);
@@ -46,41 +61,32 @@ function refreshShowKart() {
 }
 function refreshProfile() {
   const li = levelInfo(save.xp);
-  $('pLvl').textContent = li.lvl;
-  $('pName').textContent = save.name;
-  $('pXp').textContent = `Nivel ${li.lvl} · ${li.cur} / ${li.need} XP`;
-  $('pBar').style.width = (li.cur / li.need * 100) + '%';
   $('pCoins').textContent = save.coins;
   $('gCoins').textContent = save.coins;
-  const ok = li.lvl >= CHAMP_UNLOCK;
-  $('btnChamp').disabled = !ok;
-  $('champSub').textContent = ok ? '3 carreras · por puntos' : 'nivel ' + CHAMP_UNLOCK;
+  $('champSub').textContent = CHAMP_TRACKS.length + ' carreras · por puntos';
+  paintProfile($('profileCard'));
+  paintProfile($('gProfile'));
   $('statLine').textContent = `${save.stats.races} carreras · ${save.stats.wins} victorias · ${save.stats.cups} copas`;
 }
 
 // ---------- elegir pista ----------
 function openTracks(mode) {
   UI.mode = mode;
-  const lvl = playerLevel();
   UI.sel.track = UI.sel.track || save.last.track;
-  if (trackById(UI.sel.track).unlock > lvl) UI.sel.track = 't1';
   UI.sel.diff = UI.sel.diff || save.last.diff;
-  if (diffById(UI.sel.diff).unlock > lvl) UI.sel.diff = 'normal';
   UI.sel.laps = save.last.laps || 3;
-  $('trkHead').textContent = mode === 'champ' ? 'Campeonato · 3 carreras' : 'Elige tu pista';
+  $('trkHead').textContent = mode === 'champ' ? 'Campeonato · ' + CHAMP_TRACKS.length + ' carreras' : 'Elige tu pista';
   $('btnGo').textContent = mode === 'champ' ? 'Empezar campeonato' : 'Correr';
   renderTracks();
   show('tracks', true);
 }
 function renderTracks() {
-  const lvl = playerLevel(), champ = UI.mode === 'champ';
+  const champ = UI.mode === 'champ';
   const list = $('trkList'); list.innerHTML = '';
   TRACKS.forEach((t, k) => {
     const b = document.createElement('button');
     b.className = 'trk' + (t.id === UI.sel.track ? ' on' : '');
-    const locked = t.unlock > lvl;
-    b.disabled = locked && !champ;
-    b.innerHTML = `${t.name}<span>${champ ? 'Carrera ' + (k + 1) : locked ? 'Nivel ' + t.unlock : t.id === UI.sel.track ? 'Actual' : 'Pulsa para correr'}</span>`;
+    b.innerHTML = `${t.name}<span>${champ ? 'Carrera ' + (k + 1) : t.id === UI.sel.track ? 'Actual' : t.title}</span>`;
     b.onclick = () => { SFX.click(); UI.sel.track = t.id; renderTracks(); };
     b.onfocus = () => { if (!champ && !b.disabled && UI.sel.track !== t.id) { UI.sel.track = t.id; renderTrackInfo(); list.querySelectorAll('.trk').forEach(x => x.classList.toggle('on', x === b)); } };
     list.appendChild(b);
@@ -89,8 +95,7 @@ function renderTracks() {
   DIFFS.forEach(d => {
     const c = document.createElement('button');
     c.className = 'chip' + (d.id === UI.sel.diff ? ' on' : '');
-    c.disabled = d.unlock > lvl;
-    c.textContent = d.unlock > lvl ? d.name + ' · Nv' + d.unlock : d.name;
+    c.textContent = d.name;
     c.onclick = () => { SFX.click(); UI.sel.diff = d.id; renderTracks(); c.focus(); };
     dr.appendChild(c);
   });
@@ -108,8 +113,10 @@ function renderTracks() {
 function renderTrackInfo() {
   const t = trackById(UI.sel.track);
   $('trkName').textContent = t.name + ' · ' + t.title;
-  $('trkSub').textContent = (t.indoor ? 'Bajo techo' : 'Al aire libre') + ' · ' + Math.round(trackLength(t)) + ' m';
-  $('trkDesc').textContent = UI.mode === 'champ' ? 'Las 3 pistas seguidas. Puntos: 10, 7, 5, 3, 2, 1. El campeón se lleva un premio grande.' : t.desc;
+  const T = trackData(t), tags = [t.indoor ? 'Bajo techo' : 'Al aire libre', Math.round(T.L) + ' m'];
+  if (T.py.some(y => y > 2.8)) tags.push('Segundo piso'); if (T.tunnel.some(Boolean)) tags.push('Túnel');
+  $('trkSub').textContent = tags.join(' · ');
+  $('trkDesc').textContent = UI.mode === 'champ' ? 'Las ' + CHAMP_TRACKS.length + ' pistas seguidas. Puntos: 10, 7, 5, 3, 2, 1. El campeón se lleva un premio grande.' : t.desc;
   const pb = save.pb[t.id];
   $('trkPb').textContent = pb && pb.lap ? fmtTime(pb.lap) : '--.---';
   const pot = pb && pb.sec && pb.sec.every(v => v != null) ? pb.sec.reduce((a, b) => a + b, 0) : null;
@@ -126,17 +133,37 @@ function drawTrackPreview(cv, def) {
   gr.addColorStop(0, def.indoor ? '#1E1828' : '#2E5A3A'); gr.addColorStop(1, def.indoor ? '#0E0C14' : '#1C3A24');
   g.fillStyle = gr; g.fillRect(0, 0, w, h);
   const f = fitTransform(T, w, h, 26);
-  const path = () => { g.beginPath(); for (let i = 0; i <= T.N; i++) { const k = i % T.N; const [x, y] = f(T.px[k], T.pz[k]); i ? g.lineTo(x, y) : g.moveTo(x, y); } };
-  g.lineJoin = 'round';
-  path(); g.strokeStyle = def.barrier[0]; g.lineWidth = T.def.width * f.s + 8; g.stroke();
-  path(); g.strokeStyle = def.barrier[1]; g.lineWidth = T.def.width * f.s + 3; g.stroke();
-  path(); g.strokeStyle = '#3E3B48'; g.lineWidth = T.def.width * f.s; g.stroke();
-  g.setLineDash([6, 8]); path(); g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]);
+  drawTrackShape(g, T, f, T.def.width * f.s, def.barrier);
   // meta y sentido
   const [sx, sy] = f(T.px[0], T.pz[0]);
   g.fillStyle = '#fff'; g.beginPath(); g.arc(sx, sy, 6, 0, 7); g.fill();
   const [ax, ay] = f(T.px[8], T.pz[8]);
   g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.moveTo(sx, sy); g.lineTo(ax, ay); g.stroke();
+}
+// Dibuja la pista de arriba: lo de abajo primero, los puentes encima y los túneles punteados
+function drawTrackShape(g, T, f, width, cols) {
+  const N = T.N;
+  const runs = [];
+  let cur = null;
+  for (let i = 0; i <= N; i++) {
+    const k = i % N, lvl = T.py[k] > 2.8 ? 1 : 0;
+    if (!cur || cur.lvl !== lvl) { if (cur) { cur.pts.push(k); } cur = { lvl, pts: [] }; runs.push(cur); }
+    cur.pts.push(k);
+  }
+  g.lineJoin = 'round'; g.lineCap = 'butt';
+  for (const lvl of [0, 1]) for (const r of runs) {
+    if (r.lvl !== lvl) continue;
+    const path = () => { g.beginPath(); r.pts.forEach((k, j) => { const [x, y] = f(T.px[k], T.pz[k]); j ? g.lineTo(x, y) : g.moveTo(x, y); }); };
+    if (lvl) { path(); g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = width + 14; g.stroke(); }
+    path(); g.strokeStyle = cols[0]; g.lineWidth = width + 8; g.stroke();
+    path(); g.strokeStyle = cols[1]; g.lineWidth = width + 3; g.stroke();
+    path(); g.strokeStyle = lvl ? '#5A5666' : '#3E3B48'; g.lineWidth = width; g.stroke();
+  }
+  // túneles
+  g.setLineDash([Math.max(4, width * 0.5), Math.max(4, width * 0.5)]);
+  g.beginPath(); let on = false;
+  for (let i = 0; i <= N; i++) { const k = i % N; const [x, y] = f(T.px[k], T.pz[k]); if (T.tunnel[k]) { on ? g.lineTo(x, y) : g.moveTo(x, y); on = true; } else on = false; }
+  g.strokeStyle = 'rgba(10,8,16,.85)'; g.lineWidth = width + 8; g.stroke(); g.setLineDash([]);
 }
 function fitTransform(T, w, h, pad) {
   let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity;
@@ -249,11 +276,8 @@ function unlockText(before, after) {
   if (after <= before) return '';
   const out = [`¡Subiste a nivel ${after}!`];
   for (let l = before + 1; l <= after; l++) {
-    TRACKS.filter(t => t.unlock === l).forEach(t => out.push('Nueva pista: ' + t.title));
-    DIFFS.filter(d => d.unlock === l).forEach(d => out.push('Dificultad ' + d.name));
-    if (l === CHAMP_UNLOCK) out.push('Campeonato desbloqueado');
-    const cos = [...BODIES, ...HELMETS, ...RIMS].filter(c => c.lvl === l && c.cost > 0).length;
-    if (cos) out.push(cos + ' piezas nuevas en el garaje');
+    const cos = Object.values(COSMETICS).flat().filter(c => c.lvl === l && c.cost > 0);
+    if (cos.length) out.push(cos.length + ' piezas nuevas en el garaje: ' + cos.slice(0, 3).map(c => c.name).join(', ') + (cos.length > 3 ? '…' : ''));
   }
   return out.join(' · ');
 }
@@ -303,13 +327,22 @@ function renderGarage() {
     const owned = save.owned[UI.tab].includes(c.id), eq = save.eq[UI.tab] === c.id, locked = c.lvl > lvl;
     const b = document.createElement('button');
     b.className = 'item' + (eq ? ' eq' : '') + (locked ? ' locked' : '');
-    const sw = UI.tab === 'helmet' ? `background:linear-gradient(90deg, ${c.a} 0 40%, ${c.b} 40% 60%, ${c.a} 60%)` : `background:${c.c}`;
     const price = eq ? '<span class="green">Equipado</span>' : owned ? '<span class="muted">Equipar</span>' : locked ? `<span class="muted">Nivel ${c.lvl}</span>` : `<span class="gold"><span class="coin"></span>${c.cost}</span>`;
-    b.innerHTML = `<div class="sw" style="${sw}${c.metal ? ';box-shadow:inset 0 0 12px rgba(255,255,255,.6)' : ''}"></div><div class="nm">${c.name}</div><div class="pr">${price}</div>`;
+    b.innerHTML = `${swatch(UI.tab, c)}<div class="nm">${c.name}</div><div class="pr">${price}</div>`;
     b.onclick = () => buyOrEquip(c);
     box.appendChild(b);
   }
   $('gCoins').textContent = save.coins;
+}
+// Muestra de cada pieza en el garaje (los acabados brillan con CSS)
+function swatch(kind, c) {
+  const fin = c.f ? ' fin-' + c.f : '';
+  if (kind === 'helmet') return `<div class="sw${fin}" style="--c:${c.a};background-color:${c.a};background-image:linear-gradient(90deg, transparent 0 40%, ${c.b} 40% 60%, transparent 60%)"></div>`;
+  if (kind === 'glow') return `<div class="sw glowsw${c.c === 'rainbow' ? ' rainbow' : ''}" style="--c:${c.c && c.c !== 'rainbow' ? c.c : 'transparent'}"><i></i></div>`;
+  if (kind === 'frame') return `<div class="sw framesw"><span class="avatar ${c.cls}"><span class="lvl">${playerLevel()}</span></span></div>`;
+  if (kind === 'banner') return `<div class="sw ${c.cls}"></div>`;
+  if (kind === 'title') return `<div class="sw titlesw"><span class="${c.gold ? 'goldtxt' : ''}">${c.name}</span></div>`;
+  return `<div class="sw${fin}" style="--c:${c.c};background-color:${c.c}"></div>`;
 }
 function buyOrEquip(c) {
   const kind = UI.tab, owned = save.owned[kind].includes(c.id);
@@ -394,7 +427,8 @@ function updateInput(dt) {
   const lf = KEYS.has('KeyA') || KEYS.has('ArrowLeft'), rt = KEYS.has('KeyD') || KEYS.has('ArrowRight');
   // dirección del teclado con rampa (más suave a alta velocidad)
   const target = (rt ? 1 : 0) - (lf ? 1 : 0);
-  const rate = target === 0 ? 7 : (Math.sign(target) !== Math.sign(INPUT.kSteer) ? 9 : 4.2);
+  // al apretar entra suave (un toque en recta mueve poco); al soltar vuelve rápido al centro
+  const rate = target === 0 ? 6.5 : (Math.sign(target) !== Math.sign(INPUT.kSteer) && INPUT.kSteer !== 0 ? 7 : 2.8);
   INPUT.kSteer += clamp(target - INPUT.kSteer, -rate * dt, rate * dt);
   INPUT.throttle = up ? 1 : 0; INPUT.brake = dn ? 1 : 0; INPUT.steer = INPUT.kSteer; INPUT.handbrake = KEYS.has('Space');
   if (pad) {
@@ -443,12 +477,13 @@ function updateCamera(dt) {
   let dh = want - CAM.h; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
   CAM.h += CAM.snap ? dh : dh * (1 - Math.exp(-dt * (UI.camMode === 2 ? 20 : 6)));
   const fx = Math.sin(CAM.h), fz = Math.cos(CAM.h);
-  const tp = new THREE.Vector3(p.x - fx * m.d, m.y, p.z - fz * m.d);
-  const tl = new THREE.Vector3(p.x + fx * m.la, m.ly, p.z + fz * m.la);
-  if (UI.camMode === 2) { tp.set(p.x - Math.sin(p.h) * 0.12, m.y, p.z - Math.cos(p.h) * 0.12); tl.set(p.x + Math.sin(p.h) * m.la, m.ly, p.z + Math.cos(p.h) * m.la); }
+  const sl = Math.tan(p.slope);
+  const tp = new THREE.Vector3(p.x - fx * m.d, p.y + m.y - sl * m.d, p.z - fz * m.d);
+  const tl = new THREE.Vector3(p.x + fx * m.la, p.y + m.ly + sl * m.la, p.z + fz * m.la);
+  if (UI.camMode === 2) { tp.set(p.x - Math.sin(p.h) * 0.12, p.y + m.y, p.z - Math.cos(p.h) * 0.12); tl.set(p.x + Math.sin(p.h) * m.la, p.y + m.ly + sl * m.la, p.z + Math.cos(p.h) * m.la); }
   if (CAM.snap) { CAM.pos.copy(tp); CAM.look.copy(tl); CAM.snap = false; }
   const s = UI.camMode === 2 ? 1 : 1 - Math.exp(-dt * 10);
-  CAM.pos.lerp(tp, s); CAM.look.lerp(tl, UI.camMode === 2 ? 1 : 1 - Math.exp(-dt * 14));
+  CAM.pos.lerp(tp, s); CAM.pos.y = lerp(CAM.pos.y, tp.y, UI.camMode === 2 ? 1 : 1 - Math.exp(-dt * 16)); CAM.look.lerp(tl, UI.camMode === 2 ? 1 : 1 - Math.exp(-dt * 14));
   cam.position.copy(CAM.pos);
   // temblor al chocar
   if (p.hitT > 0) cam.position.y += (Math.random() - 0.5) * p.hitT * 0.4;
@@ -466,10 +501,7 @@ function drawMinimapBase() {
   mmBase = document.createElement('canvas'); mmBase.width = cv.width; mmBase.height = cv.height;
   const g = mmBase.getContext('2d');
   mmF = fitTransform(T, cv.width, cv.height, 24);
-  const path = () => { g.beginPath(); for (let i = 0; i <= T.N; i++) { const k = i % T.N; const [x, y] = mmF(T.px[k], T.pz[k]); i ? g.lineTo(x, y) : g.moveTo(x, y); } };
-  g.lineJoin = 'round';
-  path(); g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 16; g.stroke();
-  path(); g.strokeStyle = '#3B3846'; g.lineWidth = 11; g.stroke();
+  drawTrackShape(g, T, mmF, 10, ['rgba(255,255,255,.95)', 'rgba(255,255,255,.95)']);
   const [sx, sy] = mmF(T.px[0], T.pz[0]);
   g.fillStyle = '#fff'; g.fillRect(sx - 5, sy - 5, 10, 10);
   for (const el of tagEls.values()) el.remove();
@@ -512,7 +544,7 @@ function updateHud(dt) {
     if (o.isPlayer) continue;
     let el = tagEls.get(o);
     if (!el) { el = document.createElement('div'); el.className = 'tagname'; el.textContent = o.name; $('labels').appendChild(el); tagEls.set(o, el); }
-    _v3.set(o.p.x, 1.55, o.p.z);
+    _v3.set(o.p.x, o.p.y + 1.55, o.p.z);
     const d = _v3.distanceTo(W.camera.position);
     _v3.project(W.camera);
     const vis = save.opt.names && UI.screen === 'hud' && _v3.z < 1 && d < 70 && Math.abs(_v3.x) < 1.1 && Math.abs(_v3.y) < 1.1;
@@ -547,9 +579,11 @@ function updateLights() {
     el.classList.add('show');
     const n = clamp(Math.floor((3.6 - R.countdown) / 0.75) + 1, 0, 4);
     [...el.children].forEach((c, i) => c.className = i < n ? 'r' : '');
+    setStartLights(Math.min(5, n + 1), false);
   } else if (R.state === 'race' && R.t < 1) {
     [...el.children].forEach(c => c.className = 'g');
-  } else el.classList.remove('show');
+    setStartLights(5, true);
+  } else { el.classList.remove('show'); if (R.state === 'race' && R.t < 1.2) setStartLights(0, false); }
 }
 
 // ---------- bucle ----------
@@ -583,7 +617,8 @@ function frame(now) {
   const sd = W.sunDir || new THREE.Vector3(0.3, 1, 0.3);
   W.sun.target.position.set(c.x, 0, c.z);
   W.sun.position.set(c.x + sd.x * 60, sd.y * 60, c.z + sd.z * 60);
-  if (!R.on && showKart) showKart.rotation.y += dt * 0.3;
+  if (!R.on && showKart) { showKart.rotation.y += dt * 0.3; if (showKart.userData.glowParts) poseKart(showKart, { x: 0, y: 0.12, z: 0, h: showKart.rotation.y, slope: 0, roll: 0, pitch: 0, steer: 0, wheelRot: 0 }, dt, now / 1000); }
+  const tt = now / 1000; for (const f of W.anim) f(tt);
   W.renderer.render(W.scene, W.camera);
 }
 
