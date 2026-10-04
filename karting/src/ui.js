@@ -618,7 +618,9 @@ function boot() {
   $('oCam').addEventListener('change', () => { UI.camMode = save.opt.cam = +$('oCam').value; persist(); });
   $('oNames').addEventListener('change', () => { save.opt.names = $('oNames').value === '1'; persist(); });
   $('oReset').addEventListener('click', () => {
-    if (!confirm('¿Borrar todo el progreso (monedas, nivel, piezas y récords)?')) return;
+    const b = $('oReset');
+    if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { delete b.dataset.sure; b.textContent = 'Borrar progreso'; }, 3000); return; }
+    delete b.dataset.sure; b.textContent = 'Borrar progreso';
     save = defaultSave(); persist(); refreshShowKart(); refreshProfile(); toast('Progreso borrado');
   });
   // en opciones durante la pausa, "volver" regresa a la pausa
