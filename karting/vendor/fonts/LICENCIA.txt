@@ -1,0 +1,4 @@
+Fredoka (c) The Fredoka Project Authors y Rubik (c) The Rubik Project Authors.
+Ambas fuentes se distribuyen bajo la SIL Open Font License 1.1:
+https://openfontlicense.org
+Se incluye solo el subconjunto latino (español con tildes y ñ).

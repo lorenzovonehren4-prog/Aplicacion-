@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kartódromo</title>
+<meta name="description" content="Juego de karts en 3D: corre contra bots en pistas bajo techo y al aire libre, gana campeonatos y personaliza tu kart.">
+<meta name="theme-color" content="#15121C">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237C4DFF'/%3E%3Ccircle cx='20' cy='44' r='8' fill='%23111'/%3E%3Ccircle cx='46' cy='44' r='8' fill='%23111'/%3E%3Cpath d='M10 38h44l-6-10H26z' fill='%23E8322F'/%3E%3Ccircle cx='34' cy='22' r='8' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preload" href="vendor/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="vendor/fonts/rubik.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{ font-family:'Fredoka'; src:url(vendor/fonts/fredoka.woff2) format('woff2'); font-weight:300 700; font-display:swap; }
+@font-face{ font-family:'Rubik'; src:url(vendor/fonts/rubik.woff2) format('woff2'); font-weight:300 900; font-display:swap; }
+:root{ --bg:#15121C; --panel:rgba(16,14,22,.86); --panel2:rgba(30,27,40,.92); --line:rgba(255,255,255,.1);
+  --acc:#7C4DFF; --red:#EF4A43; --green:#2BD46E; --gold:#FFC93C; --purple:#B36BFF; --muted:#9A96A8; --ink:#fff; }
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{ margin:0; overflow:hidden; background:var(--bg); color:var(--ink); font-family:'Rubik', system-ui, sans-serif; -webkit-user-select:none; user-select:none; }
+#game{ position:fixed; inset:0; width:100%; height:100%; display:block; }
+#loading{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--bg); z-index:100; font:700 28px Fredoka, Rubik, sans-serif; color:var(--purple); }
+body.ready #loading{ display:none; }
+button, input, select{ font-family:inherit; color:inherit; }
+.scr{ position:fixed; inset:0; display:none; z-index:10; }
+.scr.on{ display:block; }
+.h{ font-family:'Fredoka', 'Rubik', sans-serif; font-weight:700; letter-spacing:.02em; }
+.cap{ font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+
+/* botones */
+.b{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:14px 18px; border:none; border-left:4px solid var(--acc);
+  background:rgba(40,36,54,.9); border-radius:6px; font-weight:800; font-size:15px; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; transition:transform .1s, background .12s; text-align:left; }
+.b small{ font-weight:600; font-size:11px; color:var(--muted); letter-spacing:.08em; }
+.b:hover:not(:disabled), .b:focus-visible{ background:rgba(70,60,100,.95); transform:translateX(3px); outline:none; }
+.b:focus-visible{ box-shadow:0 0 0 2px var(--gold); }
+.b:disabled{ opacity:.45; cursor:not-allowed; }
+.b.go{ background:linear-gradient(180deg,#33DE78,#18B85A); border-left-color:#0E8A42; color:#06210F; justify-content:center; }
+.b.red{ background:var(--red); border-left-color:#B22A24; justify-content:center; }
+.b.ghost{ background:rgba(255,255,255,.06); border-left-color:rgba(255,255,255,.25); justify-content:center; }
+.b.sel{ background:rgba(124,77,255,.35); }
+.row{ display:flex; gap:10px; }
+.chip{ flex:1; padding:9px 6px; border-radius:6px; border:1px solid var(--line); background:rgba(255,255,255,.05); font-weight:800; font-size:12px; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
+.chip.on{ background:var(--acc); border-color:var(--acc); }
+.chip:disabled{ opacity:.4; cursor:not-allowed; }
+.chip:focus-visible{ outline:2px solid var(--gold); }
+
+/* menú principal */
+#title{ background:linear-gradient(90deg, rgba(12,10,18,.92) 0%, rgba(12,10,18,.6) 34%, transparent 60%); }
+#title .col{ position:absolute; left:6vw; top:50%; transform:translateY(-50%); width:min(420px, 86vw); display:flex; flex-direction:column; gap:10px; }
+.logo{ font-size:clamp(36px, 4.6vw, 58px); white-space:nowrap; line-height:.9; margin:0; background:linear-gradient(180deg,#fff, #C8B6FF); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 4px 0 rgba(124,77,255,.6)); }
+.tag{ color:var(--muted); margin:2px 0 14px; font-weight:600; letter-spacing:.04em; }
+.profile{ display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--panel); border:1px solid var(--line); border-radius:8px; margin-bottom:6px; }
+.lvl{ width:46px; height:46px; border-radius:50%; display:grid; place-items:center; background:var(--acc); font:700 20px Fredoka, sans-serif; flex:none; }
+.pname{ font-weight:800; }
+.bar{ height:7px; border-radius:4px; background:rgba(255,255,255,.1); overflow:hidden; margin-top:6px; }
+.bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--acc),var(--purple)); }
+.coins{ margin-left:auto; font-weight:800; color:var(--gold); white-space:nowrap; }
+.coin{ display:inline-block; width:14px; height:14px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #FFE58A, #E3A019); vertical-align:-2px; margin-right:4px; box-shadow:inset 0 0 0 2px rgba(150,90,0,.35); }
+.foot{ position:absolute; right:20px; bottom:16px; color:var(--muted); font-size:12px; text-align:right; }
+
+/* panel genérico (estilo menú de pistas del video) */
+.panel{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(980px, 94vw); max-height:92vh; overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:6px; backdrop-filter:blur(8px); }
+.panel .grid2{ display:grid; grid-template-columns:320px 1fr; min-height:440px; }
+.panel .side{ padding:22px 18px; border-right:1px solid var(--line); display:flex; flex-direction:column; gap:8px; }
+.panel .main{ padding:22px 24px; display:flex; flex-direction:column; gap:14px; }
+.trk{ display:flex; justify-content:space-between; align-items:center; width:100%; padding:12px 14px; border:none; border-left:3px solid var(--acc); background:rgba(255,255,255,.06); border-radius:2px; font-weight:800; font-size:14px; cursor:pointer; }
+.trk span{ font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; }
+.trk.on{ background:rgba(124,77,255,.28); }
+.trk:disabled{ opacity:.45; cursor:not-allowed; }
+.trk:focus-visible{ outline:2px solid var(--gold); }
+#trkPreview{ width:100%; aspect-ratio:16/8; background:#0E0C14; border-radius:4px; display:block; }
+.stats3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.stats3 b{ display:block; font:700 24px Fredoka, sans-serif; margin-top:2px; font-variant-numeric:tabular-nums; }
+.purple{ color:var(--purple); } .green{ color:var(--green); } .gold{ color:var(--gold); }
+.muted{ color:var(--muted); }
+.lbl{ font-size:11px; font-weight:800; letter-spacing:.14em; color:#D9D5E6; text-transform:uppercase; margin-bottom:6px; }
+
+/* garaje */
+#garage .panel{ left:auto; right:3vw; transform:translateY(-50%); width:min(520px, 94vw); }
+.tabs{ display:flex; border-bottom:1px solid var(--line); }
+.tabs button{ flex:1; padding:14px 6px; background:none; border:none; border-bottom:3px solid transparent; font-weight:800; font-size:12px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; color:var(--muted); }
+.tabs button.on{ color:#fff; border-bottom-color:var(--acc); }
+.tabs button:focus-visible{ outline:2px solid var(--gold); }
+.items{ display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:8px; padding:14px 16px; }
+.item{ position:relative; padding:10px; border-radius:6px; border:1px solid var(--line); background:rgba(255,255,255,.04); cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:6px; }
+.item:hover, .item:focus-visible{ background:rgba(255,255,255,.1); outline:none; }
+.item:focus-visible{ box-shadow:0 0 0 2px var(--gold); }
+.item.eq{ border-color:var(--green); }
+.item .sw{ height:30px; border-radius:4px; }
+.item .nm{ font-weight:700; font-size:13px; }
+.item .pr{ font-size:12px; font-weight:800; }
+.item.locked{ opacity:.5; }
+.field{ display:flex; align-items:center; gap:10px; padding:0 16px 16px; }
+.field input{ flex:1; padding:10px 12px; border-radius:6px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-weight:700; }
+
+/* opciones */
+.opt{ display:flex; justify-content:space-between; align-items:center; gap:16px; padding:12px 0; border-bottom:1px solid var(--line); }
+.opt select, .opt input[type=range]{ width:200px; }
+.opt select{ padding:8px; border-radius:6px; background:#221E2E; border:1px solid var(--line); }
+.keys{ display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px; }
+kbd{ display:inline-block; padding:2px 7px; border-radius:4px; background:#2B2738; border:1px solid #444055; font:700 12px Rubik, sans-serif; margin-right:3px; }
+
+/* HUD */
+#hud{ pointer-events:none; z-index:5; }
+.timing{ position:absolute; left:50%; top:14px; transform:translateX(-50%); display:grid; grid-template-columns:repeat(5, 74px); text-align:center; padding:8px 6px 9px; border-radius:10px; background:rgba(18,16,24,.78); }
+.timing div{ font-size:12px; font-weight:800; letter-spacing:.06em; }
+.timing b{ display:block; font-size:13px; font-weight:800; margin-top:6px; font-variant-numeric:tabular-nums; color:#E4E2EC; }
+.timing b.slow{ color:var(--gold); } .timing b.best{ color:var(--green); } .timing b.record{ color:var(--purple); }
+.posbox{ position:absolute; left:22px; top:18px; }
+.posbox .big{ font:700 64px/0.9 Fredoka, sans-serif; text-shadow:0 3px 0 rgba(0,0,0,.35); }
+.posbox .big small{ font-size:26px; color:#D9D5E6; }
+.posbox .lap{ margin-top:6px; font-weight:800; letter-spacing:.1em; font-size:13px; background:rgba(18,16,24,.7); padding:6px 10px; border-radius:6px; display:inline-block; }
+.order{ margin-top:10px; display:flex; flex-direction:column; gap:3px; font-size:12px; font-weight:700; }
+.order div{ background:rgba(18,16,24,.6); padding:4px 8px; border-radius:4px; display:flex; gap:8px; width:190px; }
+.order div.me{ background:rgba(124,77,255,.6); }
+.order i{ font-style:normal; width:14px; color:var(--muted); }
+.order .gap{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+.racetime{ position:absolute; right:22px; top:18px; text-align:right; font-weight:800; font-size:12px; letter-spacing:.1em; color:#D9D5E6; }
+.racetime b{ display:block; font:700 28px Fredoka, sans-serif; color:#fff; font-variant-numeric:tabular-nums; letter-spacing:0; }
+#minimap{ position:absolute; left:18px; bottom:18px; width:190px; height:190px; border-radius:12px; background:rgba(18,16,24,.55); }
+.speedo{ position:absolute; right:26px; bottom:22px; text-align:right; }
+.speedo b{ font:700 64px/1 Fredoka, sans-serif; font-variant-numeric:tabular-nums; text-shadow:0 3px 0 rgba(0,0,0,.35); }
+.speedo span{ display:block; font-weight:800; letter-spacing:.14em; font-size:12px; color:#D9D5E6; }
+.speedo .rpm{ width:220px; height:8px; border-radius:4px; background:rgba(255,255,255,.12); overflow:hidden; margin-top:6px; }
+.speedo .rpm i{ display:block; height:100%; background:linear-gradient(90deg, var(--green), var(--gold), var(--red)); }
+.banner{ position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); font:700 clamp(36px,6vw,72px) Fredoka, sans-serif; text-align:center; text-shadow:0 4px 0 rgba(0,0,0,.4), 0 0 30px rgba(0,0,0,.3); white-space:nowrap; opacity:0; transition:opacity .2s; }
+.banner.show{ opacity:1; }
+.banner small{ display:block; font-size:.4em; letter-spacing:.08em; }
+.lights{ position:absolute; left:50%; top:22%; transform:translateX(-50%); display:flex; gap:12px; padding:12px 16px; background:#111; border-radius:12px; opacity:0; transition:opacity .25s; }
+.lights.show{ opacity:1; }
+.lights i{ width:38px; height:38px; border-radius:50%; background:#3a1414; box-shadow:inset 0 -4px 0 rgba(0,0,0,.4); }
+.lights i.r{ background:#FF2A2A; box-shadow:0 0 20px #FF2A2A; }
+.lights i.g{ background:#2BE07F; box-shadow:0 0 20px #2BE07F; }
+.wrong{ position:absolute; left:50%; top:46%; transform:translateX(-50%); padding:10px 18px; background:var(--red); border-radius:8px; font-weight:800; letter-spacing:.1em; display:none; }
+.wrong.show{ display:block; }
+#labels{ position:fixed; inset:0; pointer-events:none; z-index:4; }
+.tagname{ position:absolute; transform:translate(-50%,-100%); font:800 12px Rubik, sans-serif; text-align:center; text-shadow:0 1px 3px rgba(0,0,0,.9); white-space:nowrap; }
+.tagname::after{ content:''; display:block; width:8px; height:8px; margin:3px auto 0; border-right:3px solid #fff; border-bottom:3px solid #fff; transform:rotate(45deg); }
+.hint{ position:absolute; left:50%; bottom:18px; transform:translateX(-50%); font-size:12px; color:#D9D5E6; background:rgba(18,16,24,.6); padding:6px 12px; border-radius:6px; }
+
+/* resultados */
+table{ width:100%; border-collapse:collapse; }
+td, th{ padding:9px 10px; text-align:left; font-variant-numeric:tabular-nums; }
+th{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--line); }
+tr.me td{ background:rgba(124,77,255,.3); }
+td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
+.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; }
+.reward{ display:flex; gap:22px; flex-wrap:wrap; align-items:center; padding:14px 16px; background:rgba(255,255,255,.05); border-radius:6px; font-weight:800; }
+.unlocks{ color:var(--green); font-weight:700; }
+.toast{ position:fixed; left:50%; top:16px; transform:translate(-50%, -100px); background:var(--panel2); border:1px solid var(--line); border-left:4px solid var(--green); padding:12px 18px; border-radius:6px; font-weight:700; z-index:60; transition:transform .3s; }
+.toast.show{ transform:translate(-50%, 0); }
+.pad-hint{ font-size:12px; color:var(--muted); }
+@media (max-width:760px){ .panel .grid2{ grid-template-columns:1fr; } .panel .side{ border-right:none; border-bottom:1px solid var(--line); } .timing{ grid-template-columns:repeat(5, 60px); } .order{ display:none; } }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="loading">Cargando pista…</div>
+<div id="labels"></div>
+
+<!-- Menú principal -->
+<section id="title" class="scr">
+  <div class="col">
+    <h1 class="logo h">KARTÓDROMO</h1>
+    <p class="tag">Frena tarde. Sal rápido. Gana la copa.</p>
+    <div class="profile">
+      <div class="lvl" id="pLvl">1</div>
+      <div style="flex:1;min-width:0">
+        <div class="pname" id="pName">Piloto</div>
+        <div class="muted" style="font-size:12px" id="pXp">0 / 100 XP</div>
+        <div class="bar"><i id="pBar" style="width:0%"></i></div>
+      </div>
+      <div class="coins"><span class="coin"></span><span id="pCoins">0</span></div>
+    </div>
+    <button class="b" data-act="quick">Carrera rápida <small>vs 5 bots</small></button>
+    <button class="b" data-act="champ" id="btnChamp">Campeonato <small id="champSub">3 carreras</small></button>
+    <button class="b" data-act="garage">Garaje <small>personaliza tu kart</small></button>
+    <button class="b" data-act="options">Opciones</button>
+  </div>
+  <div class="foot">Teclado o mando · <span id="statLine"></span></div>
+</section>
+
+<!-- Elegir pista -->
+<section id="tracks" class="scr">
+  <div class="panel">
+    <div class="grid2">
+      <div class="side">
+        <div class="cap" style="margin-bottom:10px" id="trkHead">Elige tu pista</div>
+        <div id="trkList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div style="flex:1"></div>
+        <div class="lbl" style="margin-top:14px">Dificultad de los bots</div>
+        <div id="diffRow" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+        <div class="lbl" style="margin-top:8px" id="lapsLbl">Vueltas</div>
+        <div class="row" id="lapsRow"></div>
+        <button class="b red" data-back style="margin-top:12px">⟵ Cerrar</button>
+      </div>
+      <div class="main">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+          <div class="h" style="font-size:24px" id="trkName">Pista 1</div>
+          <div class="muted" id="trkSub"></div>
+        </div>
+        <canvas id="trkPreview" width="640" height="320"></canvas>
+        <div class="muted" id="trkDesc" style="font-size:14px"></div>
+        <div class="stats3">
+          <div><div class="lbl">Tu mejor vuelta</div><b id="trkPb">--.---</b></div>
+          <div><div class="lbl">Potencial</div><b id="trkPot" class="purple">--.---</b></div>
+          <div><div class="lbl">Pilotos en pista</div><b>6</b></div>
+        </div>
+        <button class="b go" id="btnGo">Correr</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Garaje -->
+<section id="garage" class="scr">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px">
+      <div class="h" style="font-size:24px">Garaje</div>
+      <div class="coins"><span class="coin"></span><span id="gCoins">0</span></div>
+    </div>
+    <div class="tabs" id="gTabs">
+      <button data-tab="body" class="on">Carrocería</button>
+      <button data-tab="helmet">Casco</button>
+      <button data-tab="rims">Aros</button>
+    </div>
+    <div class="items" id="gItems"></div>
+    <div class="field"><span class="lbl" style="margin:0">Nombre</span><input id="gName" maxlength="14"><span class="lbl" style="margin:0">N.º</span><input id="gNum" type="number" min="1" max="99" style="max-width:72px"></div>
+    <div style="padding:0 16px 16px"><button class="b red" data-back>⟵ Volver</button></div>
+  </div>
+</section>
+
+<!-- Opciones -->
+<section id="options" class="scr">
+  <div class="panel" style="width:min(620px,94vw);padding:22px 24px">
+    <div class="h" style="font-size:24px;margin-bottom:8px">Opciones</div>
+    <div class="opt"><span>Volumen</span><input type="range" id="oVol" min="0" max="1" step="0.05"></div>
+    <div class="opt"><span>Calidad gráfica <small class="muted">(recarga el juego)</small></span><select id="oQ"><option value="alta">Alta (sombras)</option><option value="baja">Baja (más rápido)</option></select></div>
+    <div class="opt"><span>Cámara</span><select id="oCam"><option value="0">Detrás, lejos</option><option value="1">Detrás, cerca</option><option value="2">Piloto</option></select></div>
+    <div class="opt"><span>Nombres sobre los rivales</span><select id="oNames"><option value="1">Sí</option><option value="0">No</option></select></div>
+    <div class="lbl" style="margin-top:18px">Controles</div>
+    <div class="keys">
+      <span><kbd>W</kbd><kbd>↑</kbd></span><span>Acelerar <span class="muted">(mando: RT o A)</span></span>
+      <span><kbd>S</kbd><kbd>↓</kbd></span><span>Frenar y reversa <span class="muted">(LT o X)</span></span>
+      <span><kbd>A</kbd><kbd>D</kbd><kbd>←</kbd><kbd>→</kbd></span><span>Girar <span class="muted">(palanca izquierda)</span></span>
+      <span><kbd>Espacio</kbd></span><span>Freno de mano para derrapar <span class="muted">(B)</span></span>
+      <span><kbd>C</kbd></span><span>Cambiar cámara <span class="muted">(Y)</span></span>
+      <span><kbd>R</kbd></span><span>Volver a la pista <span class="muted">(Back)</span></span>
+      <span><kbd>Esc</kbd><kbd>P</kbd></span><span>Pausa <span class="muted">(Start)</span></span>
+    </div>
+    <div class="row" style="margin-top:20px">
+      <button class="b ghost" id="oReset">Borrar progreso</button>
+      <button class="b red" data-back>⟵ Volver</button>
+    </div>
+  </div>
+</section>
+
+<!-- HUD -->
+<section id="hud" class="scr">
+  <div class="timing">
+    <div>S1<b id="tS1">--.---</b></div><div>S2<b id="tS2">--.---</b></div><div>S3<b id="tS3">--.---</b></div>
+    <div>LAST<b id="tLast">--.---</b></div><div>PB<b id="tPb">--.---</b></div>
+  </div>
+  <div class="posbox">
+    <div class="big" id="hPos">6<small>/6</small></div>
+    <div class="lap" id="hLap">VUELTA 1/3</div>
+    <div class="order" id="hOrder"></div>
+  </div>
+  <div class="racetime">TIEMPO<b id="hTime">0.000</b></div>
+  <canvas id="minimap" width="380" height="380"></canvas>
+  <div class="speedo"><b id="hSpeed">0</b><span>KM/H</span><div class="rpm"><i id="hRpm" style="width:0%"></i></div></div>
+  <div class="lights" id="lights"><i></i><i></i><i></i><i></i></div>
+  <div class="banner" id="banner"></div>
+  <div class="wrong" id="wrong">SENTIDO CONTRARIO</div>
+  <div class="hint" id="hint">Esc: pausa · C: cámara · R: volver a la pista</div>
+</section>
+
+<!-- Pausa -->
+<section id="pause" class="scr" style="background:rgba(10,8,16,.55)">
+  <div class="panel" style="width:min(360px,90vw);padding:22px;display:flex;flex-direction:column;gap:10px">
+    <div class="h" style="font-size:26px;margin-bottom:6px">Pausa</div>
+    <button class="b" data-act="resume" data-back>Continuar</button>
+    <button class="b" data-act="restart" id="btnRestart">Reiniciar carrera</button>
+    <button class="b" data-act="optionsInRace">Opciones</button>
+    <button class="b red" data-act="quit">Salir al menú</button>
+  </div>
+</section>
+
+<!-- Resultados -->
+<section id="results" class="scr" style="background:rgba(10,8,16,.45)">
+  <div class="panel" style="padding:22px 24px;width:min(760px,94vw)">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div class="h" style="font-size:30px" id="resTitle">¡Ganaste!</div>
+      <div class="muted" id="resSub"></div>
+    </div>
+    <table style="margin:12px 0"><thead><tr><th>Pos</th><th>Piloto</th><th>Mejor vuelta</th><th>Tiempo</th><th id="resPtsH">Pts</th></tr></thead><tbody id="resBody"></tbody></table>
+    <div class="reward" id="resReward"></div>
+    <div class="unlocks" id="resUnlocks" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:16px" id="resBtns"></div>
+  </div>
+</section>
+
+<!-- Campeonato: clasificación -->
+<section id="standings" class="scr" style="background:rgba(10,8,16,.45)">
+  <div class="panel" style="padding:22px 24px;width:min(640px,94vw)">
+    <div class="h" style="font-size:28px" id="stTitle">Clasificación</div>
+    <div class="muted" id="stSub" style="margin-top:2px"></div>
+    <table style="margin:12px 0"><thead><tr><th>Pos</th><th>Piloto</th><th>Puntos</th></tr></thead><tbody id="stBody"></tbody></table>
+    <div class="reward" id="stReward" style="display:none"></div>
+    <div class="row" style="margin-top:16px" id="stBtns"></div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="vendor/three.min.js"></script>
+<script src="src/data.js"></script>
+<script src="src/track.js"></script>
+<script src="src/kart.js"></script>
+<script src="src/world.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/race.js"></script>
+<script src="src/ui.js"></script>
+</body>
+</html>
