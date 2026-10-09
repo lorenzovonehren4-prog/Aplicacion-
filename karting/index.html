@@ -85,7 +85,8 @@ button, input, select{ font-family:inherit; color:inherit; }
 .tphead{ display:flex; align-items:center; gap:14px; }
 .tptitle{ font-size:30px; }
 .tpbody{ flex:1; display:grid; grid-template-columns:minmax(0, 1fr) minmax(320px, 420px); gap:20px; min-height:0; }
-.trkgrid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; align-content:start; }
+.trkgrid{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; align-content:start; overflow:auto; min-height:0; padding:2px; }
+.tcard .stars{ position:absolute; right:16px; top:14px; color:var(--gold); font-size:13px; letter-spacing:1px; text-shadow:0 1px 3px #000; }
 .tcard{ position:relative; display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:14px; border:1px solid var(--line); background:rgba(26,23,36,.9); cursor:pointer; text-align:left; transition:transform .15s, border-color .15s, box-shadow .15s; }
 .tcard canvas{ width:100%; aspect-ratio:16/8; border-radius:10px; display:block; }
 .tcard:hover, .tcard:focus-visible{ transform:translateY(-3px); outline:none; border-color:rgba(255,255,255,.35); }
@@ -341,6 +342,7 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
           <div><div class="lbl">Potencial</div><b id="trkPot" class="purple">--.---</b></div>
           <div><div class="lbl">Rivales</div><b>5 bots</b></div>
         </div>
+        <div class="setrow" id="timeWrap"><div class="lbl">Hora del día</div><div class="seg" id="timeRow"></div></div>
         <div class="setrow" id="fmtWrap"><div class="lbl">Formato</div><div class="seg" id="fmtRow"></div></div>
         <div class="setrow"><div class="lbl">Dificultad <span class="muted" id="diffInfo"></span></div><div class="seg" id="diffRow"></div></div>
         <div class="setrow" id="lapsWrap"><div class="lbl" id="lapsLbl">Vueltas</div><div class="seg" id="lapsRow"></div></div>

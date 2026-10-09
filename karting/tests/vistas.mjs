@@ -18,7 +18,7 @@ const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 await page.goto(`http://localhost:${server.address().port}/index.html`);
 await page.waitForFunction(() => document.body.classList.contains('ready'));
-const ids = process.argv.slice(2).filter(a => /^t\d$/.test(a));
+const ids = process.argv.slice(2).filter(a => /^t\d+$/.test(a));
 for (const id of ids.length ? ids : ['t1', 't2', 't3', 't4']) {
   await page.evaluate(id => { if (R.on) endRace(); UI.sel.track = id; UI.mode = 'quick'; go(); }, id);
   await page.waitForFunction(() => R.on && UI.screen === 'hud' && document.body.classList.contains('ready'));

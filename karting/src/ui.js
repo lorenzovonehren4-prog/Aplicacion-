@@ -2,7 +2,7 @@
 // Interfaz: pantallas, controles (teclado y mando), cámara, HUD, garaje, campeonato y bucle principal.
 
 const $ = id => document.getElementById(id);
-const UI = { screen: null, stack: [], tab: 'body', sel: { track: null, diff: null, laps: 3, format: 'race' }, champ: null, paused: false, camMode: 0, toastT: 0 };
+const UI = { screen: null, stack: [], tab: 'body', sel: { track: null, diff: null, laps: 3, format: 'race', time: null }, champ: null, paused: false, camMode: 0, toastT: 0 };
 
 // ---------- pantallas ----------
 function show(id, push) {
@@ -33,7 +33,7 @@ function goTitle() {
   W.scene.background = new THREE.Color('#15121C'); W.scene.fog = new THREE.Fog('#15121C', 12, 30);
   W.hemi.color.set('#B7A8FF'); W.hemi.groundColor.set('#2A2230'); W.hemi.intensity = 0.35;
   W.sun.color.set('#ffffff'); W.sun.intensity = 1.8; W.sunDir = new THREE.Vector3(0.4, 1, 0.6).normalize();
-  W.scene.environment = makeEnv('garaje'); W.renderer.toneMappingExposure = 1.0;
+  W.scene.environment = makeEnv('garaje'); W.renderer.toneMappingExposure = 1.0; initKartBeam().opacity = 0;
   setPostLook({ bloom: 0.45, threshold: 2.2, vignette: 0.35 });
   refreshShowKart();
   refreshProfile();
@@ -97,10 +97,10 @@ function renderTracks() {
     const T = trackData(t), pb = save.pb[t.id];
     const b = document.createElement('button');
     b.className = 'tcard' + (t.id === UI.sel.track ? ' on' : '');
-    b.innerHTML = `<canvas width="480" height="270"></canvas><div class="tn"><b>${champ ? (k + 1) + '. ' : ''}${t.title}</b><span>${pb && pb.lap ? 'PB ' + fmtTime(pb.lap) : t.name}</span></div><div class="tags">${trackTags(t, T)}</div>`;
+    b.innerHTML = `<canvas width="480" height="270"></canvas><div class="tn"><b>${champ ? (k + 1) + '. ' : ''}${t.title}</b><span>${pb && pb.lap ? 'PB ' + fmtTime(pb.lap) : t.name}</span></div><div class="tags">${trackTags(t, T)}</div><span class="stars" title="Dificultad">${'★'.repeat(t.stars || 1)}${'☆'.repeat(3 - (t.stars || 1))}</span>`;
     drawTrackPreview(b.querySelector('canvas'), t);
-    b.onclick = () => { SFX.click(); UI.sel.track = t.id; renderTracks(); $('btnGo').focus(); };
-    b.onfocus = () => { if (UI.sel.track !== t.id) { UI.sel.track = t.id; renderTrackInfo(); list.querySelectorAll('.tcard').forEach(x => x.classList.toggle('on', x === b)); } };
+    b.onclick = () => { SFX.click(); if (UI.sel.track !== t.id) UI.sel.time = null; UI.sel.track = t.id; renderTracks(); $('btnGo').focus(); };
+    b.onfocus = () => { if (UI.sel.track !== t.id) { UI.sel.track = t.id; UI.sel.time = null; renderTracks(); const nb = $('trkList').children[k]; if (nb) nb.focus({ preventScroll: true }); } };
     list.appendChild(b);
   });
   const seg = (box, items, cur, set) => {
@@ -114,6 +114,11 @@ function renderTracks() {
     });
   };
   $('fmtWrap').style.display = champ ? 'none' : '';
+  // hora del día (solo pistas al aire libre con cielo)
+  const tdef = trackById(UI.sel.track), outdoor = DAYLIGHT.includes(tdef.theme);
+  $('timeWrap').style.display = outdoor && !champ ? '' : 'none';
+  if (!UI.sel.time || (UI.sel.time !== 'ciclo' && !TIMES[UI.sel.time])) UI.sel.time = tdef.time || 'mediodia';
+  if (outdoor) seg($('timeRow'), [...TIME_CYCLE.map(k => [k, TIMES[k].name]), ['ciclo', 'Cambia']], UI.sel.time, v => { UI.sel.time = v; });
   seg($('fmtRow'), [['race', 'Carrera'], ['best', 'Mejor vuelta']], UI.sel.format, v => { UI.sel.format = v; });
   seg($('diffRow'), DIFFS.map(d => [d.id, d.name]), UI.sel.diff, v => { UI.sel.diff = v; });
   $('diffInfo').textContent = '· ' + diffById(UI.sel.diff).info;
@@ -215,7 +220,7 @@ function go() {
     const bots = pickBots(5), slot = { facil: 2, normal: 2, dificil: 3, experto: 5 }[UI.sel.diff];
     bots.splice(slot, 0, playerEntry());
     UI.lastGrid = bots;
-    launch(trackById(UI.sel.track), diffById(UI.sel.diff), UI.sel.laps, 'quick', UI.lastGrid, UI.sel.format);
+    launch(trackById(UI.sel.track), diffById(UI.sel.diff), UI.sel.laps, 'quick', UI.lastGrid, UI.sel.format, DAYLIGHT.includes(trackById(UI.sel.track).theme) ? UI.sel.time : null);
   }
 }
 function startChampRace() {
@@ -226,12 +231,12 @@ function startChampRace() {
   UI.lastGrid = grid;
   launch(trackById(CHAMP_TRACKS[C.race]), diffById(C.diff), 3, 'champ', grid);
 }
-function launch(def, diff, laps, mode, grid, format) {
+function launch(def, diff, laps, mode, grid, format, time) {
   W.garage.visible = false;
   $('loading').textContent = 'Cargando ' + def.title + '…';
   document.body.classList.remove('ready');
   setTimeout(() => {
-    startRace(def, diff, laps, mode, grid, format);
+    startRace(def, diff, laps, mode, grid, format, time);
     CAM.snap = true;
     UI.paused = false;
     UI.stack = [];
@@ -253,7 +258,7 @@ function pause() {
 function resume() { UI.paused = false; show('hud'); }
 function restart() {
   UI.paused = false;
-  launch(R.def, R.diff, R.laps, R.mode, UI.lastGrid, R.format);
+  launch(R.def, R.diff, R.laps, R.mode, UI.lastGrid, R.format, R.time);
 }
 
 // ---------- resultados ----------

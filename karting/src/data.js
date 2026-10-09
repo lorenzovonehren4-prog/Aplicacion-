@@ -10,7 +10,7 @@ const SAVE_KEY = 'kartodromo-save-v1';
 // entre dos índices de puntos de control. Todas las pistas están libres desde el principio.
 const TRACKS = [
   {
-    id: 't1', name: 'Pista 1', title: 'Galpón Azul', theme: 'azul', indoor: true, width: 10, scale: 2.0,
+    id: 't1', name: 'Pista 1', title: 'Galpón Azul', theme: 'azul', indoor: true, width: 10, scale: 2.0, stars: 1,
     barrier: ['#2F6BE8', '#EEF2FA'],
     desc: 'Galpón de dos pisos: sube la rampa, cruza el puente sobre la recta y baja a la horquilla, la única curva donde hay que frenar.',
     pts: [[-60, -50], [0, -50], [35, -50], [58, -42], [68, -22, 0.4], [70, 2, 2.6], [64, 24, 4.6], [46, 38, 5], [20, 40, 5],
@@ -18,7 +18,7 @@ const TRACKS = [
       [-15, -118], [-23, -110], [-24, -96], [-34, -86], [-46, -86], [-68, -88], [-94, -82], [-110, -66], [-108, -46], [-88, -40]],
   },
   {
-    id: 't2', name: 'Pista 2', title: 'Fábrica Roja', theme: 'fabrica', indoor: true, width: 10, scale: 1.9,
+    id: 't2', name: 'Pista 2', title: 'Fábrica Roja', theme: 'fabrica', indoor: true, width: 10, scale: 1.9, stars: 2,
     barrier: ['#E23B2E', '#FFD21F'], tunnels: [[12, 15]],
     desc: 'Fábrica con túnel de contenedores, un segundo piso que pasa sobre la largada y llantas en cada curva.',
     pts: [[-70, -40], [-20, -40], [15, -40], [50, -40], [55, -36], [56, -26], [57, -10], [58, 8], [42, 22], [20, 20], [0, 24], [-16, 38],
@@ -26,7 +26,7 @@ const TRACKS = [
       [20, -62, 4.6], [-4, -74, 2.4], [-30, -80, 0.4], [-66, -82], [-84, -80], [-91, -67], [-84, -53]],
   },
   {
-    id: 't3', name: 'Pista 3', title: 'Parque del Litoral', theme: 'parque', indoor: false, width: 12, scale: 1.35,
+    id: 't3', name: 'Pista 3', title: 'Parque del Litoral', theme: 'parque', indoor: false, width: 12, scale: 1.35, time: 'mediodia', stars: 1,
     barrier: ['#E23B2E', '#F4F4F4'], tunnels: [[7, 10]], kerbs: true,
     desc: 'Al aire libre junto al mar: túnel bajo el cerro, viaducto de segundo piso sobre la meta y curvas rápidas.',
     pts: [[-80, -90], [0, -90], [60, -90], [100, -76], [118, -42], [108, -8], [82, 12], [64, 36], [68, 66], [88, 88],
@@ -34,7 +34,7 @@ const TRACKS = [
       [10, -90, 6.5], [4, -120, 4], [-16, -140, 1], [-46, -150], [-84, -144], [-112, -126], [-120, -104], [-104, -92]],
   },
   {
-    id: 't4', name: 'Pista 4', title: 'Lima de Noche', theme: 'noche', indoor: false, width: 11, scale: 1.4,
+    id: 't4', name: 'Pista 4', title: 'Lima de Noche', theme: 'noche', indoor: false, width: 11, scale: 1.4, stars: 2,
     barrier: ['#FF2E88', '#2AD4FF'], tunnels: [[17, 20]], kerbs: true,
     desc: 'Ciudad de noche con letreros de neón, un paso a desnivel bajo los edificios y una vía expresa elevada.',
     pts: [[-76, -72], [-30, -70], [30, -70], [62, -62], [78, -40], [78, -10], [74, 8, 0.8], [58, 22, 3.2], [30, 28, 5.6],
@@ -42,7 +42,7 @@ const TRACKS = [
       [84, 92], [96, 70], [92, 46], [70, 40], [40, 46], [-4, 54], [-36, 56], [-78, 26], [-94, 4], [-102, -24], [-106, -50], [-96, -66]],
   },
   {
-    id: 't5', name: 'Pista 5', title: 'Dunas de Paracas', theme: 'desierto', indoor: false, width: 12, scale: 1.0,
+    id: 't5', name: 'Pista 5', title: 'Dunas de Paracas', theme: 'desierto', indoor: false, width: 12, scale: 1.0, time: 'atardecer', stars: 1,
     barrier: ['#F28C28', '#F4F4F4'], tunnels: [[8, 10]], kerbs: true,
     desc: 'Desierto al atardecer: rectas largas entre dunas, un túnel bajo la arena y un viaducto que cruza la meta.',
     pts: [[-150, -100], [-60, -105], [30, -100], [110, -85], [155, -50], [165, 0], [140, 45], [95, 60], [70, 95], [80, 140], [55, 180],
@@ -50,12 +50,45 @@ const TRACKS = [
       [-110, -185], [-150, -170], [-180, -140], [-180, -110]],
   },
   {
-    id: 't6', name: 'Pista 6', title: 'Galpón Neón', theme: 'neon', indoor: true, width: 10, scale: 1.6,
+    id: 't6', name: 'Pista 6', title: 'Galpón Neón', theme: 'neon', indoor: true, width: 10, scale: 1.6, stars: 2,
     barrier: ['#B026FF', '#2AF5FF'], tunnels: [[6, 8]],
     desc: 'Galpón a oscuras con tubos de neón, un túnel de anillos de luz y un segundo piso que pasa sobre la largada.',
     pts: [[-80, -60], [0, -60], [55, -56], [82, -38], [86, -8], [66, 12], [34, 12], [12, 26], [14, 50], [40, 58], [72, 60, 0.6],
       [92, 76, 2.6], [88, 100, 4.6], [60, 110, 5.4], [20, 104, 5.6], [-12, 84, 5.6], [-30, 40, 5.6], [-36, -10, 5.4], [-40, -60, 5.2],
       [-46, -92, 3.4], [-66, -108, 1], [-90, -110], [-101, -102], [-103, -86], [-96, -70]],
+  },
+  {
+    id: 't7', name: 'Pista 7', title: 'Cerro San Cristóbal', theme: 'cerro', indoor: false, width: 11, scale: 1.25, terrain: true, time: 'manana',
+    barrier: ['#E23B2E', '#F4F4F4'], tunnels: [[15, 17]], kerbs: true, stars: 3,
+    desc: 'Sube el cerro por curvas de herradura, cruza la cumbre por un túnel, baja en zigzag y pasa por un puente sobre la largada.',
+    pts: [[-90, -140], [-20, -145], [40, -140], [80, -122, 1.0], [96, -92, 3.4], [82, -66, 5.7], [44, -62, 7.8], [22, -50, 9.4], [32, -28, 11.2],
+      [70, -20, 13.3], [96, 0, 15.1], [90, 26, 16.9], [52, 32, 19.0], [16, 36, 20.8], [-12, 26, 22.1], [-32, 2, 22.1], [-44, -26, 20.8], [-72, -50, 17.4],
+      [-54, -78, 14.3], [-78, -106, 11.2], [-66, -140, 8.6], [-70, -172, 5.2], [-100, -192, 2.0], [-140, -186], [-156, -160], [-130, -142]],
+  },
+  {
+    id: 't8', name: 'Pista 8', title: 'Estacionamiento', theme: 'parking', indoor: true, width: 10, scale: 1.6, stars: 3,
+    barrier: ['#FFD21F', '#1E1E26'], tunnels: [[2, 5]],
+    desc: 'Estacionamiento de dos pisos: horquilla bajo la losa, zigzag entre columnas, rampa al segundo piso, chicanas arriba y bajada en espiral.',
+    pts: [[-52, -48], [0, -46], [50, -48], [70, -46], [78, -36], [68, -26], [40, -28], [20, -34], [0, -26], [-20, -34], [-45, -28], [-62, -18],
+      [-55, -2], [-20, 0, 1.5], [20, 2, 3.5], [50, 0, 5.5], [70, 12, 6], [60, 30, 6], [30, 32, 6], [10, 40, 6], [-10, 32, 6], [-30, 40, 6],
+      [-55, 34, 6], [-75, 25, 6], [-84, 0, 4.5], [-85, -25, 2.5], [-84, -46, 0.6], [-76, -58]],
+  },
+  {
+    id: 't9', name: 'Pista 9', title: 'Circuito del Sur', theme: 'parque', indoor: false, width: 11, scale: 2.0, stars: 3, time: 'atardecer', kerbs: true,
+    barrier: ['#E23B2E', '#F4F4F4'],
+    desc: 'Recta principal, izquierda de 90°, un rulo a la derecha de casi 260° que sube y cruza por un puente, bajada en diagonal y una zona técnica de S hasta la meta.',
+    pts: [[0, -75], [0, -20], [0, 20], [-6, 40], [-22, 50], [-42, 54, 1.5], [-66, 64, 3], [-78, 88, 4.5], [-66, 112, 5.5], [-40, 118, 6],
+      [-18, 106, 6], [-10, 82, 6], [-12, 56, 5.6], [-22, 32, 4], [-40, 10, 2], [-60, -5, 0.5], [-76, -16], [-86, -34], [-76, -48], [-58, -44],
+      [-46, -54], [-42, -70], [-30, -86], [-14, -98]],
+  },
+  {
+    id: 't10', name: 'Pista 10', title: 'Galpón Internacional', theme: 'azul', indoor: true, width: 10, scale: 1.6, stars: 3,
+    barrier: ['#E23B2E', '#F4F4F4'],
+    desc: 'Izquierda abierta alrededor de los pits, puente en diagonal que cruza todo, horquilla de bajada, chicana, rulo de 220°, paso bajo el puente y la serpiente de tres curvas de 180°.',
+    pts: [[-48, -42], [0, -40], [30, -40], [52, -36], [63, -20], [56, -4], [38, 0, 1.4], [18, 6, 5.0], [-5, 16, 6], [-30, 28, 6], [-52, 38, 6],
+      [-68, 50, 5.2], [-64, 66, 4.2], [-48, 70, 3.2], [-34, 64, 2.2], [-20, 70, 1.2], [-6, 64, 0.4], [10, 68], [32, 70], [50, 60], [54, 42],
+      [42, 30], [22, 20], [2, 8], [-12, -2], [-27, -5], [-28, -16], [-13, -20], [-2, -14], [10, -6], [24, -8], [24, -19], [0, -29], [-30, -29],
+      [-56, -28], [-74, -29], [-84, -37], [-80, -47], [-66, -46]],
   },
 ];
 
@@ -67,7 +100,7 @@ const DIFFS = [
 ];
 
 const LAP_OPTIONS = [2, 3, 5];
-const CHAMP_TRACKS = ['t1', 't2', 't3', 't4', 't5', 't6'];
+const CHAMP_TRACKS = ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9', 't10'];
 const POINTS = [10, 7, 5, 3, 2, 1];
 const COINS_BY_POS = [120, 80, 60, 40, 30, 20];
 const XP_BY_POS = [70, 55, 45, 35, 28, 22];

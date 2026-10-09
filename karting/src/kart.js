@@ -97,6 +97,13 @@ function numberTexture(num, color) {
   });
 }
 
+// material compartido del haz de los faros (su opacidad la pone la hora del día)
+let KART_BEAM = null;
+function initKartBeam() {
+  if (KART_BEAM) return KART_BEAM;
+  KART_BEAM = new THREE.MeshBasicMaterial({ color: '#FFF0D0', map: glowTexture(), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  return KART_BEAM;
+}
 let GLOW_TEX = null;
 function glowTexture() {
   if (GLOW_TEX) return GLOW_TEX;
@@ -193,6 +200,7 @@ function makeKart(look) {
   const pick = (k, v) => typeof v === 'string' ? cosById(k, v) : v;
   const body = pick('body', look.body), helmet = pick('helmet', look.helmet), rims = pick('rims', look.rims);
   const glow = look.glow ? pick('glow', look.glow) : null;
+  initKartBeam();
   const root = new THREE.Group();
   root.rotation.order = 'YXZ';
   const chassis = new THREE.Group(); root.add(chassis);   // se inclina con el balanceo
@@ -324,6 +332,14 @@ function makeKart(look) {
     glowParts = { tubeM, floorM, rainbow: glow.c === 'rainbow' };
   }
 
+  // faros: luces chicas adelante, rojas atrás y un haz en el piso que se ve de noche
+  const headM = new THREE.MeshBasicMaterial({ color: '#FFF4D8' }), tailM = new THREE.MeshBasicMaterial({ color: '#FF2A2A' });
+  for (const sx of [-1, 1]) {
+    chassis.add(boxM(0.1, 0.05, 0.03, headM, sx * 0.3, 0.27, 1.05));
+    chassis.add(boxM(0.12, 0.05, 0.03, tailM, sx * 0.45, 0.24, -1.09));
+  }
+  const beam = new THREE.Mesh(geo('beam', () => new THREE.PlaneGeometry(3.4, 9).rotateX(-Math.PI / 2).translate(0, 0.05, 5.4)), KART_BEAM);
+  beam.renderOrder = 2; root.add(beam);
   root.userData = { chassis, wheels, head, wheelS, glowParts, driverParts };
   return root;
 }

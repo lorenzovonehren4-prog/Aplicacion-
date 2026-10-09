@@ -16,10 +16,12 @@ function botLook() {
 
 // grid: lista de { name, isPlayer, look } en orden de largada
 // format: 'race' (gana el primero en cruzar la meta) o 'best' (gana la mejor vuelta)
-function startRace(def, diff, laps, mode, grid, format) {
+function startRace(def, diff, laps, mode, grid, format, time) {
   endRace();
   R.def = def; R.diff = diff; R.laps = laps; R.mode = mode; R.format = format || 'race';
-  R.T = buildTrackScene(def);
+  R.T = buildTrackScene(def, time);
+  R.time = time; R.timeT = 0;
+  if (time === 'ciclo' && W.day) applyTime(timeAt(0));
   R.prof = speedProfile(R.T, diff.pace);
   R.karts = []; R.finishOrder = []; R.events = [];
   R.t = 0; R.state = 'countdown'; R.countdown = 3.6; R.endTimer = 0;
@@ -159,6 +161,11 @@ function updateRace(dt, playerInput) {
     R.endTimer += dt;
     const all = R.karts.every(k => k.finished);
     if (all || R.endTimer > (R.format === 'best' ? 25 : 18)) finishAll();
+  }
+  // hora que cambia durante la carrera
+  if (R.time === 'ciclo' && W.day && R.player) {
+    R.timeT -= dt;
+    if (R.timeT <= 0) { R.timeT = 0.4; applyTime(timeAt(Math.max(0, R.player.dist) / (R.laps * T.L))); }
   }
   FX.update(dt);
 }
