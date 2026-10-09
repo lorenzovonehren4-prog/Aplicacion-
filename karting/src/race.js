@@ -3,7 +3,7 @@
 
 const R = {
   on: false, T: null, def: null, diff: null, laps: 3, mode: 'quick',
-  karts: [], player: null, t: 0, state: 'idle', countdown: 0, finishOrder: [],
+  karts: [], player: null, players: [], t: 0, state: 'idle', countdown: 0, finishOrder: [],
   endTimer: 0, prof: null, bestSec: [Infinity, Infinity, Infinity], bestLap: Infinity, events: [],
 };
 
@@ -23,7 +23,8 @@ function startRace(def, diff, laps, mode, grid, format, time) {
   R.time = time; R.timeT = 0;
   if (time === 'ciclo' && W.day) applyTime(timeAt(0));
   R.prof = speedProfile(R.T, diff.pace);
-  R.karts = []; R.finishOrder = []; R.events = [];
+  R.karts = []; R.players = []; R.finishOrder = []; R.events = [];
+  R.rec = { dt: 1 / 30, acc: 0, n: 0, t: [], k: [] };
   R.t = 0; R.state = 'countdown'; R.countdown = 3.6; R.endTimer = 0;
   const pb = save.pb[def.id] || {};
   R.bestSec = (pb.sec || [Infinity, Infinity, Infinity]).map(v => v == null ? Infinity : v);
@@ -39,46 +40,79 @@ function startRace(def, diff, laps, mode, grid, format, time) {
       p: newPhys(slot.x, slot.z, slot.h), idx: slot.i,
       dist: -slot.back, maxDist: -slot.back, lapsDone: 0, lapStart: 0, secStart: 0, sec: [null, null, null],
       lastLap: null, bestLap: null, finished: false, finishTime: null, pos: k + 1,
-      ai: { lane: 0, laneT: 0, err: 1, errT: 0, stuck: 0 }, bump: 0, wrong: 0,
+      ai: { lane: 0, laneT: 0, err: 1, errT: 0, stuck: 0, mode: '', modeT: 0 }, bump: 0, wrong: 0, draft: 0,
+      pid: g.isPlayer ? (g.pid || 0) : -1,
     };
     kart.ai.lane = rand(-0.6, 0.6);
     R.karts.push(kart);
-    if (kart.isPlayer) R.player = kart;
+    R.rec.k.push([]);
+    if (kart.isPlayer) R.players[kart.pid] = kart;
     poseKart(mesh, kart.p, 0);
   });
+  R.players = R.players.filter(Boolean);
+  R.player = R.players[0];
   R.on = true;
   FX.reset();
 }
 
 function endRace() {
   for (const k of R.karts) W.scene.remove(k.mesh);
-  R.karts = []; R.player = null; R.on = false; R.state = 'idle';
+  R.karts = []; R.player = null; R.players = []; R.on = false; R.state = 'idle';
   clearTrack();
 }
 
 // ---------- controles del bot ----------
+// Desplazamiento lateral de un kart respecto del centro de la pista
+function latOf(k) { const T = R.T, i = k.idx; return (k.p.x - T.px[i]) * T.nx[i] + (k.p.z - T.pz[i]) * T.nz[i]; }
+// Lado interior de la próxima curva (entre 15 y 70 m adelante): +1 derecha, -1 izquierda, 0 si no hay
+function insideAhead(T, i) {
+  let best = 0, side = 0;
+  for (let o = 15; o < 70; o += 3) { const c = T.curv[(i + o) % T.N]; if (Math.abs(c) > best) { best = Math.abs(c); side = Math.sign(c); } }
+  return best > 1 / 60 ? side : 0;
+}
+
 function botInput(k, dt) {
   const T = R.T, p = k.p, N = T.N, ai = k.ai;
   const v = Math.max(p.fwd, 0);
-  // carril propio: varía un poco y se aparta si hay alguien adelante
+  const lim = T.hw - 1.0;
+  const skill = 1 - R.diff.err * 0.6;          // 0.2 (fácil) … 0.94 (experto)
+  const mylat = latOf(k);
+  // carril propio: varía un poco
   ai.laneT -= dt;
   if (ai.laneT <= 0) { ai.laneT = rand(2, 5); ai.laneWant = rand(-0.8, 0.8); }
-  let want = ai.laneWant || 0;
+  let want = ai.laneWant || 0, push = 1;
+  ai.modeT -= dt;
+  if (ai.modeT <= 0) ai.mode = '';
+  // ¿quién va adelante y atrás, cerca?
+  let ahead = null, behind = null, da = 99, db = 99;
   for (const o of R.karts) {
-    if (o === k) continue;
-    let d = o.dist - k.dist;
-    if (d > 0 && d < 9) {
-      const ci = o.idx;
-      const olat = (o.p.x - T.px[ci]) * T.nx[ci] + (o.p.z - T.pz[ci]) * T.nz[ci];
-      const mylat = (p.x - T.px[k.idx]) * T.nx[k.idx] + (p.z - T.pz[k.idx]) * T.nz[k.idx];
-      if (Math.abs(olat - mylat) < 1.8) want = olat > mylat ? -2.2 : 2.2;
+    if (o === k || Math.abs(o.p.y - p.y) > 1.5) continue;
+    const d = o.dist - k.dist;
+    if (d > 0 && d < da) { da = d; ahead = o; }
+    if (d < 0 && -d < db) { db = -d; behind = o; }
+  }
+  const inside = insideAhead(T, k.idx);
+  if (ahead && da < 16 && !k.finished) {
+    const olat = latOf(ahead);
+    const closing = v - Math.max(ahead.p.fwd, 0);
+    if (Math.abs(olat - mylat) < 1.9 || closing > 0.5) {
+      // ataque: por dentro de la próxima curva; si no hay curva, por el lado libre
+      if (Math.random() < skill * dt * 1.2 || ai.mode === 'attack') {
+        if (ai.mode !== 'attack') { ai.mode = 'attack'; ai.modeT = rand(2, 4); ai.side = inside || (olat > 0 ? -1 : 1); }
+        want = ai.side * (lim - 0.3);
+        push = 1 + 0.035 * skill;               // frena un poco más tarde cuando ataca
+      } else if (Math.abs(olat - mylat) < 1.9 && da < 9) want = olat > mylat ? -2.2 : 2.2;
     }
   }
-  ai.lane = lerp(ai.lane, want, 1 - Math.exp(-dt * 1.5));
+  // defensa: si alguien viene pegado atrás antes de una curva, cierra el interior
+  if (ai.mode !== 'attack' && behind && db < 9 && inside && Math.random() < skill * dt * 2) { ai.mode = 'defend'; ai.modeT = rand(1.5, 2.5); ai.side = inside; }
+  if (ai.mode === 'defend') want = ai.side * (lim * 0.55);
+  ai.lane = lerp(ai.lane, want, 1 - Math.exp(-dt * (ai.mode ? 2.4 : 1.5)));
   const la = 3.5 + v * 0.42;
   const j = (k.idx + Math.round(la)) % N;
-  const lim = T.hw - 1.0;
-  const off = clamp(T.lineOff[j] + ai.lane, -lim, lim);
+  // al atacar o defender se usa la línea propia (mezclada con la de carrera)
+  const base = ai.mode ? T.lineOff[j] * 0.35 : T.lineOff[j];
+  const off = clamp(base + ai.lane, -lim, lim);
   const tx = T.px[j] + T.nx[j] * off, tz = T.pz[j] + T.nz[j] * off;
   const dx = tx - p.x, dz = tz - p.z, dl = Math.hypot(dx, dz) || 1;
   const rx = -Math.cos(p.h), rz = Math.sin(p.h);
@@ -94,14 +128,17 @@ function botInput(k, dt) {
   ai.errT -= dt;
   if (ai.errT <= 0) { ai.errT = rand(1.5, 4); ai.err = 1 + R.diff.err * rand(-0.07, 0.035); }
   const look = (k.idx + 2 + Math.round(v * 0.12)) % N;
-  let vt = Math.min(R.prof[look], R.prof[k.idx]) * ai.err;
-  vt = Math.min(vt, KART.vmax * R.diff.top);
+  let vt = Math.min(R.prof[look], R.prof[k.idx]) * ai.err * push;
+  // por fuera de la línea ideal se va un poco más lento
+  if (ai.mode) vt *= 0.985;
+  vt = Math.min(vt, KART.vmax * R.diff.top * (1 + 0.05 * k.draft));
   // goma elástica según la dificultad
-  // (en Fácil y Normal los bots esperan al jugador si se escapan mucho)
-  if (R.player && R.diff.band && R.format === 'race') {
-    const gap = k.dist - R.player.dist, [far, slow] = R.diff.band;
+  // (en Fácil y Normal los bots esperan a los jugadores si se escapan mucho)
+  if (R.players.length && R.diff.band && R.format === 'race') {
+    const lead = Math.max(...R.players.map(h => h.dist)), last = Math.min(...R.players.map(h => h.dist));
+    const gap = k.dist - lead, [far, slow] = R.diff.band;
     if (gap > far) vt *= slow; else if (gap > far * 0.5) vt *= lerp(1, slow, (gap - far * 0.5) / (far * 0.5));
-    else if (gap < -far * 2) vt *= 1.03;
+    else if (k.dist - last < -far * 2) vt *= 1.03;
   }
   if (k.finished) vt *= 0.7;
   let throttle = 0, brake = 0;
@@ -113,10 +150,27 @@ function botInput(k, dt) {
   return { throttle, brake, steer, handbrake: false };
 }
 
+// Rebufo: si vas pegado detrás de otro kart en recta, el aire te frena menos
+function updateDraft() {
+  for (const k of R.karts) {
+    let d = 0;
+    for (const o of R.karts) {
+      if (o === k || Math.abs(o.p.y - k.p.y) > 1.5) continue;
+      const gap = o.dist - k.dist;
+      if (gap < 1.5 || gap > 12) continue;
+      const dl = Math.abs(latOf(o) - latOf(k));
+      if (dl > 1.6) continue;
+      d = Math.max(d, (1 - (gap - 1.5) / 10.5) * (1 - dl / 1.6) * (k.p.fwd > 12 ? 1 : 0));
+    }
+    k.draft = lerp(k.draft, d, 0.2);
+  }
+}
+
 // ---------- paso de la carrera ----------
-function updateRace(dt, playerInput) {
+function updateRace(dt, inputs) {
   if (!R.on) return;
   const T = R.T;
+  if (!Array.isArray(inputs)) inputs = [inputs];
   if (R.state === 'countdown') {
     const before = Math.ceil(R.countdown - 0.6);
     R.countdown -= dt;
@@ -127,23 +181,26 @@ function updateRace(dt, playerInput) {
     R.t += dt;
   }
   const live = R.state !== 'countdown';
+  if (live) updateDraft();
   for (const k of R.karts) {
     let inp;
-    if (!live) { k.inp = { throttle: k.isPlayer ? playerInput.throttle : 0, brake: 0, steer: 0 }; k.p.vx = k.p.vz = 0; poseKart(k.mesh, k.p, dt); continue; }
-    else if (k.isPlayer && !k.finished) inp = playerInput;
+    const hin = k.isPlayer ? (inputs[k.pid] || inputs[0]) : null;
+    if (!live) { k.inp = { throttle: hin ? hin.throttle : 0, brake: 0, steer: 0 }; k.p.vx = k.p.vz = 0; poseKart(k.mesh, k.p, dt); continue; }
+    else if (k.isPlayer && !k.finished) inp = Object.assign({}, hin);
     else inp = botInput(k, dt);
+    inp.draft = k.draft;
     const res = stepPhys(k.p, inp, dt, T, k.idx);
     k.inp = inp;
     k.idx = res.idx;
     if (res.hit > 2) {
       FX.sparks(k.p.x + T.nx[k.idx] * res.side * 0.7, k.p.z + T.nz[k.idx] * res.side * 0.7, res.hit, k.p.y);
-      if (k.isPlayer) R.events.push({ type: 'hit', v: res.hit });
+      if (k.isPlayer) R.events.push({ type: 'hit', v: res.hit, pid: k.pid });
     }
     trackProgress(k, T);
   }
   collideKarts(R.karts);
   for (const k of R.karts) {
-    if (k.bump > 2 && (k.isPlayer)) R.events.push({ type: 'bump', v: k.bump });
+    if (k.bump > 2 && (k.isPlayer)) R.events.push({ type: 'bump', v: k.bump, pid: k.pid });
     k.bump = 0;
     poseKart(k.mesh, k.p, dt, R.t);
     // humo y marcas al derrapar
@@ -155,7 +212,19 @@ function updateRace(dt, playerInput) {
     if (a.finished) return -1; if (b.finished) return 1;
     return b.dist - a.dist;
   });
-  order.forEach((k, i) => k.pos = i + 1);
+  order.forEach((k, i) => {
+    if (k.isPlayer && R.state === 'race' && k.pos && i + 1 < k.pos && R.t > 3) R.events.push({ type: 'overtake', pid: k.pid, pos: i + 1 });
+    k.pos = i + 1;
+  });
+  // grabación para la repetición (30 cuadros por segundo)
+  if (live && R.state !== 'results') {
+    R.rec.acc += dt;
+    if (R.rec.acc >= R.rec.dt) {
+      R.rec.acc -= R.rec.dt;
+      R.rec.t.push(R.t);
+      R.karts.forEach((k, i) => { const p = k.p; R.rec.k[i].push(p.x, p.y, p.z, p.h, p.slope, p.roll, p.pitch, p.steer, p.wheelRot); });
+    }
+  }
   // fin
   if (R.state === 'done') {
     R.endTimer += dt;
@@ -163,7 +232,7 @@ function updateRace(dt, playerInput) {
     if (all || R.endTimer > (R.format === 'best' ? 25 : 18)) finishAll();
   }
   // hora que cambia durante la carrera
-  if (R.time === 'ciclo' && W.day && R.player) {
+  if (R.time === 'ciclo' && W.day && R.player && R.state !== 'results') {
     R.timeT -= dt;
     if (R.timeT <= 0) { R.timeT = 0.4; applyTime(timeAt(Math.max(0, R.player.dist) / (R.laps * T.L))); }
   }
@@ -191,7 +260,7 @@ function trackProgress(k, T) {
     const st = R.t - k.secStart;
     k.secStart = R.t;
     k.sec[si] = st;
-    if (k.isPlayer) onPlayerSector(si, st);
+    if (k.isPlayer) onPlayerSector(k, si, st);
     if (b % 3 === 0) {
       // vuelta completa
       const lt = R.t - k.lapStart;
@@ -199,35 +268,38 @@ function trackProgress(k, T) {
       k.lapsDone++;
       k.lastLap = lt;
       if (k.bestLap == null || lt < k.bestLap) k.bestLap = lt;
-      if (k.isPlayer) onPlayerLap(lt);
+      if (k.isPlayer) onPlayerLap(k, lt);
       if (k.lapsDone >= R.laps && !k.finished) {
         k.finished = true; k.finishTime = R.t;
         R.finishOrder.push(k);
-        if (k.isPlayer) { R.state = 'done'; R.events.push({ type: 'finish', pos: R.format === 'best' ? R.karts.slice().sort(byBestLap).indexOf(k) + 1 : R.finishOrder.length }); }
-      } else if (k.isPlayer && k.lapsDone === R.laps - 1) R.events.push({ type: 'lastlap' });
+        if (k.isPlayer) {
+          R.events.push({ type: 'finish', pid: k.pid, name: k.name, pos: R.format === 'best' ? R.karts.slice().sort(byBestLap).indexOf(k) + 1 : R.finishOrder.length });
+          if (R.players.every(h => h.finished)) R.state = 'done';
+        }
+      } else if (k.isPlayer && k.lapsDone === R.laps - 1) R.events.push({ type: 'lastlap', pid: k.pid });
       if (k.isPlayer) k.sec = [null, null, null];
     }
   }
 }
 
-function onPlayerSector(si, st) {
+function onPlayerSector(k, si, st) {
   let cls = 'slow';
   if (st < R.bestSec[si]) { R.bestSec[si] = st; cls = 'record'; }
   else if (st < R.sessSec[si]) cls = 'best';
   R.sessSec[si] = Math.min(R.sessSec[si], st);
-  R.player.secCls = R.player.secCls || [];
-  R.player.secCls[si] = cls;
-  R.events.push({ type: 'sector', si, st, cls });
+  k.secCls = k.secCls || [];
+  k.secCls[si] = cls;
+  R.events.push({ type: 'sector', si, st, cls, pid: k.pid });
 }
 
-function onPlayerLap(lt) {
+function onPlayerLap(k, lt) {
   let cls = 'slow';
   if (lt < R.bestLap) { R.bestLap = lt; cls = 'record'; }
   else if (lt < R.sessLap) cls = 'best';
   R.sessLap = Math.min(R.sessLap, lt);
-  R.player.lastCls = cls;
-  R.player.secCls = [];
-  R.events.push({ type: 'lap', lt, cls });
+  k.lastCls = cls;
+  k.secCls = [];
+  R.events.push({ type: 'lap', lt, cls, pid: k.pid, name: k.name });
   // guardar récords de la pista
   const pb = save.pb[R.def.id] || (save.pb[R.def.id] = { lap: null, sec: [null, null, null] });
   if (pb.lap == null || lt < pb.lap) pb.lap = lt;
@@ -252,9 +324,9 @@ function finishAll() {
   R.events.push({ type: 'results' });
 }
 
-// Reubica al jugador en el centro de la pista (tecla R)
-function resetPlayer() {
-  const k = R.player; if (!k || R.state !== 'race') return;
+// Reubica a un jugador en el centro de la pista (tecla R)
+function resetPlayer(pid) {
+  const k = R.players[pid || 0]; if (!k || R.state !== 'race') return;
   const T = R.T, i = k.idx;
   k.p.x = T.px[i] + T.nx[i] * T.lineOff[i] * 0.5; k.p.z = T.pz[i] + T.nz[i] * T.lineOff[i] * 0.5;
   k.p.h = Math.atan2(T.tx[i], T.tz[i]); k.p.vx = k.p.vz = 0; k.p.yaw = 0;

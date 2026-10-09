@@ -278,7 +278,7 @@ function clearTrack() {
   W.trackGroup.traverse(o => {
     if (o.geometry && !Object.values(GEO).includes(o.geometry)) o.geometry.dispose();
   });
-  W.trackGroup = null; W.startLights = []; W.anim = [];
+  W.trackGroup = null; W.startLights = []; W.anim = []; W.stands = [];
 }
 
 // Tira horizontal entre los desplazamientos laterales a y b (pueden ser funciones de i)
@@ -431,6 +431,7 @@ function grandstand(T, G, i, side, len, color) {
   const ls = -side;
   const g = new THREE.Group();
   g.position.set(T.px[i] + T.nx[i] * off, T.py[i], T.pz[i] + T.nz[i] * off); g.rotation.y = h;
+  (W.stands || (W.stands = [])).push({ x: g.position.x, z: g.position.z, len });
   const conc = new THREE.MeshStandardMaterial({ color: '#B9BCC6', roughness: 0.85 });
   const seat = new THREE.MeshStandardMaterial({ color, roughness: 0.5 });
   const spots = [];

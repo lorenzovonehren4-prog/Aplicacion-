@@ -374,7 +374,8 @@ function stepPhys(p, inp, dt, T, idx) {
   // motor, frenos y freno motor
   let ax = 0;
   if (inp.throttle > 0) {
-    if (vf >= -0.5) ax += inp.throttle * KART.accel * Math.max(0, 1 - (vf / KART.vmax) ** 2);
+    const vmx = KART.vmax * (1 + 0.06 * (inp.draft || 0));   // el rebufo sube un poco la punta
+    if (vf >= -0.5) ax += inp.throttle * KART.accel * Math.max(0, 1 - (vf / vmx) ** 2);
     else ax += inp.throttle * KART.brake;
   }
   if (inp.brake > 0) {
@@ -382,7 +383,7 @@ function stepPhys(p, inp, dt, T, idx) {
     else if (inp.throttle <= 0) ax -= inp.brake * KART.accel * 0.6 * Math.max(0, 1 - (Math.max(0, -vf) / KART.reverse) ** 2);
   }
   // rodadura, aire y freno motor (al soltar el acelerador el kart desacelera solo)
-  let drag = KART.roll + 0.0016 * vf * vf;
+  let drag = KART.roll + 0.0016 * vf * vf * (1 - 0.45 * (inp.draft || 0));
   if (inp.throttle <= 0 && inp.brake <= 0) drag += KART.engineBrake * clamp(sp / 6, 0, 1);
   if (vf > 0) ax -= Math.min(drag, vf / dt); else if (vf < 0 && inp.throttle <= 0) ax += Math.min(drag, -vf / dt);
   if (inp.handbrake) ax -= Math.sign(vf) * Math.min(2.5, Math.abs(vf) / dt);

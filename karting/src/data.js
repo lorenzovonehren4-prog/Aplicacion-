@@ -221,7 +221,8 @@ function defaultSave() {
     pb: {},          // por pista: { lap, sec: [s1, s2, s3] }
     stats: { races: 0, wins: 0, podiums: 0, cups: 0 },
     last: { track: 't1', diff: 'normal', laps: 3 },
-    opt: { vol: 0.7, quality: 'alta', cam: 0, names: true },
+    opt: { vol: 0.7, quality: 'alta', cam: 0, names: true, voice: true },
+    custom: [],      // pistas hechas en el editor
   };
 }
 
@@ -238,6 +239,7 @@ function loadSave() {
       for (const id of base.owned[kind]) if (!s.owned[kind].includes(id)) s.owned[kind].push(id);
       if (!s.owned[kind].includes(s.eq[kind])) s.eq[kind] = base.eq[kind];
     }
+    if (!Array.isArray(s.custom)) s.custom = [];
     if ((s.v || 1) < 2) s.pb = {}; // las pistas cambiaron
     s.v = 2;
     return Object.assign(base, s);
@@ -247,7 +249,8 @@ function loadSave() {
 let save = loadSave();
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* sin guardado */ } }
 
-const trackById = id => TRACKS.find(t => t.id === id) || TRACKS[0];
+const allTracks = () => TRACKS.concat(save.custom || []);
+const trackById = id => allTracks().find(t => t.id === id) || TRACKS[0];
 const diffById = id => DIFFS.find(d => d.id === id) || DIFFS[1];
 const cosById = (kind, id) => COSMETICS[kind].find(c => c.id === id) || COSMETICS[kind][0];
 const playerLevel = () => levelInfo(save.xp).lvl;

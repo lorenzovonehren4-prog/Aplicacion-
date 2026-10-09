@@ -64,7 +64,7 @@ button, input, select{ font-family:inherit; color:inherit; }
 .nextunlock:empty{ display:none; }
 .kartplate{ position:absolute; left:50%; top:calc(50% + 40px); transform:translateX(10%); display:flex; align-items:center; gap:8px; padding:6px 12px 6px 6px; border-radius:999px; background:rgba(16,14,22,.75); border:1px solid var(--line); font-weight:700; font-size:13px; }
 .kp-num{ width:28px; height:28px; border-radius:50%; background:#fff; color:#16141C; display:grid; place-items:center; font:700 15px Fredoka, sans-serif; }
-.modes{ position:absolute; left:28px; right:28px; bottom:44px; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px; }
+.modes{ position:absolute; left:28px; right:28px; bottom:44px; display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:14px; }
 .mode{ --mc:var(--acc); position:relative; display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto 1fr auto; column-gap:12px; row-gap:4px; align-items:start; text-align:left; padding:16px 16px 14px; min-height:150px; border:1px solid var(--line); border-radius:14px; background:linear-gradient(160deg, rgba(36,32,50,.92), rgba(18,16,26,.92)); cursor:pointer; transition:transform .15s ease, border-color .15s, box-shadow .15s; overflow:hidden; }
 .mode::before{ content:''; position:absolute; left:0; right:0; top:0; height:4px; background:var(--mc); }
 .mode::after{ content:''; position:absolute; right:-40px; bottom:-60px; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, color-mix(in srgb, var(--mc) 45%, transparent), transparent 70%); opacity:.6; }
@@ -75,7 +75,7 @@ button, input, select{ font-family:inherit; color:inherit; }
 .md{ font-size:13px; color:#C9C4D8; line-height:1.4; }
 .mk{ grid-column:1 / span 2; justify-self:end; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); padding:3px 7px; border:1px solid var(--line); border-radius:5px; opacity:0; transition:opacity .15s; }
 .mode:focus-visible .mk, .mode:hover .mk{ opacity:1; }
-.m-race{ --mc:#EF4A43; } .m-best{ --mc:#2AD4FF; } .m-champ{ --mc:#F5C542; } .m-garage{ --mc:#B36BFF; }
+.m-edit{ --mc:#2BE07F; } .m-race{ --mc:#EF4A43; } .m-best{ --mc:#2AD4FF; } .m-champ{ --mc:#F5C542; } .m-garage{ --mc:#B36BFF; }
 .foot{ position:absolute; left:0; right:0; bottom:14px; text-align:center; color:var(--muted); font-size:12px; letter-spacing:.04em; }
 @media (max-width:900px){ .modes{ grid-template-columns:repeat(2, minmax(0, 1fr)); } .hero{ display:none; } }
 
@@ -249,6 +249,45 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
 .toast.show{ transform:translate(-50%, 0); }
 .pad-hint{ font-size:12px; color:var(--muted); }
 @media (max-width:760px){ .panel .grid2{ grid-template-columns:1fr; } .panel .side{ border-right:none; border-bottom:1px solid var(--line); } .timing{ grid-template-columns:repeat(5, 60px); } .order{ display:none; } }
+/* editor */
+#editor{ background:#0E0C14; }
+.ed{ position:absolute; inset:0; display:grid; grid-template-columns:1fr 340px; gap:14px; padding:14px; }
+.edmap{ position:relative; border-radius:14px; overflow:hidden; border:1px solid var(--line); }
+#edCanvas{ width:100%; height:100%; display:block; cursor:crosshair; touch-action:none; }
+.edhelp{ position:absolute; left:10px; right:10px; bottom:10px; font-size:12px; color:#D9D5E6; background:rgba(14,12,20,.7); padding:6px 10px; border-radius:8px; pointer-events:none; }
+.edside.panel{ position:relative; left:auto; top:auto; transform:none; width:auto; max-height:none; display:flex; flex-direction:column; gap:10px; padding:16px; overflow:auto; }
+.edside input, .edside select{ min-width:0; width:180px; padding:8px; border-radius:6px; background:#221E2E; border:1px solid var(--line); color:inherit; }
+.edside .b{ padding:9px 12px; font-size:13px; min-height:0; } .edside .b.big{ font-size:15px; }
+.edside .row{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.edstat{ font-size:13px; line-height:1.6; background:rgba(255,255,255,.04); padding:10px; border-radius:10px; }
+.edstat .red{ color:#FF6B63; } .edstat .green{ color:var(--green); }
+@media (max-width:800px){ .ed{ grid-template-columns:1fr; grid-template-rows:1fr auto; } }
+/* pantalla dividida */
+.ph{ display:none; }
+body.split .ph{ display:flex; position:absolute; left:16px; align-items:center; gap:12px; padding:8px 14px; border-radius:10px; background:rgba(18,16,24,.72); }
+body.split #ph0{ top:12px; } body.split #ph1{ top:calc(50% + 12px); }
+.ph b{ font:700 40px/1 Fredoka, sans-serif; } .ph b small{ font-size:18px; color:#D9D5E6; }
+.ph span{ font-weight:800; font-size:12px; letter-spacing:.06em; line-height:1.5; }
+.ph i{ font:700 26px Fredoka, sans-serif; font-style:normal; margin-left:8px; } .ph i small{ font-size:11px; }
+.ph em{ font-style:normal; background:var(--red); padding:4px 8px; border-radius:6px; font-weight:800; font-size:12px; }
+body.split .timing, body.split .posbox, body.split .racetime, body.split .speedo, body.split .wrong{ display:none; }
+body.split #minimap{ left:auto; right:14px; bottom:auto; top:calc(50% - 75px); width:150px; height:150px; }
+body.split #hud::after{ content:''; position:absolute; left:0; right:0; top:calc(50% - 2px); height:4px; background:#111; }
+body.split .banner{ top:50%; font-size:clamp(28px,4.5vw,54px); }
+body.split .lights{ top:calc(50% - 31px); }
+/* repetición */
+#replay{ pointer-events:none; z-index:6; }
+#replay .rp-top{ position:absolute; left:20px; top:16px; display:flex; gap:14px; align-items:center; font-weight:800; }
+.rp-rec{ background:var(--red); padding:5px 10px; border-radius:6px; letter-spacing:.08em; font-size:13px; animation:blink 1.2s infinite; }
+@keyframes blink{ 50%{ opacity:.55; } }
+#rpWho{ background:rgba(18,16,24,.72); padding:5px 12px; border-radius:6px; }
+.rp-cam{ position:absolute; right:20px; top:16px; background:rgba(18,16,24,.72); padding:6px 12px; border-radius:6px; font-weight:800; opacity:0; transition:opacity .3s; }
+.rp-cam.show{ opacity:1; }
+.rp-bot{ position:absolute; left:20px; right:20px; bottom:16px; }
+.rp-bar{ height:6px; border-radius:3px; background:rgba(255,255,255,.18); overflow:hidden; }
+.rp-bar i{ display:block; height:100%; background:var(--red); }
+.rp-row{ display:flex; gap:16px; align-items:center; margin-top:8px; font-size:13px; font-weight:700; text-shadow:0 1px 3px #000; flex-wrap:wrap; }
+body.replaying #labels .tagname{ font-size:11px; }
 </style>
 </head>
 <body>
@@ -308,6 +347,11 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
       <span class="md" id="champSub">4 carreras por puntos. El campeón se lleva el premio grande.</span>
       <span class="mk">Enter</span>
     </button>
+    <button class="mode m-edit" data-act="editor">
+      <span class="mi"><svg viewBox="0 0 24 24"><path d="M3 17.3V21h3.7L17.8 9.9l-3.7-3.7ZM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.7 3.7Z" fill="currentColor"/></svg></span>
+      <span class="mt h">Editor</span>
+      <span class="md">Dibuja tu propio circuito con el mouse y córrelo.</span>
+    </button>
     <button class="mode m-garage" data-act="garage">
       <span class="mi"><svg viewBox="0 0 24 24"><path d="M21.7 18.6 13 9.9a5.4 5.4 0 0 0-7.1-7L9.6 6.6 6.6 9.6 2.9 5.9a5.4 5.4 0 0 0 7 7.1l8.7 8.7a1.1 1.1 0 0 0 1.5 0l1.6-1.6a1.1 1.1 0 0 0 0-1.5Z" fill="currentColor"/></svg></span>
       <span class="mt h">Garaje</span>
@@ -343,10 +387,35 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
           <div><div class="lbl">Rivales</div><b>5 bots</b></div>
         </div>
         <div class="setrow" id="timeWrap"><div class="lbl">Hora del día</div><div class="seg" id="timeRow"></div></div>
+        <div class="setrow" id="plWrap"><div class="lbl">Jugadores <span class="muted" id="plInfo"></span></div><div class="seg" id="plRow"></div></div>
         <div class="setrow" id="fmtWrap"><div class="lbl">Formato</div><div class="seg" id="fmtRow"></div></div>
         <div class="setrow"><div class="lbl">Dificultad <span class="muted" id="diffInfo"></span></div><div class="seg" id="diffRow"></div></div>
         <div class="setrow" id="lapsWrap"><div class="lbl" id="lapsLbl">Vueltas</div><div class="seg" id="lapsRow"></div></div>
         <button class="b go big" id="btnGo">Correr</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Editor de pistas -->
+<section id="editor" class="scr">
+  <div class="ed">
+    <div class="edmap"><canvas id="edCanvas"></canvas>
+      <div class="edhelp">Clic: agregar punto · arrastrar: mover · clic derecho / Supr: borrar · ↑ ↓: altura · ← →: otro punto · T: túnel · rueda: zoom · el punto blanco es la largada</div>
+    </div>
+    <div class="edside panel">
+      <div style="display:flex;justify-content:space-between;align-items:center"><div class="h" style="font-size:24px">Editor de pistas</div><button class="b ghost" data-back>Volver</button></div>
+      <div class="opt"><span>Tus pistas</span><select id="edLoad"></select></div>
+      <div class="opt"><span>Nombre</span><input id="edName" maxlength="24"></div>
+      <div class="opt"><span>Lugar</span><select id="edTheme"></select></div>
+      <div class="opt"><span>Ancho</span><select id="edWidth"><option value="9">9 m</option><option value="10">10 m</option><option value="11">11 m</option><option value="12">12 m</option><option value="13">13 m</option></select></div>
+      <div class="lbl" id="edSel" style="margin-top:6px"></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap">
+        <button class="b" id="edUp">Subir</button><button class="b" id="edDown">Bajar</button><button class="b" id="edTun">Túnel</button><button class="b red" id="edRem">Quitar punto</button>
+      </div>
+      <div class="edstat" id="edStatus"></div>
+      <div class="row" style="gap:8px;margin-top:auto">
+        <button class="b go big" id="edTry">Probar</button><button class="b" id="edSave">Guardar</button><button class="b red" id="edDel">Borrar</button>
       </div>
     </div>
   </div>
@@ -388,6 +457,7 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
     <div class="opt"><span>Calidad gráfica <small class="muted">(recarga el juego)</small></span><select id="oQ"><option value="alta">Alta (sombras)</option><option value="baja">Baja (más rápido)</option></select></div>
     <div class="opt"><span>Cámara</span><select id="oCam"><option value="0">Detrás, lejos</option><option value="1">Detrás, cerca</option><option value="2">Piloto</option></select></div>
     <div class="opt"><span>Nombres sobre los rivales</span><select id="oNames"><option value="1">Sí</option><option value="0">No</option></select></div>
+    <div class="opt"><span>Locutor</span><select id="oVoice"><option value="1">Sí</option><option value="0">No</option></select></div>
     <div class="lbl" style="margin-top:18px">Controles</div>
     <div class="keys">
       <span><kbd>W</kbd><kbd>↑</kbd></span><span>Acelerar <span class="muted">(mando: RT o A)</span></span>
@@ -423,6 +493,18 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
   <div class="banner" id="banner"></div>
   <div class="wrong" id="wrong">SENTIDO CONTRARIO</div>
   <div class="hint" id="hint">Esc: pausa · C: cámara · R: volver a la pista</div>
+  <div class="ph" id="ph0"></div><div class="ph" id="ph1"></div>
+</section>
+
+<!-- Repetición -->
+<section id="replay" class="scr">
+  <div class="rp-top"><span class="rp-rec">● REPETICIÓN</span><span id="rpWho"></span></div>
+  <div class="rp-cam" id="rpCam"></div>
+  <div class="rp-bot">
+    <div class="rp-bar"><i id="rpBar"></i></div>
+    <div class="rp-row"><b id="rpState">▶ ×1</b><span id="rpTime"></span>
+    <span class="muted">Espacio: pausa · ← →: 5 s · ↑ ↓: otro kart · C: cámara · V: velocidad · Esc: salir</span></div>
+  </div>
 </section>
 
 <!-- Pausa -->
@@ -471,6 +553,8 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
 <script src="src/post.js"></script>
 <script src="src/audio.js"></script>
 <script src="src/race.js"></script>
+<script src="src/replay.js"></script>
+<script src="src/editor.js"></script>
 <script src="src/ui.js"></script>
 </body>
 </html>

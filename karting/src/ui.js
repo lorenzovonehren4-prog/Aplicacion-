@@ -2,7 +2,7 @@
 // Interfaz: pantallas, controles (teclado y mando), cámara, HUD, garaje, campeonato y bucle principal.
 
 const $ = id => document.getElementById(id);
-const UI = { screen: null, stack: [], tab: 'body', sel: { track: null, diff: null, laps: 3, format: 'race', time: null }, champ: null, paused: false, camMode: 0, toastT: 0 };
+const UI = { screen: null, stack: [], tab: 'body', sel: { track: null, diff: null, laps: 3, format: 'race', time: null, players: 1 }, champ: null, paused: false, camMode: 0, toastT: 0 };
 
 // ---------- pantallas ----------
 function show(id, push) {
@@ -29,6 +29,7 @@ function goTitle() {
   if (R.on) endRace();
   SFX.silence();
   UI.stack = []; UI.paused = false;
+  setSplit(false); document.body.classList.remove('replaying');
   W.garage.visible = true;
   W.scene.background = new THREE.Color('#15121C'); W.scene.fog = new THREE.Fog('#15121C', 12, 30);
   W.hemi.color.set('#B7A8FF'); W.hemi.groundColor.set('#2A2230'); W.hemi.intensity = 0.35;
@@ -93,11 +94,11 @@ const LAPS_BEST = [3, 5, 8];
 function renderTracks() {
   const champ = UI.mode === 'champ';
   const list = $('trkList'); list.innerHTML = '';
-  TRACKS.forEach((t, k) => {
+  (champ ? TRACKS : allTracks()).forEach((t, k) => {
     const T = trackData(t), pb = save.pb[t.id];
     const b = document.createElement('button');
     b.className = 'tcard' + (t.id === UI.sel.track ? ' on' : '');
-    b.innerHTML = `<canvas width="480" height="270"></canvas><div class="tn"><b>${champ ? (k + 1) + '. ' : ''}${t.title}</b><span>${pb && pb.lap ? 'PB ' + fmtTime(pb.lap) : t.name}</span></div><div class="tags">${trackTags(t, T)}</div><span class="stars" title="Dificultad">${'★'.repeat(t.stars || 1)}${'☆'.repeat(3 - (t.stars || 1))}</span>`;
+    b.innerHTML = `<canvas width="480" height="270"></canvas><div class="tn"><b>${champ ? (k + 1) + '. ' : ''}${t.title}</b><span>${pb && pb.lap ? 'PB ' + fmtTime(pb.lap) : t.name}</span></div><div class="tags">${t.custom ? '<span class="tag2" style="color:#111;background:var(--gold)">Tuya</span>' : ''}${trackTags(t, T)}</div><span class="stars" title="Dificultad">${'★'.repeat(t.stars || 1)}${'☆'.repeat(3 - (t.stars || 1))}</span>`;
     drawTrackPreview(b.querySelector('canvas'), t);
     b.onclick = () => { SFX.click(); if (UI.sel.track !== t.id) UI.sel.time = null; UI.sel.track = t.id; renderTracks(); $('btnGo').focus(); };
     b.onfocus = () => { if (UI.sel.track !== t.id) { UI.sel.track = t.id; UI.sel.time = null; renderTracks(); const nb = $('trkList').children[k]; if (nb) nb.focus({ preventScroll: true }); } };
@@ -114,6 +115,10 @@ function renderTracks() {
     });
   };
   $('fmtWrap').style.display = champ ? 'none' : '';
+  $('plWrap').style.display = champ ? 'none' : '';
+  if (champ) UI.sel.players = 1;
+  seg($('plRow'), [[1, '1 jugador'], [2, '2 jugadores']], UI.sel.players, v => { UI.sel.players = v; });
+  $('plInfo').textContent = UI.sel.players === 2 ? '· J1: WASD + Espacio · J2: mando (o flechas + Shift der.)' : '';
   // hora del día (solo pistas al aire libre con cielo)
   const tdef = trackById(UI.sel.track), outdoor = DAYLIGHT.includes(tdef.theme);
   $('timeWrap').style.display = outdoor && !champ ? '' : 'none';
@@ -204,7 +209,13 @@ function pickBots(n) {
   const names = BOT_NAMES.slice().sort(() => Math.random() - 0.5).slice(0, n);
   return names.map(name => ({ name, look: botLook() }));
 }
-function playerEntry() { return { name: save.name, isPlayer: true, look: Object.assign({}, save.eq) }; }
+function playerEntry() { return { name: save.name, isPlayer: true, pid: 0, look: Object.assign({}, save.eq) }; }
+// el jugador 2 usa un kart de otro color (el de los bots, con su número)
+function player2Entry() {
+  const look = botLook(); look.num = 2;
+  if (look.body === save.eq.body) look.body = save.eq.body === 'azul' ? 'rojo' : 'azul';
+  return { name: 'Jugador 2', isPlayer: true, pid: 1, look };
+}
 
 function go() {
   SFX.init(); SFX.click();
@@ -217,8 +228,10 @@ function go() {
   } else {
     UI.champ = null;
     // el jugador larga en el medio en Fácil y Normal, más atrás en las difíciles
-    const bots = pickBots(5), slot = { facil: 2, normal: 2, dificil: 3, experto: 5 }[UI.sel.diff];
-    bots.splice(slot, 0, playerEntry());
+    const two = UI.sel.players === 2;
+    const bots = pickBots(two ? 4 : 5), slot = { facil: 2, normal: 2, dificil: 3, experto: 5 }[UI.sel.diff];
+    bots.splice(Math.min(slot, bots.length), 0, playerEntry());
+    if (two) bots.splice(Math.min(slot + 1, bots.length), 0, player2Entry());
     UI.lastGrid = bots;
     launch(trackById(UI.sel.track), diffById(UI.sel.diff), UI.sel.laps, 'quick', UI.lastGrid, UI.sel.format, DAYLIGHT.includes(trackById(UI.sel.track).theme) ? UI.sel.time : null);
   }
@@ -237,14 +250,21 @@ function launch(def, diff, laps, mode, grid, format, time) {
   document.body.classList.remove('ready');
   setTimeout(() => {
     startRace(def, diff, laps, mode, grid, format, time);
-    CAM.snap = true;
+    setSplit(R.players.length > 1);
+    CAMS.forEach(c => c.snap = true);
     UI.paused = false;
     UI.stack = [];
     show('hud');
+    $('hint').textContent = UI.split ? 'J1: WASD + Espacio · J2: mando o flechas + Shift der. · Esc: pausa · R / -: volver a la pista' : 'Esc: pausa · C: cámara · R: volver a la pista';
     $('hint').style.opacity = 1;
     UI.hintT = 6;
     drawMinimapBase();
     document.body.classList.add('ready');
+    // después del primer cuadro se recompilan los materiales de la pista: en algunas pistas
+    // (p. ej. las del editor) el asfalto quedaba con un shader viejo y se veía verde
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (W.trackGroup) W.trackGroup.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); });
+    }));
   }, 30);
 }
 
@@ -263,7 +283,7 @@ function restart() {
 
 // ---------- resultados ----------
 function showResults() {
-  const pl = R.player, pos = R.finishOrder.indexOf(pl) + 1;
+  const pl = R.player, pos = R.finishOrder.indexOf(pl) + 1, two = R.players.length > 1;
   const champ = R.mode === 'champ';
   const before = levelInfo(save.xp).lvl;
   const coins = Math.round(COINS_BY_POS[pos - 1] * R.diff.coin);
@@ -274,6 +294,10 @@ function showResults() {
   const after = levelInfo(save.xp).lvl;
   const best = R.format === 'best';
   $('resTitle').textContent = pos === 1 ? (best ? '¡Mejor tiempo de todos!' : '¡Ganaste!') : pos <= 3 ? '¡Podio! Quedaste ' + pos + '.º' : 'Quedaste ' + pos + '.º';
+  if (two) {
+    const w = R.finishOrder.find(k => k.isPlayer);
+    $('resTitle').textContent = '¡' + w.name + ' le ganó al otro jugador!';
+  }
   $('resSub').textContent = (best ? 'Mejor vuelta · ' : '') + R.def.title + ' · ' + R.diff.name;
   $('resTimeH').textContent = best ? 'Diferencia' : 'Tiempo';
   $('resPtsH').style.display = champ ? '' : 'none';
@@ -296,6 +320,8 @@ function showResults() {
     mk('Ver clasificación', 'go', showStandings);
   } else {
     mk('Correr otra vez', 'go', restart);
+    mk('Ver repetición', 'ghost', startReplay);
+    if (R.def.custom) mk('Editar pista', 'ghost', () => { const d = R.def; endRace(); goTitle(); openEditor(d); });
     mk('Cambiar pista', 'ghost', () => { const m = R.format === 'best' ? 'best' : 'quick'; endRace(); goTitle(); openTracks(m); });
     mk('Menú', 'red', goTitle);
   }
@@ -389,21 +415,25 @@ function buyOrEquip(c) {
 
 // ---------- opciones ----------
 function openOptions() {
-  $('oVol').value = save.opt.vol; $('oQ').value = save.opt.quality; $('oCam').value = save.opt.cam; $('oNames').value = save.opt.names ? '1' : '0';
+  $('oVol').value = save.opt.vol; $('oQ').value = save.opt.quality; $('oCam').value = save.opt.cam; $('oNames').value = save.opt.names ? '1' : '0'; $('oVoice').value = save.opt.voice ? '1' : '0';
   show('options', true);
 }
 
 // ---------- entrada ----------
 const KEYS = new Set();
 const INPUT = { throttle: 0, brake: 0, steer: 0, handbrake: false, kSteer: 0 };
+const INPUT2 = { throttle: 0, brake: 0, steer: 0, handbrake: false, kSteer: 0 };
 const PAD = { prev: {}, navT: 0 };
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' && e.key !== 'Escape') return;
   KEYS.add(e.code);
+  if (UI.screen === 'replay') { replayKey(e); return; }
+  if (UI.screen === 'editor' && editorKey(e)) return;
   if (UI.screen === 'hud') {
     if (e.code === 'Escape' || e.code === 'KeyP') { pause(); e.preventDefault(); }
     if (e.code === 'KeyC') cycleCam();
-    if (e.code === 'KeyR') resetPlayer();
+    if (e.code === 'KeyR') resetPlayer(0);
+    if (e.code === 'Slash' || e.code === 'NumpadDecimal') resetPlayer(1);
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
     return;
   }
@@ -440,52 +470,83 @@ function navMove(dx, dy) {
   if (best) { best.focus(); SFX.click(); if (best.closest('#gItems')) best.scrollIntoView({ block: 'nearest' }); }
 }
 
-function readPad() {
+function readPad(n) {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const gp = [...pads].find(p => p && p.connected);
+  const gp = [...pads].filter(p => p && p.connected)[n || 0];
   if (!gp) return null;
   const b = i => gp.buttons[i] ? gp.buttons[i].value || (gp.buttons[i].pressed ? 1 : 0) : 0;
   const ax = Math.abs(gp.axes[0]) > 0.12 ? gp.axes[0] : 0, ay = Math.abs(gp.axes[1]) > 0.5 ? gp.axes[1] : 0;
   return { gp, steer: ax, ay, rt: b(7), lt: b(6), a: b(0), bb: b(1), x: b(2), y: b(3), back: b(8), start: b(9), up: b(12), down: b(13), left: b(14), right: b(15) };
 }
-function padEdge(pad, key) { const now = pad[key] > 0.5, was = PAD.prev[key]; PAD.prev[key] = now; return now && !was; }
+function padEdge(pad, key) { const id = pad.gp.index + key, now = pad[key] > 0.5, was = PAD.prev[id]; PAD.prev[id] = now; return now && !was; }
 
-function updateInput(dt) {
-  const pad = readPad();
-  const up = KEYS.has('KeyW') || KEYS.has('ArrowUp'), dn = KEYS.has('KeyS') || KEYS.has('ArrowDown');
-  const lf = KEYS.has('KeyA') || KEYS.has('ArrowLeft'), rt = KEYS.has('KeyD') || KEYS.has('ArrowRight');
-  // dirección del teclado con rampa (más suave a alta velocidad)
+// teclado con rampa: al apretar entra suave (un toque en recta mueve poco); al soltar vuelve rápido al centro
+function keyDrive(I, up, dn, lf, rt, hb, dt) {
   const target = (rt ? 1 : 0) - (lf ? 1 : 0);
-  // al apretar entra suave (un toque en recta mueve poco); al soltar vuelve rápido al centro
-  const rate = target === 0 ? 6.5 : (Math.sign(target) !== Math.sign(INPUT.kSteer) && INPUT.kSteer !== 0 ? 7 : 2.8);
-  INPUT.kSteer += clamp(target - INPUT.kSteer, -rate * dt, rate * dt);
-  INPUT.throttle = up ? 1 : 0; INPUT.brake = dn ? 1 : 0; INPUT.steer = INPUT.kSteer; INPUT.handbrake = KEYS.has('Space');
-  if (pad) {
-    if (Math.abs(pad.steer) > 0) INPUT.steer = Math.sign(pad.steer) * Math.pow(Math.abs(pad.steer), 1.4);
-    INPUT.throttle = Math.max(INPUT.throttle, pad.rt, pad.a);
-    INPUT.brake = Math.max(INPUT.brake, pad.lt, pad.x);
-    INPUT.handbrake = INPUT.handbrake || pad.bb > 0.5;
+  const rate = target === 0 ? 6.5 : (Math.sign(target) !== Math.sign(I.kSteer) && I.kSteer !== 0 ? 7 : 2.8);
+  I.kSteer += clamp(target - I.kSteer, -rate * dt, rate * dt);
+  I.throttle = up ? 1 : 0; I.brake = dn ? 1 : 0; I.steer = I.kSteer; I.handbrake = hb;
+}
+function padDrive(I, pad) {
+  if (!pad) return;
+  if (Math.abs(pad.steer) > 0) I.steer = Math.sign(pad.steer) * Math.pow(Math.abs(pad.steer), 1.4);
+  I.throttle = Math.max(I.throttle, pad.rt, pad.a);
+  I.brake = Math.max(I.brake, pad.lt, pad.x);
+  I.handbrake = I.handbrake || pad.bb > 0.5;
+}
+function updateInput(dt) {
+  const K = c => KEYS.has(c);
+  const two = R.on && R.players.length > 1;
+  const pad = readPad(0), pad2 = readPad(1);
+  if (!two) {
+    keyDrive(INPUT, K('KeyW') || K('ArrowUp'), K('KeyS') || K('ArrowDown'), K('KeyA') || K('ArrowLeft'), K('KeyD') || K('ArrowRight'), K('Space'), dt);
+    padDrive(INPUT, pad);
+  } else {
+    // J1: WASD + Espacio (y el segundo mando si hay); J2: el primer mando, o las flechas + Shift derecho
+    keyDrive(INPUT, K('KeyW'), K('KeyS'), K('KeyA'), K('KeyD'), K('Space') || K('ShiftLeft'), dt);
+    padDrive(INPUT, pad2);
+    keyDrive(INPUT2, K('ArrowUp'), K('ArrowDown'), K('ArrowLeft'), K('ArrowRight'), K('ShiftRight') || K('ControlRight'), dt);
+    padDrive(INPUT2, pad);
+  }
+  if (UI.screen === 'replay') { if (pad) { if (padEdge(pad, 'bb') || padEdge(pad, 'start')) endReplay(); if (padEdge(pad, 'a')) RP.playing = !RP.playing; if (padEdge(pad, 'y')) RP.target = (RP.target + 1) % R.karts.length; if (padEdge(pad, 'x')) RP.speed = RP.speed === 1 ? 2 : RP.speed === 2 ? 0.5 : 1; } return; }
+  for (const [pd, pid] of [[pad, two ? 1 : 0], [pad2, 0]]) {
+    if (!pd) continue;
     if (UI.screen === 'hud') {
-      if (padEdge(pad, 'start')) pause();
-      if (padEdge(pad, 'y')) cycleCam();
-      if (padEdge(pad, 'back')) resetPlayer();
-      padEdge(pad, 'a'); padEdge(pad, 'bb');
-    } else {
+      if (padEdge(pd, 'start')) pause();
+      if (padEdge(pd, 'y')) cycleCam();
+      if (padEdge(pd, 'back')) resetPlayer(pid);
+      padEdge(pd, 'a'); padEdge(pd, 'bb');
+    } else if (pd === pad) {
       PAD.navT -= dt;
-      const dx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0) || (Math.abs(pad.steer) > 0.6 ? Math.sign(pad.steer) : 0);
-      const dy = (pad.down ? 1 : 0) - (pad.up ? 1 : 0) || (pad.ay ? Math.sign(pad.ay) : 0);
+      const dx = (pd.right ? 1 : 0) - (pd.left ? 1 : 0) || (Math.abs(pd.steer) > 0.6 ? Math.sign(pd.steer) : 0);
+      const dy = (pd.down ? 1 : 0) - (pd.up ? 1 : 0) || (pd.ay ? Math.sign(pd.ay) : 0);
       if ((dx || dy) && PAD.navT <= 0) { navMove(dx, dy); PAD.navT = 0.22; } else if (!dx && !dy) PAD.navT = 0;
-      if (padEdge(pad, 'a')) { const el = document.activeElement; if (el && el.click) el.click(); }
-      if (padEdge(pad, 'bb')) { if (UI.screen !== 'title' && UI.screen !== 'results' && UI.screen !== 'standings') back(); }
-      if (padEdge(pad, 'start') && UI.screen === 'pause') resume();
-      padEdge(pad, 'y'); padEdge(pad, 'back');
+      if (padEdge(pd, 'a')) { const el = document.activeElement; if (el && el.click) el.click(); }
+      if (padEdge(pd, 'bb')) { if (UI.screen !== 'title' && UI.screen !== 'results' && UI.screen !== 'standings') back(); }
+      if (padEdge(pd, 'start') && UI.screen === 'pause') resume();
+      padEdge(pd, 'y'); padEdge(pd, 'back');
     }
   }
 }
 
 // ---------- cámara ----------
-const CAM = { h: 0, pos: new THREE.Vector3(), look: new THREE.Vector3(), snap: true, snapMenu: true, menuA: 0 };
+// Una cámara por jugador; con dos jugadores la pantalla se parte arriba/abajo.
+const newCam = () => ({ h: 0, pos: new THREE.Vector3(), look: new THREE.Vector3(), snap: true, snapMenu: true, menuA: 0 });
+const CAMS = [newCam(), newCam()];
+const CAM = CAMS[0];
 const CAM_MODES = [{ d: 4.8, y: 2.1, la: 2.4, ly: 0.7 }, { d: 3.3, y: 1.45, la: 2.2, ly: 0.75 }, { d: -0.05, y: 1.08, la: 6, ly: 0.9 }];
+let camera2 = null;
+function setSplit(on) {
+  UI.split = on;
+  document.body.classList.toggle('split', on);
+  if (on && !camera2) camera2 = new THREE.PerspectiveCamera(62, 1, 0.1, 1400);
+  resizeCams();
+}
+function resizeCams() {
+  const w = window.innerWidth, h = window.innerHeight;
+  W.camera.aspect = UI.split ? w / (h / 2) : w / h; W.camera.updateProjectionMatrix();
+  if (camera2) { camera2.aspect = w / (h / 2); camera2.updateProjectionMatrix(); }
+}
 function updateCamera(dt) {
   const cam = W.camera;
   if (!R.on) {
@@ -498,28 +559,33 @@ function updateCamera(dt) {
     cam.fov = 50; cam.updateProjectionMatrix();
     return;
   }
-  const k = R.player, p = k.p;
-  const m = CAM_MODES[UI.camMode];
+  if (UI.screen === 'replay') { replayCamera(dt, cam); return; }
+  chaseCamera(dt, R.players[0], CAMS[0], cam, UI.split ? Math.min(UI.camMode, 1) : UI.camMode);
+  if (UI.split && R.players[1]) chaseCamera(dt, R.players[1], CAMS[1], camera2, Math.min(UI.camMode, 1));
+}
+function chaseCamera(dt, k, C, cam, mode) {
+  const p = k.p;
+  const m = CAM_MODES[mode];
   // el rumbo de la cámara sigue al kart con algo de retraso (y a la velocidad cuando derrapa)
   let want = p.h;
-  if (p.speed > 4 && UI.camMode !== 2) { const vh = Math.atan2(p.vx, p.vz); let d = vh - p.h; d = Math.atan2(Math.sin(d), Math.cos(d)); if (p.fwd > 0) want = p.h + d * 0.5; }
-  let dh = want - CAM.h; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
-  CAM.h += CAM.snap ? dh : dh * (1 - Math.exp(-dt * (UI.camMode === 2 ? 20 : 6)));
-  const fx = Math.sin(CAM.h), fz = Math.cos(CAM.h);
+  if (p.speed > 4 && mode !== 2) { const vh = Math.atan2(p.vx, p.vz); let d = vh - p.h; d = Math.atan2(Math.sin(d), Math.cos(d)); if (p.fwd > 0) want = p.h + d * 0.5; }
+  let dh = want - C.h; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+  C.h += C.snap ? dh : dh * (1 - Math.exp(-dt * (mode === 2 ? 20 : 6)));
+  const fx = Math.sin(C.h), fz = Math.cos(C.h);
   const sl = Math.tan(p.slope);
   const tp = new THREE.Vector3(p.x - fx * m.d, p.y + m.y - sl * m.d, p.z - fz * m.d);
   const tl = new THREE.Vector3(p.x + fx * m.la, p.y + m.ly + sl * m.la, p.z + fz * m.la);
-  if (UI.camMode === 2) { tp.set(p.x - Math.sin(p.h) * 0.12, p.y + m.y, p.z - Math.cos(p.h) * 0.12); tl.set(p.x + Math.sin(p.h) * m.la, p.y + m.ly + sl * m.la, p.z + Math.cos(p.h) * m.la); }
-  if (CAM.snap) { CAM.pos.copy(tp); CAM.look.copy(tl); CAM.snap = false; }
-  const s = UI.camMode === 2 ? 1 : 1 - Math.exp(-dt * 10);
-  CAM.pos.lerp(tp, s); CAM.pos.y = lerp(CAM.pos.y, tp.y, UI.camMode === 2 ? 1 : 1 - Math.exp(-dt * 16)); CAM.look.lerp(tl, UI.camMode === 2 ? 1 : 1 - Math.exp(-dt * 14));
-  cam.position.copy(CAM.pos);
+  if (mode === 2) { tp.set(p.x - Math.sin(p.h) * 0.12, p.y + m.y, p.z - Math.cos(p.h) * 0.12); tl.set(p.x + Math.sin(p.h) * m.la, p.y + m.ly + sl * m.la, p.z + Math.cos(p.h) * m.la); }
+  if (C.snap) { C.pos.copy(tp); C.look.copy(tl); C.snap = false; }
+  const s = mode === 2 ? 1 : 1 - Math.exp(-dt * 10);
+  C.pos.lerp(tp, s); C.pos.y = lerp(C.pos.y, tp.y, mode === 2 ? 1 : 1 - Math.exp(-dt * 16)); C.look.lerp(tl, mode === 2 ? 1 : 1 - Math.exp(-dt * 14));
+  cam.position.copy(C.pos);
   // temblor al chocar
   if (p.hitT > 0) cam.position.y += (Math.random() - 0.5) * p.hitT * 0.4;
-  cam.lookAt(CAM.look);
-  cam.fov = 62 + clamp(p.speed / KART.vmax, 0, 1) * 10;
+  cam.lookAt(C.look);
+  cam.fov = 62 + clamp(p.speed / KART.vmax, 0, 1) * 10 - (UI.split ? 8 : 0);
   cam.updateProjectionMatrix();
-  R.player.mesh.userData.head.visible = UI.camMode !== 2;
+  k.mesh.userData.head.visible = mode !== 2;
 }
 
 // ---------- HUD ----------
@@ -539,6 +605,7 @@ function drawMinimapBase() {
 const _v3 = new THREE.Vector3();
 function updateHud(dt) {
   const k = R.player; if (!k) return;
+  if (UI.split) splitHud();
   const T = R.T;
   // tiempos por sector de la vuelta actual
   const secs = k.sec, cls = k.secCls || [];
@@ -570,19 +637,28 @@ function updateHud(dt) {
     g.lineWidth = o.isPlayer ? 4 : 2; g.strokeStyle = o.isPlayer ? '#fff' : '#111'; g.stroke();
   }
   // nombres sobre los rivales
-  const w = window.innerWidth, h = window.innerHeight;
+  const w = window.innerWidth, h = UI.split && UI.screen !== 'replay' ? window.innerHeight / 2 : window.innerHeight;
   for (const o of R.karts) {
-    if (o.isPlayer) continue;
+    if (o.isPlayer && !UI.split) continue;
+    if (o === k) { const el = tagEls.get(o); if (el) el.style.display = 'none'; continue; }
     let el = tagEls.get(o);
     if (!el) { el = document.createElement('div'); el.className = 'tagname'; el.textContent = o.name; $('labels').appendChild(el); tagEls.set(o, el); }
     _v3.set(o.p.x, o.p.y + 1.55, o.p.z);
     const d = _v3.distanceTo(W.camera.position);
     _v3.project(W.camera);
-    const vis = save.opt.names && UI.screen === 'hud' && _v3.z < 1 && d < 70 && Math.abs(_v3.x) < 1.1 && Math.abs(_v3.y) < 1.1;
+    const vis = save.opt.names && (UI.screen === 'hud' || UI.screen === 'replay') && _v3.z < 1 && d < 70 && Math.abs(_v3.x) < 1.1 && Math.abs(_v3.y) < 1.1;
     el.style.display = vis ? '' : 'none';
     if (vis) { el.style.left = ((_v3.x + 1) / 2 * w) + 'px'; el.style.top = ((1 - _v3.y) / 2 * h) + 'px'; el.style.opacity = clamp(1.4 - d / 50, 0.25, 1); }
   }
   if (UI.hintT > 0) { UI.hintT -= dt; if (UI.hintT <= 0) $('hint').style.opacity = 0; }
+}
+// con pantalla dividida: un recuadro chico por jugador (posición, vuelta, tiempo y velocidad)
+function splitHud() {
+  R.players.forEach((k, i) => {
+    const el = $('ph' + i); if (!el) return;
+    const T = R.format === 'best' ? (k.bestLap == null ? '--.---' : fmtTime(k.bestLap)) : fmtTime(R.state === 'countdown' ? 0 : (k.finished ? k.finishTime : R.t));
+    el.innerHTML = `<b>${k.pos}<small>/${R.karts.length}</small></b><span>${esc(k.name)}<br>VUELTA ${clamp(k.lapsDone + 1, 1, R.laps)}/${R.laps} · ${T}</span><i>${Math.round(Math.abs(k.p.fwd) * 3.6)}<small> km/h</small></i>` + (k.wrong > 40 ? '<em>SENTIDO CONTRARIO</em>' : '');
+  });
 }
 function clearTags() { for (const el of tagEls.values()) el.remove(); tagEls.clear(); }
 
@@ -595,10 +671,16 @@ function handleEvents() {
     if (e.type === 'go') { SFX.beep(0); banner('¡YA!', 0.9); }
     if (e.type === 'hit') SFX.hit(e.v);
     if (e.type === 'bump') SFX.hit(e.v * 0.6);
-    if (e.type === 'lastlap') banner('ÚLTIMA VUELTA', 1.8);
-    if (e.type === 'lap' && e.cls === 'record') banner('<span class="purple">¡RÉCORD!</span><small>' + fmtTime(e.lt) + '</small>', 1.8);
-    else if (e.type === 'lap' && e.cls === 'best') banner('<span class="green">MEJOR VUELTA</span><small>' + fmtTime(e.lt) + '</small>', 1.5);
-    if (e.type === 'finish') { banner(e.pos === 1 ? '¡GANASTE!' : 'META · ' + e.pos + '.º', 2.5); }
+    const who = UI.split && e.pid != null ? (e.pid === 0 ? 'J1 · ' : 'J2 · ') : '';
+    if (e.type === 'lastlap') { banner(who + 'ÚLTIMA VUELTA', 1.8); SFX.say('¡Última vuelta!'); }
+    if (e.type === 'lap' && e.cls === 'record') { banner('<span class="purple">' + who + '¡RÉCORD!</span><small>' + fmtTime(e.lt) + '</small>', 1.8); SFX.say('¡Récord de la pista!'); }
+    else if (e.type === 'lap' && e.cls === 'best') banner('<span class="green">' + who + 'MEJOR VUELTA</span><small>' + fmtTime(e.lt) + '</small>', 1.5);
+    if (e.type === 'go') SFX.say('¡Largaron!');
+    if (e.type === 'overtake' && e.pos === 1) SFX.say((UI.split ? e.pid === 0 ? 'Jugador uno' : 'Jugador dos' : '¡Pasaste') + ' a la punta!');
+    if (e.type === 'finish') {
+      banner(who + (e.pos === 1 ? (UI.split ? '¡PRIMERO!' : '¡GANASTE!') : 'META · ' + e.pos + '.º'), 2.5);
+      SFX.say(e.pos === 1 ? '¡Bandera a cuadros! ¡' + (UI.split ? e.name + ' gana' : 'Ganaste') + '!' : 'Bandera a cuadros. Puesto ' + e.pos + '.');
+    }
     if (e.type === 'results') { setTimeout(() => { if (R.state === 'results') { clearTags(); showResults(); } }, 600); }
   }
   R.events.length = 0;
@@ -624,27 +706,30 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
   updateInput(dt);
-  if (R.on && !UI.paused && UI.screen !== 'results' && UI.screen !== 'standings') {
+  if (R.on && !UI.paused && UI.screen !== 'results' && UI.screen !== 'standings' && UI.screen !== 'replay') {
     acc += dt;
     let n = 0;
-    while (acc >= STEP && n < 12) { updateRace(STEP, INPUT); acc -= STEP; n++; }
+    while (acc >= STEP && n < 12) { updateRace(STEP, [INPUT, INPUT2]); acc -= STEP; n++; }
     if (n >= 12) acc = 0;
     handleEvents();
     updateLights();
-    const p = R.player.p;
-    let near = 999; for (const o of R.karts) if (!o.isPlayer) near = Math.min(near, Math.hypot(o.p.x - p.x, o.p.z - p.z));
-    SFX.drive(Math.abs(p.fwd), R.state === 'countdown' ? 0.2 : R.player.inp ? R.player.inp.throttle : 0, p.slip, near, true);
+    const pk = R.player, p = pk.p;
+    let near = 999, ns = 0; for (const o of R.karts) if (o !== pk) { const d = Math.hypot(o.p.x - p.x, o.p.z - p.z); if (d < near) { near = d; ns = Math.abs(o.p.fwd); } }
+    let crowd = 0; for (const st of W.stands || []) crowd = Math.max(crowd, clamp(1 - (Math.hypot(st.x - p.x, st.z - p.z) - st.len * 0.4) / 45, 0, 1));
+    SFX.drive(Math.abs(p.fwd), R.state === 'countdown' ? 0.2 : pk.inp ? pk.inp.throttle : 0, p.slip, near, true, { rivalSpeed: ns, tunnel: R.T.tunnel && R.T.tunnel[pk.idx] ? 1 : 0, crowd: crowd * (R.state === 'countdown' ? 0.6 : 1) });
   } else if (R.on && R.state === 'results') {
     // los karts siguen dando vueltas detrás de los resultados
-    acc += dt; while (acc >= STEP) { updateRace(STEP, INPUT); acc -= STEP; }
+    acc += dt; while (acc >= STEP) { updateRace(STEP, [INPUT, INPUT2]); acc -= STEP; }
     R.events.length = 0;
+  } else if (R.on && UI.screen === 'replay') {
+    updateReplay(dt);
   }
   if (R.on) updateHud(dt);
   if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) $('banner').classList.remove('show'); }
   if (UI.toastT > 0) { UI.toastT -= dt; if (UI.toastT <= 0) $('toast').classList.remove('show'); }
   updateCamera(dt);
   // la sombra sigue a la cámara
-  const c = R.on ? R.player.p : { x: 0, z: 0 };
+  const c = !R.on ? { x: 0, z: 0 } : UI.screen === 'replay' ? R.karts[RP.target].mesh.position : R.player.p;
   const sd = W.sunDir || new THREE.Vector3(0.3, 1, 0.3);
   W.sun.target.position.set(c.x, 0, c.z);
   W.sun.position.set(c.x + sd.x * 60, sd.y * 60, c.z + sd.z * 60);
@@ -656,7 +741,14 @@ function frame(now) {
     UI.slowT = Math.max(0, UI.slowT);
     if (UI.slowT > 4 && !navigator.webdriver) { POST.on = false; toast('Bajamos efectos para que el juego vaya fluido'); }
   }
-  renderFrame(W.scene, W.camera);
+  if (UI.split && R.on && camera2 && UI.screen !== 'replay') {
+    // pantalla dividida: J1 arriba, J2 abajo (sin posprocesado)
+    const r = W.renderer, w = window.innerWidth, h = window.innerHeight;
+    r.setScissorTest(true);
+    r.setViewport(0, h / 2, w, h / 2); r.setScissor(0, h / 2, w, h / 2); r.render(W.scene, W.camera);
+    r.setViewport(0, 0, w, h / 2); r.setScissor(0, 0, w, h / 2); r.render(W.scene, camera2);
+    r.setScissorTest(false); r.setViewport(0, 0, w, h);
+  } else renderFrame(W.scene, W.camera);
 }
 
 // ---------- arranque ----------
@@ -664,7 +756,7 @@ function boot() {
   initRenderer($('game'));
   resizeRenderer();
   initPost();
-  window.addEventListener('resize', () => { resizeRenderer(); resizePost(); });
+  window.addEventListener('resize', () => { resizeRenderer(); resizePost(); resizeCams(); });
   buildGarage();
   FX.init(W.scene);
   UI.camMode = save.opt.cam | 0;
@@ -682,8 +774,10 @@ function boot() {
     if (a === 'restart') restart();
     if (a === 'optionsInRace') { SFX.click(); openOptions(); }
     if (a === 'quit') { UI.champ = null; clearTags(); goTitle(); }
+    if (a === 'editor') { SFX.click(); openEditor(); }
   }));
   $('btnGo').onclick = go;
+  initEditor();
   document.querySelectorAll('#gTabs button').forEach(b => b.onclick = () => { SFX.click(); UI.tab = b.dataset.tab; renderGarage(); });
   $('gName').addEventListener('change', () => { save.name = ($('gName').value || 'Piloto').trim().slice(0, 14) || 'Piloto'; persist(); refreshProfile(); });
   $('gNum').addEventListener('change', () => { save.eq.num = clamp(parseInt($('gNum').value, 10) || 7, 1, 99); $('gNum').value = save.eq.num; persist(); refreshShowKart(); });
@@ -691,6 +785,7 @@ function boot() {
   $('oQ').addEventListener('change', () => { save.opt.quality = $('oQ').value; persist(); location.reload(); });
   $('oCam').addEventListener('change', () => { UI.camMode = save.opt.cam = +$('oCam').value; persist(); });
   $('oNames').addEventListener('change', () => { save.opt.names = $('oNames').value === '1'; persist(); });
+  $('oVoice').addEventListener('change', () => { save.opt.voice = $('oVoice').value === '1'; persist(); });
   $('oReset').addEventListener('click', () => {
     const b = $('oReset');
     if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { delete b.dataset.sure; b.textContent = 'Borrar progreso'; }, 3000); return; }
