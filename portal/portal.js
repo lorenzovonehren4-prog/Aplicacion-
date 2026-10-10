@@ -1,6 +1,6 @@
 'use strict';
 // Anonymous Games: el portal que junta todos los juegos.
-// Rutas por hash: #/ (inicio) y #/juego/<id> (reproductor). Sin compilación ni
+// Rutas por ancla: #inicio, #biblioteca, #logros y #juego-<id> (reproductor). Sin compilación ni
 // módulos, para que también abra con doble clic (file://).
 
 /* ---------- utilidades ---------- */
@@ -206,12 +206,13 @@ function paintMe() {
 
 /* ---------- vistas ---------- */
 const view = $('#view');
-const UI = { cat: 'todos', q: '', hero: 0, game: null, frame: null, playing: false };
+const UI = { cat: 'todos', q: '', sel: 0, game: null, frame: null, playing: false, autoplay: false, tab: 'inicio' };
+const gameHref = g => '#juego-' + g.id;
 
 function tileHTML(g, size = '') {
   const p = prog(g.id), fav = P.favs.includes(g.id);
   const sub = p ? p.label : g.tagline;
-  return `<a class="tile ${size}" href="#/juego/${g.id}" data-tile="${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="Jugar ${esc(g.title)}">
+  return `<a class="tile ${size}" href="${gameHref(g)}" data-tile="${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="Jugar ${esc(g.title)}">
     <span class="tile__art"><img class="tile__img" src="${g.cover}" alt="" loading="lazy" decoding="async"><img class="tile__alt" src="${g.alt}" alt="" loading="lazy" decoding="async"></span>
     ${g.badge ? `<span class="tile__badge">${g.badge}</span>` : ''}
     ${fav ? `<span class="tile__fav">${ic('heart')}</span>` : ''}
@@ -219,13 +220,6 @@ function tileHTML(g, size = '') {
     <span class="tile__meta"><b>${esc(g.title)}</b><small>${esc(sub)}</small></span>
     ${p && p.pct ? `<span class="tile__prog"><i style="width:${Math.max(4, Math.round(p.pct * 100))}%"></i></span>` : ''}
   </a>`;
-}
-function soonHTML(s) {
-  return `<div class="tile tile--soon" style="--c:${s.color}" aria-label="Próximamente: ${esc(s.title)}">
-    <span class="soon__mask">${ic('mask')}</span><span class="soon__q">?</span>
-    <span class="tile__meta"><b>${esc(s.title)}</b><small>${esc(s.hint)}</small></span>
-    <span class="soon__lock">${ic('lock')} Próximamente</span>
-  </div>`;
 }
 
 function filtered() {
@@ -238,35 +232,65 @@ function filtered() {
   });
 }
 
-function renderHome() {
+function leaveGame(title) {
   stopGame();
   UI.game = null;
-  document.title = 'Anonymous Games';
-  const searching = UI.q.trim().length > 0;
+  document.title = title ? `${title} · Anonymous Games` : 'Anonymous Games';
+}
+function paintTabs() {
+  for (const a of $$('.tabs a')) {
+    const on = a.dataset.tab === UI.tab;
+    a.classList.toggle('is-on', on);
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  }
+}
+
+/* ---------- inicio: menú de consola ---------- */
+// El juego elegido llena la pantalla; abajo, el estante con todos los juegos.
+function renderDash() {
+  leaveGame();
+  UI.tab = 'inicio';
   const recent = P.recent.map(gameById).filter(Boolean);
   const L = levelOf(P.xp);
   const nAch = Object.keys(P.ach).length;
   view.innerHTML = `
-    ${searching ? '' : heroHTML()}
-    <nav class="chips" aria-label="Categorías">${CATS.map(c => {
-      const n = c.id === 'todos' ? GAMES.length : c.id === 'favs' ? P.favs.length : GAMES.filter(g => g.cats.includes(c.id)).length;
-      return `<button class="chip ${UI.cat === c.id ? 'is-on' : ''}" data-cat="${c.id}" type="button" aria-pressed="${UI.cat === c.id}">${ic(c.icon)}<span>${c.name}</span><em>${n}</em></button>`;
-    }).join('')}</nav>
-    ${!searching && recent.length && UI.cat === 'todos' ? `<section class="sec">
+    <section class="dash" id="dash" aria-label="Juegos">
+      <div class="dash__bg" aria-hidden="true"><img class="dash__art" id="art0" alt=""><img class="dash__art" id="art1" alt=""></div>
+      <div class="dash__shade" aria-hidden="true"></div>
+      <div class="dash__info" id="dashInfo" aria-live="polite"></div>
+      <div class="shelf" id="shelf" role="listbox" aria-label="Elige un juego" tabindex="0">
+        ${GAMES.map((g, i) => {
+          const p = prog(g.id), fav = P.favs.includes(g.id);
+          return `<button class="gcard" type="button" role="option" data-sel="${i}" id="card-${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="${esc(g.title)}" tabindex="-1">
+            <img src="${g.cover}" alt="" ${i > 4 ? 'loading="lazy"' : ''} decoding="async">
+            ${g.badge ? `<span class="gcard__badge">${g.badge}</span>` : ''}
+            ${fav ? `<span class="gcard__fav">${ic('heart')}</span>` : ''}
+            ${p && p.pct ? `<span class="gcard__prog"><i style="width:${Math.max(4, Math.round(p.pct * 100))}%"></i></span>` : ''}
+            <span class="gcard__name">${esc(g.title)}</span>
+          </button>`;
+        }).join('')}
+        <a class="gcard gcard--all" href="#biblioteca" tabindex="-1">${ic('grid')}<span>Biblioteca</span><small>${GAMES.length} juegos</small></a>
+      </div>
+      <div class="hints" aria-hidden="true">
+        <span><kbd>←</kbd><kbd>→</kbd> Elegir</span>
+        <span><kbd>Enter</kbd> Jugar</span>
+        <span><kbd>I</kbd> Detalles</span>
+        <span><kbd>F</kbd> Favorito</span>
+        <span><kbd>Q</kbd><kbd>E</kbd> Pestañas</span>
+        <span class="hints__pad" id="padHint" hidden>${ic('gamepad')} Mando conectado</span>
+      </div>
+    </section>
+    ${recent.length ? `<section class="sec">
       <h2 class="sec__title">${ic('clock')} Sigue jugando</h2>
       <div class="row">${recent.map(g => {
         const p = prog(g.id), st = gstat(g.id);
-        return `<a class="cont" href="#/juego/${g.id}" style="--c:${g.color}">
+        return `<a class="cont" href="${gameHref(g)}" data-play="${g.id}" style="--c:${g.color}">
           <img src="${g.cover}" alt="" loading="lazy">
           <span class="cont__txt"><b>${esc(g.title)}</b><small>${esc(p ? p.label : 'Jugado ' + fmtTime(st.time))}</small>
           ${p && p.pct ? `<span class="tile__prog static"><i style="width:${Math.max(4, Math.round(p.pct * 100))}%"></i></span>` : ''}</span>
           <span class="cont__go">${ic('play')}</span></a>`;
       }).join('')}</div></section>` : ''}
     <section class="sec">
-      <h2 class="sec__title">${searching ? `${ic('search')} Resultados para “${esc(UI.q.trim())}”` : `${ic('gamepad')} ${UI.cat === 'todos' ? 'Todos los juegos' : esc(CATS.find(c => c.id === UI.cat).name)}`}</h2>
-      ${gridHTML()}
-    </section>
-    ${searching ? '' : `<section class="sec">
       <h2 class="sec__title">${ic('trophy')} Tu sala</h2>
       <div class="hall">
         <button class="hall__me" type="button" data-act="profile">
@@ -275,70 +299,114 @@ function renderHome() {
         </button>
         <div class="hall__stat">${ic('clock')}<b>${fmtTime(totalTime())}</b><small>jugando</small></div>
         <div class="hall__stat">${ic('gamepad')}<b>${playedCount()}/${GAMES.length}</b><small>juegos probados</small></div>
-        <button class="hall__stat" type="button" data-act="profile">${ic('trophy')}<b>${nAch}/${ACH.length}</b><small>insignias</small></button>
+        <a class="hall__stat" href="#logros">${ic('trophy')}<b>${nAch}/${ACH.length}</b><small>insignias</small></a>
       </div>
-      <div class="badges">${ACH.map(a => `<span class="badge ${P.ach[a.id] ? 'is-on' : ''}" title="${esc(a.name)}: ${esc(a.desc)}">${ic(P.ach[a.id] ? a.icon : 'lock')}</span>`).join('')}</div>
-    </section>`}
-  `;
+    </section>`;
   bindTiles();
-  if (!searching) startHero();
+  const shelf = $('#shelf');
+  for (const c of $$('.gcard[data-sel]', shelf)) {
+    c.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') setSel(+c.dataset.sel, { center: false }); });
+  }
+  shelf.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { shelf.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  setSel(UI.sel, { quiet: true, instant: true });
+  paintPadHint();
+}
+
+let artFlip = 0;
+function setSel(i, { quiet = false, instant = false, center = true } = {}) {
+  const dash = $('#dash'); if (!dash) return;
+  i = (i + GAMES.length) % GAMES.length;
+  const changed = i !== UI.sel || instant;
+  UI.sel = i;
+  const g = GAMES[i];
+  if (!changed) return;
+  if (!quiet) SFX.tick();
+  dash.style.setProperty('--c', g.color);
+  dash.style.setProperty('--c2', g.color2);
+  // Dos capas de fondo que se cruzan: la nueva entra mientras la vieja se apaga.
+  const next = $('#art' + (artFlip ^ 1)), prev = $('#art' + artFlip);
+  next.src = g.hero || g.cover;
+  next.classList.add('is-on'); prev.classList.remove('is-on');
+  artFlip ^= 1;
+  for (const c of $$('.gcard[data-sel]')) {
+    const on = +c.dataset.sel === i;
+    c.classList.toggle('is-sel', on);
+    c.setAttribute('aria-selected', String(on));
+  }
+  const card = $('#card-' + g.id);
+  const shelf = $('#shelf');
+  // Con teclado o mando la carta elegida va al centro. Con el mouse sólo se mueve el
+  // estante si la carta quedó cortada: si no, las cartas se correrían bajo el puntero.
+  const left = card.offsetLeft - (shelf.clientWidth - card.offsetWidth) / 2;
+  const cut = card.offsetLeft < shelf.scrollLeft || card.offsetLeft + card.offsetWidth > shelf.scrollLeft + shelf.clientWidth;
+  if (center || cut) shelf.scrollTo({ left, behavior: instant || REDUCED ? 'auto' : 'smooth' });
+  shelf.setAttribute('aria-activedescendant', card.id);
+  const p = prog(g.id), st = gstat(g.id), fav = P.favs.includes(g.id);
+  $('#dashInfo').innerHTML = `
+    <div class="dash__kicker">${g.badge ? `<span class="pill">${g.badge}</span>` : ''}<span>${esc(g.tags.join(' · '))}</span></div>
+    <h1 class="dash__title">${esc(g.title)}</h1>
+    <p class="dash__tag">${esc(g.tagline)}</p>
+    <div class="dash__meta">
+      ${p ? `<span class="meta meta--prog">${ic('star')}${esc(p.label)}</span>` : `<span class="meta">${ic('bolt')}Nuevo para ti</span>`}
+      ${st.time ? `<span class="meta">${ic('clock')}${fmtTime(st.time)} jugado</span>` : ''}
+      ${p && p.pct ? `<span class="meta meta--bar"><i style="width:${Math.max(4, Math.round(p.pct * 100))}%"></i></span>` : ''}
+    </div>
+    <div class="dash__cta">
+      <a class="btn btn--play" href="${gameHref(g)}" data-play="${g.id}">${ic('play')} ${st.plays ? 'Continuar' : 'Jugar'}</a>
+      <a class="btn btn--ghost" href="${gameHref(g)}">${ic('grid')}<span>Detalles</span></a>
+      <button class="iconbtn lg ${fav ? 'is-fav' : ''}" type="button" data-fav="${g.id}" aria-pressed="${fav}" aria-label="Favorito" title="Favorito (F)">${ic(fav ? 'heart' : 'heartO')}</button>
+    </div>`;
+  const info = $('#dashInfo');
+  info.classList.remove('swap'); void info.offsetWidth; info.classList.add('swap');
+}
+
+/* ---------- biblioteca ---------- */
+function renderLibrary() {
+  leaveGame('Biblioteca');
+  UI.tab = 'biblioteca';
+  const searching = UI.q.trim().length > 0;
+  view.innerHTML = `
+    <header class="pagehead">
+      <h1>${searching ? `Resultados para “${esc(UI.q.trim())}”` : 'Biblioteca'}</h1>
+      <p>${GAMES.length} juegos, gratis y sin descargas. Tu progreso de cada uno aparece en su ficha.</p>
+    </header>
+    <nav class="chips" aria-label="Categorías">${CATS.map(c => {
+      const n = c.id === 'todos' ? GAMES.length : c.id === 'favs' ? P.favs.length : GAMES.filter(g => g.cats.includes(c.id)).length;
+      return `<button class="chip ${UI.cat === c.id ? 'is-on' : ''}" data-cat="${c.id}" type="button" aria-pressed="${UI.cat === c.id}">${ic(c.icon)}<span>${c.name}</span><em>${n}</em></button>`;
+    }).join('')}</nav>
+    <section class="sec">${gridHTML()}</section>`;
+  bindTiles();
 }
 
 function gridHTML() {
   const list = filtered();
   if (!list.length) {
-    return `<div class="empty">${ic('mask')}<b>${UI.cat === 'favs' ? 'Aún no tienes favoritos' : 'No encontramos ese juego'}</b><small>${UI.cat === 'favs' ? 'Toca el corazón en cualquier juego para guardarlo aquí.' : 'Prueba con “carreras”, “puzzles” o “3D”.'}</small></div>`;
+    return `<div class="empty">${ic('mask')}<b>${UI.cat === 'favs' ? 'Aún no tienes favoritos' : 'No encontramos ese juego'}</b><small>${UI.cat === 'favs' ? 'Toca el corazón en cualquier juego para guardarlo aquí.' : 'Prueba con “carreras”, “zombis” o “3D”.'}</small></div>`;
   }
-  const sizes = ['tile--w3'];
-  const tiles = list.map((g, i) => tileHTML(g, sizes[i] || 'tile--w2'));
-  if (UI.cat === 'todos' && !UI.q.trim()) tiles.push(...SOON.map(soonHTML));
-  return `<div class="grid">${tiles.join('')}</div>`;
+  return `<div class="grid">${list.map((g, i) => tileHTML(g, i === 0 ? 'tile--w3' : 'tile--w2')).join('')}</div>`;
 }
 
-/* ---------- carrusel destacado ---------- */
-const HERO = GAMES.filter(g => g.featured);
-function heroHTML() {
-  return `<section class="hero" id="hero" aria-roledescription="carrusel" aria-label="Destacados">
-    ${HERO.map((g, i) => `<article class="slide ${i === UI.hero ? 'is-on' : ''}" style="--c:${g.color};--c2:${g.color2}" aria-hidden="${i !== UI.hero}">
-      <img class="slide__bg" src="${g.hero || g.cover}" alt="" ${i ? 'loading="lazy"' : ''}>
-      <div class="slide__shade"></div>
-      <div class="slide__body">
-        <span class="kicker">${ic('fire')} ${g.badge || 'Destacado'}</span>
-        <h2 class="slide__title">${esc(g.title)}</h2>
-        <p class="slide__tag">${esc(g.tagline)}</p>
-        <div class="slide__tags">${g.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>
-        <div class="slide__cta">
-          <a class="btn btn--play" href="#/juego/${g.id}" tabindex="${i === UI.hero ? 0 : -1}">${ic('play')} Jugar ahora</a>
-          <button class="btn btn--ghost" type="button" data-fav="${g.id}" tabindex="${i === UI.hero ? 0 : -1}" aria-pressed="${P.favs.includes(g.id)}">${ic(P.favs.includes(g.id) ? 'heart' : 'heartO')}<span>${P.favs.includes(g.id) ? 'En favoritos' : 'Favorito'}</span></button>
-        </div>
+/* ---------- logros ---------- */
+function renderAch() {
+  leaveGame('Logros');
+  UI.tab = 'logros';
+  const L = levelOf(P.xp), n = Object.keys(P.ach).length, pct = Math.round(n / ACH.length * 100);
+  view.innerHTML = `
+    <header class="pagehead pagehead--ach">
+      <div class="ring" style="--p:${pct}"><b>${pct}%</b><small>${n}/${ACH.length}</small></div>
+      <div>
+        <h1>Logros</h1>
+        <p>Nivel ${L.lvl} · ${esc(L.title)}. Cada insignia da ${ACH_XP} XP; muchas se ganan dentro de los juegos.</p>
+        <span class="xpbar"><i style="width:${Math.round(L.cur / L.need * 100)}%"></i></span>
       </div>
-    </article>`).join('')}
-    <div class="hero__thumbs" role="tablist">${HERO.map((g, i) => `<button class="hthumb ${i === UI.hero ? 'is-on' : ''}" type="button" role="tab" aria-selected="${i === UI.hero}" data-hero="${i}" style="--c:${g.color}">
-      <img src="${g.cover}" alt="" loading="lazy"><span>${esc(g.title)}</span><i class="hthumb__bar"></i></button>`).join('')}</div>
-  </section>`;
-}
-function setHero(i) {
-  const hero = $('#hero'); if (!hero) return;
-  UI.hero = (i + HERO.length) % HERO.length;
-  $$('.slide', hero).forEach((s, k) => {
-    const on = k === UI.hero;
-    s.classList.toggle('is-on', on); s.setAttribute('aria-hidden', String(!on));
-    $$('a,button', s).forEach(b => b.tabIndex = on ? 0 : -1);
-  });
-  $$('.hthumb', hero).forEach((b, k) => {
-    b.classList.remove('is-on'); b.setAttribute('aria-selected', String(k === UI.hero));
-    if (k === UI.hero) { void b.offsetWidth; b.classList.add('is-on'); }
-  });
-}
-function startHero() {
-  const hero = $('#hero'); if (!hero) return;
-  // La barra de la miniatura activa es una animación CSS: cuando termina, pasa a la siguiente.
-  hero.addEventListener('animationend', e => { if (e.target.classList.contains('hthumb__bar')) setHero(UI.hero + 1); });
+    </header>
+    <section class="sec"><div class="achgrid">${ACH.map(a => { const on = !!P.ach[a.id]; return `<div class="ach ${on ? 'is-on' : ''}"><span class="ach__ico">${ic(on ? a.icon : 'lock')}</span><span><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></span>${on ? `<em>+${ACH_XP}</em>` : ''}</div>`; }).join('')}</div></section>`;
+  P.seenAch = n; persist(); paintMe();
 }
 
 /* ---------- efectos de las fichas ---------- */
 function bindTiles() {
-  for (const t of $$('.tile[data-tile], .cont, .hthumb, .mini')) {
+  for (const t of $$('.tile[data-tile], .cont, .mini')) {
     t.addEventListener('pointerenter', () => SFX.tick());
     if (REDUCED || !t.classList.contains('tile')) continue;
     t.addEventListener('pointermove', e => {
@@ -356,6 +424,7 @@ function bindTiles() {
 function renderGame(g) {
   stopGame();
   UI.game = g;
+  UI.tab = '';
   document.title = `${g.title} · Anonymous Games`;
   const p = prog(g.id), st = gstat(g.id), fav = P.favs.includes(g.id);
   const blocked = g.needsServer && location.protocol === 'file:';
@@ -385,7 +454,7 @@ function renderGame(g) {
           <button class="iconbtn lg ${fav ? 'is-fav' : ''}" type="button" data-fav="${g.id}" aria-pressed="${fav}" aria-label="Favorito" title="Favorito">${ic(fav ? 'heart' : 'heartO')}</button>
           <button class="iconbtn lg" type="button" data-act="restart" aria-label="Reiniciar" title="Reiniciar">${ic('restart')}</button>
           <button class="iconbtn lg" type="button" data-act="full" aria-label="Pantalla completa" title="Pantalla completa (F)">${ic('full')}</button>
-          <a class="btn btn--ghost sm" href="#/">${ic('back')}<span>Inicio</span></a>
+          <a class="btn btn--ghost sm" href="#inicio">${ic('back')}<span>Inicio</span></a>
         </div>
       </div>
 
@@ -413,13 +482,14 @@ function renderGame(g) {
 
     <aside class="game__side">
       <h3 class="sec__title">${ic('gamepad')} Más juegos</h3>
-      ${others.slice(0, 6).map(o => `<a class="mini" href="#/juego/${o.id}" style="--c:${o.color}"><img src="${o.cover}" alt="" loading="lazy"><span><b>${esc(o.title)}</b><small>${esc(o.tagline)}</small></span></a>`).join('')}
-      ${SOON.slice(0, 2).map(s => `<div class="mini mini--soon" style="--c:${s.color}"><span class="mini__q">${ic('mask')}</span><span><b>${esc(s.title)}</b><small>Próximamente</small></span></div>`).join('')}
+      ${others.slice(0, 6).map(o => `<a class="mini" href="${gameHref(o)}" style="--c:${o.color}"><img src="${o.cover}" alt="" loading="lazy"><span><b>${esc(o.title)}</b><small>${esc(o.tagline)}</small></span></a>`).join('')}
     </aside>
   </section>`;
   bindTiles();
   const btn = $('#btnPlay');
   if (btn) btn.addEventListener('click', () => startGame(g));
+  if (UI.autoplay && btn) { UI.autoplay = false; startGame(g); }
+  UI.autoplay = false;
   window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
 }
 
@@ -560,7 +630,7 @@ function renderDrawer() {
    "Classes": el sitio va dentro de un iframe que ocupa toda la ventana. */
 function openBlank() {
   SFX.click();
-  const url = location.href.split('#')[0] + (UI.game ? '#/juego/' + UI.game.id : '#/');
+  const url = location.href.split('#')[0] + (UI.game ? gameHref(UI.game) : '#' + (UI.tab || 'inicio'));
   let w = null;
   try { w = window.open('about:blank', '_blank'); } catch (e) { w = null; }
   if (!w) { toast('No se pudo abrir la pestaña', 'Permite las ventanas emergentes de esta página y vuelve a intentarlo.', 'blank'); return; }
@@ -591,23 +661,79 @@ function playIntro(force) {
 }
 
 /* ---------- enrutado ---------- */
+// Anclas simples (#inicio, #biblioteca, #logros, #juego-<id>): son las únicas que
+// el visor de Claude deja pasar.
 function route() {
-  const m = location.hash.match(/^#\/juego\/([\w-]+)/);
-  const g = m && gameById(m[1]);
+  const h = location.hash.replace(/^#\/?/, '');
+  const g = h.startsWith('juego-') && gameById(h.slice(6));
   closeDrawer();
-  if (g) renderGame(g); else renderHome();
+  if (g) renderGame(g);
+  else if (h === 'biblioteca') renderLibrary();
+  else if (h === 'logros') renderAch();
+  else renderDash();
+  paintTabs();
   view.classList.remove('enter'); void view.offsetWidth; view.classList.add('enter');
 }
+
+/* ---------- jugar, pestañas y mando ---------- */
+function playGame(g) {
+  if (!g) return;
+  UI.autoplay = true;
+  if (location.hash === gameHref(g)) route(); else location.hash = gameHref(g);
+}
+function playSel() { playGame(GAMES[UI.sel]); }
+const TABS = ['inicio', 'biblioteca', 'logros'];
+function switchTab(d) {
+  const i = Math.max(0, TABS.indexOf(UI.tab || 'inicio'));
+  SFX.click();
+  location.hash = '#' + TABS[(i + d + TABS.length) % TABS.length];
+}
+function paintPadHint() {
+  const h = $('#padHint'); if (!h) return;
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  h.hidden = !pads.length;
+}
+// Con el menú abierto se lee el mando: cruceta o stick para elegir, A jugar, B volver,
+// Y favorito, LB/RB cambian de pestaña. Mientras se juega no se lee (el juego lo usa).
+(function padLoop() {
+  const last = {};
+  let repeatAt = 0;
+  const press = (k, on, fn) => { if (on && !last[k]) fn(); last[k] = on; };
+  function tick(t) {
+    requestAnimationFrame(tick);
+    if (UI.playing || !navigator.getGamepads) return;
+    const gp = [...navigator.getGamepads()].find(Boolean);
+    if (!gp) return;
+    const b = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+    const x = gp.axes[0] || 0;
+    const dir = b(15) || x > 0.6 ? 1 : b(14) || x < -0.6 ? -1 : 0;
+    if (dir && $('#dash')) { if (t > repeatAt) { setSel(UI.sel + dir); repeatAt = t + (last.dir === dir ? 140 : 320); } }
+    last.dir = dir;
+    press('a', b(0), () => { if ($('#dash')) playSel(); else if (UI.game && !UI.frame) startGame(UI.game); });
+    press('b', b(1), () => { if (!$('#drawer').hidden) closeDrawer(); else if (UI.game || UI.tab !== 'inicio') location.hash = '#inicio'; });
+    press('y', b(3), () => { const f = $('#dashInfo [data-fav]'); if (f) f.click(); });
+    press('lb', b(4), () => switchTab(-1));
+    press('rb', b(5), () => switchTab(1));
+  }
+  requestAnimationFrame(tick);
+  addEventListener('gamepadconnected', () => { paintPadHint(); toast('Mando conectado', 'Cruceta para elegir, A para jugar', 'gamepad'); });
+  addEventListener('gamepaddisconnected', paintPadHint);
+})();
+
+/* ---------- reloj ---------- */
+function paintClock() { const c = $('#clock'); if (c) c.textContent = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }); }
+setInterval(paintClock, 15000);
 
 /* ---------- eventos globales ---------- */
 document.addEventListener('pointerdown', () => SFX.unlock(), { once: true, capture: true });
 window.addEventListener('hashchange', route);
 
 view.addEventListener('click', e => {
-  const t = e.target.closest('[data-cat],[data-fav],[data-hero],[data-act]');
+  const t = e.target.closest('[data-cat],[data-fav],[data-sel],[data-play],[data-act]');
   if (!t) return;
-  if (t.dataset.cat) { UI.cat = t.dataset.cat; SFX.click(); renderHome(); return; }
-  if (t.dataset.hero) { SFX.click(); setHero(+t.dataset.hero); return; }
+  if (t.dataset.cat) { UI.cat = t.dataset.cat; SFX.click(); renderLibrary(); return; }
+  if (t.dataset.sel) { const i = +t.dataset.sel; if (i === UI.sel && t.classList.contains('is-sel')) playSel(); else { SFX.click(); setSel(i); } return; }
+  if (t.dataset.play) { e.preventDefault(); playGame(gameById(t.dataset.play)); return; }
   if (t.dataset.fav) {
     const id = t.dataset.fav, on = !P.favs.includes(id);
     P.favs = on ? [...P.favs, id] : P.favs.filter(x => x !== id);
@@ -617,6 +743,7 @@ view.addEventListener('click', e => {
     t.querySelector('.ic').outerHTML = ic(on ? 'heart' : 'heartO');
     const label = t.querySelector('span:not(.ic)'); if (label) label.textContent = on ? 'En favoritos' : 'Favorito';
     if (on) toast('Guardado en favoritos', gameById(id).title, 'heart');
+    if ($('#card-' + id)) { const card = $('#card-' + id); const f = card.querySelector('.gcard__fav'); if (on && !f) card.insertAdjacentHTML('beforeend', `<span class="gcard__fav">${ic('heart')}</span>`); if (!on && f) f.remove(); }
     checkAch();
     return;
   }
@@ -629,7 +756,7 @@ view.addEventListener('click', e => {
 $('#drawerBody').addEventListener('click', e => {
   const t = e.target.closest('[data-av],[data-act]');
   if (!t) return;
-  if (t.dataset.av) { P.avatar = +t.dataset.av; P.customized = true; persist(); SFX.click(); paintMe(); renderDrawer(); checkAch(); if (!UI.game) renderHome(); return; }
+  if (t.dataset.av) { P.avatar = +t.dataset.av; P.customized = true; persist(); SFX.click(); paintMe(); renderDrawer(); checkAch(); if (!UI.game) route(); return; }
   const act = t.dataset.act;
   if (act === 'sound') { P.sound = !P.sound; persist(); paintMe(); renderDrawer(); SFX.click(); }
   else if (act === 'blank') openBlank();
@@ -640,7 +767,7 @@ $('#drawerBody').addEventListener('click', e => {
       try { localStorage.removeItem(KEY); } catch (e) { /* nada */ }
       P = freshProfile(); persist(); checkAch(true); paintMe(); renderDrawer();
       toast('Perfil borrado', 'Empiezas de cero como un nuevo anónimo', 'mask');
-      if (!UI.game) renderHome();
+      if (!UI.game) route();
     } else {
       t.classList.add('armed'); $('#wipeTxt').textContent = 'Toca otra vez para borrar';
       setTimeout(() => { if (t.isConnected) { t.classList.remove('armed'); $('#wipeTxt').textContent = 'Borrar mi perfil del portal'; } }, 3000);
@@ -658,12 +785,12 @@ $('#btnSearchMobile').addEventListener('click', () => { $('#top').classList.togg
 const q = $('#q');
 q.addEventListener('input', () => {
   UI.q = q.value;
-  if (location.hash.startsWith('#/juego/')) { location.hash = '#/'; return; }
-  renderHome();
+  if (UI.tab !== 'biblioteca') { UI.cat = 'todos'; location.hash = '#biblioteca'; return; }
+  renderLibrary();
 });
 q.addEventListener('keydown', e => {
-  if (e.key === 'Enter') { const g = filtered()[0]; if (g) { location.hash = '#/juego/' + g.id; q.blur(); $('#top').classList.remove('searching'); } }
-  if (e.key === 'Escape') { q.value = ''; UI.q = ''; q.blur(); $('#top').classList.remove('searching'); renderHome(); }
+  if (e.key === 'Enter') { const g = filtered()[0]; if (g) { location.hash = gameHref(g); q.blur(); $('#top').classList.remove('searching'); } }
+  if (e.key === 'Escape') { q.value = ''; UI.q = ''; q.blur(); $('#top').classList.remove('searching'); if (UI.tab === 'biblioteca') renderLibrary(); }
 });
 
 document.addEventListener('keydown', e => {
@@ -673,7 +800,16 @@ document.addEventListener('keydown', e => {
   if (e.key === '/') { e.preventDefault(); $('#top').classList.add('searching'); q.focus(); q.select(); }
   else if (e.key === 'm' || e.key === 'M') $('#btnSound').click();
   else if ((e.key === 'f' || e.key === 'F') && UI.game) toggleFull();
-  else if (!UI.game && $('#hero') && (e.key === 'ArrowRight' || e.key === 'ArrowLeft') && document.activeElement.closest && document.activeElement.closest('#hero')) setHero(UI.hero + (e.key === 'ArrowRight' ? 1 : -1));
+  else if (e.key === 'q' || e.key === 'Q') switchTab(-1);
+  else if (e.key === 'e' || e.key === 'E') switchTab(1);
+  else if ($('#dash') && $('#drawer').hidden) {
+    const inDash = !document.activeElement || document.activeElement === document.body || document.activeElement.closest('#dash');
+    if (!inDash) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); setSel(UI.sel + (e.key === 'ArrowRight' ? 1 : -1)); }
+    else if (e.key === 'Enter' && !document.activeElement.closest('a,button:not(.gcard)')) { e.preventDefault(); playSel(); }
+    else if (e.key === 'i' || e.key === 'I') location.hash = gameHref(GAMES[UI.sel]);
+    else if (e.key === 'f' || e.key === 'F') { const b = $('#dashInfo [data-fav]'); if (b) b.click(); }
+  }
 });
 document.addEventListener('click', e => { if (e.target.closest('#btnExitFs')) toggleFull(); });
 document.addEventListener('fullscreenchange', () => document.body.classList.toggle('is-fs', !!document.fullscreenElement));
@@ -684,6 +820,7 @@ window.addEventListener('storage', () => checkAch());
 paintIcons();
 persist();
 paintMe();
+paintClock();
 playIntro(false);
 route();
 // Las insignias ganadas jugando (o en otra visita) aparecen después de la intro.

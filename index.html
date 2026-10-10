@@ -24,10 +24,16 @@
   <div class="bg" aria-hidden="true"><i class="bg__a"></i><i class="bg__b"></i><i class="bg__c"></i><i class="bg__grid"></i></div>
 
   <header class="top" id="top">
-    <a class="logo" href="#/" aria-label="Anonymous Games, inicio">
+    <a class="logo" href="#inicio" aria-label="Anonymous Games, inicio">
       <span class="logo__mask" data-icon="mask"></span>
       <span class="logo__txt"><span>ANONYMOUS</span><b>GAMES</b></span>
     </a>
+
+    <nav class="tabs" aria-label="Secciones">
+      <a href="#inicio" data-tab="inicio">Inicio</a>
+      <a href="#biblioteca" data-tab="biblioteca">Biblioteca</a>
+      <a href="#logros" data-tab="logros">Logros</a>
+    </nav>
 
     <label class="search" id="search">
       <span class="search__ico" data-icon="search"></span>
@@ -40,6 +46,7 @@
       <!-- El botón de siempre: abre todo en una pestaña about:blank -->
       <button class="blankbtn" id="btnBlank" type="button" title="Abrir en una pestaña about:blank"><span data-icon="blank"></span><span>about:blank</span></button>
       <button class="iconbtn" id="btnSound" type="button" aria-label="Sonido" title="Sonido (M)"><span data-icon="sound"></span></button>
+      <span class="clock" id="clock" aria-hidden="true"></span>
       <!-- Tu perfil -->
       <button class="me" id="btnMe" type="button" aria-haspopup="dialog" aria-controls="drawer">
         <span class="me__av" id="meAv"></span>
@@ -57,7 +64,7 @@
   <footer class="foot">
     <div class="foot__brand"><span class="logo__mask" data-icon="mask"></span><span>ANONYMOUS <b>GAMES</b></span></div>
     <p>Juegos hechos en casa, gratis y sin descargas. Tus partidas se guardan en este navegador.</p>
-    <p class="foot__small">Atajos: <kbd>/</kbd> buscar · <kbd>F</kbd> pantalla completa · <kbd>M</kbd> sonido · <kbd>Esc</kbd> cerrar</p>
+    <p class="foot__small">Atajos: <kbd>←</kbd><kbd>→</kbd> elegir · <kbd>Enter</kbd> jugar · <kbd>Q</kbd><kbd>E</kbd> pestañas · <kbd>/</kbd> buscar · <kbd>F</kbd> pantalla completa · <kbd>M</kbd> sonido · también con mando</p>
   </footer>
 
   <!-- Panel del perfil -->

@@ -35,8 +35,17 @@ check(await page.isVisible('#intro'), 'la intro aparece la primera vez');
 await page.waitForSelector('#intro', { state: 'detached', timeout: 6000 });
 await page.waitForTimeout(600);
 await shot(page, 'portal-1-inicio.png');
-check(await page.locator('.tile[data-tile]').count() === 9, 'las 9 fichas de juego en la cuadrícula');
-check(await page.locator('.slide').count() === 4, 'carrusel con 4 destacados');
+check(await page.locator('.shelf .gcard[data-sel]').count() === 9, 'los 9 juegos en el estante del menú');
+check(await page.locator('.gcard.is-sel').count() === 1, 'hay un juego elegido');
+check(await page.locator('.tile--soon, .soon__q').count() === 0, 'sin fichas de "Próximamente"');
+// teclado: flecha derecha cambia el juego elegido y el título grande
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(400);
+check(await page.locator('.dash__title').textContent() === 'Kartódromo', 'la flecha → elige el siguiente juego');
+await page.keyboard.press('ArrowLeft');
+await page.waitForTimeout(300);
+check(await page.locator('.dash__title').textContent() === 'Ápice GP', 'la flecha ← vuelve');
+await shot(page, 'portal-1b-menu.png');
 check(await page.isVisible('#btnMe'), 'botón de perfil arriba a la derecha');
 const meBox = await page.locator('#btnMe').boundingBox();
 check(meBox.x + meBox.width > 1366 - 40 && meBox.y < 20, 'el botón de perfil está pegado a la esquina superior derecha');
@@ -49,7 +58,7 @@ check(true, 'aviso de insignia "Sin rostro"');
 await page.keyboard.press('/');
 await page.keyboard.type('karts');
 await page.waitForTimeout(200);
-check(await page.locator('.tile[data-tile]').count() === 1, 'buscar "karts" deja sólo el Kartódromo');
+check(await page.locator('.tile[data-tile]').count() === 1, 'buscar "karts" abre la biblioteca con sólo el Kartódromo');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
 check(await page.locator('.tile[data-tile]').count() === 9, 'Esc limpia la búsqueda');
@@ -61,18 +70,20 @@ await page.click('[data-cat=favs]');
 check(await page.isVisible('.empty'), 'favoritos vacío muestra aviso');
 await page.click('[data-cat=todos]');
 
-// carrusel
-await page.click('[data-hero="1"]');
-await page.waitForTimeout(900);
-check(await page.locator('.slide.is-on .slide__title').textContent() === 'Kartódromo', 'el carrusel cambia al tocar la miniatura');
+// pestañas
+await page.keyboard.press('e');
+await page.waitForTimeout(300);
+check(await page.locator('.achgrid .ach').count() > 10, 'E pasa a la pestaña Logros');
+await page.click('.tabs a[data-tab=biblioteca]');
+await page.waitForTimeout(300);
 
 // el botón de about:blank (arriba a la derecha)
 const bb = await page.locator('#btnBlank').boundingBox();
-check(bb && bb.y < 20 && bb.x > 900, 'botón about:blank arriba a la derecha');
+check(bb && bb.y < 20 && bb.x > 700, 'botón about:blank arriba a la derecha');
 const [tab] = await Promise.all([ctx.waitForEvent('page'), page.click('#btnBlank')]);
 await tab.waitForLoadState();
 check(tab.url() === 'about:blank' && await tab.title() === 'Classes', 'abre una pestaña about:blank titulada "Classes"');
-check(/index\.html#\/$/.test(await tab.locator('iframe').getAttribute('src')), 'con el portal adentro');
+check(/index\.html#biblioteca$/.test(await tab.locator('iframe').getAttribute('src')), 'con el portal adentro');
 await tab.close();
 
 // hover en ficha
@@ -101,7 +112,15 @@ check(plays === 1, 'cuenta la partida');
 await page.click('.logo');
 await page.waitForSelector('.cont');
 check(await page.locator('.cont').count() === 1, '"Sigue jugando" muestra el juego abierto');
-check(await page.locator('.tile[data-tile=mind-escape] .tile__fav').count() === 1, 'la ficha muestra el corazón de favorito');
+check(await page.locator('#card-mind-escape .gcard__fav').count() === 1, 'la carta del estante muestra el corazón de favorito');
+// (con el mouse, pasar por encima elige la carta y un clic la juega)
+await page.locator('#card-fuga-urbana').hover();
+await page.waitForTimeout(300);
+check(await page.locator('.dash__title').textContent() === 'Fuga Urbana', 'pasar el mouse por una carta la elige');
+await page.locator('#card-fuga-urbana').click();
+await page.waitForSelector('iframe.player__frame');
+check(page.url().endsWith('#juego-fuga-urbana'), 'clic en la carta elegida abre y arranca el juego');
+await page.goto(base + '#inicio');
 
 // perfil
 await page.click('#btnMe');
@@ -124,6 +143,7 @@ await page.evaluate(() => {
 });
 await page.reload();
 await page.waitForTimeout(3500);
+await page.goto(base + '#biblioteca'); await page.waitForTimeout(500);
 const kart = await page.locator('.tile[data-tile=karting] small').textContent();
 check(/Piloto nivel 3/.test(kart), 'la ficha del Kartódromo lee el guardado: ' + kart);
 const ach2 = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('anonymousGames_v1')).ach));
@@ -146,7 +166,7 @@ await mp.waitForTimeout(400);
 await shot(mp, 'portal-8-movil-grilla.png');
 await mp.tap('#btnSearchMobile');
 check(await mp.isVisible('#q'), 'el buscador se abre en celular');
-await mp.goto(base + '#/juego/karting');
+await mp.goto(base + '#juego-karting');
 await mp.reload();
 await mp.waitForTimeout(700);
 const sw2 = await mp.evaluate(() => document.documentElement.scrollWidth);

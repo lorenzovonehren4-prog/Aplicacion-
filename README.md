@@ -29,23 +29,27 @@ Y entrar a <http://localhost:8000>. El portal también abre con doble clic en
 ## Qué tiene el portal
 
 - **Intro** animada la primera vez en cada sesión (clic para saltarla).
-- **Cabecera**: logo, buscador (`/` para enfocarlo) y, arriba a la derecha, el
-  botón **about:blank** (abre el portal en una pestaña nueva cuya barra dice
-  `about:blank`, titulada "Classes", con todo adentro), el sonido y **tu
-  perfil**: máscara, nombre, nivel y barra de XP.
-- **Carrusel** de destacados (los juegos con `featured: true`) con avance automático.
-- **Categorías**: Carreras, Acción, Simulación, Deportes, Estrategia,
-  Plataformas, Puzzles, 3D, Multijugador y Favoritos.
-- **Sigue jugando**: los últimos juegos que abriste.
-- **Cuadrícula** estilo Poki con fichas grandes y chicas; al pasar el mouse la
-  ficha se inclina, brilla y muestra otra imagen del juego. Las fichas leen el
-  guardado de cada juego (nivel de piloto, día y plata, niveles superados).
+- **Cabecera**: logo, pestañas **Inicio · Biblioteca · Logros** (`Q`/`E` o
+  LB/RB del mando), buscador (`/`) y, arriba a la derecha, el botón
+  **about:blank** (abre el portal en una pestaña `about:blank` titulada
+  "Classes"), el sonido, la hora y **tu perfil**. En celular las pestañas van
+  en una barra fija abajo.
+- **Inicio, menú de consola**: el juego elegido llena la pantalla (fondo,
+  título grande, etiquetas, tu progreso, Jugar / Detalles / Favorito) y abajo
+  está el estante con los 9 juegos. Se recorre con `←` `→`, el mouse o la
+  cruceta del mando; `Enter` o A juega, `I` abre los detalles, `F` o Y marca
+  favorito, B vuelve. Debajo, "Sigue jugando" y "Tu sala".
+- **Biblioteca**: cuadrícula con categorías (Carreras, Acción, Simulación,
+  Deportes, Estrategia, Plataformas, Puzzles, 3D, Multijugador, Favoritos) y
+  búsqueda. Las fichas leen el guardado de cada juego.
+- **Logros**: las 18 insignias y tu nivel.
 - **Página de juego** con reproductor (el juego va en un `iframe`), favorito,
   reiniciar, pantalla completa (`F`), controles, tu progreso y más juegos.
 - **Perfil**: 12 máscaras, nombre, nivel (10 XP por minuto jugado y 50 por
-  insignia), tiempo por juego y **18 insignias** (muchas se ganan dentro de
-  los juegos: ganar una carrera, 10 viajes en combi, llegar a la cima…).
-- Sonidos de interfaz sintetizados (`M` para apagarlos). Funciona en celular.
+  insignia), tiempo por juego y ajustes.
+
+Rutas: `#inicio`, `#biblioteca`, `#logros` y `#juego-<id>` (anclas simples,
+las únicas que deja pasar el visor de Claude).
 
 Todo se guarda en `localStorage` bajo `anonymousGames_v1`. Borrar el perfil no
 toca el progreso de los juegos.
@@ -82,6 +86,16 @@ su versión ya compilada en un solo archivo. Después de cambiar el juego:
 cd formula-3d && npm ci && npm run build:artifact && cd ..
 node portal/tools/apice-gp.mjs
 ```
+
+## Publicar como Artifact de Claude
+
+```bash
+node portal/tools/artifact.mjs <carpeta>
+```
+
+Deja `anonymous-games.html` (la página sin `<head>`, que el Artifact pone) y
+`files.json` con los archivos que cargan el portal y los juegos. Se publica
+la página con esos archivos como `files`.
 
 ## Pruebas
 

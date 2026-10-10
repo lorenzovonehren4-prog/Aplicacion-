@@ -315,13 +315,6 @@ const GAMES = [
     },
   },];
 
-// Huecos misteriosos de la cuadrícula: lo que viene.
-const SOON = [
-  { id: 'soon-1', title: 'Clasificado', hint: 'Multijugador', color: '#ff3d71' },
-  { id: 'soon-2', title: '???', hint: 'Pronto', color: '#a78bfa' },
-  { id: 'soon-3', title: 'Archivo 404', hint: 'Terror', color: '#34d399' },
-];
-
 const CATS = [
   { id: 'todos', name: 'Todos', icon: 'grid' },
   { id: 'carreras', name: 'Carreras', icon: 'flag' },
