@@ -361,6 +361,15 @@ input[type=range] { width: 180px; accent-color: var(--gold); }
 /* ------------------------------------------------------------------ */
 /* Responsive                                                          */
 /* ------------------------------------------------------------------ */
+/* Pantallas bajas (celular acostado): la intro se achica para que el botón entre */
+@media (max-height: 520px) {
+  .intro { padding: 10px 20px; }
+  .intro-badge { font-size: 38px; }
+  .intro-title { font-size: clamp(30px, 11vh, 64px); }
+  .intro-sub { font-size: clamp(16px, 5.5vh, 28px); letter-spacing: 10px; }
+  .intro-tag { margin: 8px 0 14px; font-size: 14px; }
+  .intro-press { font-size: 17px; padding: 9px 22px; }
+}
 @media (max-width: 980px) {
   body { overflow: auto; }
   #screen-game { overflow-y: auto; }
