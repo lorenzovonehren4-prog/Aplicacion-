@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0" stop-color="#1d1546"/>
+      <stop offset=".55" stop-color="#0c0b22"/>
+      <stop offset="1" stop-color="#05050d"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#00d4ff" stop-opacity=".55"/>
+      <stop offset=".4" stop-color="#7c3aed" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="door" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9ff3ff"/>
+      <stop offset=".5" stop-color="#00d4ff"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0V64" fill="none" stroke="#00d4ff" stroke-opacity=".07" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect width="1280" height="720" fill="url(#grid)"/>
+  <!-- laberinto -->
+  <g fill="none" stroke="#00d4ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".5" filter="url(#glow)">
+    <path d="M70 120h192v128h128M262 248v128h-128v128h256M70 376h64M390 504V376h-64M70 632h320v-64"/>
+    <path d="M1210 120h-192v128H890M1018 248v128h128v128H890M1210 376h-64M890 504V376h64M1210 632H890v-64"/>
+    <path d="M454 60v60h372V60M454 660v-60h372v60" stroke="#7c3aed"/>
+  </g>
+  <g fill="#00d4ff" filter="url(#glow)">
+    <circle cx="70" cy="120" r="8"/><circle cx="390" cy="248" r="8"/><circle cx="70" cy="632" r="8"/>
+    <circle cx="1210" cy="120" r="8"/><circle cx="890" cy="248" r="8"/><circle cx="1210" cy="632" r="8"/>
+  </g>
+  <!-- puerta / cerradura -->
+  <circle cx="640" cy="360" r="330" fill="url(#halo)"/>
+  <g filter="url(#glow)">
+    <rect x="510" y="150" width="260" height="420" rx="130" fill="#070718" stroke="url(#door)" stroke-width="10"/>
+    <rect x="540" y="180" width="200" height="360" rx="100" fill="none" stroke="#00d4ff" stroke-opacity=".35" stroke-width="3" stroke-dasharray="14 12"/>
+    <circle cx="640" cy="320" r="48" fill="url(#door)"/>
+    <path d="M612 352h56l20 120h-96z" fill="url(#door)"/>
+  </g>
+  <!-- números flotando -->
+  <g font-family="JetBrains Mono, Consolas, monospace" font-weight="700" fill="#9ff3ff" opacity=".45">
+    <text x="150" y="200" font-size="38">0110</text>
+    <text x="1030" y="560" font-size="38">1001</text>
+    <text x="980" y="190" font-size="30" fill="#c4b5fd">7 · 3 · 9</text>
+    <text x="140" y="560" font-size="30" fill="#c4b5fd">? = 42</text>
+  </g>
+  <g fill="#fff">
+    <circle cx="300" cy="90" r="2"/><circle cx="980" cy="300" r="1.6"/><circle cx="1150" cy="420" r="2.2"/>
+    <circle cx="220" cy="430" r="1.6"/><circle cx="460" cy="640" r="2"/><circle cx="830" cy="660" r="1.8"/>
+  </g>
+</svg>

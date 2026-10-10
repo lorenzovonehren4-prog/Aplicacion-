@@ -8,4 +8,4 @@ Thumbs.db
 .vscode/
 .idea/
 node_modules
-tests/capturas/
+**/tests/capturas/

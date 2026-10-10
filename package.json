@@ -1,13 +1,14 @@
 {
-  "name": "mind-escape",
+  "name": "anonymous-games",
   "version": "1.0.0",
-  "description": "Juego web de puzzles: 30 desafíos, 1 salida. HTML, CSS y JavaScript vanilla.",
+  "description": "Anonymous Games: portal con todos los juegos (Mind Escape, Sazón Tycoon y Kartódromo). HTML, CSS y JavaScript vanilla.",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 8000",
-    "build": "node tools/build-single-file.mjs",
-    "test": "node tests/run.mjs"
+    "build": "node mind-escape/tools/build-single-file.mjs",
+    "test": "node mind-escape/tests/run.mjs",
+    "test:portal": "node portal/tests/portal.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
