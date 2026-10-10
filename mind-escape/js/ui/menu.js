@@ -18,10 +18,14 @@ export const menuScreen = {
 
     const screen = el('section.screen.menu', { 'aria-labelledby': 'menu-title' }, [
       el('div.menu__brand', {}, [
-        // Cada letra en su propio span: permite animar el título más adelante
-        // sin volver a tocar el marcado.
+        // Cada letra en su propio span (permite animar el título), agrupadas por
+        // palabra: el título sólo puede partirse entre "MIND" y "ESCAPE".
         el('h1#menu-title.menu__title', { 'aria-label': TITLE },
-          [...TITLE].map((char) => el('span', { text: char === ' ' ? ' ' : char, 'aria-hidden': 'true' }))),
+          TITLE.split(' ').flatMap((word, i) => [
+            i > 0 && ' ',
+            el('span.menu__word', { 'aria-hidden': 'true' },
+              [...word].map((char) => el('span', { text: char }))),
+          ])),
         el('hr.menu__rule'),
         el('p.menu__tagline', { text: '30 desafíos · 1 salida' }),
       ]),

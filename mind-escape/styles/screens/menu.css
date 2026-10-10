@@ -35,6 +35,7 @@
 }
 
 .menu__title span { display: inline-block; }
+.menu__title .menu__word { white-space: nowrap; }
 
 .menu__tagline {
   font-size: clamp(0.66rem, 2.6vw, 0.8rem);
