@@ -20,7 +20,7 @@ El progreso (nivel, rango, medallas, estrellas y logros) se guarda en el navegad
 
 | | |
 |---|---|
-| 🗺️ **3 mapas** | Pradera del Molino (noches), Cañón Escarlata (tormentas de arena) y Fragua Volcánica (lava y erupciones). |
+| 🗺️ **4 mapas** | Pradera del Molino (noches), Cañón Escarlata (tormentas de arena), Fragua Volcánica (lava y erupciones) y Glaciar Maldito (ventiscas que congelan torres, con el Yeti Zombi de jefe). |
 | ⚔️ **3 dificultades** | Aprendiz, Guardián y Leyenda. |
 | 🌊 **20 oleadas** | Minijefe en la oleada 10 y jefe propio de cada mapa en la 20. |
 | 🗼 **21 torres, nivel 5** | Terrestres, antiaéreas, mixtas, de detección, de apoyo y de economía (granjas, minas de plata, bancos). Cada torre desbloquea una habilidad especial en el nivel 5. |

@@ -451,7 +451,7 @@ TD.Menus = class {
         '<h3>💵 Plata</h3>Ganas plata al eliminar zombis y al terminar cada oleada. Las <b>Granjas</b>, <b>Minas de Plata</b> y <b>Bancos</b> generan más. ¡Pasa el ratón sobre las monedas de la Mina de Plata para recogerlas con +25%!' +
         '<h3>⏩ Ritmo de las oleadas</h3>Una oleada termina cuando eliminas a todos sus zombis. Entonces tienes <b>10 segundos</b> para prepararte antes de que llegue la siguiente (o pulsa <kbd>N</kbd> para empezarla ya y ganar plata extra). Mientras dura una oleada puedes <b>adelantar la siguiente una sola vez</b>. Usa <b>x1.5, x2 o x3</b> para acelerar el juego.' +
         '<h3>🦸 Héroe y habilidades</h3>Coloca tu héroe gratis al empezar; sube de nivel solo al eliminar zombis cerca. Las habilidades (✈️🧊📦🧱💣) se recargan con el tiempo.' +
-        '<h3>🌙🌪️🌋 Eventos</h3>Cada mapa tiene su evento: noches que reducen el alcance, tormentas que ralentizan la cadencia y erupciones que aturden torres.';
+        '<h3>🌙🌪️🌋🏔️ Eventos</h3>Cada mapa tiene su evento: noches que reducen el alcance, tormentas que ralentizan la cadencia, erupciones que aturden torres y ventiscas que las congelan.';
     } else if (tab === 'controles') {
       h += '<h3>🖱️ Ratón / táctil</h3>Clic en una torre del panel → clic en el mapa para construir. Clic en una torre para ver sus opciones. Clic derecho o <kbd>Esc</kbd> para cancelar.' +
         '<h3>⌨️ Teclado</h3>' +

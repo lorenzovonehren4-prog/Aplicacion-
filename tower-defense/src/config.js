@@ -144,6 +144,26 @@ TD.CONFIG = {
       lavaRateBonus: 0.15,
       // Evento: erupción (una roca aturde una torre al azar)
       event: { type: 'erupcion', interval: 22, warning: 2, stun: 3 }
+    },
+    {
+      id: 'glaciar',
+      name: 'Glaciar Maldito',
+      icon: '🏔️',
+      desc: 'El camino más largo, entre pinos y hielo. Las ventiscas congelan torres. El Yeti no siente el frío.',
+      hpMul: 1.22,
+      boss: 'yeti',
+      palette: { grass: '#d6e6ef', grass2: '#e1edf4', path: '#8fb3c8', pathEdge: '#6e93aa', deco: '#3d6b85' },
+      path: [[-1, 9], [3, 9], [3, 3], [7, 3], [7, 8], [11, 8], [11, 1], [15, 1], [15, 10], [18, 10], [18, 4], [20, 4]],
+      airPath: [[-1, 9], [6, 5.5], [13, 5], [20, 4]],
+      blocked: [
+        { c: 0, r: 1, type: 'arbol' }, { c: 1, r: 0, type: 'arbol' }, { c: 5, r: 11, type: 'arbol' }, { c: 9, r: 11, type: 'arbol' },
+        { c: 13, r: 6, type: 'roca' }, { c: 13, r: 7, type: 'roca' }, { c: 9, r: 5, type: 'roca' }, { c: 19, r: 11, type: 'arbol' },
+        { c: 17, r: 0, type: 'arbol' }, { c: 0, r: 6, type: 'roca' }, { c: 5, r: 6, type: 'arbol' }, { c: 19, r: 1, type: 'roca' },
+        { c: 13, r: 11, type: 'arbol' }, { c: 9, r: 0, type: 'roca' }
+      ],
+      special: [],
+      // Evento: ventisca (el hielo congela una torre al azar unos segundos)
+      event: { type: 'ventisca', interval: 18, warning: 2, stun: 3.5 }
     }
   ],
 
@@ -174,7 +194,10 @@ TD.CONFIG = {
     escorpion: { name: 'Escorpión Mutante', icon: '🦂',      hp: 3600, speed: 0.5,  reward: 320, lives: 20, radius: 0.62, color: '#c4532e', armor: 3, boss: true,
                  summon: { type: 'corredor', count: 3, every: 6 }, cloak: { every: 9, duration: 3 }, desc: 'Jefe del Cañón. Invoca crías y se camufla por momentos.' },
     dragon:    { name: 'Dragón de Lava', icon: '🐉',         hp: 4200, speed: 0.42, reward: 350, lives: 20, radius: 0.66, color: '#e2572b', armor: 5, boss: true, air: true,
-                 regen: 12, slowResist: 0.5, desc: 'Jefe de la Fragua. Volador, blindado, se regenera y resiste el frío.' }
+                 regen: 12, slowResist: 0.5, desc: 'Jefe de la Fragua. Volador, blindado, se regenera y resiste el frío.' },
+    yeti:      { name: 'Yeti Zombi', icon: '🧊',            hp: 4800, speed: 0.44, reward: 380, lives: 20, radius: 0.68, color: '#a9cbe0', armor: 4, boss: true,
+                 enrage: { at: 0.4, speedMul: 1.7 }, slowResist: 0.85, summon: { type: 'corredor', count: 2, every: 8 },
+                 desc: 'Jefe del Glaciar. Casi inmune al frío, invoca corredores y, herido, corre furioso.' }
   },
 
   // Oleada 10: minijefe (el jefe del mapa con esta fracción de vida)
@@ -530,8 +553,8 @@ TD.CONFIG = {
     { id: 'perfecto',   icon: '💎', name: 'Perfecto',           desc: 'Gana sin perder ninguna vida.',                    medals: 5 },
     { id: 'sinGranjas', icon: '🚜', name: 'Sin granjas',        desc: 'Gana sin construir torres de economía.',           medals: 4 },
     { id: 'leyenda',    icon: '🔥', name: 'Leyenda viva',       desc: 'Gana un mapa en dificultad Leyenda.',              medals: 6 },
-    { id: 'trilogia',   icon: '🗺️', name: 'Trotamundos',        desc: 'Gana en los 3 mapas.',                             medals: 5 },
-    { id: 'estrellas',  icon: '🌟', name: 'Constelación',       desc: 'Consigue 3 estrellas en los 3 mapas.',             medals: 8 },
+    { id: 'trilogia',   icon: '🗺️', name: 'Trotamundos',        desc: 'Gana en todos los mapas.',                             medals: 5 },
+    { id: 'estrellas',  icon: '🌟', name: 'Constelación',       desc: 'Consigue 3 estrellas en todos los mapas.',             medals: 8 },
     { id: 'max5',       icon: '⭐', name: 'Al máximo',          desc: 'Lleva una torre a nivel 5.',                       medals: 2 },
     { id: 'jefe',       icon: '👹', name: 'Matagigantes',       desc: 'Derrota a un jefe.',                               medals: 3 },
     { id: 'sniperJefe', icon: '🎯', name: 'Ojo de halcón',      desc: 'Da el golpe final a un jefe con un Francotirador.', medals: 4 },
@@ -561,6 +584,7 @@ TD.CONFIG = {
     { id: 'soloFusil', name: 'Solo Fusileros',   icon: '🪖', desc: 'Solo puedes usar Fusileros y Granjas.',                map: 'pradera', difficulty: 'guardian', allowed: ['fusilero', 'granja'], medals: 6, unlock: 3 },
     { id: 'estampida', name: 'Estampida',        icon: '🐗', desc: 'Todos los zombis son un 40% más rápidos.',             map: 'canon',   difficulty: 'aprendiz', speedMul: 1.4, medals: 6, unlock: 5 },
     { id: 'austero',   name: 'Austeridad',       icon: '🚫', desc: 'Sin torres de economía, pero empiezas con 600.',       map: 'fragua',  difficulty: 'aprendiz', banned: ['granja', 'minaplata', 'banco'], money: 600, medals: 7, unlock: 7 },
+    { id: 'deshielo',  name: 'Deshielo',         icon: '🔥', desc: 'En el Glaciar, solo torres de fuego, artillería y economía.', map: 'glaciar', difficulty: 'aprendiz', allowed: ['lanzallamas', 'lanzagranadas', 'mortero', 'granja', 'minaplata'], medals: 7, unlock: 12 },
     { id: 'unaVida',   name: 'Una sola vida',    icon: '💀', desc: 'Empiezas con 1 vida. Un error y se acabó.',            map: 'pradera', difficulty: 'aprendiz', lives: 1, medals: 8, unlock: 9 }
   ]
 };

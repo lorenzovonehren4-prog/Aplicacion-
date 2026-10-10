@@ -423,7 +423,7 @@ TD.Game = class {
   }
 
   // ------------------------------------------------------------------
-  // Eventos del mapa: tormenta de arena y erupciones
+  // Eventos del mapa: tormenta de arena, erupciones y ventiscas
   // ------------------------------------------------------------------
   updateEvents(dt) {
     const ev = this.mapDef.event;
@@ -436,7 +436,8 @@ TD.Game = class {
         this.emit('banner', '🌪️ ¡Tormenta de arena!', 'Cadencia de las torres −40% durante ' + ev.duration + ' s');
       }
     }
-    if (ev.type === 'erupcion' && this.waveActive && this.towers.length) {
+    if ((ev.type === 'erupcion' || ev.type === 'ventisca') && this.waveActive && this.towers.length) {
+      const ice = ev.type === 'ventisca';
       const E = this.eruption;
       if (E.warn) {
         E.warn.t -= dt;
@@ -444,10 +445,10 @@ TD.Game = class {
           const t = E.warn.tower;
           if (this.towers.includes(t)) {
             t.stunTimer = ev.stun;
-            this.fx.explosion(t.x, t.y, 30, '#ff5a1f');
-            this.fx.text(t.x, t.y - 26, '¡Aturdida!', '#ff9a3c', 13);
-            this.shake(6);
-            TD.Audio.play('bigboom');
+            this.fx.explosion(t.x, t.y, 30, ice ? '#bfe6ff' : '#ff5a1f');
+            this.fx.text(t.x, t.y - 26, ice ? '¡Congelada!' : '¡Aturdida!', ice ? '#9fdcff' : '#ff9a3c', 13);
+            this.shake(ice ? 3 : 6);
+            TD.Audio.play(ice ? 'freeze' : 'bigboom');
           }
           E.warn = null;
         }
@@ -769,11 +770,11 @@ TD.Game = class {
     // Aviso de erupción
     const W = this.eruption.warn;
     if (W) {
-      const k = 0.5 + 0.5 * Math.sin(this.time * 20);
-      ctx.strokeStyle = 'rgba(255,60,0,' + (0.5 + 0.5 * k) + ')'; ctx.lineWidth = 3;
+      const k = 0.5 + 0.5 * Math.sin(this.time * 20), ice = this.mapDef.event.type === 'ventisca';
+      ctx.strokeStyle = (ice ? 'rgba(140,210,255,' : 'rgba(255,60,0,') + (0.5 + 0.5 * k) + ')'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(W.tower.x, W.tower.y, S * 0.6, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = '#ff5a1f'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('⚠', W.tower.x, W.tower.y - S * 0.65);
+      ctx.fillStyle = ice ? '#8fd4ff' : '#ff5a1f'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(ice ? '❄' : '⚠', W.tower.x, W.tower.y - S * 0.65);
     }
 
     this.fx.draw(ctx);
@@ -791,6 +792,16 @@ TD.Game = class {
       for (let i = 0; i < 60; i++) {
         const x = ((i * 97 + this.time * 400) % (this.map.width + 40)) - 20, y = (i * 53) % this.map.height;
         ctx.fillRect(x, y, 14, 1.5);
+      }
+    }
+    if (this.mapDef.event.type === 'ventisca') {
+      // Nieve que cae siempre en el Glaciar; más densa durante las oleadas
+      const n = this.waveActive ? 90 : 45;
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      for (let i = 0; i < n; i++) {
+        const x = ((i * 73.3 + Math.sin(this.time * 0.8 + i) * 18 + this.time * 22) % (this.map.width + 20)) - 10;
+        const y = ((i * 41.7 + this.time * (40 + (i % 5) * 12)) % (this.map.height + 20)) - 10;
+        ctx.fillRect(x, y, i % 3 ? 2 : 3, i % 3 ? 2 : 3);
       }
     }
     if (this.revealTimer > 0) {
