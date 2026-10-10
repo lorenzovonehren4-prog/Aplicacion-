@@ -13,9 +13,46 @@ function edTemplate() {
   return {
     id: 'c' + Date.now().toString(36), custom: true, name: 'Mi pista', title: 'Mi pista ' + ((save.custom || []).length + 1),
     theme: 'parque', width: 11, scale: 1, stars: 1, tunnels: [],
-    pts: [[-120, -60], [0, -60], [90, -60], [140, -30], [140, 30], [100, 70], [40, 50], [-20, 80], [-90, 90], [-150, 50], [-160, -20]],
+    pts: [[-150, -75], [0, -75], [112, -75], [175, -38], [175, 38], [125, 88], [50, 62], [-25, 100], [-112, 112], [-188, 62], [-200, -25]],
   };
 }
+// Formas listas del editor y generador al azar (se prueban también desde node)
+const ED_SHAPES = {
+  ovalo: { name: 'Óvalo', make() { const p = []; for (let k = 0; k < 14; k++) { const t = Math.PI / 2 + k / 14 * Math.PI * 2, c = Math.cos(t), s = Math.sin(t); p.push([Math.round(200 * Math.sign(c) * Math.abs(c) ** 0.55), Math.round(95 * Math.sign(s) * Math.abs(s) ** 0.55)]); } return { pts: p, tunnels: [] }; } },
+  rinon: { name: 'Riñón', make() { return { pts: [[-120, -60], [0, -60], [90, -60], [140, -30], [140, 30], [100, 70], [40, 50], [-20, 80], [-90, 90], [-150, 50], [-160, -20]].map(p => [Math.round(p[0] * 1.25), Math.round(p[1] * 1.25)]), tunnels: [] }; } },
+  ocho: { name: 'Ocho con puente', make() { const p = []; const n = 18; for (let k = 0; k < n; k++) { const t = k / n * Math.PI * 2; const y = 5.6 * clamp((-Math.cos(t) - 0.15) / 0.6, 0, 1); p.push(y > 0.05 ? [Math.round(175 * Math.sin(t)), Math.round(95 * Math.sin(2 * t)), +y.toFixed(1)] : [Math.round(175 * Math.sin(t)), Math.round(95 * Math.sin(2 * t))]); } return { pts: p, tunnels: [] }; } },
+  zigzag: { name: 'Zigzag', make() { return { pts: [[-150, -90], [-40, -90], [70, -90], [160, -80], [205, -40], [195, 10], [150, 25], [120, 70], [70, 95], [20, 60], [-20, 25], [-70, 40], [-110, 90], [-170, 90], [-215, 45], [-215, -40]], tunnels: [] }; } },
+  colina: { name: 'Colina y túnel', make() { return { pts: [[-160, -80], [-40, -80], [80, -80], [170, -55], [200, 0, 1], [175, 55, 3], [110, 80, 3.5], [40, 70, 2], [-20, 85], [-90, 95], [-160, 70], [-205, 15], [-200, -45]], tunnels: [[9, 11]] }; } },
+};
+// Pista al azar: puntos alrededor de un centro con radios distintos, una subida y a veces un túnel.
+// Se prueba hasta que pase la validación (y dure ~45-70 s).
+function edRandomTrack() {
+  for (let tries = 0; tries < 200; tries++) {
+    const n = 9 + (Math.random() * 6 | 0), R0 = 120 + Math.random() * 50, sx = 1.2 + Math.random() * 0.5;
+    let pts = [];
+    for (let k = 0; k < n; k++) {
+      const t = (k + Math.random() * 0.5 - 0.25) / n * Math.PI * 2;
+      const r = R0 * (0.55 + Math.random() * 0.45);
+      pts.push([Math.round(Math.cos(t) * r * sx), Math.round(Math.sin(t) * r)]);
+    }
+    // la largada en el medio del tramo más largo (para que la grilla quede en recta)
+    let li = 0, ll = 0;
+    pts.forEach((p, i) => { const q = pts[(i + 1) % n]; const l = Math.hypot(q[0] - p[0], q[1] - p[1]); if (l > ll) { ll = l; li = i; } });
+    const a = pts[li], b = pts[(li + 1) % n];
+    pts = [[Math.round((a[0] + b[0]) / 2), Math.round((a[1] + b[1]) / 2)], ...pts.slice(li + 1), ...pts.slice(0, li + 1)];
+    // una subida suave en el lado opuesto a la largada
+    const m = pts.length, h = Math.floor(m / 2);
+    if (Math.random() < 0.8) { const H = 2 + Math.random() * 2.5; pts[h] = [...pts[h].slice(0, 2), +H.toFixed(1)]; pts[h - 1] = [...pts[h - 1].slice(0, 2), +(H * 0.5).toFixed(1)]; }
+    const tunnels = Math.random() < 0.4 ? [[h + 1, Math.min(h + 3, m - 1)]] : [];
+    const def = { pts, tunnels };
+    const T = (() => { try { return buildTrackData(edFinish(Object.assign(edTemplate(), def))); } catch (e) { return null; } })();
+    if (!T) continue;
+    const v = validateTrack(T), lap = lapEstimate(T, 1);
+    if (v.ok && lap > 42 && lap < 72) return def;
+  }
+  return ED_SHAPES.rinon.make();
+}
+
 // completa los datos que el juego necesita según el tema
 function edFinish(def) {
   const base = TRACKS.find(t => t.theme === def.theme) || TRACKS[0];
@@ -35,11 +72,12 @@ function openEditor(def) {
   edCheck();
   show('editor', true);
   edResize();
+  $('edGuide').classList.toggle('show', !save.opt.edGuide);
 }
 function edFillForm() {
   $('edName').value = ED.def.title;
   $('edTheme').innerHTML = ED_THEMES.map(([v, n]) => `<option value="${v}"${v === ED.def.theme ? ' selected' : ''}>${n}</option>`).join('');
-  $('edWidth').value = ED.def.width;
+  $('edWidth').value = ED.def.width <= 9 ? 9 : ED.def.width >= 13 ? 13 : 11;
   const list = save.custom || [];
   $('edLoad').innerHTML = '<option value="">Nueva pista…</option>' + list.map(t => `<option value="${t.id}"${t.id === ED.def.id ? ' selected' : ''}>${esc(t.title)}</option>`).join('');
   $('edDel').disabled = !list.some(t => t.id === ED.def.id);
@@ -110,6 +148,40 @@ function edTunnel() {
   edChanged();
 }
 
+function edLoadShape(def) {
+  ED.def.pts = def.pts; ED.def.tunnels = def.tunnels || [];
+  ED.sel = -1; ED.tunA = -1;
+  edCheck(); edResize();
+}
+// agranda o achica toda la pista desde su centro (las alturas no cambian)
+function edScale(f) {
+  const P = ED.def.pts;
+  const cx = P.reduce((a, p) => a + p[0], 0) / P.length, cz = P.reduce((a, p) => a + p[1], 0) / P.length;
+  P.forEach(p => { p[0] = Math.round(cx + (p[0] - cx) * f); p[1] = Math.round(cz + (p[1] - cz) * f); });
+  edChanged(); edResize();
+}
+// Arregla sola lo que la validación marca: suaviza curvas cerradas, agranda si hay tramos que se
+// chocan o es muy corta, y baja las subidas muy empinadas.
+function edAutoFix() {
+  const P = ED.def.pts;
+  for (let it = 0; it < 20 && (!ED.ok || ED.res.length < 800); it++) {
+    const r = ED.res; if (!r) break;
+    if (r.maxGrade >= 0.16) P.forEach(p => { if (p[2]) p[2] = +(p[2] * 0.8).toFixed(1); });
+    if (r.minRadius <= ED.T.hw + 1.5) {
+      const c = P.map(p => p.slice());
+      P.forEach((p, i) => { const a = c[(i - 1 + P.length) % P.length], b = c[(i + 1) % P.length]; p[0] = Math.round(p[0] * 0.7 + (a[0] + b[0]) * 0.15); p[1] = Math.round(p[1] * 0.7 + (a[1] + b[1]) * 0.15); });
+    }
+    if (r.minSep < r.need || r.length < 800 || r.minRadius <= ED.T.hw + 1.5) {
+      const cx = P.reduce((a, p) => a + p[0], 0) / P.length, cz = P.reduce((a, p) => a + p[1], 0) / P.length;
+      P.forEach(p => { p[0] = Math.round(cx + (p[0] - cx) * 1.1); p[1] = Math.round(cz + (p[1] - cz) * 1.1); });
+    }
+    edCheck();
+  }
+  edResize();
+  if (ED.ok) { SFX.coin(); toast('¡Arreglada! Ya puedes correr'); }
+  else toast('No pude arreglarla sola: prueba otra forma o 🎲');
+}
+
 let edTimer = 0;
 function edChanged() { ED.dirty = true; edDraw(); clearTimeout(edTimer); edTimer = setTimeout(edCheck, 120); }
 function edCheck() {
@@ -122,20 +194,22 @@ function edCheck() {
   if (res) {
     const lap = lapEstimate(T, 1);
     def.stars = res.brakes >= 3 ? 3 : res.brakes >= 2 ? 2 : 1;
-    out.push(`<b>${Math.round(res.length)} m</b> · vuelta de ~${fmtTime(lap)} · ${res.brakes} curva(s) de freno · ${'★'.repeat(def.stars)}`);
-    if (res.length < 350) { ok = false; out.push('<span class="red">Muy corta: necesita al menos 350 m.</span>'); }
-    if (res.minSep < res.need) out.push(`<span class="red">Dos partes de la pista se tocan (marcadas en rojo). Sepáralas o sube una ${BRIDGE_CLEAR} m para hacer un puente.</span>`);
-    if (res.minRadius <= T.hw + 1.5) out.push('<span class="red">Hay una curva demasiado cerrada (círculo rojo). Aleja un poco los puntos.</span>');
-    if (res.maxGrade >= 0.16) out.push('<span class="red">Una rampa es muy empinada: separa más los puntos que suben.</span>');
+    out.push(`Largo <b>${Math.round(res.length)} m</b> · vuelta de unos <b>${Math.round(lap)} s</b> · dificultad ${'★'.repeat(def.stars)}${'☆'.repeat(3 - def.stars)}`);
+    if (res.length < 600) { ok = false; out.push('<span class="red">⚠ Es muy corta. Pulsa ➕ Agrandar.</span>'); }
+    if (res.minSep < res.need) out.push('<span class="red">⚠ Dos partes de la pista se chocan (círculo rojo). Pulsa 🔧 Arreglar sola, o separa los puntos.</span>');
+    if (res.minRadius <= T.hw + 1.5) out.push('<span class="red">⚠ Hay una curva demasiado cerrada (círculo rojo). Pulsa 🔧 Arreglar sola.</span>');
+    if (res.maxGrade >= 0.16) out.push('<span class="red">⚠ Una subida es muy empinada. Pulsa 🔧 Arreglar sola.</span>');
     ok = ok && res.ok;
-    if (ok) out.push('<span class="green">¡Lista para correr!</span>');
+    if (ok) out.push('<span class="green">✔ ¡Todo bien! Pulsa ¡Correr!</span>');
   } else out.push('<span class="red">No se pudo armar la pista.</span>');
   ED.ok = ok;
+  $('edFix').style.display = res && !ok ? '' : 'none';
   $('edStatus').innerHTML = out.join('<br>');
   $('edTry').disabled = !ok;
   $('edSave').disabled = !ok;
   const p = ED.def.pts[ED.sel];
-  $('edSel').textContent = p ? `Punto ${ED.sel + 1}${ED.sel === 0 ? ' (largada)' : ''} · altura ${(p[2] || 0).toFixed(1)} m` + (ED.def.tunnels.some(t => t.includes(ED.sel)) ? ' · túnel' : '') : 'Ningún punto elegido';
+  $('edSel').textContent = p ? `· punto ${ED.sel + 1}${ED.sel === 0 ? ' (largada)' : ''}, altura ${(p[2] || 0).toFixed(1)} m` + (ED.def.tunnels.some(t => t.includes(ED.sel)) ? ', túnel' : '') : '· haz clic en un punto azul';
+  ['edUp', 'edDown', 'edTun', 'edRem'].forEach(id => $(id).disabled = !p);
   edDraw();
 }
 
@@ -236,8 +310,25 @@ function initEditor() {
   $('edWidth').onchange = () => { ED.def.width = +$('edWidth').value; edChanged(); };
   $('edName').onchange = () => { ED.def.title = $('edName').value; };
   $('edLoad').onchange = () => { const t = (save.custom || []).find(c => c.id === $('edLoad').value); ED.def = JSON.parse(JSON.stringify(t || edTemplate())); ED.sel = -1; edFillForm(); edCheck(); edResize(); };
-  $('edUp').onclick = () => edHeight(0.5);
-  $('edDown').onclick = () => edHeight(-0.5);
+  const sh = $('edShapes'); sh.innerHTML = '';
+  const shapeBtn = (label, fn, draw) => {
+    const b = document.createElement('button'); b.innerHTML = `<canvas width="120" height="60"></canvas>${label}`;
+    b.onclick = () => { SFX.click(); fn(); };
+    sh.appendChild(b);
+    const cv = b.querySelector('canvas'), g = cv.getContext('2d');
+    if (!draw) { g.font = '34px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('🎲', 60, 32); return; }
+    const T = buildTrackData(edFinish(Object.assign(edTemplate(), draw))), f = fitTransform(T, 120, 60, 8);
+    drawTrackShape(g, T, f, 4, ['#E23B2E', '#fff']);
+  };
+  for (const s of Object.values(ED_SHAPES)) { const d = s.make(); shapeBtn(s.name, () => edLoadShape(s.make()), d); }
+  shapeBtn('Al azar', () => { toast('Creando una pista…'); setTimeout(() => { edLoadShape(edRandomTrack()); toast('¡Pista nueva! Si no te gusta, pulsa 🎲 otra vez'); }, 30); });
+  $('edBig').onclick = () => edScale(1.1);
+  $('edSmall').onclick = () => edScale(1 / 1.1);
+  $('edFix').onclick = edAutoFix;
+  $('edGuideOk').onclick = () => { $('edGuide').classList.remove('show'); save.opt.edGuide = true; persist(); };
+  $('edHelpBtn').onclick = () => $('edGuide').classList.add('show');
+  $('edUp').onclick = () => edHeight(1);
+  $('edDown').onclick = () => edHeight(-1);
   $('edTun').onclick = edTunnel;
   $('edRem').onclick = () => edDelete(ED.sel);
   $('edSave').onclick = () => { if (edSaveTrack()) { SFX.coin(); toast('Pista guardada'); } };

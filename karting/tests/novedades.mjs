@@ -90,20 +90,33 @@ await page.evaluate(() => goTitle());
 await page.click('[data-act=editor]');
 await page.waitForTimeout(400);
 ok(await page.evaluate(() => UI.screen === 'editor' && ED.ok), 'el editor abre con una pista válida');
+ok(await page.isVisible('#edGuide'), 'la primera vez muestra la guía de 3 pasos');
+if (shot) await page.screenshot({ path: path.join(out, 'n5a-editor-guia.png'), timeout: 120000 });
+await page.click('#edGuideOk');
+ok(await page.evaluate(() => document.querySelectorAll('#edShapes button').length === 6), 'hay 5 formas listas y el botón al azar');
+// cada forma lista es válida
+ok(await page.evaluate(() => Object.values(ED_SHAPES).every(s => { edLoadShape(s.make()); return ED.ok; })), 'todas las formas listas se pueden correr');
+// al azar: siempre una pista válida
+ok(await page.evaluate(() => { for (let i = 0; i < 3; i++) { edLoadShape(edRandomTrack()); if (!ED.ok) return false; } return true; }), 'el botón al azar crea pistas válidas');
+// arreglar sola: una pista achicada hasta tener curvas imposibles
+const fix = await page.evaluate(() => { edLoadShape(ED_SHAPES.zigzag.make()); for (let i = 0; i < 12; i++) edScale(1 / 1.1); edCheck(); const before = ED.ok; edAutoFix(); return [before, ED.ok && ED.res.length > 750]; });
+ok(fix[0] === false && fix[1] === true, 'Arreglar sola corrige una pista con curvas demasiado cerradas');
+await page.evaluate(() => { ED.def = edTemplate(); ED.sel = -1; edCheck(); edResize(); });
 const n0 = await page.evaluate(() => ED.def.pts.length);
 // clic entre dos puntos: agrega uno
-const xy = await page.evaluate(() => { const [sx, sy] = edToScreen(45, -75), cv = $('edCanvas'), r = cv.getBoundingClientRect(); return [r.left + sx * r.width / cv.width, r.top + sy * r.height / cv.height]; });
+const xy = await page.evaluate(() => { const [sx, sy] = edToScreen(56, -92), cv = $('edCanvas'), r = cv.getBoundingClientRect(); return [r.left + sx * r.width / cv.width, r.top + sy * r.height / cv.height]; });
 await page.mouse.click(xy[0], xy[1]);
 await page.waitForTimeout(300);
 ok(await page.evaluate(n => ED.def.pts.length === n + 1, n0), 'clic agrega un punto');
 // subir ese punto para hacer una rampa
-for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowUp');
+for (let i = 0; i < 2; i++) await page.click('#edUp');
 await page.waitForTimeout(300);
 ok(await page.evaluate(() => ED.def.pts[ED.sel][2] === 2), '↑ sube el punto (rampa de 2 m)');
 // un punto encima de otro tramo: la validación lo marca
-const bad = await page.evaluate(async () => { const p = ED.def.pts[5]; const o = p.slice(); p[0] = -20; p[1] = -60; edCheck(); const r = ED.ok; ED.def.pts[5] = o; edCheck(); return [r, ED.ok]; });
+const bad = await page.evaluate(async () => { const p = ED.def.pts[5]; const o = p.slice(); p[0] = -60; p[1] = -75; edCheck(); const r = ED.ok; ED.def.pts[5] = o; edCheck(); return [r, ED.ok]; });
 ok(bad[0] === false && bad[1] === true, 'la validación avisa cuando dos tramos se tocan');
 await page.fill('#edName', 'Prueba del editor');
+await page.evaluate(() => edCheck());
 if (shot) await page.screenshot({ path: path.join(out, 'n5-editor.png'), timeout: 120000 });
 await page.click('#edTry');
 await page.waitForFunction(() => R.on && document.body.classList.contains('ready'));

@@ -254,12 +254,29 @@ td.p{ font:700 20px Fredoka, sans-serif; width:44px; }
 .ed{ position:absolute; inset:0; display:grid; grid-template-columns:1fr 340px; gap:14px; padding:14px; }
 .edmap{ position:relative; border-radius:14px; overflow:hidden; border:1px solid var(--line); }
 #edCanvas{ width:100%; height:100%; display:block; cursor:crosshair; touch-action:none; }
+.edguide{ position:absolute; inset:0; margin:auto; width:min(520px,90%); height:fit-content; padding:22px 24px; border-radius:14px; background:rgba(18,16,26,.96); border:1px solid var(--line); box-shadow:0 20px 60px rgba(0,0,0,.6); display:none; }
+.edguide.show{ display:block; }
+.edguide ol{ padding-left:22px; line-height:1.6; font-size:15px; } .edguide li{ margin:8px 0; }
+.edstep{ display:flex; align-items:center; gap:8px; font-weight:800; margin-top:6px; flex-wrap:wrap; }
+.edstep i{ font-style:normal; width:24px; height:24px; border-radius:50%; background:var(--acc, #6A3BFF); display:grid; place-items:center; font-size:13px; }
+.edshapes{ display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+.edshapes button{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; border-radius:10px; background:#221E2E; border:1px solid var(--line); color:inherit; font:700 12px Rubik, sans-serif; cursor:pointer; }
+.edshapes button:hover, .edshapes button:focus-visible{ border-color:var(--gold); outline:none; }
+.edshapes canvas{ width:100%; height:36px; }
+.edhelp b.cy{ color:#2AD4FF; }
+#edFix{ background:var(--gold); color:#111; }
 .edhelp{ position:absolute; left:10px; right:10px; bottom:10px; font-size:12px; color:#D9D5E6; background:rgba(14,12,20,.7); padding:6px 10px; border-radius:8px; pointer-events:none; }
 .edside.panel{ position:relative; left:auto; top:auto; transform:none; width:auto; max-height:none; display:flex; flex-direction:column; gap:10px; padding:16px; overflow:auto; }
 .edside input, .edside select{ min-width:0; width:180px; padding:8px; border-radius:6px; background:#221E2E; border:1px solid var(--line); color:inherit; }
-.edside .b{ padding:9px 12px; font-size:13px; min-height:0; } .edside .b.big{ font-size:15px; }
+.edside .b{ padding:7px 8px; font-size:12px; min-height:0; letter-spacing:.02em; } .edside .b.big{ font-size:17px; padding:12px; }
 .edside .row{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.edstat{ font-size:13px; line-height:1.6; background:rgba(255,255,255,.04); padding:10px; border-radius:10px; }
+.edside .row3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+.edhead{ display:flex; align-items:center; gap:6px; } .edhead .h{ font-size:21px; flex:1; white-space:nowrap; }
+.edgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; } .edgrid label{ display:flex; flex-direction:column; gap:3px; font-size:12px; font-weight:700; color:#D9D5E6; }
+.edside .edgrid input, .edside .edgrid select{ width:100%; }
+.edmore{ display:flex; flex-direction:column; gap:8px; margin-top:6px; padding-top:10px; border-top:1px solid var(--line); }
+.edside{ gap:8px !important; } .edside > *{ flex-shrink:0; }
+.edstat{ font-size:12.5px; line-height:1.5; background:rgba(255,255,255,.04); padding:10px; border-radius:10px; }
 .edstat .red{ color:#FF6B63; } .edstat .green{ color:var(--green); }
 @media (max-width:800px){ .ed{ grid-template-columns:1fr; grid-template-rows:1fr auto; } }
 /* pantalla dividida */
@@ -401,21 +418,35 @@ body.replaying #labels .tagname{ font-size:11px; }
 <section id="editor" class="scr">
   <div class="ed">
     <div class="edmap"><canvas id="edCanvas"></canvas>
-      <div class="edhelp">Clic: agregar punto · arrastrar: mover · clic derecho / Supr: borrar · ↑ ↓: altura · ← →: otro punto · T: túnel · rueda: zoom · el punto blanco es la largada</div>
+      <div class="edhelp" id="edHelp">Arrastra los <b class="cy">puntos azules</b> para cambiar la forma · clic en un lugar vacío = punto nuevo · clic derecho = borrar punto · rueda = zoom</div>
+      <div class="edguide" id="edGuide">
+        <div class="h" style="font-size:26px">Crea tu pista en 3 pasos</div>
+        <ol>
+          <li><b>Elige una forma</b> (o pulsa 🎲 y el juego te arma una).</li>
+          <li><b>Cámbiala si quieres:</b> arrastra los puntos azules con el mouse. Elige un punto y pulsa <i>Subir</i> para hacer una subida o un puente.</li>
+          <li><b>Pulsa ¡Correr!</b> y juega contra los bots. Si algo está mal, el botón <i>Arreglar sola</i> lo corrige.</li>
+        </ol>
+        <button class="b go" id="edGuideOk">¡Entendido!</button>
+      </div>
     </div>
     <div class="edside panel">
-      <div style="display:flex;justify-content:space-between;align-items:center"><div class="h" style="font-size:24px">Editor de pistas</div><button class="b ghost" data-back>Volver</button></div>
-      <div class="opt"><span>Tus pistas</span><select id="edLoad"></select></div>
-      <div class="opt"><span>Nombre</span><input id="edName" maxlength="24"></div>
-      <div class="opt"><span>Lugar</span><select id="edTheme"></select></div>
-      <div class="opt"><span>Ancho</span><select id="edWidth"><option value="9">9 m</option><option value="10">10 m</option><option value="11">11 m</option><option value="12">12 m</option><option value="13">13 m</option></select></div>
-      <div class="lbl" id="edSel" style="margin-top:6px"></div>
-      <div class="row" style="gap:6px;flex-wrap:wrap">
-        <button class="b" id="edUp">Subir</button><button class="b" id="edDown">Bajar</button><button class="b" id="edTun">Túnel</button><button class="b red" id="edRem">Quitar punto</button>
+      <div class="edhead"><div class="h">Crea tu pista</div><button class="b ghost" id="edHelpBtn" title="Ver la guía">? Ayuda</button><button class="b ghost" data-back>Volver</button></div>
+      <div class="edstep"><i>1</i>Elige una forma</div>
+      <div class="edshapes" id="edShapes"></div>
+      <div class="edstep"><i>2</i>Cámbiala si quieres <span class="muted" id="edSel"></span></div>
+      <div class="row3">
+        <button class="b" id="edUp" title="Sube el punto elegido (subidas y puentes)">⬆ Subir</button><button class="b" id="edDown" title="Baja el punto elegido">⬇ Bajar</button>
+        <button class="b" id="edBig" title="Agranda toda la pista">➕ Agrandar</button><button class="b" id="edSmall" title="Achica toda la pista">➖ Achicar</button>
+        <button class="b" id="edTun" title="Pon un túnel desde el punto elegido">🚇 Túnel</button><button class="b red" id="edRem" title="Borra el punto elegido">✖ Quitar punto</button>
       </div>
+      <div class="edgrid"><label>Lugar<select id="edTheme"></select></label><label>Nombre<input id="edName" maxlength="24"></label></div>
+      <div class="edstep"><i>3</i>¡A correr!</div>
       <div class="edstat" id="edStatus"></div>
-      <div class="row" style="gap:8px;margin-top:auto">
-        <button class="b go big" id="edTry">Probar</button><button class="b" id="edSave">Guardar</button><button class="b red" id="edDel">Borrar</button>
+      <button class="b" id="edFix" style="display:none">🔧 Arreglar sola</button>
+      <button class="b go big" id="edTry">🏁 ¡Correr!</button>
+      <div class="edmore">
+        <div class="edgrid"><label>Ancho<select id="edWidth"><option value="9">Angosta</option><option value="11">Normal</option><option value="13">Ancha</option></select></label><label>Tus pistas<select id="edLoad"></select></label></div>
+        <div class="row"><button class="b" id="edSave">Guardar</button><button class="b red" id="edDel">Borrar</button></div>
       </div>
     </div>
   </div>
