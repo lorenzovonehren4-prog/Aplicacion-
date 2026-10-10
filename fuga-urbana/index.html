@@ -2760,7 +2760,7 @@ function syncGarage() {
   $('odds').innerHTML = pool.length ? groups.map(gr => {
     const p = gr.cars.reduce((a, e) => a + e.p, 0), R0 = RARITY[gr.k];
     return `<div class="odd"><span style="color:${R0.color};font-weight:700">${R0.name}</span><div class="bar"><i style="width:${Math.round(p * 100)}%;background:${R0.color}"></i></div><span class="pct">${pct(p)}</span><small>${gr.cars.map(e => `${e.car.name} ${pct(e.p)}`).join(' · ')}</small></div>`;
-  }).join('') : '<p class="g-note">¡Ya tienes los ${CARS.length} carros!</p>';
+  }).join('') : `<p class="g-note">¡Ya tienes los ${CARS.length} carros!</p>`;
   const gb = $('gachaBtn');
   gb.innerHTML = `Abrir garaje · <i class="coin"></i> ${fmtN(GACHA_COST)}`;
   gb.disabled = !pool.length || save.coins < GACHA_COST || gacha.t >= 0;
