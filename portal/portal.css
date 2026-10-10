@@ -126,6 +126,14 @@ code { font-family: ui-monospace, Consolas, monospace; background: rgba(255,255,
 .iconbtn.lg { width: 48px; height: 48px; }
 .iconbtn.is-fav { color: var(--hot); border-color: rgba(255,61,113,.5); background: rgba(255,61,113,.12); }
 #btnSearchMobile { display: none; }
+.blankbtn {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 14px;
+  background: var(--panel); border: 1px solid var(--line2); font: 600 14px var(--display); letter-spacing: .02em;
+  transition: transform .15s, background .2s, border-color .2s;
+}
+.blankbtn .ic { width: 20px; height: 20px; color: var(--cy); }
+.blankbtn:hover { background: var(--panel3); border-color: var(--cy); transform: translateY(-1px); }
+.blankbtn:active { transform: scale(.95); }
 
 /* el botón de perfil */
 .me {
@@ -492,6 +500,8 @@ a.mini:hover { transform: translateX(4px); border-color: var(--c); }
   .hthumb img { height: 52px; }
   .slide__body { left: 24px; right: 24px; bottom: 120px; }
   .me__info, .me__menu { display: none; }
+  .blankbtn span:not(.ic) { display: none; }
+  .blankbtn { width: 44px; padding: 0; justify-content: center; }
   .me { padding: 4px; }
 }
 @media (max-width: 700px) {
@@ -502,7 +512,8 @@ a.mini:hover { transform: translateX(4px); border-color: var(--c); }
   .search { display: none; }
   #btnSearchMobile { display: grid; }
   .top.searching .search { display: flex; position: absolute; left: 10px; right: 10px; top: 8px; height: 44px; max-width: none; z-index: 2; }
-  .iconbtn { width: 40px; height: 40px; border-radius: 12px; }
+  .iconbtn, .blankbtn { width: 40px; height: 40px; border-radius: 12px; }
+  .top__right { gap: 6px; }
   .me { height: 44px; } .me__av { width: 36px; height: 36px; }
   .view { padding: 14px 12px 30px; }
   .hero { border-radius: 20px; height: 440px; }

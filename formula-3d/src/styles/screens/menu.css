@@ -1,0 +1,1160 @@
+/* ─── Menú principal ─────────────────────────────────────────────────────
+   Centro de mando: marca y piloto arriba, el acceso enfocado en grande a la
+   izquierda, el auto en el podio a la derecha y un riel de tarjetas con color
+   propio abajo, con una barra de luz que sigue al foco. Todo lo que se mueve
+   anima transform u opacity (no recalcula la página ni traba el 3D). */
+
+/* Colores animables: el acento del menú cambia suave al cambiar de tarjeta y
+   el borde de la tarjeta enfocada gira. */
+@property --menu-accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ff2a3c;
+}
+
+@property --mcard-spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.screen--menu {
+  --menu-accent: #ff2a3c;
+  --card-h: 124px;
+  /* Alto del riel con el rótulo de grupo (para que el panel grande no lo pise). */
+  --rail-h: calc(var(--card-h) + 20px);
+  --rail-bottom: calc(var(--gutter) + 46px);
+  pointer-events: none;
+  transition: --menu-accent 0.6s var(--ease-out);
+}
+
+.screen--menu > * {
+  pointer-events: auto;
+}
+
+/* ─── Fondo: barrido de luz, líneas de velocidad y oscurecido ─── */
+
+.menu__fx,
+.menu__scrim {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none !important;
+}
+
+.menu__sweep {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: -40%;
+  width: 60%;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.045) 45%, rgba(255, 255, 255, 0.07) 50%, rgba(255, 255, 255, 0.045) 55%, transparent 100%);
+  transform: translateX(-60%) skewX(-18deg);
+  animation: menu-sweep 11s var(--ease-in-out) infinite;
+  will-change: transform;
+}
+
+@keyframes menu-sweep {
+  0%,
+  15% {
+    transform: translateX(-60%) skewX(-18deg);
+  }
+  65%,
+  100% {
+    transform: translateX(330%) skewX(-18deg);
+  }
+}
+
+/* Líneas finas que cruzan de derecha a izquierda, como estelas a velocidad. */
+.menu__streak {
+  position: absolute;
+  left: 0;
+  top: calc(12% + var(--i) * 6.5%);
+  width: 26%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--menu-accent) 70%, white) 60%, transparent);
+  opacity: 0;
+  transform: translateX(420%);
+  animation: menu-streak 5.5s linear infinite;
+  animation-delay: calc(var(--i) * -0.95s);
+  will-change: transform, opacity;
+}
+
+.menu__streak:nth-child(odd) {
+  top: calc(64% + var(--i) * 3%);
+  width: 18%;
+  animation-duration: 4.2s;
+}
+
+@keyframes menu-streak {
+  0% {
+    opacity: 0;
+    transform: translateX(560%);
+  }
+  12% {
+    opacity: 0.32;
+  }
+  70% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+}
+
+.menu__scrim {
+  background:
+    radial-gradient(ellipse 55% 70% at 0% 100%, color-mix(in srgb, var(--menu-accent) 22%, transparent), transparent 70%),
+    linear-gradient(90deg, rgba(4, 5, 10, 0.92) 0%, rgba(4, 5, 10, 0.78) 26%, rgba(4, 5, 10, 0.4) 44%, rgba(4, 5, 10, 0) 62%),
+    linear-gradient(0deg, rgba(4, 5, 10, 0.96) 0%, rgba(4, 5, 10, 0.82) 22%, rgba(4, 5, 10, 0.45) 34%, rgba(4, 5, 10, 0) 48%),
+    linear-gradient(180deg, rgba(4, 5, 10, 0.7) 0%, rgba(4, 5, 10, 0) 18%);
+}
+
+/* ─── Barra de arriba: marca y piloto ─── */
+
+.menu__top {
+  position: absolute;
+  top: var(--gutter);
+  left: var(--gutter);
+  right: var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.menu__brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.menu__logo {
+  --logo-size: clamp(28px, 2.8vw, 40px);
+}
+
+.menu__season {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 18px;
+  border-left: 1px solid var(--c-line-strong);
+}
+
+.menu__season b {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--menu-accent);
+}
+
+.menu__season span {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.menu__top-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.menu__chips {
+  display: flex;
+  gap: 8px;
+}
+
+/* Botones redondos de opciones (Manual, Ajustes). */
+.mchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px 0 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  background: linear-gradient(135deg, rgba(24, 27, 40, 0.86), rgba(12, 13, 20, 0.8));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition:
+    background 0.25s,
+    color 0.25s,
+    box-shadow 0.25s,
+    scale 0.3s var(--ease-out);
+}
+
+.mchip__label {
+  white-space: nowrap;
+}
+
+.mchip__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--card-accent);
+}
+
+/* Desafío del día: borde de su color y un punto que late mientras no se cumplió el de hoy. */
+.mchip--daily {
+  position: relative;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card-accent) 55%, transparent);
+}
+
+.mchip--daily:not(.is-done)::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--card-accent);
+  box-shadow: 0 0 8px var(--card-accent);
+  animation: mchip-pulse 1.6s ease-in-out infinite;
+}
+
+.mchip--weekly {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card-accent) 55%, transparent);
+}
+
+.mchip--daily.is-done {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.mchip__streak {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-family: var(--font-num);
+  font-size: 12px;
+  letter-spacing: 0;
+  color: #1a0d04;
+  background: var(--card-accent);
+}
+
+@keyframes mchip-pulse {
+  50% {
+    opacity: 0.35;
+    scale: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mchip--daily:not(.is-done)::after {
+    animation: none;
+  }
+}
+
+.mchip.is-focused {
+  scale: 1.06;
+  color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 30%, rgba(24, 27, 40, 0.9)), rgba(12, 13, 20, 0.9));
+  box-shadow:
+    inset 0 0 0 1.5px var(--card-accent),
+    0 0 24px -6px var(--card-accent);
+}
+
+.mchip.is-focused .mchip__icon {
+  animation: mcard-pop 0.5s var(--ease-out);
+}
+
+.mchip.is-denied {
+  animation: mcard-deny 0.35s;
+}
+
+/* La tarjeta del piloto, compacta y redondeada. */
+.menu__player .pcard {
+  min-width: 0;
+  gap: 12px;
+  padding: 6px 16px 6px 6px;
+  border-radius: 999px;
+  transform: none;
+  background: linear-gradient(135deg, rgba(24, 27, 40, 0.86), rgba(12, 13, 20, 0.8));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.4);
+  backdrop-filter: none;
+}
+
+.menu__player .pcard > * {
+  transform: none;
+}
+
+.menu__player .pcard__avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 19px;
+}
+
+.menu__player .pcard__info {
+  width: 150px;
+}
+
+.menu__player .pcard__name {
+  font-size: 15px;
+}
+
+.menu__player .pcard__title {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.menu__player .pcard__bar {
+  height: 4px;
+  border-radius: 2px;
+  transform: none;
+}
+
+.menu__player .pcard__xp {
+  margin-top: 3px;
+  font-size: 9px;
+}
+
+.menu__player .pcard__level {
+  padding-left: 12px;
+}
+
+.menu__player .pcard__level small {
+  font-size: 8px;
+}
+
+.menu__player .pcard__level b {
+  font-size: 22px;
+}
+
+/* ─── El acceso enfocado, en grande ─── */
+
+.menu__hero {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(var(--gutter) + 64px);
+  bottom: calc(var(--rail-bottom) + var(--rail-h) + 28px);
+  width: min(46%, 560px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 14px;
+  pointer-events: none !important;
+}
+
+.menu__kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.menu__kicker-bar {
+  width: 34px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--menu-accent);
+  box-shadow: 0 0 14px var(--menu-accent);
+  transform-origin: left center;
+}
+
+.menu__kicker-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: var(--menu-accent);
+  background: color-mix(in srgb, var(--menu-accent) 16%, transparent);
+}
+
+.menu__kicker-icon .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.menu__kicker-group {
+  color: var(--menu-accent);
+}
+
+.menu__kicker-count {
+  font-family: var(--font-num);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--c-text-3);
+}
+
+.menu__title {
+  font-size: clamp(38px, 4.6vw, 74px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-shadow: 0 6px 40px rgba(0, 0, 0, 0.6);
+  text-wrap: balance;
+}
+
+/* Cada palabra entra desde abajo de su propia máscara (con margen para la
+   cursiva y los acentos). */
+.menu__word {
+  display: inline-block;
+  overflow: hidden;
+  margin: -0.12em -0.04em -0.04em 0;
+  padding: 0.12em 0.3em 0.04em 0;
+  vertical-align: top;
+}
+
+.menu__word > span {
+  display: inline-block;
+  transform-origin: left bottom;
+}
+
+.menu__text {
+  max-width: 48ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--c-text-2);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.menu__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.menu__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 92px;
+  padding: 9px 14px 10px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+
+.menu__stat span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+.menu__stat b {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Botón de acción: píldora con el color del acceso y un brillo que respira. */
+.menu__action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 11px 12px 11px 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--menu-accent) 92%, white), color-mix(in srgb, var(--menu-accent) 70%, black));
+  box-shadow:
+    0 10px 30px -8px color-mix(in srgb, var(--menu-accent) 80%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  pointer-events: auto;
+  isolation: isolate;
+}
+
+.menu__action::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--menu-accent);
+  filter: blur(14px);
+  opacity: 0.25;
+  animation: menu-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes menu-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.menu__action-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.menu__action-key {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--font-num);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.menu__action.is-locked {
+  color: var(--c-text-2);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.menu__action.is-locked::before {
+  display: none;
+}
+
+.menu__note {
+  min-height: 1em;
+  font-size: 13px;
+  color: var(--c-gold);
+}
+
+.menu__note:empty {
+  display: none;
+}
+
+/* ─── Riel de tarjetas ─── */
+
+.menu__rail {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--rail-bottom);
+  display: flex;
+  gap: 18px;
+}
+
+.menu__group {
+  display: flex;
+  flex: var(--units) 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.menu__group-label {
+  padding-left: 2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+.menu__group-cards {
+  display: flex;
+  gap: 8px;
+  height: var(--card-h);
+}
+
+/* Barra de luz debajo de la tarjeta enfocada (GSAP la desliza). */
+.menu__pill {
+  position: absolute;
+  left: 0;
+  bottom: -12px;
+  width: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--menu-accent) 18%, var(--menu-accent) 82%, transparent);
+  box-shadow: 0 0 16px var(--menu-accent);
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.menu__pill.is-off {
+  opacity: 0;
+}
+
+.mcard {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 12px 12px;
+  overflow: hidden;
+  border-radius: 14px;
+  text-align: left;
+  color: rgba(243, 244, 246, 0.82);
+  background: linear-gradient(165deg, rgba(30, 33, 48, 0.88), rgba(12, 13, 20, 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 24px rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+  /* La elevación usa `translate`/`scale` y no `transform`: no choca con la entrada de GSAP. */
+  transition:
+    translate 0.35s var(--ease-out),
+    scale 0.35s var(--ease-out),
+    background 0.3s,
+    box-shadow 0.3s,
+    color 0.3s;
+}
+
+/* Borde con luz que gira (sólo en la enfocada). */
+.mcard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--mcard-spin), var(--card-accent), transparent 22%, transparent 50%, var(--card-accent) 72%, transparent 88%, var(--card-accent));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+/* Destello que cruza la tarjeta al enfocarla. */
+.mcard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%);
+  translate: -110% 0;
+  pointer-events: none;
+}
+
+.mcard__mark {
+  position: absolute;
+  right: -14px;
+  bottom: -16px;
+  z-index: -1;
+  width: 86px;
+  height: 86px;
+  color: var(--card-accent);
+  opacity: 0.06;
+  rotate: -12deg;
+  transition:
+    opacity 0.35s,
+    scale 0.5s var(--ease-out),
+    rotate 0.5s var(--ease-out);
+}
+
+.mcard__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mcard__icon {
+  width: 30px;
+  height: 30px;
+  color: var(--card-accent);
+  filter: drop-shadow(0 0 0 transparent);
+  transition: filter 0.3s;
+}
+
+.mcard__lock {
+  width: 16px;
+  height: 16px;
+  color: var(--c-text-3);
+}
+
+/* Hasta dos renglones: "Pase de temporada" y "Manual de ayudas" entran enteros. */
+.mcard__label {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.mcard__sub {
+  margin-top: -2px;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--c-text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcard__head + .mcard__label {
+  margin-top: auto;
+}
+
+.mcard.is-focused {
+  z-index: 1;
+  translate: 0 -10px;
+  scale: 1.04;
+  color: #fff;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--card-accent) 34%, transparent), transparent 60%),
+    linear-gradient(165deg, rgba(34, 37, 54, 0.95), rgba(12, 13, 20, 0.95));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 22px 40px -14px color-mix(in srgb, var(--card-accent) 70%, transparent),
+    0 14px 28px rgba(0, 0, 0, 0.5);
+}
+
+.mcard.is-focused::before {
+  opacity: 1;
+  animation: mcard-spin 3.2s linear infinite;
+}
+
+.mcard.is-focused::after {
+  animation: mcard-shine 0.9s var(--ease-out);
+}
+
+.mcard.is-focused .mcard__mark {
+  opacity: 0.16;
+  scale: 1.15;
+  rotate: -4deg;
+}
+
+.mcard.is-focused .mcard__icon {
+  filter: drop-shadow(0 0 10px var(--card-accent));
+  animation: mcard-pop 0.5s var(--ease-out);
+}
+
+.mcard.is-focused .mcard__sub {
+  color: var(--c-text-2);
+}
+
+@keyframes mcard-spin {
+  to {
+    --mcard-spin: 360deg;
+  }
+}
+
+@keyframes mcard-shine {
+  from {
+    translate: -110% 0;
+  }
+  to {
+    translate: 110% 0;
+  }
+}
+
+@keyframes mcard-pop {
+  0% {
+    scale: 0.8;
+  }
+  60% {
+    scale: 1.12;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+.mcard.is-locked {
+  color: var(--c-text-3);
+}
+
+.mcard.is-locked .mcard__icon {
+  color: var(--c-text-3);
+}
+
+.mcard.is-locked:not(.is-focused) {
+  opacity: 0.55;
+}
+
+.mcard.is-denied {
+  animation: mcard-deny 0.35s;
+}
+
+@keyframes mcard-deny {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Entrada: cada tarjeta sube escalonada (y los botones de arriba llegan desde
+   la derecha). Usa `transform`, que se suma al `translate`/`scale` del foco. */
+.screen--menu.is-entering .mcard {
+  animation: mcard-in 0.7s var(--ease-out) both;
+  animation-delay: calc(0.25s + var(--n) * 45ms);
+}
+
+.screen--menu.is-entering .mchip {
+  animation: mchip-in 0.5s var(--ease-out) both;
+  animation-delay: calc(0.1s + (var(--n) - 8) * 60ms);
+}
+
+@keyframes mcard-in {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+}
+
+@keyframes mchip-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+/* "Continuar": ancha, con el trazado de la carrera que sigue. */
+.mcard--hero {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 12px 14px 16px;
+  background:
+    radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--card-accent) 30%, transparent), transparent 60%),
+    linear-gradient(165deg, rgba(38, 30, 40, 0.92), rgba(14, 12, 20, 0.94));
+}
+
+.mcard__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mcard__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--card-accent);
+}
+
+.mcard__live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--card-accent);
+  box-shadow: 0 0 10px var(--card-accent);
+  animation: mcard-live 1.6s ease-in-out infinite;
+}
+
+@keyframes mcard-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.mcard--hero .mcard__label {
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.mcard__progress {
+  position: relative;
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mcard__progress i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--card-accent);
+  transform-origin: left center;
+  transform: scaleX(var(--p, 0));
+}
+
+.mcard__track {
+  flex: none;
+  align-self: center;
+  width: 74px;
+  height: 74px;
+  overflow: visible;
+}
+
+.mcard__track-glow,
+.mcard__track-line {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: mcard-draw 1.8s var(--ease-out) 0.6s forwards;
+}
+
+.mcard__track-glow {
+  stroke: var(--card-accent);
+  stroke-opacity: 0.35;
+  stroke-width: 14;
+}
+
+.mcard__track-line {
+  stroke: #fff;
+  stroke-width: 5;
+}
+
+@keyframes mcard-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ─── Pie ─── */
+
+.menu__foot {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: calc(var(--gutter) - 4px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  height: 32px;
+}
+
+.menu__ticker {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 760px;
+  height: 26px;
+  overflow: hidden;
+  background: rgba(10, 11, 15, 0.55);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+}
+
+.menu__ticker-tag {
+  flex: none;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.16em;
+  color: #fff;
+  background: #e10600;
+}
+
+.menu__ticker-window {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+
+.menu__ticker-track {
+  display: flex;
+  width: max-content;
+  animation: menu-ticker var(--ticker-time, 60s) linear infinite;
+}
+
+.menu__ticker-line {
+  display: flex;
+  flex: none;
+}
+
+.menu__ticker-item {
+  padding: 0 28px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--c-text-2);
+}
+
+.menu__ticker-item::before {
+  content: '◆';
+  margin-right: 12px;
+  font-size: 8px;
+  color: var(--menu-accent, #e10600);
+}
+
+@keyframes menu-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__ticker-track {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .menu__ticker {
+    display: none;
+  }
+}
+
+.menu__meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--c-text-3);
+}
+
+.menu__save {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu__save::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.menu__save.is-ok::before {
+  background: #3ddc84;
+  box-shadow: 0 0 8px rgba(61, 220, 132, 0.8);
+}
+
+.menu__save.is-warn {
+  color: var(--c-gold);
+}
+
+.menu__save.is-warn::before {
+  background: var(--c-gold);
+}
+
+.menu__version {
+  font-family: var(--font-num);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+/* ─── Tamaños ─── */
+
+/* Pantallas bajas: tarjetas más bajas y sin descripción. */
+@container ui (max-height: 640px) {
+  .screen--menu {
+    --card-h: 112px;
+  }
+  .menu__text {
+    display: none;
+  }
+  .menu__title {
+    font-size: clamp(34px, 4.6vw, 60px);
+  }
+}
+
+/* Angostas: el riel pasa a dos filas llenas ("Continuar" y tres; después
+   cuatro) y sin rótulos de grupo. */
+@container ui (max-width: 900px) {
+  .screen--menu {
+    --card-h: 104px;
+    --rail-h: calc(var(--card-h) * 2 + 8px);
+  }
+  .menu__rail {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .menu__group,
+  .menu__group-cards {
+    display: contents;
+  }
+  .menu__group-label {
+    display: none;
+  }
+  .mcard {
+    flex: 1 1 calc(20% - 8px);
+    height: var(--card-h);
+  }
+  .mcard--hero {
+    flex: 2 1 calc(40% - 8px);
+  }
+  .menu__hero {
+    width: min(62%, 520px);
+    top: calc(var(--gutter) + 64px);
+    bottom: calc(var(--rail-bottom) + var(--rail-h) + 24px);
+  }
+  .menu__title {
+    font-size: 40px;
+  }
+  .menu__text,
+  .menu__season span,
+  .menu__meta {
+    display: none;
+  }
+  .menu__player .pcard__info {
+    width: 110px;
+  }
+  .mchip {
+    padding: 0 12px;
+  }
+  .mchip__label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__sweep,
+  .menu__streak,
+  .menu__action::before,
+  .mcard.is-focused::before,
+  .mcard.is-focused::after,
+  .mcard.is-focused .mcard__icon,
+  .mcard__live i {
+    animation: none;
+  }
+  .menu__streak {
+    display: none;
+  }
+  .mcard__track-glow,
+  .mcard__track-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Con el desafío y el evento semanal arriba, los botones de opciones quedan sólo con el ícono
+   (el nombre está en su aria-label y en el panel grande al enfocarlos). */
+.menu__season {
+  white-space: nowrap;
+}
+
+@media (max-width: 1600px) {
+  .menu__chips .mchip:not(.mchip--daily):not(.mchip--weekly) .mchip__label {
+    display: none;
+  }
+}

@@ -1,0 +1,194 @@
+# ÁPICE GP
+
+Juego de carreras de monoplazas estilo Fórmula 1 en 3D para navegador
+(Vite + TypeScript + Three.js + GSAP + Web Audio). Equipos, pilotos y marcas
+son ficticios.
+
+La arquitectura, las decisiones técnicas y las fases de desarrollo están en
+[`PLAN.md`](./PLAN.md).
+
+## Cómo jugar (desarrollo)
+
+Requisitos: Node.js 20.19 o superior (o 22.12+) y un navegador con WebGL 2
+(Chrome, Edge, Firefox o Safari recientes).
+
+```bash
+cd formula-3d
+npm install
+npm run dev
+```
+
+Abrir <http://localhost:5173>.
+
+## Controles
+
+| Acción | Teclado | Gamepad |
+|---|---|---|
+| Navegar | Flechas o WASD | Cruceta o stick izquierdo |
+| Elegir | Enter o Espacio | A |
+| Volver | Esc o Retroceso | B |
+| Cambiar pestaña | Q / E | LB / RB |
+
+El ratón también funciona en todos los menús.
+
+### En pista
+
+| Acción | Teclado | Gamepad |
+|---|---|---|
+| Acelerar / frenar | ↑ / ↓ | RT / LT |
+| Doblar | ← / → | Stick izquierdo |
+| DRS (en las zonas) | D | X |
+| Cambiar cámara | C | Y |
+| Retrovisor (prender / apagar) | M | Cruceta ↑ |
+| Volver a la pista | R | Select |
+| Pausa | Esc o P | Start (o B) |
+
+Las teclas del manejo se cambian en Ajustes → Controles.
+
+La caja de cambios es automática (8 marchas).
+
+## Comandos
+
+```bash
+npm run dev        # servidor de desarrollo
+npm run build      # typecheck + build de producción (dist/)
+npm run preview    # sirve dist/
+npm run check      # typecheck + lint + pruebas unitarias + build
+npm test           # pruebas unitarias (Vitest)
+npm run smoke      # prueba de humo en Chromium real (necesita `npm run build` antes)
+npm run build:artifact  # todo el juego en un solo HTML (dist-artifact/apice-gp.html)
+```
+
+La prueba de humo usa `playwright-core`. Si no tienes un Chromium de Playwright
+instalado: `npx playwright-core install chromium`, o indica uno propio con la
+variable `CHROMIUM_PATH`.
+
+## Estado
+
+Versión 2.8.0: menú de juego profesional. Evento semanal en contrarreloj,
+licencia del piloto según tus medallas, barra de noticias, cámara del estudio
+que va a una parte del auto según la opción, pantalla de carga con tu mejor
+vuelta y las curvas clave, y un monoplaza que cruza la portada.
+
+Desde la 2.7.0: boxes como en la transmisión y cabina profesional. Las
+paradas son más cortas (~15 s de pérdida) y se ven con una toma de TV: los
+gatos levantan el auto, los mecánicos sacan las ruedas viejas y ponen las
+nuevas, levantan los brazos y el semáforo se pone verde; cada equipo tiene su
+garaje. En la cabina ves tus manos en el volante, que ahora tiene perillas,
+rótulos, luces de bandera y una pantalla con gomas, alerón y el limitador de
+boxes; la cabeza mira hacia la curva.
+
+Desde la 2.6.0: carreras como en la transmisión. Al terminar puedes **ver la
+repetición** con cámaras de TV, helicóptero, a bordo y un director que corta
+solo (pausa, velocidad, saltos y elegir a quién seguir). En la largada,
+acelerar antes de que se apaguen las luces es **salida en falso** (+5 s) y se
+mide tu reacción. Las gomas se gastan y los golpes dañan el alerón: con **B**
+pides **boxes** (o te metes en el desvío) y el equipo te cambia todo. Salirte
+de la pista ya no anula la vuelta: son **advertencias** y, desde la cuarta,
+**+5 s**. Hay **banderas amarillas** por sector y **azules** al que van a
+doblar.
+
+Desde la 2.5.0: **récords en línea** con el mismo link. Quien abre el juego
+desde claude.ai con su cuenta ve, en Circuitos → Récords, los diez mejores
+tiempos de cada circuito (con medalla y nivel de ayudas) y puede **correr
+contra el fantasma del récord**; en el Perfil está el **ranking de
+medallas**. Los tiempos se suben solos al mejorar. Sin cuenta, el juego
+funciona igual, sin tablas.
+
+Desde la 2.4.0: más fluido y con motivos para volver. El juego ya no pierde
+cuadros por el ruido de los tiempos del navegador y mueve el auto al ritmo
+exacto del monitor; el posprocesado se hace en una sola pasada (dos menos a
+pantalla completa por cuadro) y la escena pide un 20 % menos de llamadas de
+dibujo. Cada circuito tiene **medallas de tiempo** (bronce, plata, oro y
+platino), con la próxima a la vista mientras corres, y hay un **desafío del
+día** (vuelta de medalla, podio, remontada, carrera limpia o victoria) con
+racha de días seguidos que sube el premio.
+
+Desde la 2.3.0: las carreras son más estables y fluidas. Rueda a rueda, la
+posición ya no parpadea (cambia cuando uno pasa de verdad, con 1,2 m de
+ventaja), un auto que vuelve a la pista ya no reaparece encima de otro (si
+al terminar el modo fantasma tiene a alguien encima, lo espera) y deja de
+titilar. Se terminaron los tirones a mitad de carrera: las sombras de cada
+pieza se preparan todas durante la carga. La calidad **Media** dibuja menos
+píxeles y el brillo a un cuarto de resolución, sin que se note. Y hay un
+**retrovisor** arriba al centro de la pantalla, en todas las cámaras, con
+quién viene detrás y a cuánto (M para prenderlo o apagarlo); en Alta y
+Ultra los espejos del auto en la cabina reflejan lo mismo.
+
+Desde la 2.2.0: en el menú hay un **piloto 3D** junto al auto, con el traje
+del equipo y el casco elegido en el garaje, que respira, mira a la cámara,
+saluda y reacciona a cada tarjeta (señala el auto, levanta el pulgar, se
+cruza de brazos en el Perfil). El auto se **mejora**: cada carrera da puntos
+de desarrollo para Motor, Aerodinámica, Frenos, Caja de cambios y Chasis
+(cinco niveles cada uno, con efecto real en la física), en la nueva pestaña
+Mejoras del garaje con la ficha del auto en barras. Y la pantalla nueva
+**Circuitos** muestra las 24 pistas a fondo: ficha técnica calculada con la
+física del juego y la traza de velocidad de una vuelta, guía curva por
+curva con velocidades, marcha, frenada y un consejo, y tus tiempos (mejor
+vuelta, sectores, vuelta ideal y resultados en esa pista).
+
+Desde la 2.1.0: la trazada ideal ya nunca pide curvas más cerradas de lo que
+gira el auto (la horquilla de Mónaco se toma a 49 km/h, como en la
+realidad) y los bots aprenden cada pista: en Leyenda casi no se salen,
+largan limpio y no quedan atascados. Desde la 2.0.0: las 24 pistas del calendario 2026 con su trazado real (de
+Melbourne a Yas Marina, con las urbanas entre muros y edificios, el cruce
+de Suzuka y el desierto de Sakhir), cada una clasificada como Fácil, Media o
+Difícil después de analizar su trazado y medirla con el propio juego, y 5
+campeonatos: Copa Iniciación (las 8 fáciles), Copa Desafío (las 8 medias),
+Copa Élite (las 8 difíciles), Temporada Completa (las 24, de la más fácil a
+la más difícil) y Gran Gira (10 carreras elegidas por el autor). El menú
+principal es nuevo y animado: el auto sobre un podio con luces LED y focos,
+el acceso enfocado en grande a la izquierda (título que entra con máscara,
+datos que cuentan), un riel de tarjetas con color propio, borde de luz que
+gira y una barra que sigue al foco, y "Continuar" con el trazado de la
+próxima carrera. La justificación pista por pista está en
+`PLAN.md` (Versión 2.0).
+
+Desde antes: las 9 fases del documento de diseño están completas, con
+más tracción en curvas, carga y carrera más fluidas, pistas más anchas,
+gráficos mejorados, circuitos con más detalle (asfalto con goma y marcas,
+árboles con viento, barreras de neumáticos, horizonte y público animado) y
+menús pulidos (fondos animados, mapa del circuito con sectores y un auto que
+recorre la vuelta, vista previa del campeonato), texturas nítidas
+(anisotrópico 8–16×, mipmaps, doble resolución y detalle cercano), ayuda de
+dirección hacia el ápice con anti-derrape en Principiante y línea de
+trazada dinámica en todos los niveles, que se pone roja con tiempo para
+frenar suave y doblar. Los circuitos usan el trazado real (línea central
+medida) y son algo más anchos que los reales; la dirección con teclado
+crece con el tiempo que mantienes la flecha, sin demora: responde enseguida
+pero un toque corto gira poco. En ventanas chicas (como el panel de
+claude.ai) la interfaz se achica en proporción en vez de encimarse. El HUD
+sigue la distribución de una transmisión de carrera y la calidad inicial se
+elige según la GPU para que el juego vaya fluido y nítido. Los árboles tienen
+copas de hojas, cada auto apoya una sombra en el piso, los autos tienen
+alerón delantero de carbono de varios elementos, morro ancho y calcomanías de
+patrocinadores ficticios, y la cabina tiene retrovisores con la pista de atrás
+(Alta y Ultra), volante con pantalla completa y fibra de carbono.
+24 circuitos, con pantalla de selección de carrera. Modos: práctica
+libre, carrera rápida (3, 5 o 10 vueltas contra 9–19 rivales con IA de 5
+dificultades), contrarreloj con fantasma y campeonato con puntos. XP y
+niveles 1–100, pase de temporada de 50 niveles, garaje con vista previa en
+vivo (pintura, material, llantas, alerón, casco, número y festejo), perfil con
+estadísticas, récords, vitrina de trofeos y 21 logros. Tutorial la primera
+vez, manual de ayudas con demos animadas, teclas reasignables y música de
+menú generativa.
+
+En pista: presentación del circuito en tres tomas (vuelo, parrilla y órbita),
+clima, choques con chispas y humo, humo de neumáticos, tierra fuera de la
+pista, rebufo y DRS (el campo visual se abre), desenfoque de velocidad y aire
+caliente de los escapes, bandera a cuadros y cámara lenta en la llegada,
+tres cámaras, sonido 3D, HUD con radio, ayudas por niveles y rendimiento
+automático. Después de una carrera con rivales, el podio 3D con confeti,
+serpentinas, champán y fuegos artificiales (el festejo equipado se luce más).
+Ver la sección **Fases** de `PLAN.md`.
+
+## Créditos de datos
+
+Los trazados de Albert Park y Monza vienen de la
+[TUMFTM racetrack-database](https://github.com/TUMFTM/racetrack-database)
+(Universidad Técnica de Múnich), derivada de OpenStreetMap (© colaboradores
+de OpenStreetMap), bajo licencia LGPL-3.0. Los otros 22 vienen de
+[bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (licencia
+MIT). Los archivos convertidos y las licencias están en
+`src/tracks/data/real/`. Los nombres de los circuitos y ciudades son
+geográficos; equipos, pilotos, patrocinadores y récords son ficticios.

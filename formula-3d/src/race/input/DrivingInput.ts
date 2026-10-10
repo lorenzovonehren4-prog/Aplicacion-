@@ -1,0 +1,192 @@
+/**
+ * Mandos de manejo a partir del teclado y el gamepad. Ver PLAN.md §4.7.
+ *
+ * Teclado: los mandos son digitales, así que se suavizan con rampas (el
+ * acelerador sube en ~0,17 s). La dirección crece con el tiempo que
+ * mantienes la flecha, a mitad de camino entre la dirección directa (un
+ * toque giraba de golpe) y una lenta por tiempo (había que esperar para que
+ * doblara): giro = (tiempo / T)^1,25, casi lineal, así responde enseguida
+ * pero un toque corto gira poco. T va de 0,28 s despacio a 0,75 s a fondo
+ * (×1,2 con la dirección asistida). A 180 km/h en Principiante, un toque de
+ * 0,1 s da ~0,4 g y mantenerla 0,3 s ya dobla a 2 g. Al soltar vuelve al
+ * centro más rápido de lo que gira.
+ * Gamepad: gatillos analógicos y stick con zona muerta y curva de respuesta.
+ *
+ * Teclas (reasignables en Ajustes → Controles, `core/input/bindings.ts`): por
+ * defecto ↑ acelerar · ↓ frenar · ←/→ doblar · D DRS · B boxes · C cámara ·
+ * M retrovisor · R volver a pista · P pausa (Esc pausa siempre). Gamepad:
+ * RT/LT, stick izquierdo, X DRS, cruceta abajo boxes, Y cámara, cruceta arriba
+ * retrovisor, Select volver a pista, Start pausa.
+ */
+
+import type { InputManager } from '../../core/input/InputManager';
+import type { ControlSettings } from '../../core/save/schema';
+import { clamp, damp } from '../../core/utils/math';
+
+export interface DrivingControls {
+  throttle: number;
+  brake: number;
+  /** −1 izquierda … 1 derecha. */
+  steer: number;
+}
+
+export type DrivingEvent = 'camera' | 'mirror' | 'drs' | 'pit' | 'reset' | 'pause';
+
+/** Acciones de un toque (las teclas vienen de los ajustes; Esc llega como "volver" y también pausa). */
+const KEY_EVENTS: ReadonlyArray<DrivingEvent> = ['camera', 'mirror', 'drs', 'pit', 'reset', 'pause'];
+
+/** Botones del gamepad (mapeo estándar) → evento. */
+const PAD_EVENTS: ReadonlyArray<readonly [number, DrivingEvent]> = [
+  [2, 'drs'], // X / Cuadrado
+  [3, 'camera'], // Y / Triángulo
+  [8, 'reset'], // Select / Share
+  [9, 'pause'], // Start / Options
+  [12, 'mirror'], // Cruceta arriba
+  [13, 'pit'], // Cruceta abajo
+];
+
+const THROTTLE_UP = 6;
+const THROTTLE_DOWN = 9;
+const BRAKE_UP = 7;
+const BRAKE_DOWN = 10;
+const STEER_RETURN = 5.5;
+/** Exponente de la curva de giro del teclado (1 = lineal; más, arranque más suave). */
+const STEER_CURVE = 1.25;
+/** Segundos de flecha pulsada hasta el tope: despacio, y cuánto se suma a fondo (80 m/s). */
+const STEER_TIME_SLOW = 0.28;
+const STEER_TIME_FAST = 0.47;
+/** Con la dirección asistida (Principiante) llega al tope un poco más tarde. */
+const STEER_TIME_ASSISTED = 1.2;
+
+export class DrivingInput {
+  readonly controls: DrivingControls = { throttle: 0, brake: 0, steer: 0 };
+  private readonly handlers = new Set<(event: DrivingEvent) => void>();
+  private readonly padPressed = new Set<number>();
+  private readonly offKey: () => void;
+  /** El DRS se mantiene pedido hasta que se vuelve a pulsar o se frena. */
+  drsRequested = false;
+  /** El último mando usado para manejar fue el gamepad. */
+  private padInUse = false;
+
+  /**
+   * @param assisted devuelve true con la dirección asistida (Principiante):
+   *   el volante gira más despacio y el stick se suaviza más.
+   */
+  constructor(
+    private readonly input: InputManager,
+    private readonly settings: () => ControlSettings,
+    private readonly assisted: () => boolean = () => false,
+  ) {
+    this.offKey = input.onKey((code) => {
+      const keys = this.settings().keys;
+      const event = KEY_EVENTS.find((name) => keys[name] === code);
+      if (event) this.emit(event);
+    });
+  }
+
+  onEvent(handler: (event: DrivingEvent) => void): () => void {
+    this.handlers.add(handler);
+    return () => this.handlers.delete(handler);
+  }
+
+  /** Suelta todo (al pausar o reiniciar). */
+  release(): void {
+    this.controls.throttle = 0;
+    this.controls.brake = 0;
+    this.controls.steer = 0;
+    this.drsRequested = false;
+  }
+
+  /** Actualiza los mandos. `speed` (m/s) ajusta la rapidez de la dirección con teclado. */
+  update(dt: number, speed: number): void {
+    const settings = this.settings();
+    const pad = this.input.gamepad;
+    this.pollPadEvents(pad);
+
+    const keys = settings.keys;
+    const keyThrottle = this.input.isKeyDown(keys.throttle);
+    const keyBrake = this.input.isKeyDown(keys.brake);
+    const keyLeft = this.input.isKeyDown(keys.left);
+    const keyRight = this.input.isKeyDown(keys.right);
+
+    // Gatillos y stick del gamepad.
+    const padThrottle = pad?.buttons[7]?.value ?? 0;
+    const padBrake = pad?.buttons[6]?.value ?? 0;
+    const padSteer = shapeStick(pad?.axes[0] ?? 0, settings);
+    if (keyThrottle || keyBrake || keyLeft || keyRight) this.padInUse = false;
+    else if (padSteer !== 0 || padThrottle > 0.1 || padBrake > 0.1) this.padInUse = true;
+
+    const c = this.controls;
+    c.throttle = Math.max(ramp(c.throttle, keyThrottle ? 1 : 0, THROTTLE_UP, THROTTLE_DOWN, dt), padThrottle > 0.02 ? padThrottle : 0);
+    c.brake = Math.max(ramp(c.brake, keyBrake ? 1 : 0, BRAKE_UP, BRAKE_DOWN, dt), padBrake > 0.02 ? padBrake : 0);
+
+    const assisted = this.assisted();
+    if (this.padInUse && pad) {
+      c.steer = damp(c.steer, padSteer, assisted ? 11 : 20, dt);
+    } else {
+      const target = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0);
+      if (target === 0) {
+        c.steer = moveTowards(c.steer, 0, STEER_RETURN * dt);
+      } else if (Math.sign(c.steer) !== 0 && Math.sign(c.steer) !== target) {
+        // Cambiar de lado: primero vuelve al centro (rápido) y después gira.
+        c.steer = moveTowards(c.steer, 0, (STEER_RETURN + 2) * dt);
+      } else {
+        // Segundos de flecha pulsada hasta el tope: pocos para maniobrar
+        // despacio, más a alta velocidad y con la dirección asistida.
+        const fullLock =
+          ((STEER_TIME_SLOW + STEER_TIME_FAST * clamp(speed / 80, 0, 1)) / Math.max(0.3, settings.steeringSensitivity)) *
+          (assisted ? STEER_TIME_ASSISTED : 1);
+        // Sin guardar el tiempo: se deduce del giro actual (así un toque suelto
+        // y vuelto a pulsar sigue desde donde quedó).
+        const held = Math.pow(Math.abs(c.steer), 1 / STEER_CURVE) * fullLock + dt;
+        c.steer = target * Math.min(1, Math.pow(held / fullLock, STEER_CURVE));
+      }
+    }
+
+    // Frenar cierra el DRS (como en la realidad).
+    if (c.brake > 0.1) this.drsRequested = false;
+  }
+
+  dispose(): void {
+    this.offKey();
+    this.handlers.clear();
+  }
+
+  private pollPadEvents(pad: Gamepad | null): void {
+    if (!pad) {
+      this.padPressed.clear();
+      return;
+    }
+    for (const [index, event] of PAD_EVENTS) {
+      const pressed = pad.buttons[index]?.pressed ?? false;
+      if (pressed && !this.padPressed.has(index)) this.emit(event);
+      if (pressed) this.padPressed.add(index);
+      else this.padPressed.delete(index);
+    }
+  }
+
+  private emit(event: DrivingEvent): void {
+    if (event === 'drs') this.drsRequested = !this.drsRequested;
+    for (const handler of [...this.handlers]) handler(event);
+  }
+}
+
+/** Stick → dirección: zona muerta, curva de respuesta según la sensibilidad. */
+export function shapeStick(raw: number, settings: ControlSettings): number {
+  const deadzone = settings.steeringDeadzone;
+  const magnitude = Math.abs(raw);
+  if (magnitude <= deadzone) return 0;
+  const normalized = Math.min(1, (magnitude - deadzone) / (1 - deadzone));
+  // Sensibilidad 0,5 → curva suave (exponente 1,85); 1,5 → casi lineal (1,15).
+  const exponent = 2.2 - 0.7 * settings.steeringSensitivity;
+  return Math.sign(raw) * Math.pow(normalized, exponent);
+}
+
+function ramp(current: number, target: number, up: number, down: number, dt: number): number {
+  return target > current ? Math.min(target, current + up * dt) : Math.max(target, current - down * dt);
+}
+
+function moveTowards(current: number, target: number, maxDelta: number): number {
+  if (Math.abs(target - current) <= maxDelta) return target;
+  return current + Math.sign(target - current) * maxDelta;
+}

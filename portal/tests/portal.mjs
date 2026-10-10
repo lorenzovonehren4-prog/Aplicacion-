@@ -35,8 +35,8 @@ check(await page.isVisible('#intro'), 'la intro aparece la primera vez');
 await page.waitForSelector('#intro', { state: 'detached', timeout: 6000 });
 await page.waitForTimeout(600);
 await shot(page, 'portal-1-inicio.png');
-check(await page.locator('.tile[data-tile]').count() === 3, 'las 3 fichas de juego en la cuadrícula');
-check(await page.locator('.slide').count() === 3, 'carrusel con 3 destacados');
+check(await page.locator('.tile[data-tile]').count() === 9, 'las 9 fichas de juego en la cuadrícula');
+check(await page.locator('.slide').count() === 4, 'carrusel con 4 destacados');
 check(await page.isVisible('#btnMe'), 'botón de perfil arriba a la derecha');
 const meBox = await page.locator('#btnMe').boundingBox();
 check(meBox.x + meBox.width > 1366 - 40 && meBox.y < 20, 'el botón de perfil está pegado a la esquina superior derecha');
@@ -52,7 +52,7 @@ await page.waitForTimeout(200);
 check(await page.locator('.tile[data-tile]').count() === 1, 'buscar "karts" deja sólo el Kartódromo');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
-check(await page.locator('.tile[data-tile]').count() === 3, 'Esc limpia la búsqueda');
+check(await page.locator('.tile[data-tile]').count() === 9, 'Esc limpia la búsqueda');
 
 // categorías
 await page.click('[data-cat=puzzles]');
@@ -64,7 +64,16 @@ await page.click('[data-cat=todos]');
 // carrusel
 await page.click('[data-hero="1"]');
 await page.waitForTimeout(900);
-check(await page.locator('.slide.is-on .slide__title').textContent() === 'Sazón Tycoon', 'el carrusel cambia al tocar la miniatura');
+check(await page.locator('.slide.is-on .slide__title').textContent() === 'Kartódromo', 'el carrusel cambia al tocar la miniatura');
+
+// el botón de about:blank (arriba a la derecha)
+const bb = await page.locator('#btnBlank').boundingBox();
+check(bb && bb.y < 20 && bb.x > 900, 'botón about:blank arriba a la derecha');
+const [tab] = await Promise.all([ctx.waitForEvent('page'), page.click('#btnBlank')]);
+await tab.waitForLoadState();
+check(tab.url() === 'about:blank' && await tab.title() === 'Classes', 'abre una pestaña about:blank titulada "Classes"');
+check(/index\.html#\/$/.test(await tab.locator('iframe').getAttribute('src')), 'con el portal adentro');
+await tab.close();
 
 // hover en ficha
 await page.hover('.tile[data-tile=karting]');
@@ -103,7 +112,7 @@ await page.waitForTimeout(400);
 check(await page.locator('#meName').textContent() === 'ElZorro', 'cambiar el nombre se ve en el botón de perfil');
 await shot(page, 'portal-5-perfil.png');
 const ach = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('anonymousGames_v1')).ach));
-check(['hola', 'primera', 'identidad', 'flechado'].every(a => ach.includes(a)), 'insignias: ' + ach.join(', '));
+check(['hola', 'primera', 'identidad', 'flechado', 'fantasma'].every(a => ach.includes(a)), 'insignias: ' + ach.join(', '));
 await page.keyboard.press('Escape');
 await page.waitForTimeout(400);
 check(await page.locator('#drawer').isHidden(), 'Esc cierra el perfil');
@@ -138,6 +147,7 @@ await shot(mp, 'portal-8-movil-grilla.png');
 await mp.tap('#btnSearchMobile');
 check(await mp.isVisible('#q'), 'el buscador se abre en celular');
 await mp.goto(base + '#/juego/karting');
+await mp.reload();
 await mp.waitForTimeout(700);
 const sw2 = await mp.evaluate(() => document.documentElement.scrollWidth);
 check(sw2 <= 375, 'página de juego sin scroll horizontal en celular (' + sw2 + ' px)');

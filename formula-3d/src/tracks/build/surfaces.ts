@@ -1,0 +1,412 @@
+/**
+ * Superficies a nivel del suelo: pasto con variación de tono, asfalto, pintura
+ * blanca (bordes, línea de meta, casilleros de la parrilla), pianos elevados,
+ * camas de grava, escapatorias asfaltadas y calle de boxes.
+ */
+
+import {
+  Color,
+  Float32BufferAttribute,
+  MeshStandardMaterial,
+  PlaneGeometry,
+  type BufferGeometry,
+  type Texture,
+} from 'three';
+import { PIT_WALL_RUNOFF } from '../PitLane';
+import { ASPHALT_TILE, createRacedAsphaltMaterial, createTrackDataTexture } from './asphalt';
+import { addMesh, mergeAll, type BuildContext } from './context';
+import { DETAIL_PARS, detailLayer } from './detail';
+import { buildRibbon, fullLap, spansWhere, type ProfilePoint } from './ribbon';
+import { createAsphalt, createChecker, createGravel, createGrass, createKerb } from './textures';
+
+/** Alturas (m) para que cada capa quede por encima de la anterior sin parpadeos. */
+const Y = { ground: -0.06, gravel: -0.01, runoff: 0.002, asphalt: 0, paint: 0.006 };
+
+export function buildGround(ctx: BuildContext): void {
+  const g = ctx.track.geometry;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (let i = 0; i < g.count; i++) {
+    minX = Math.min(minX, g.x[i] ?? 0);
+    maxX = Math.max(maxX, g.x[i] ?? 0);
+    minZ = Math.min(minZ, g.z[i] ?? 0);
+    maxZ = Math.max(maxZ, g.z[i] ?? 0);
+  }
+  const size = Math.max(maxX - minX, maxZ - minZ) + 9000;
+  const segments = 120;
+  const plane = new PlaneGeometry(size, size, segments, segments);
+  plane.rotateX(-Math.PI / 2);
+  plane.translate((minX + maxX) / 2, Y.ground, (minZ + maxZ) / 2);
+
+  const sand = ctx.track.def.scenery.ground === 'sand';
+  // Parches de tono (rompen la repetición de la textura a gran escala).
+  const colors: number[] = [];
+  const position = plane.getAttribute('position');
+  const color = new Color();
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i);
+    const z = position.getZ(i);
+    const n =
+      Math.sin(x * 0.011 + Math.sin(z * 0.007) * 2) * 0.5 +
+      Math.sin(z * 0.013 + Math.cos(x * 0.005) * 2) * 0.35 +
+      ctx.rng.range(-0.15, 0.15);
+    // Verde de césped real: menos saturado y algo más oscuro (antes parecía plástico);
+    // en el desierto, arena clara con manchas más tostadas.
+    if (sand) color.setHSL(0.095 + n * 0.012, 0.42 + n * 0.08, 0.6 + n * 0.06);
+    else color.setHSL(0.25 + n * 0.018, 0.34 + n * 0.07, 0.44 + n * 0.07);
+    colors.push(color.r * 1.25, color.g * 1.25, color.b * 1.25);
+  }
+  plane.setAttribute('color', new Float32BufferAttribute(colors, 3));
+
+  const grass = ctx.own.own(createGrass(ctx.anisotropy, ctx.textureSize));
+  grass.repeat.set(size / 5, size / 5);
+  const material = new MeshStandardMaterial({ map: grass, vertexColors: true, roughness: 0.95 });
+  // Franjas de césped cortado (claras y oscuras, de 9 m), como se ven en la TV,
+  // y un cuadriculado suave más grande: se calculan con la posición del mundo.
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGroundXZ = (modelMatrix * vec4(position, 1.0)).xz;');
+    if (sand) {
+      // Arena: el grano de la textura de pasto en gris (el color lo pone el vértice) y
+      // ondulaciones del viento a dos escalas.
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>\nvarying vec2 vGroundXZ;\n${DETAIL_PARS}`)
+        .replace(
+          '#include <map_fragment>',
+          `#include <map_fragment>
+          ${detailLayer(4.3, 0.35)}
+          float grain = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+          diffuseColor.rgb = vec3(0.55 + grain * 1.15);
+          float ripple = sin(dot(vGroundXZ, vec2(0.83, 0.31)) + sin(vGroundXZ.y * 0.07) * 2.6);
+          float dune = sin(vGroundXZ.x * 0.006 + sin(vGroundXZ.y * 0.004) * 2.0) * sin(vGroundXZ.y * 0.008 - vGroundXZ.x * 0.003);
+          diffuseColor.rgb *= 0.95 + 0.05 * ripple + 0.08 * dune;`,
+        );
+      return;
+    }
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\nvarying vec2 vGroundXZ;\n${DETAIL_PARS}`)
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        ${detailLayer(4.3, 0.45)}
+        // Franjas del corte con el borde algo suave (el césped se inclina, no es un escalón).
+        float mowPhase = fract(dot(vGroundXZ, vec2(0.0786, 0.0786)));
+        float mow = smoothstep(0.44, 0.56, mowPhase) - smoothstep(0.94, 1.0, mowPhase);
+        float checker = step(0.5, fract(dot(vGroundXZ, vec2(-0.0262, 0.0262))));
+        diffuseColor.rgb *= 0.82 + 0.26 * mow + 0.04 * checker;
+        // Manchas de pasto más seco (amarillento) a gran escala.
+        float dry = sin(vGroundXZ.x * 0.017 + sin(vGroundXZ.y * 0.011) * 2.3) * sin(vGroundXZ.y * 0.015 - sin(vGroundXZ.x * 0.009) * 1.9);
+        dry = smoothstep(0.35, 0.95, dry);
+        float luma = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma * 1.25, luma * 1.12, luma * 0.55), dry * 0.45);`,
+      );
+  };
+  material.customProgramCacheKey = () => (sand ? 'arena' : 'cesped-cortado');
+  addMesh(ctx, plane, material, { name: 'suelo' });
+}
+
+/** Texturas del asfalto: se generan una vez por circuito (pista, escapatorias y boxes las comparten). */
+function asphaltTextures(ctx: BuildContext): { map: Texture; bump: Texture } {
+  if (!ctx.asphalt) {
+    const textures = createAsphalt(ctx.anisotropy, ctx.textureSize);
+    ctx.own.own(textures.map);
+    ctx.own.own(textures.bump);
+    ctx.asphalt = textures;
+  }
+  return ctx.asphalt;
+}
+
+export function buildAsphalt(ctx: BuildContext): void {
+  const g = ctx.track.geometry;
+  const hw = g.halfWidth;
+  const { map, bump } = asphaltTextures(ctx);
+  const ribbon = buildRibbon(g, {
+    ...fullLap(g),
+    step: 2,
+    profile: () => [
+      [-hw - 0.3, Y.asphalt],
+      [hw + 0.3, Y.asphalt],
+    ],
+    vLength: ASPHALT_TILE,
+    u: 'meters',
+    uLength: ASPHALT_TILE,
+  });
+  // La trazada engomada, las frenadas y los parches salen de una textura de datos de la vuelta.
+  const data = ctx.own.own(createTrackDataTexture(ctx.track));
+  addMesh(ctx, ribbon, createRacedAsphaltMaterial(ctx.track, map, bump, data), { name: 'asfalto' });
+}
+
+/** Pintura blanca: bordes de pista, línea de meta y casilleros de la parrilla. */
+export function buildPaint(ctx: BuildContext): void {
+  const track = ctx.track;
+  const g = track.geometry;
+  const hw = g.halfWidth;
+  const pieces: BufferGeometry[] = [];
+  const strip = (from: number, to: number, d0: number, d1: number): void => {
+    // Una vuelta entera no se puede expresar con from/to envueltos (quedarían iguales).
+    const whole = to - from >= g.length;
+    const range = whole ? fullLap(g) : { from: g.wrapS(from), to: g.wrapS(to) };
+    pieces.push(
+      buildRibbon(g, {
+        ...range,
+        step: whole ? 3 : Math.min(3, Math.max(0.1, g.wrapS(to - from))),
+        profile: () => [
+          [d0, Y.paint],
+          [d1, Y.paint],
+        ],
+        vLength: 1,
+      }),
+    );
+  };
+  // Líneas blancas de borde, continuas en toda la vuelta.
+  strip(0, g.length, -hw + 0.12, -hw + 0.36);
+  strip(0, g.length, hw - 0.36, hw - 0.12);
+  // Parrilla: barra delante de cada auto y dos laterales cortas.
+  for (let p = 0; p < 20; p++) {
+    const slot = track.gridSlot(p);
+    const front = slot.s + 3.5;
+    strip(front, front + 0.2, slot.d - 1.25, slot.d + 1.25);
+    strip(front - 1.4, front, slot.d - 1.25, slot.d - 1.05);
+    strip(front - 1.4, front, slot.d + 1.05, slot.d + 1.25);
+  }
+  const white = new MeshStandardMaterial({
+    color: '#f2f2ee',
+    roughness: 0.7,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
+  });
+  const merged = mergeAll(pieces);
+  for (const piece of pieces) piece.dispose();
+  if (merged) addMesh(ctx, merged, white, { name: 'pintura' });
+
+  // Línea de meta a cuadros.
+  const checker = ctx.own.own(createChecker(ctx.anisotropy));
+  const line = buildRibbon(g, {
+    from: track.startS - 0.6,
+    to: track.startS + 0.6,
+    step: 1.2,
+    profile: () => [
+      [-hw + 0.12, Y.paint],
+      [hw - 0.12, Y.paint],
+    ],
+    vLength: 1.2,
+    u: 'meters',
+    uLength: 4.8,
+  });
+  addMesh(
+    ctx,
+    line,
+    new MeshStandardMaterial({ map: checker, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }),
+    { name: 'meta' },
+  );
+}
+
+export function buildKerbs(ctx: BuildContext): void {
+  const g = ctx.track.geometry;
+  const hw = g.halfWidth;
+  const pieces: BufferGeometry[] = [];
+  for (const kerb of ctx.track.trackside.kerbs) {
+    const length = g.wrapS(kerb.to - kerb.from);
+    const taper = (s: number): number => {
+      const fromStart = g.wrapS(s - kerb.from);
+      const toEnd = length - fromStart;
+      return Math.min(1, Math.max(0.15, Math.min(fromStart, toEnd) / 3));
+    };
+    pieces.push(
+      buildRibbon(g, {
+        from: kerb.from,
+        to: kerb.to,
+        step: 1,
+        profile: (_, s): ProfilePoint[] => {
+          const w = kerb.width * taper(s);
+          const height = 0.05 * taper(s);
+          return kerb.side === 'right'
+            ? [
+                [hw - 0.05, Y.paint],
+                [hw + w * 0.45, height],
+                [hw + w, 0.012],
+              ]
+            : [
+                [-hw - w, 0.012],
+                [-hw - w * 0.45, height],
+                [-hw + 0.05, Y.paint],
+              ];
+        },
+        vLength: 2,
+      }),
+    );
+  }
+  const merged = mergeAll(pieces);
+  for (const piece of pieces) piece.dispose();
+  if (!merged) return;
+  const texture = ctx.own.own(createKerb(ctx.anisotropy, ctx.textureSize));
+  addMesh(
+    ctx,
+    merged,
+    new MeshStandardMaterial({ map: texture, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
+    { name: 'pianos' },
+  );
+}
+
+/** Camas de grava y escapatorias asfaltadas (el resto es pasto: el suelo). */
+export function buildRunoff(ctx: BuildContext): void {
+  const g = ctx.track.geometry;
+  const t = ctx.track.trackside;
+  const hw = g.halfWidth;
+  const kinds: Array<{ kind: number; y: number }> = [
+    { kind: 1, y: Y.gravel },
+    { kind: 2, y: Y.runoff },
+  ];
+  for (const { kind, y } of kinds) {
+    const pieces: BufferGeometry[] = [];
+    for (const side of ['left', 'right'] as const) {
+      const runoff = side === 'left' ? t.runoffLeft : t.runoffRight;
+      const walls = side === 'left' ? t.wallLeft : t.wallRight;
+      const kerbs = side === 'left' ? t.kerbLeft : t.kerbRight;
+      for (const [from, to] of spansWhere(g, (i) => runoff[i] === kind)) {
+        pieces.push(
+          buildRibbon(g, {
+            from,
+            to,
+            step: 2,
+            profile: (i): ProfilePoint[] => {
+              const inner = hw + 0.25 + (kerbs[i] ?? 0) * 0.9;
+              const outer = (walls[i] ?? inner + 5) - 0.2;
+              return side === 'right'
+                ? [
+                    [inner, y],
+                    [outer, y],
+                  ]
+                : [
+                    [-outer, y],
+                    [-inner, y],
+                  ];
+            },
+            vLength: kind === 1 ? 4 : 7,
+            u: 'meters',
+            uLength: kind === 1 ? 4 : 7,
+          }),
+        );
+      }
+    }
+    const merged = mergeAll(pieces);
+    for (const piece of pieces) piece.dispose();
+    if (!merged) continue;
+    if (kind === 1) {
+      const gravel = ctx.own.own(createGravel(ctx.anisotropy, ctx.textureSize));
+      const material = new MeshStandardMaterial({ map: gravel, roughness: 1 });
+      // Manchas de tono grandes (piedras más claras o más húmedas): de lejos no se ve una lámina lisa.
+      material.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec2 vGravelXZ;')
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGravelXZ = (modelMatrix * vec4(position, 1.0)).xz;');
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', `#include <common>\nvarying vec2 vGravelXZ;\n${DETAIL_PARS}`)
+          .replace(
+            '#include <map_fragment>',
+            `#include <map_fragment>
+            ${detailLayer(3.1, 0.5)}
+            float gravelTone = sin(vGravelXZ.x * 0.21 + sin(vGravelXZ.y * 0.13) * 2.0) * sin(vGravelXZ.y * 0.17 + sin(vGravelXZ.x * 0.09) * 1.7);
+            float gravelFine = sin(vGravelXZ.x * 1.3 + vGravelXZ.y * 0.7) * sin(vGravelXZ.y * 1.1 - vGravelXZ.x * 0.4);
+            diffuseColor.rgb *= 0.9 + 0.12 * gravelTone + 0.05 * gravelFine;`,
+          );
+      };
+      material.customProgramCacheKey = () => 'grava-manchas';
+      addMesh(ctx, merged, material, { name: 'grava' });
+    } else {
+      const { map } = asphaltTextures(ctx);
+      addMesh(ctx, merged, new MeshStandardMaterial({ map, color: '#9aa0a8', roughness: 0.9 }), { name: 'escapatoria' });
+    }
+  }
+}
+
+/**
+ * Calle de boxes, detrás del muro de boxes: el asfalto de la calle y su
+ * pintura (líneas de entrada y salida desde el borde de la pista hasta las
+ * puntas del muro, división de carriles, líneas del límite de velocidad y
+ * los lugares de parada de los equipos). Los desvíos de entrada y salida son
+ * escapatorias asfaltadas (ver `Trackside`).
+ */
+export function buildPitLane(ctx: BuildContext): { inner: number; outer: number } {
+  const track = ctx.track;
+  const g = track.geometry;
+  const hw = g.halfWidth;
+  const pit = track.pitLane;
+  const sign = pit.sign;
+  const { map } = asphaltTextures(ctx);
+  // Perfil de una cinta entre dos distancias (sin signo) del lado de boxes.
+  const band = (d0: number, d1: number, y: number): ProfilePoint[] =>
+    sign > 0
+      ? [
+          [d0, y],
+          [d1, y],
+        ]
+      : [
+          [-d1, y],
+          [-d0, y],
+        ];
+  const lane = buildRibbon(g, {
+    from: pit.wallFrom,
+    to: pit.wallTo,
+    step: 3,
+    profile: () => band(pit.inner, pit.outer, Y.runoff),
+    vLength: 7,
+    u: 'meters',
+    uLength: 7,
+  });
+  addMesh(ctx, lane, new MeshStandardMaterial({ map, color: '#cfd3d8', roughness: 0.85 }), { name: 'boxes' });
+
+  const white: BufferGeometry[] = [];
+  const yellow: BufferGeometry[] = [];
+  const paint = (into: BufferGeometry[], from: number, to: number, edge: (t: number) => number, width: number, step = 2): void => {
+    const length = g.wrapS(to - from);
+    into.push(
+      buildRibbon(g, {
+        from,
+        to,
+        step: Math.min(step, Math.max(0.1, length)),
+        profile: (_, at) => {
+          const t = length > 0 ? Math.min(1, g.wrapS(at - from) / length) : 0;
+          const d = edge(t);
+          return band(d, d + width, Y.paint);
+        },
+        vLength: 1,
+      }),
+    );
+  };
+  const ease = (t: number): number => t * t * (3 - 2 * t);
+  // Líneas de entrada y de salida: del borde de la pista a la punta del muro y de vuelta.
+  paint(white, pit.entry, pit.wallFrom, (t) => hw + 0.15 + (PIT_WALL_RUNOFF - 0.45) * ease(t), 0.3);
+  paint(white, pit.wallTo, pit.exit, (t) => hw + 0.15 + (PIT_WALL_RUNOFF - 0.45) * (1 - ease(t)), 0.3);
+  // División entre el carril rápido y el de trabajo (a trazos).
+  const divider = (pit.fast + pit.box) / 2;
+  const span = g.wrapS(pit.wallTo - pit.wallFrom);
+  for (let along = 4; along + 3 < span; along += 7) paint(white, pit.wallFrom + along, pit.wallFrom + along + 3, () => divider, 0.18);
+  // Límite de velocidad: una línea de lado a lado al empezar y al terminar.
+  for (const at of [pit.limitFrom, pit.limitTo]) paint(white, at, at + 0.5, () => pit.inner + 0.3, pit.outer - pit.inner - 0.6, 0.5);
+  // Lugares de parada: un rectángulo amarillo en el carril de trabajo.
+  for (const at of pit.boxes) {
+    const near = pit.box - 1.6;
+    const far = pit.box + 1.6;
+    paint(yellow, at - 3, at + 3, () => near, 0.14, 6);
+    paint(yellow, at - 3, at + 3, () => far - 0.14, 0.14, 6);
+    paint(yellow, at + 2.86, at + 3, () => near, far - near, 0.14);
+    paint(yellow, at - 3, at - 2.86, () => near, far - near, 0.14);
+  }
+  const paints: Array<[BufferGeometry[], string, string]> = [
+    [white, '#f2f2ee', 'boxes-pintura'],
+    [yellow, '#f5c400', 'boxes-lugares'],
+  ];
+  for (const [pieces, color, name] of paints) {
+    const merged = mergeAll(pieces);
+    for (const piece of pieces) piece.dispose();
+    if (!merged) continue;
+    const material = new MeshStandardMaterial({ color, roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    addMesh(ctx, merged, material, { name });
+  }
+  return { inner: pit.inner, outer: pit.outer };
+}

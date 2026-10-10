@@ -45,6 +45,9 @@ const ICONS = {
   gamepad: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10a5 5 0 0 1 4.9 6l-.8 4a2.5 2.5 0 0 1-4.3 1.2L14.5 16h-5l-2.3 2.2A2.5 2.5 0 0 1 2.9 17l-.8-4A5 5 0 0 1 7 7z"/><path d="M8 10v4M6 12h4" stroke="var(--mask-ink,#07060d)" stroke-width="1.8" stroke-linecap="round"/><circle cx="15.5" cy="11" r="1.1" fill="var(--mask-ink,#07060d)"/><circle cx="17.5" cy="13" r="1.1" fill="var(--mask-ink,#07060d)"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 4 14h7l-1 8 9.5-12h-7z"/></svg>',
   pencil: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 4.5l4 4L9 19H5v-4z"/><path d="M14 6l4 4" stroke="var(--mask-ink,#07060d)" stroke-width="1.5"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 20 5.5v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4v-5h4v-5h4V5h4"/><path d="M15 3l3-1 1 3" /></svg>',
+  blank: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/><circle cx="6.5" cy="6.5" r=".6" fill="currentColor"/><circle cx="9" cy="6.5" r=".6" fill="currentColor"/><path d="M13 13h5v5"/><path d="m18 13-6 6"/></svg>',
 };
 const ic = (n, cls = '') => `<span class="ic ${cls}" aria-hidden="true">${ICONS[n] || ''}</span>`;
 function paintIcons(root = document) { for (const e of $$('[data-icon]', root)) { e.innerHTML = ICONS[e.dataset.icon] || ''; e.classList.add('ic'); e.setAttribute('aria-hidden', 'true'); e.removeAttribute('data-icon'); } }
@@ -112,16 +115,22 @@ const flag = (id, k) => ((prog(id) || {}).flags || {})[k] || 0;
 const ACH = [
   { id: 'hola', name: 'Sin rostro', desc: 'Entra a Anonymous Games', icon: 'mask', test: () => true },
   { id: 'primera', name: 'Primera partida', desc: 'Juega cualquier juego', icon: 'play', test: () => playedCount() >= 1 },
-  { id: 'explorador', name: 'Explorador', desc: `Prueba los ${GAMES.length} juegos`, icon: 'gamepad', test: () => playedCount() >= GAMES.length },
+  { id: 'curioso', name: 'Curioso', desc: 'Prueba 5 juegos distintos', icon: 'gamepad', test: () => playedCount() >= 5 },
+  { id: 'explorador', name: 'Explorador', desc: `Prueba los ${GAMES.length} juegos`, icon: 'star', test: () => playedCount() >= GAMES.length },
   { id: 'identidad', name: 'Nueva identidad', desc: 'Cambia tu nombre o tu máscara', icon: 'pencil', test: () => P.customized },
   { id: 'flechado', name: 'Flechado', desc: 'Marca un juego como favorito', icon: 'heart', test: () => P.favs.length > 0 },
+  { id: 'fantasma', name: 'Fantasma', desc: 'Abre el portal en about:blank', icon: 'blank', test: () => P.cloaked },
   { id: 'maraton', name: 'Maratón', desc: 'Juega 1 hora en total', icon: 'clock', test: () => totalTime() >= 3600 },
   { id: 'podio', name: 'Primera victoria', desc: 'Gana una carrera en Kartódromo', icon: 'flag', test: () => flag('karting', 'wins') >= 1 },
   { id: 'copa', name: 'Campeón', desc: 'Gana un campeonato en Kartódromo', icon: 'trophy', test: () => flag('karting', 'cups') >= 1 },
+  { id: 'cobrador', name: 'Cobrador', desc: 'Haz 10 viajes en Combi Rush', icon: 'users', test: () => flag('combi-rush', 'trips') >= 10 },
   { id: 'chef', name: 'Chef de barrio', desc: 'Llega al día 5 en Sazón Tycoon', icon: 'chef', test: () => flag('sazon', 'day') >= 5 },
   { id: 'cadena', name: 'Cadenero', desc: 'Abre un segundo local en Sazón Tycoon', icon: 'fire', test: () => flag('sazon', 'locales') >= 2 },
+  { id: 'leyenda', name: 'Leyenda', desc: 'Termina una carrera en Modo Carrera Fútbol', icon: 'trophy', test: () => flag('futbol', 'careers') >= 1 },
+  { id: 'muralla', name: 'Muralla', desc: 'Gana una partida en Reino en Guardia', icon: 'shield', test: () => flag('tower-defense', 'wins') >= 1 },
+  { id: 'cumbre', name: 'No miré abajo', desc: "Llega a la cima en Don't Look Up", icon: 'up', test: () => flag('escalada', 'done') >= 1 },
   { id: 'mente', name: 'Mente abierta', desc: 'Supera 10 niveles de Mind Escape', icon: 'puzzle', test: () => flag('mind-escape', 'done') >= 10 },
-  { id: 'escape', name: 'Escapaste', desc: 'Supera los 30 niveles de Mind Escape', icon: 'star', test: () => flag('mind-escape', 'done') >= 30 },
+  { id: 'escape', name: 'Escapaste', desc: 'Supera los 30 niveles de Mind Escape', icon: 'bolt', test: () => flag('mind-escape', 'done') >= 30 },
 ];
 const ACH_XP = 50;
 function checkAch(quiet) {
@@ -280,17 +289,18 @@ function gridHTML() {
   if (!list.length) {
     return `<div class="empty">${ic('mask')}<b>${UI.cat === 'favs' ? 'Aún no tienes favoritos' : 'No encontramos ese juego'}</b><small>${UI.cat === 'favs' ? 'Toca el corazón en cualquier juego para guardarlo aquí.' : 'Prueba con “carreras”, “puzzles” o “3D”.'}</small></div>`;
   }
-  const sizes = ['tile--w3', 'tile--w2', 'tile--w2'];
+  const sizes = ['tile--w3'];
   const tiles = list.map((g, i) => tileHTML(g, sizes[i] || 'tile--w2'));
   if (UI.cat === 'todos' && !UI.q.trim()) tiles.push(...SOON.map(soonHTML));
   return `<div class="grid">${tiles.join('')}</div>`;
 }
 
 /* ---------- carrusel destacado ---------- */
+const HERO = GAMES.filter(g => g.featured);
 function heroHTML() {
   return `<section class="hero" id="hero" aria-roledescription="carrusel" aria-label="Destacados">
-    ${GAMES.map((g, i) => `<article class="slide ${i === UI.hero ? 'is-on' : ''}" style="--c:${g.color};--c2:${g.color2}" aria-hidden="${i !== UI.hero}">
-      <img class="slide__bg" src="${g.hero}" alt="" ${i ? 'loading="lazy"' : ''}>
+    ${HERO.map((g, i) => `<article class="slide ${i === UI.hero ? 'is-on' : ''}" style="--c:${g.color};--c2:${g.color2}" aria-hidden="${i !== UI.hero}">
+      <img class="slide__bg" src="${g.hero || g.cover}" alt="" ${i ? 'loading="lazy"' : ''}>
       <div class="slide__shade"></div>
       <div class="slide__body">
         <span class="kicker">${ic('fire')} ${g.badge || 'Destacado'}</span>
@@ -303,13 +313,13 @@ function heroHTML() {
         </div>
       </div>
     </article>`).join('')}
-    <div class="hero__thumbs" role="tablist">${GAMES.map((g, i) => `<button class="hthumb ${i === UI.hero ? 'is-on' : ''}" type="button" role="tab" aria-selected="${i === UI.hero}" data-hero="${i}" style="--c:${g.color}">
+    <div class="hero__thumbs" role="tablist">${HERO.map((g, i) => `<button class="hthumb ${i === UI.hero ? 'is-on' : ''}" type="button" role="tab" aria-selected="${i === UI.hero}" data-hero="${i}" style="--c:${g.color}">
       <img src="${g.cover}" alt="" loading="lazy"><span>${esc(g.title)}</span><i class="hthumb__bar"></i></button>`).join('')}</div>
   </section>`;
 }
 function setHero(i) {
   const hero = $('#hero'); if (!hero) return;
-  UI.hero = (i + GAMES.length) % GAMES.length;
+  UI.hero = (i + HERO.length) % HERO.length;
   $$('.slide', hero).forEach((s, k) => {
     const on = k === UI.hero;
     s.classList.toggle('is-on', on); s.setAttribute('aria-hidden', String(!on));
@@ -354,7 +364,7 @@ function renderGame(g) {
     <div class="game__main">
       <div class="player" id="player">
         <div class="player__cover" id="cover">
-          <img class="player__bg" src="${g.hero}" alt="">
+          <img class="player__bg" src="${g.hero || g.cover}" alt="">
           <div class="player__center">
             <img class="player__thumb" src="${g.cover}" alt="">
             <h1 class="player__title">${esc(g.title)}</h1>
@@ -403,7 +413,7 @@ function renderGame(g) {
 
     <aside class="game__side">
       <h3 class="sec__title">${ic('gamepad')} Más juegos</h3>
-      ${others.map(o => `<a class="mini" href="#/juego/${o.id}" style="--c:${o.color}"><img src="${o.cover}" alt="" loading="lazy"><span><b>${esc(o.title)}</b><small>${esc(o.tagline)}</small></span></a>`).join('')}
+      ${others.slice(0, 6).map(o => `<a class="mini" href="#/juego/${o.id}" style="--c:${o.color}"><img src="${o.cover}" alt="" loading="lazy"><span><b>${esc(o.title)}</b><small>${esc(o.tagline)}</small></span></a>`).join('')}
       ${SOON.slice(0, 2).map(s => `<div class="mini mini--soon" style="--c:${s.color}"><span class="mini__q">${ic('mask')}</span><span><b>${esc(s.title)}</b><small>Próximamente</small></span></div>`).join('')}
     </aside>
   </section>`;
@@ -534,6 +544,7 @@ function renderDrawer() {
     <h3 class="dh">Ajustes</h3>
     <div class="opts">
       <button class="opt" type="button" data-act="sound">${ic(P.sound ? 'sound' : 'mute')}<span>Sonidos del portal</span><em class="sw ${P.sound ? 'is-on' : ''}"><i></i></em></button>
+      <button class="opt" type="button" data-act="blank">${ic('blank')}<span>Abrir en about:blank</span></button>
       <button class="opt" type="button" data-act="intro">${ic('mask')}<span>Ver la intro otra vez</span></button>
       <button class="opt danger" type="button" data-act="wipe">${ic('restart')}<span id="wipeTxt">Borrar mi perfil del portal</span></button>
     </div>
@@ -542,6 +553,26 @@ function renderDrawer() {
   const inp = $('#inName');
   inp.addEventListener('input', () => { const v = inp.value.trim(); if (v) { P.name = v; P.customized = true; persist(); paintMe(); } });
   inp.addEventListener('change', () => { if (!inp.value.trim()) inp.value = P.name; checkAch(); });
+}
+
+/* ---------- about:blank ----------
+   Abre el portal en una pestaña nueva cuya barra dice about:blank y cuyo título es
+   "Classes": el sitio va dentro de un iframe que ocupa toda la ventana. */
+function openBlank() {
+  SFX.click();
+  const url = location.href.split('#')[0] + (UI.game ? '#/juego/' + UI.game.id : '#/');
+  let w = null;
+  try { w = window.open('about:blank', '_blank'); } catch (e) { w = null; }
+  if (!w) { toast('No se pudo abrir la pestaña', 'Permite las ventanas emergentes de esta página y vuelve a intentarlo.', 'blank'); return; }
+  const d = w.document;
+  d.open();
+  d.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Classes</title>' +
+    '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 rx=%273%27 fill=%27%231e8e3e%27/%3E%3C/svg%3E">' +
+    '<style>html,body{margin:0;height:100%;background:#07060d;overflow:hidden}iframe{display:block;width:100vw;height:100vh;border:0}</style></head>' +
+    '<body><iframe src="' + url.replace(/"/g, '&quot;') + '" allow="fullscreen; autoplay; gamepad; accelerometer; gyroscope" allowfullscreen></iframe></body></html>');
+  d.close();
+  P.cloaked = true; persist(); checkAch();
+  stopGame();
 }
 
 /* ---------- intro ---------- */
@@ -601,6 +632,7 @@ $('#drawerBody').addEventListener('click', e => {
   if (t.dataset.av) { P.avatar = +t.dataset.av; P.customized = true; persist(); SFX.click(); paintMe(); renderDrawer(); checkAch(); if (!UI.game) renderHome(); return; }
   const act = t.dataset.act;
   if (act === 'sound') { P.sound = !P.sound; persist(); paintMe(); renderDrawer(); SFX.click(); }
+  else if (act === 'blank') openBlank();
   else if (act === 'intro') { closeDrawer(); setTimeout(() => playIntro(true), 320); }
   else if (act === 'wipe') {
     // Doble toque para confirmar (sin confirm()).
@@ -617,6 +649,7 @@ $('#drawerBody').addEventListener('click', e => {
 });
 
 $('#btnMe').addEventListener('click', openDrawer);
+$('#btnBlank').addEventListener('click', openBlank);
 $('#btnCloseDrawer').addEventListener('click', closeDrawer);
 $('#scrim').addEventListener('click', closeDrawer);
 $('#btnSound').addEventListener('click', () => { P.sound = !P.sound; persist(); paintMe(); SFX.click(); toast(P.sound ? 'Sonido activado' : 'Sonido apagado', '', P.sound ? 'sound' : 'mute'); });

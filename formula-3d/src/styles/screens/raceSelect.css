@@ -1,0 +1,1026 @@
+/* ─── Selección de carrera y campeonato ─────────────────────────────────
+   Panel de opciones a la izquierda (tarjetas de circuito + filas + botón) y
+   el "escenario" a la derecha: mapa grande del circuito con sus datos o la
+   tabla del campeonato. En pantallas angostas todo va en una columna. */
+
+.screen--rsel {
+  --rsel-panel: min(520px, calc(100% - 2 * var(--gutter)));
+  --rsel-footer: 56px;
+  background: var(--c-bg);
+}
+
+.rsel__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 70% at 72% 45%, rgba(255, 42, 60, 0.1), transparent 70%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 22px),
+    linear-gradient(180deg, #0b0d12 0%, #050608 100%);
+}
+
+.rsel__panel,
+.champ__panel {
+  position: absolute;
+  top: var(--gutter);
+  bottom: calc(var(--gutter) + var(--rsel-footer));
+  left: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: var(--rsel-panel);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+.rsel__stage,
+.champ__side {
+  position: absolute;
+  top: var(--gutter);
+  bottom: calc(var(--gutter) + var(--rsel-footer));
+  left: calc(var(--rsel-panel) + var(--gutter) * 2);
+  right: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.rsel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+}
+
+.rsel__kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.rsel__title {
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.rsel__section {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+/* Fichas de circuito: grilla de las 24 pistas (bandera, nombre y nivel). */
+
+.rsel__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.tcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 8px;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 9px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.tcard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--c-accent);
+  transform: scaleY(0);
+  transition: transform 0.3s var(--ease-out);
+}
+
+.tcard.is-focused {
+  background: linear-gradient(90deg, rgba(255, 42, 60, 0.22), rgba(255, 255, 255, 0.05) 80%);
+}
+
+.tcard.is-selected {
+  box-shadow: inset 0 0 0 1px rgba(255, 42, 60, 0.7);
+}
+
+.tcard.is-selected::before,
+.tcard.is-focused::before {
+  transform: scaleY(1);
+}
+
+.tcard__flag {
+  display: block;
+  width: 22px;
+  height: 15px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.tcard__flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tcard__flag-code {
+  font-family: var(--font-num);
+  font-size: 9px;
+  color: var(--c-text-2);
+}
+
+.tcard__name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Punto de dificultad: verde, amarillo o rojo. */
+.tcard__level {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lvl, #f5c542);
+  box-shadow: 0 0 8px var(--lvl, #f5c542);
+}
+
+.tcard--easy {
+  --lvl: #2fd27a;
+}
+
+.tcard--medium {
+  --lvl: #f5c542;
+}
+
+.tcard--hard {
+  --lvl: #ff3b4a;
+}
+
+.rsel__stat.is-easy .rsel__stat-value {
+  color: #2fd27a;
+}
+
+.rsel__stat.is-medium .rsel__stat-value {
+  color: #f5c542;
+}
+
+.rsel__stat.is-hard .rsel__stat-value {
+  color: #ff3b4a;
+}
+
+/* Filas y botón */
+
+.rsel__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rsel__rows .srow {
+  min-height: 42px;
+}
+
+.rsel__rows .srow.is-muted .srow__label,
+.rsel__rows .srow.is-muted .slider__value {
+  color: var(--c-text-3);
+}
+
+.rsel__start {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.rsel__help {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 58px;
+  padding: 4px 2px 0;
+}
+
+.rsel__help-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rsel__help-text {
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--c-text-2);
+}
+
+/* Escenario: circuito */
+
+.rsel__track {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.rsel__gp {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+}
+
+.rsel__name {
+  font-size: clamp(32px, 4.4vw, 60px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 0.95;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.rsel__place {
+  font-size: 14px;
+  color: var(--c-text-3);
+}
+
+.rsel__map {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.tmap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tmap__glow {
+  fill: none;
+  stroke: var(--c-accent);
+  stroke-opacity: 0.16;
+  stroke-width: 34;
+  stroke-linejoin: round;
+}
+
+.tmap__base {
+  fill: none;
+  stroke: #07080b;
+  stroke-opacity: 0.92;
+  stroke-width: 26;
+  stroke-linejoin: round;
+}
+
+/* Cada sector de un color, como los mapas oficiales: S1 magenta, S2 amarillo, S3 azul. */
+.tmap__line {
+  fill: none;
+  stroke: #f3f4f6;
+  stroke-width: 9;
+  stroke-linejoin: round;
+}
+
+.tmap__line--s1 {
+  stroke: #e8268a;
+}
+
+.tmap__line--s2 {
+  stroke: #f5c542;
+}
+
+.tmap__line--s3 {
+  stroke: #3d8bff;
+}
+
+/* Zonas de DRS: punteadas por fuera del trazado. */
+.tmap__drs {
+  fill: none;
+  stroke: #27e06b;
+  stroke-width: 6;
+  stroke-dasharray: 3 9;
+  stroke-linecap: round;
+}
+
+/* Curvas numeradas. */
+.tmap__turn circle {
+  fill: rgba(10, 11, 15, 0.92);
+  stroke: rgba(243, 244, 246, 0.85);
+  stroke-width: 2.5;
+}
+
+.tmap__turn text {
+  font-family: var(--font-num);
+  font-size: 23px;
+  font-weight: 700;
+  fill: #f3f4f6;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* Curva resaltada (guía de circuitos): las demás se apagan y el ápice late. */
+.tmap__turn {
+  transition: opacity 0.3s;
+}
+
+.tmap.has-focus .tmap__turn:not(.is-active) {
+  opacity: 0.32;
+}
+
+.tmap__turn .tmap__apex,
+.tmap__turn .tmap__apex-ring,
+.tmap__apex-link {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.tmap__turn .tmap__apex {
+  fill: #fff;
+  stroke: none;
+}
+
+.tmap__turn .tmap__apex-ring {
+  fill: none;
+  stroke: var(--tmap-focus, #29d8ff);
+  stroke-width: 5;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tmap__apex-link {
+  stroke: var(--tmap-focus, #29d8ff);
+  stroke-width: 3;
+  stroke-dasharray: 6 6;
+}
+
+.tmap__turn.is-active .tmap__apex,
+.tmap__turn.is-active .tmap__apex-link {
+  opacity: 1;
+}
+
+.tmap__turn.is-active .tmap__apex-ring {
+  opacity: 1;
+  animation: tmap-apex 1.3s ease-out infinite;
+}
+
+.tmap__turn.is-active circle:last-of-type {
+  fill: var(--tmap-focus, #29d8ff);
+  stroke: #fff;
+}
+
+.tmap__turn.is-active text {
+  fill: #041016;
+}
+
+@keyframes tmap-apex {
+  from {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tmap__turn.is-active .tmap__apex-ring {
+    animation: none;
+  }
+}
+
+.tmap__start {
+  stroke: var(--c-accent);
+  stroke-width: 7;
+}
+
+.tmap__arrow {
+  fill: none;
+  stroke: var(--c-accent);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tmap__tick {
+  stroke: #f3f4f6;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.tmap__sector {
+  font-family: var(--font-num);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  fill: var(--c-text-3);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.tmap__sector--s1 {
+  fill: #e8268a;
+}
+
+.tmap__sector--s2 {
+  fill: #f5c542;
+}
+
+.tmap__sector--s3 {
+  fill: #3d8bff;
+}
+
+/* El "auto" que recorre la vuelta: cabeza brillante y estela tenue. */
+.tmap__comet,
+.tmap__comet-tail {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.tmap__comet {
+  stroke: #fff;
+  stroke-width: 11;
+  filter: drop-shadow(0 0 10px var(--c-accent)) drop-shadow(0 0 22px var(--c-accent));
+}
+
+.tmap__comet-tail {
+  stroke: var(--c-accent);
+  stroke-opacity: 0.55;
+  stroke-width: 9;
+}
+
+/* Una sola fila con todos los datos; si no entran, el último renglón se estira. */
+.rsel__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.rsel__stat {
+  display: flex;
+  flex: 1 1 104px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.rsel__stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  color: var(--c-text-3);
+}
+
+.rsel__stat-value {
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rsel__stat.is-mine .rsel__stat-value {
+  color: var(--c-gold);
+}
+
+.rsel__stat.is-ghost .rsel__stat-value {
+  color: #9fd4ff;
+}
+
+.rsel__stat.is-medal .rsel__stat-label {
+  color: var(--tone);
+}
+
+.rsel__stat.is-medal .rsel__stat-value {
+  color: var(--c-text);
+}
+
+/* Pie */
+
+.rsel__footer {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--rsel-footer);
+  border-top: 1px solid var(--c-line);
+}
+
+.rsel__back {
+  padding: 8px 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  border: 1px solid var(--c-line-strong);
+  transform: skewX(var(--skew));
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.rsel__back:hover,
+.rsel__back:focus-visible {
+  color: #fff;
+  border-color: var(--c-accent);
+}
+
+/* ─── Campeonato ──────────────────────────────────────────────────────── */
+
+.champ__calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.champ__round {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 14px 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.champ__round-n {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-3);
+}
+
+.champ__round-name {
+  font-weight: 700;
+}
+
+.champ__round-status,
+.champ__round-code {
+  font-family: var(--font-num);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--c-text-2);
+}
+
+.champ__round.is-next {
+  background: linear-gradient(90deg, rgba(255, 42, 60, 0.2), rgba(255, 255, 255, 0.03) 70%);
+  box-shadow: inset 3px 0 0 var(--c-accent);
+}
+
+.champ__round.is-next .champ__round-status {
+  color: var(--c-accent-2);
+}
+
+.champ__round.is-done .champ__round-n {
+  color: var(--c-text-2);
+}
+
+.champ__help {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.champ__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 56ch;
+  margin-top: clamp(0px, 4vh, 40px);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--c-text-2);
+}
+
+.champ__intro-title {
+  font-size: 28px;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--c-text);
+  text-transform: uppercase;
+}
+
+.champ__champion {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, rgba(245, 197, 66, 0.18), transparent 80%);
+  box-shadow: inset 4px 0 0 var(--c-gold);
+}
+
+.champ__champion-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: var(--c-gold);
+}
+
+.champ__champion-name {
+  font-size: clamp(26px, 3vw, 40px);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+.champ__champion-points {
+  font-family: var(--font-num);
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.ctable {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.ctable__row {
+  display: grid;
+  grid-template: auto / 30px 4px 1fr 44px 48px;
+  gap: 10px;
+  align-items: center;
+  min-height: 30px;
+  padding: 2px 12px 2px 0;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ctable__row--head {
+  min-height: 22px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--c-text-3);
+  background: none;
+}
+
+.ctable__pos {
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ctable__team {
+  width: 4px;
+  height: 18px;
+}
+
+.ctable__name {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ctable__teamname {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-3);
+  text-overflow: ellipsis;
+}
+
+.ctable__wins {
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--c-text-2);
+}
+
+.ctable__points {
+  text-align: right;
+  font-family: var(--font-num);
+  font-weight: 700;
+}
+
+.ctable__row.is-player {
+  background: linear-gradient(90deg, rgba(200, 16, 46, 0.55), rgba(200, 16, 46, 0.18));
+  box-shadow: inset 3px 0 0 var(--c-accent);
+}
+
+.ctable__row:nth-child(3) .ctable__points {
+  color: var(--c-gold);
+}
+
+/* ─── Pantallas angostas: una sola columna que se desplaza ────────────── */
+
+@container ui (max-width: 900px) {
+  .screen--rsel {
+    overflow-y: auto;
+  }
+
+  .rsel__panel,
+  .champ__panel,
+  .rsel__stage,
+  .champ__side {
+    position: relative;
+    inset: auto;
+    width: auto;
+    margin: var(--gutter);
+    overflow: visible;
+  }
+
+  .rsel__stage {
+    height: 620px;
+  }
+
+  .rsel__track {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .rsel__footer {
+    position: relative;
+    inset: auto;
+    margin: 0 var(--gutter) var(--gutter);
+  }
+
+  .srow__control {
+    min-width: 0;
+  }
+}
+
+/* Póster del calendario: marco rojo, fondo gris oscuro y cada carrera con su
+   trazado en rojo, la ciudad y la fecha (como los pósters de temporada). */
+
+.champ__poster-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.champ__poster-tag {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--c-accent);
+  transform: skewX(var(--skew));
+}
+
+.champ__poster-name {
+  font-size: 24px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+.champ__poster-count {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--c-text-3);
+}
+
+.champ__cup-info {
+  margin: 4px 0 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--c-text-2);
+}
+
+/* Columnas según la cantidad de carreras (4 para 8, 5 para 10, 6 para 24) y
+   filas centradas en el marco: un campeonato corto no deja un hueco abajo. */
+.champ__cards {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--poster-cols, 4), minmax(0, 1fr));
+  align-content: safe center;
+  gap: 4px 6px;
+  padding: 14px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: #2b2c30;
+  box-shadow:
+    inset 0 0 0 6px #d6403a,
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.champ__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 4px 8px;
+  text-align: center;
+}
+
+.champ__card-round {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-family: var(--font-num);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.champ__card::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lvl, #f5c542);
+}
+
+.champ__card--easy {
+  --lvl: #2fd27a;
+}
+
+.champ__card--medium {
+  --lvl: #f5c542;
+}
+
+.champ__card--hard {
+  --lvl: #ff3b4a;
+}
+
+.champ__thumb {
+  width: 100%;
+  max-width: 120px;
+  aspect-ratio: 1.45;
+  height: auto;
+}
+
+.champ__thumb-glow,
+.champ__thumb-line {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+.champ__thumb-glow {
+  stroke: #ff3b3b;
+  stroke-opacity: 0.18;
+  stroke-width: 70;
+}
+
+.champ__thumb-line {
+  stroke: #e8433f;
+  stroke-width: 30;
+}
+
+.champ__card-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #f4f4f4;
+}
+
+.champ__card-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #e8433f;
+}
+
+.champ__card-flag {
+  width: 16px;
+  height: 11px;
+  flex: none;
+  overflow: hidden;
+}
+
+.champ__points {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  align-items: end;
+  gap: 6px;
+  height: clamp(90px, 18vh, 150px);
+  padding: 0 4px;
+}
+
+.champ__bar {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  height: 100%;
+  gap: 4px;
+}
+
+.champ__bar-value {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-2);
+}
+
+.champ__bar-fill {
+  align-self: end;
+  width: 100%;
+  height: calc(var(--h) * 100%);
+  min-height: 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06));
+  transform: skewX(var(--skew));
+  transform-origin: bottom;
+  animation: champ-bar-grow 0.7s var(--ease-out) backwards;
+}
+
+.champ__bar-fill {
+  animation-delay: calc(0.2s + var(--i) * 0.05s);
+}
+
+.champ__bar.is-p1 .champ__bar-fill {
+  background: linear-gradient(180deg, #f5c542, rgba(245, 197, 66, 0.25));
+}
+
+.champ__bar.is-p2 .champ__bar-fill {
+  background: linear-gradient(180deg, #d9dde4, rgba(217, 221, 228, 0.2));
+}
+
+.champ__bar.is-p3 .champ__bar-fill {
+  background: linear-gradient(180deg, #d08a52, rgba(208, 138, 82, 0.2));
+}
+
+.champ__bar.is-p1 .champ__bar-value {
+  color: var(--c-gold);
+}
+
+.champ__bar-pos {
+  font-family: var(--font-num);
+  font-size: 10px;
+  color: var(--c-text-3);
+}
+
+@keyframes champ-bar-grow {
+  from {
+    transform: skewX(var(--skew)) scaleY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .champ__bar-fill {
+    animation: none;
+  }
+}
+
+.champ__card-flag svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.champ__card-flag-code {
+  font-family: var(--font-num);
+  font-size: 10px;
+}

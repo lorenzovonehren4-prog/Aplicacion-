@@ -10,6 +10,33 @@ const readJSON = key => { try { return JSON.parse(localStorage.getItem(key)); } 
 
 const GAMES = [
   {
+    id: 'apice-gp',
+    title: 'Ápice GP',
+    tagline: 'Monoplazas estilo Fórmula 1 en 3D',
+    desc: 'Campeonato de monoplazas con equipos y pilotos ficticios: clasificación, carrera, paradas en boxes, DRS, radio del ingeniero, cámaras de cabina y repetición con helicóptero. Ayudas de frenado y dirección para empezar, y caja automática de 8 marchas.',
+    url: 'formula-3d/apice-gp.html',
+    cover: 'portal/img/apice-gp-cover.webp',
+    alt: 'portal/img/apice-gp-alt.webp',
+    hero: 'portal/img/apice-gp-hero.webp',
+    color: '#ff1e3c',
+    color2: '#ff8a3d',
+    cats: ['carreras', 'deportes', '3d'],
+    tags: ['Fórmula', 'Carreras', '3D', 'Mando'],
+    badge: 'NUEVO',
+    featured: true,
+    controls: [
+      [['↑', '↓'], 'Acelerar / frenar'],
+      [['←', '→'], 'Doblar'],
+      [['D'], 'DRS (en las zonas)'],
+      [['C'], 'Cambiar cámara'],
+      [['M'], 'Retrovisor'],
+      [['R'], 'Volver a la pista'],
+      [['Esc'], 'Pausa'],
+    ],
+    tip: 'Las teclas se cambian en Ajustes → Controles. También se juega con mando.',
+    progress() { return null; }, // guarda en IndexedDB
+  },
+  {
     id: 'karting',
     title: 'Kartódromo',
     tagline: 'Karts 3D: 10 pistas, bots que pelean y 2 jugadores',
@@ -20,9 +47,10 @@ const GAMES = [
     hero: 'portal/img/karting-hero.webp',
     color: '#ff4d3d',
     color2: '#ffb020',
-    cats: ['carreras', '3d', 'dos'],
+    cats: ['carreras', '3d', 'multi'],
     tags: ['Carreras', '3D', '2 jugadores', 'Mando'],
-    badge: 'NUEVO',
+    badge: 'TOP',
+    featured: true,
     added: '2026-10-09',
     controls: [
       [['W', '↑'], 'Acelerar'],
@@ -47,6 +75,74 @@ const GAMES = [
         flags: { wins: st.wins || 0, cups: st.cups || 0, races: st.races || 0 },
       };
     },
+  },  {
+    id: 'combi-rush',
+    title: 'Combi Rush',
+    tagline: 'Maneja una combi por Lima y llena tus asientos',
+    desc: 'Recoge pasajeros en los paraderos, llévalos a tiempo, esquiva huecos y conos, respeta la roja y no los hagas enojar. Con lo que cobras mejoras motor, frenos y asientos, pintas tu combi y cambias de ruta y de clima.',
+    url: 'combi-rush/combi-rush.html',
+    cover: 'portal/img/combi-rush-cover.webp',
+    alt: 'portal/img/combi-rush-alt.webp',
+    hero: 'portal/img/combi-rush-hero.webp',
+    color: '#ff2d8a',
+    color2: '#ffd23f',
+    cats: ['carreras', 'simulacion', '3d'],
+    tags: ['Manejo', 'Lima', '3D', 'Celular'],
+    badge: 'HOT',
+    featured: true,
+    controls: [
+      [['↑', '↓'], 'Acelerar y frenar (W, S)'],
+      [['←', '→'], 'Cambiar de carril (A, D)'],
+      [['H'], 'Bocina'],
+      [['M'], 'Mapa de la ruta'],
+      [['P'], 'Pausa'],
+    ],
+    tip: 'En las curvas la combi se abre: frena antes y gira hacia adentro.',
+    progress() {
+      const s = readJSON('combirush_v1');
+      if (!s) return null;
+      const st = s.stats || {};
+      if (!st.trips && !s.money) return null;
+      return {
+        label: `${st.trips || 0} viajes · S/ ${Math.round(s.money || 0).toLocaleString('es-PE')}`,
+        pct: Math.min(1, (st.trips || 0) / 30),
+        stats: [['Viajes', st.trips || 0], ['Plata', 'S/ ' + Math.round(s.money || 0).toLocaleString('es-PE')], ['Récord a bordo', st.maxOn || 0]],
+        flags: { trips: st.trips || 0 },
+      };
+    },
+  },
+  {
+    id: 'fuga-urbana',
+    title: 'Fuga Urbana',
+    tagline: 'Derrapa, esquiva y escapa de la policía',
+    desc: 'La policía te busca desde que arrancas: aguanta el mayor tiempo posible. Derrapa para cargar el turbo, piérdete entre los edificios para bajar las estrellas y sobrevive a patrullas, bloqueos, clavos y helicópteros. Abre el garaje para ganar carros nuevos.',
+    url: 'fuga-urbana/index.html',
+    cover: 'portal/img/fuga-urbana-cover.webp',
+    alt: 'portal/img/fuga-urbana-alt.webp',
+    color: '#ffb800',
+    color2: '#ff3d71',
+    cats: ['carreras', 'accion'],
+    tags: ['Persecución', 'Acción', 'Celular'],
+    badge: '',
+    controls: [
+      [['↑'], 'Avanzar'],
+      [['←', '→'], 'Girar (a buena velocidad, derrapar)'],
+      [['↓'], 'Frenar y reversa'],
+      [['Espacio'], 'Turbo'],
+      [['P'], 'Pausa'],
+    ],
+    tip: 'También sirven W A S D. En el celular hay botones en pantalla.',
+    progress() {
+      const s = readJSON('fuga-urbana-v1');
+      if (!s || (!s.best && !s.xp)) return null;
+      const cars = Array.isArray(s.unlocked) ? s.unlocked.length : 1;
+      return {
+        label: `Récord ${Math.round(s.best || 0).toLocaleString('es-PE')} · ${cars} carros`,
+        pct: Math.min(1, cars / 10),
+        stats: [['Récord', Math.round(s.best || 0).toLocaleString('es-PE')], ['Carros', cars], ['Monedas', s.coins || 0]],
+        flags: { best: s.best || 0, cars },
+      };
+    },
   },
   {
     id: 'sazon',
@@ -61,7 +157,8 @@ const GAMES = [
     color2: '#ffd23f',
     cats: ['simulacion', '3d'],
     tags: ['Tycoon', 'Simulación', '3D', 'Celular'],
-    badge: 'TOP',
+    badge: '',
+    featured: true,
     added: '2026-09-20',
     controls: [
       [['W', 'A', 'S', 'D'], 'Caminar'],
@@ -79,6 +176,105 @@ const GAMES = [
         pct: Math.min(1, (s.level || 1) / 20),
         stats: [['Día', s.day || 1], ['Plata', 'S/ ' + Math.round(s.money || 0).toLocaleString('es-PE')], ['Fama', s.level || 1], ['Locales', locales], ['Calificación', (s.rating || 0).toFixed(1) + ' ★']],
         flags: { day: s.day || 1, locales },
+      };
+    },
+  },  {
+    id: 'futbol',
+    title: 'Modo Carrera Fútbol',
+    tagline: 'Vive la carrera de un futbolista, de los 16 a los 40',
+    desc: 'Empiezas en un club peruano y cada semana decides cómo entrenar, descansar o salir de fiesta. Fichajes, contratos, selección, casa, carros y familia en escenas 3D. Al retirarte recibes un puntaje de carrera del 1 al 100.',
+    url: 'modo-carrera-futbol/index.html',
+    cover: 'portal/img/futbol-cover.webp',
+    alt: 'portal/img/futbol-alt.webp',
+    color: '#22c55e',
+    color2: '#facc15',
+    cats: ['deportes', 'simulacion', '3d'],
+    tags: ['Fútbol', 'Carrera', 'Decisiones', '3D'],
+    badge: '',
+    controls: [
+      [['Clic'], 'Elegir cómo vivir la semana'],
+      [['Clic'], 'Decidir en cada evento'],
+    ],
+    tip: 'Una temporada dura unos 25 minutos. Los partidos se juegan solos según tus decisiones.',
+    progress() {
+      const c = readJSON('mcf_save_v1'), hall = readJSON('mcf_hall_v1');
+      const done = Array.isArray(hall) ? hall.length : 0;
+      if (!c && !done) return null;
+      const best = done ? Math.max(...hall.map(h => h.score || 0)) : 0;
+      const live = c && !c.done;
+      return {
+        label: live ? `Temporada ${c.season || 1} · ${c.age || 16} años` : `${done} carreras · mejor ${best}`,
+        pct: live ? Math.min(1, ((c.age || 16) - 16) / 24) : 1,
+        stats: [...(live ? [['Temporada', c.season || 1], ['Edad', c.age || 16], ['Media', c.ovr || '—']] : []), ['Carreras', done], ['Mejor puntaje', best || '—']],
+        flags: { careers: done },
+      };
+    },
+  },
+  {
+    id: 'tower-defense',
+    title: 'Reino en Guardia',
+    tagline: 'Tower defense contra la horda zombi',
+    desc: 'Construye torres, sube a tu héroe y aguanta 20 oleadas de zombis con minijefes y jefes en 3 mapas: pradera de noche, cañón con tormentas de arena y fragua volcánica. Misiones diarias, logros, rangos, modo infinito y desafíos.',
+    url: 'tower-defense/index.html',
+    cover: 'portal/img/tower-defense-cover.webp',
+    alt: 'portal/img/tower-defense-alt.webp',
+    color: '#f59e0b',
+    color2: '#ef4444',
+    cats: ['estrategia', 'accion'],
+    tags: ['Tower defense', 'Estrategia', 'Zombis'],
+    badge: '',
+    controls: [
+      [['1', '…', '9'], 'Elegir torre'],
+      [['N'], 'Iniciar o adelantar oleada'],
+      [['U', 'V'], 'Mejorar / vender'],
+      [['H'], 'Héroe'],
+      [['Q', 'W', 'E', 'R'], 'Habilidades'],
+      [['F'], 'Velocidad'],
+      [['Espacio'], 'Pausa'],
+    ],
+    tip: 'Clic derecho o Esc cancela. Llama la oleada antes de tiempo para ganar más.',
+    progress() {
+      const s = readJSON('reino-en-guardia-perfil-v1');
+      if (!s) return null;
+      const st = s.stats || {};
+      const stars = Object.values(s.stars || {}).reduce((a, v) => a + (typeof v === 'number' ? v : 0), 0);
+      if (!st.games && (s.level || 1) <= 1) return null;
+      return {
+        label: `Nivel ${s.level || 1} · ${st.wins || 0} victorias`,
+        pct: Math.min(1, (s.level || 1) / 30),
+        stats: [['Nivel', s.level || 1], ['Victorias', st.wins || 0], ['Zombis', (st.kills || 0).toLocaleString('es-PE')], ['Estrellas', stars], ['Medallas', s.medals || 0]],
+        flags: { wins: st.wins || 0 },
+      };
+    },
+  },
+  {
+    id: 'escalada',
+    title: "Don't Look Up",
+    tagline: '1000 metros de escalada. No mires abajo',
+    desc: 'Salta, rebota en trampolines y agárrate de apoyos que se mueven, se rompen o resbalan para subir 6 cumbres. Junta monedas para la tienda de colores, gorros y estelas, y juega con amigos por internet en salas compartidas.',
+    url: 'escalada/index.html',
+    cover: 'portal/img/escalada-cover.webp',
+    alt: 'portal/img/escalada-alt.webp',
+    color: '#38bdf8',
+    color2: '#ffd700',
+    cats: ['accion', 'plataformas', 'multi'],
+    tags: ['Plataformas', 'Online', 'Difícil'],
+    badge: '',
+    controls: [
+      [['←', '→'], 'Moverte (A, D)'],
+      [['↑', 'Espacio'], 'Saltar (W)'],
+      [['↑', '↑'], 'Doble salto en el aire'],
+      [['Tab'], 'Mapa del nivel'],
+    ],
+    tip: 'Cada cumbre es un checkpoint. Los atajos ahorran altura pero son más difíciles.',
+    progress() {
+      const s = readJSON('dontlookup.v1');
+      if (!s || !(s.altura > 0)) return null;
+      return {
+        label: s.completado ? '¡Cumbre final! · ' + Math.round(s.altura) + ' m' : `Mejor altura ${Math.round(s.altura)} m`,
+        pct: Math.min(1, s.altura / 1000),
+        stats: [['Mejor altura', Math.round(s.altura) + ' m'], ['Puntos', s.puntos || 0], ['Completado', s.completado ? 'Sí' : 'No']],
+        flags: { done: s.completado ? 1 : 0, alt: s.altura },
       };
     },
   },
@@ -117,24 +313,26 @@ const GAMES = [
         flags: { done, stars },
       };
     },
-  },
-];
+  },];
 
 // Huecos misteriosos de la cuadrícula: lo que viene.
 const SOON = [
-  { id: 'soon-1', title: 'Proyecto R', hint: 'Plataformas · 2027', color: '#22d3ee' },
-  { id: 'soon-2', title: 'Clasificado', hint: 'Multijugador', color: '#ff3d71' },
-  { id: 'soon-3', title: '???', hint: 'Pronto', color: '#a78bfa' },
-  { id: 'soon-4', title: 'Archivo 404', hint: 'Terror', color: '#34d399' },
+  { id: 'soon-1', title: 'Clasificado', hint: 'Multijugador', color: '#ff3d71' },
+  { id: 'soon-2', title: '???', hint: 'Pronto', color: '#a78bfa' },
+  { id: 'soon-3', title: 'Archivo 404', hint: 'Terror', color: '#34d399' },
 ];
 
 const CATS = [
   { id: 'todos', name: 'Todos', icon: 'grid' },
   { id: 'carreras', name: 'Carreras', icon: 'flag' },
+  { id: 'accion', name: 'Acción', icon: 'bolt' },
   { id: 'simulacion', name: 'Simulación', icon: 'chef' },
+  { id: 'deportes', name: 'Deportes', icon: 'trophy' },
+  { id: 'estrategia', name: 'Estrategia', icon: 'shield' },
+  { id: 'plataformas', name: 'Plataformas', icon: 'up' },
   { id: 'puzzles', name: 'Puzzles', icon: 'puzzle' },
   { id: '3d', name: '3D', icon: 'cube' },
-  { id: 'dos', name: '2 jugadores', icon: 'users' },
+  { id: 'multi', name: 'Multijugador', icon: 'users' },
   { id: 'favs', name: 'Favoritos', icon: 'heart' },
 ];
 
