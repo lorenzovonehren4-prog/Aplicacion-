@@ -79,7 +79,7 @@ const GAMES = [
     id: 'combi-rush',
     title: 'Combi Rush',
     tagline: 'Maneja una combi por Lima y llena tus asientos',
-    desc: 'Recoge pasajeros en los paraderos, llévalos a tiempo, esquiva huecos y conos, respeta la roja y no los hagas enojar. Con lo que cobras mejoras motor, frenos y asientos, pintas tu combi y cambias de ruta y de clima.',
+    desc: 'Recoge pasajeros en los paraderos, llévalos a tiempo, esquiva huecos y conos, respeta la roja y no los hagas enojar. 16 viajes por Lima (La Punta, Túpac Amaru, Miraflores de noche y más), una flota de 4 vehículos hasta el micro de 40 pasajeros y radio con cumbia, chicha y salsa.',
     url: 'combi-rush/combi-rush.html',
     cover: 'portal/img/combi-rush-cover.webp',
     alt: 'portal/img/combi-rush-alt.webp',
@@ -88,12 +88,13 @@ const GAMES = [
     color2: '#ffd23f',
     cats: ['carreras', 'simulacion', '3d'],
     tags: ['Manejo', 'Lima', '3D', 'Celular'],
-    badge: 'HOT',
+    badge: 'ACTUALIZADO',
     featured: true,
     controls: [
       [['↑', '↓'], 'Acelerar y frenar (W, S)'],
       [['←', '→'], 'Cambiar de carril (A, D)'],
       [['H'], 'Bocina'],
+      [['R'], 'Cambiar de emisora en la radio'],
       [['M'], 'Mapa de la ruta'],
       [['P'], 'Pausa'],
     ],
@@ -115,7 +116,7 @@ const GAMES = [
     id: 'fuga-urbana',
     title: 'Fuga Urbana',
     tagline: 'Derrapa, esquiva y escapa de la policía',
-    desc: 'La policía te busca desde que arrancas: aguanta el mayor tiempo posible. Derrapa para cargar el turbo, piérdete entre los edificios para bajar las estrellas y sobrevive a patrullas, bloqueos, clavos y helicópteros. Abre el garaje para ganar carros nuevos.',
+    desc: 'La policía te busca desde que arrancas: aguanta el mayor tiempo posible. Derrapa para cargar el turbo, agarra power-ups en la pista (nitro, plata, escudo y pintura que despista a la policía) y sobrevive a patrullas, bloqueos, clavos y helicópteros. 12 carros para ganar en el garaje.',
     url: 'fuga-urbana/index.html',
     cover: 'portal/img/fuga-urbana-cover.webp',
     alt: 'portal/img/fuga-urbana-alt.webp',
@@ -123,7 +124,7 @@ const GAMES = [
     color2: '#ff3d71',
     cats: ['carreras', 'accion'],
     tags: ['Persecución', 'Acción', 'Celular'],
-    badge: '',
+    badge: 'ACTUALIZADO',
     controls: [
       [['↑'], 'Avanzar'],
       [['←', '→'], 'Girar (a buena velocidad, derrapar)'],
@@ -314,6 +315,13 @@ const GAMES = [
       };
     },
   },];
+
+// Novedades que se muestran en el inicio (la más nueva primero).
+const NEWS = [
+  { game: 'combi-rush', date: '10 oct', title: 'Combi Rush, versión 4', items: ['4 viajes nuevos: La Punta, Túpac Amaru, Noche en Miraflores y la ruta más larga', 'Combi Sprinter y Micro chosicano de 40 pasajeros', 'Radio con Cumbia Total, Chicha Andina y Salsa Brava (tecla R)'] },
+  { game: 'fuga-urbana', date: '10 oct', title: 'Fuga Urbana: power-ups', items: ['Cajas en la pista: nitro, plata, escudo y pintura', 'La pintura cambia tu color y la policía pierde tu rastro', '2 carros nuevos: La Chatarra y Fantasma'] },
+  { game: 'apice-gp', date: '10 oct', title: 'Ápice GP llega al portal', items: ['Monoplazas con DRS, boxes y radio del ingeniero', 'Se juega con teclado o mando'] },
+];
 
 const CATS = [
   { id: 'todos', name: 'Todos', icon: 'grid' },

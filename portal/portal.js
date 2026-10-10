@@ -280,6 +280,13 @@ function renderDash() {
         <span class="hints__pad" id="padHint" hidden>${ic('gamepad')} Mando conectado</span>
       </div>
     </section>
+    <section class="sec">
+      <h2 class="sec__title">${ic('bolt')} Novedades</h2>
+      <div class="news">${NEWS.map(n => { const g = gameById(n.game); return g ? `<a class="news__item" href="${gameHref(g)}" style="--c:${g.color};--c2:${g.color2}">
+        <img src="${g.cover}" alt="" loading="lazy">
+        <span class="news__body"><small>${esc(n.date)} · ${esc(g.title)}</small><b>${esc(n.title)}</b>
+        <ul>${n.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul></span></a>` : ''; }).join('')}</div>
+    </section>
     ${recent.length ? `<section class="sec">
       <h2 class="sec__title">${ic('clock')} Sigue jugando</h2>
       <div class="row">${recent.map(g => {
