@@ -259,7 +259,7 @@ export class RaceScreen extends BaseScreen<RaceParams> {
     // Los datos del circuito se calculan en milisegundos; las mallas se arman después, por etapas.
     const track = Track.load(def, F1_SPEC);
     this.track = track;
-    this.loading = new LoadingOverlay(track);
+    this.loading = new LoadingOverlay(track, this.game.save.data.records[def.id]?.bestLap ?? null);
     this.root.append(this.loading.root);
     this.game.render.setView(null);
     this.game.releaseStudio();

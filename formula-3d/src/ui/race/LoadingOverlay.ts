@@ -1,13 +1,16 @@
 /**
  * Pantalla de carga del circuito: nombre del Gran Premio y del circuito,
- * trazado dibujándose, datos de la pista, barra de progreso con la etapa real
- * de la construcción y consejos que rotan.
+ * trazado dibujándose, datos de la pista, tu mejor vuelta con la medalla que
+ * sigue, las curvas clave (la más lenta y la rápida que pide frenar), barra de
+ * progreso con la etapa real de la construcción y consejos que rotan.
  */
 
 import gsap from 'gsap';
 import { Disposer } from '../../core/utils/Disposer';
 import { formatLapTime } from '../../core/utils/format';
 import { LOADING_TIPS } from '../../data/tips';
+import { MEDAL_INFO, medalFor, nextMedal } from '../../progression/medals';
+import { CORNER_KIND_LABEL, trackInsight, type CornerInfo } from '../../tracks/insight';
 import type { Track } from '../../tracks/Track';
 import { h, prefersReducedMotion } from '../dom';
 import { finished } from '../anim/finished';
@@ -27,7 +30,8 @@ export class LoadingOverlay {
   private tipIndex: number;
   private progress = { value: 0 };
 
-  constructor(track: Track) {
+  /** @param bestLap tu mejor vuelta en este circuito (null si no tienes) */
+  constructor(track: Track, bestLap: number | null = null) {
     const def = track.def;
     this.tipIndex = Math.floor(Math.random() * LOADING_TIPS.length);
 
@@ -88,6 +92,8 @@ export class LoadingOverlay {
             stat(`Récord · ${def.lapRecord.year}`, formatLapTime(def.lapRecord.seconds)),
             stat('Zonas DRS', String(def.drsZones.length)),
           ),
+          this.personal(track, bestLap),
+          this.keys,
         ),
         svg,
       ),
@@ -99,6 +105,9 @@ export class LoadingOverlay {
       ),
     );
     this.showTip(false);
+    // Las curvas clave se calculan después del primer cuadro (no demoran la aparición).
+    const keysTimer = setTimeout(() => this.fillKeys(track), 0);
+    this.own.add(() => clearTimeout(keysTimer));
     const timer = setInterval(() => this.showTip(true), TIP_INTERVAL);
     this.own.add(() => clearInterval(timer));
   }
@@ -150,6 +159,43 @@ export class LoadingOverlay {
   dispose(): void {
     this.own.dispose();
     this.root.remove();
+  }
+
+  /** Tu mejor vuelta aquí, su medalla y la que sigue. */
+  private personal(track: Track, bestLap: number | null): HTMLElement {
+    const def = track.def;
+    const medal = medalFor(def, bestLap);
+    const next = nextMedal(def, bestLap);
+    const text =
+      bestLap === null
+        ? `Todavía no tienes vuelta aquí. ${next ? `Bronce: ${formatLapTime(next.time)}.` : ''}`
+        : `Tu mejor vuelta: ${formatLapTime(bestLap)}${medal ? ` (${MEDAL_INFO[medal].label.toLowerCase()})` : ''}. ${next ? `${MEDAL_INFO[next.medal].label}: ${formatLapTime(next.time)}.` : '¡Tienes platino!'}`;
+    return h('p', { class: 'loading__personal', style: { '--medal': medal ? MEDAL_INFO[medal].color : '#8a95a8' }, text });
+  }
+
+  private readonly keys = h('div', { class: 'loading__keys' });
+
+  /** Curvas clave del circuito (de la guía curva por curva). */
+  private fillKeys(track: Track): void {
+    let insight: ReturnType<typeof trackInsight>;
+    try {
+      insight = trackInsight(track.def);
+    } catch {
+      return;
+    }
+    const { slowest, fastest } = insight;
+    const corner = (label: string, info: CornerInfo | null): HTMLElement | null =>
+      info
+        ? h(
+            'div',
+            { class: 'loading__key' },
+            h('span', { class: 'loading__key-label', text: label }),
+            h('b', { text: `Curva ${info.number} · ${CORNER_KIND_LABEL[info.kind]}` }),
+            h('span', { text: `${Math.round(info.minKmh)} km/h en ${info.gear}ª${info.brakingMeters ? ` · frena ${Math.round(info.brakingMeters)} m` : ''}` }),
+          )
+        : null;
+    this.keys.replaceChildren(...[corner('CURVA MÁS LENTA', slowest), corner('LA MÁS RÁPIDA CON FRENADA', fastest)].filter((el): el is HTMLElement => el !== null));
+    if (!prefersReducedMotion()) this.own.tween(gsap.from(this.keys.children, { opacity: 0, y: 12, duration: 0.5, stagger: 0.1, ease: 'power3.out' }));
   }
 
   private showTip(animate: boolean): void {

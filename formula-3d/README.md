@@ -65,7 +65,12 @@ variable `CHROMIUM_PATH`.
 
 ## Estado
 
-Versión 2.7.0: boxes como en la transmisión y cabina profesional. Las
+Versión 2.8.0: menú de juego profesional. Evento semanal en contrarreloj,
+licencia del piloto según tus medallas, barra de noticias, cámara del estudio
+que va a una parte del auto según la opción, pantalla de carga con tu mejor
+vuelta y las curvas clave, y un monoplaza que cruza la portada.
+
+Desde la 2.7.0: boxes como en la transmisión y cabina profesional. Las
 paradas son más cortas (~15 s de pérdida) y se ven con una toma de TV: los
 gatos levantan el auto, los mecánicos sacan las ruedas viejas y ponen las
 nuevas, levantan los brazos y el semáforo se pone verde; cada equipo tiene su

@@ -2,13 +2,14 @@ import type { Profile, Progression } from '../../core/save/schema';
 import { formatInteger } from '../../core/utils/format';
 import type { DeepReadonly } from '../../core/utils/types';
 import { getItem } from '../../progression/items';
+import type { License } from '../../progression/license';
 import { levelProgress } from '../../progression/levels';
 import { countUp } from '../anim/countUp';
 import { h } from '../dom';
 import { avatarPreview } from './ItemPreview';
 import gsap from 'gsap';
 
-/** Tarjeta del piloto: avatar, nombre, título, nivel y barra de XP. */
+/** Tarjeta del piloto: avatar, nombre, título, licencia, nivel y barra de XP. */
 export class PlayerCard {
   readonly element: HTMLDivElement;
   private readonly bar: HTMLElement;
@@ -16,7 +17,7 @@ export class PlayerCard {
   private readonly levelText: HTMLElement;
   private readonly progress;
 
-  constructor(profile: DeepReadonly<Profile>, progression: DeepReadonly<Progression>) {
+  constructor(profile: DeepReadonly<Profile>, progression: DeepReadonly<Progression>, license?: License) {
     this.progress = levelProgress(progression.level, progression.xp);
     const initial = profile.name.trim().charAt(0).toUpperCase() || 'P';
     const avatar = getItem(profile.avatarId);
@@ -38,6 +39,18 @@ export class PlayerCard {
         { class: 'pcard__info' },
         h('div', { class: 'pcard__name', text: profile.name }),
         h('div', { class: 'pcard__title', text: title?.kind === 'title' ? title.text : '' }),
+        license
+          ? h(
+              'div',
+              {
+                class: 'pcard__license',
+                style: { '--lic': license.tier.color },
+                attrs: { title: license.next ? `Faltan ${license.next.missing} medallas para la ${license.next.tier.name}` : 'Licencia máxima' },
+              },
+              h('b', { text: license.tier.badge }),
+              h('span', { text: license.tier.name }),
+            )
+          : null,
         h('div', { class: 'pcard__bar' }, this.bar),
         h('div', { class: 'pcard__xp' }, this.xpText),
       ),

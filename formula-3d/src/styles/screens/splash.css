@@ -132,3 +132,22 @@
   background: radial-gradient(ellipse at 50% 50%, #fff 0%, rgba(255, 235, 238, 0.85) 35%, rgba(255, 42, 60, 0.25) 75%);
   pointer-events: none;
 }
+
+/* Monoplaza que cruza detrás del logo. */
+.splash__flyby {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 58%;
+  height: 120px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.splash__car {
+  display: block;
+  width: min(70vw, 900px);
+  height: auto;
+  opacity: 0;
+  filter: drop-shadow(0 0 10px rgba(255, 60, 40, 0.8)) drop-shadow(0 0 28px rgba(225, 6, 0, 0.45));
+}

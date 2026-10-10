@@ -5,6 +5,8 @@
  * audio del navegador. La primera vez sigue al tutorial inicial; después, al menú.
  *
  * Mientras se ve el logo se prepara el estudio 3D del menú en segundo plano.
+ * Cada tanto, un monoplaza en silueta cruza la pantalla a toda velocidad por
+ * detrás del logo (sólo DOM y transform: no carga nada).
  */
 
 import gsap from 'gsap';
@@ -44,6 +46,7 @@ export class SplashScreen extends BaseScreen {
   private readonly sheen = h('div', { class: 'splash__sheen' });
   private readonly tagline = h('p', { class: 'splash__tagline', text: 'Campeonato de monoplazas' });
   private readonly prompt = h('p', { class: 'splash__prompt', text: 'Haz clic o pulsa cualquier tecla' });
+  private readonly flyby = h('div', { class: 'splash__flyby', attrs: { 'aria-hidden': 'true' } });
 
   constructor(game: Game) {
     super(game, 'screen--splash');
@@ -52,6 +55,7 @@ export class SplashScreen extends BaseScreen {
   enter(): void {
     this.root.append(
       this.glow,
+      this.flyby,
       this.streak,
       h('div', { class: 'splash__center' }, h('div', { class: 'splash__logo-wrap' }, this.logo, this.sheen), this.tagline),
       this.prompt,
@@ -133,6 +137,7 @@ export class SplashScreen extends BaseScreen {
     this.phase = 'ready';
     // El aviso para empezar late suave y el brillo cruza el logo cada tanto.
     this.own.tween(gsap.to(this.prompt, { opacity: 0.35, duration: 0.9, repeat: -1, yoyo: true, ease: 'sine.inOut' }));
+    if (!prefersReducedMotion()) this.startFlyby();
     this.own.tween(
       gsap.fromTo(
         this.sheen,
@@ -140,6 +145,17 @@ export class SplashScreen extends BaseScreen {
         { xPercent: 220, duration: 1.1, ease: 'power2.inOut', repeat: -1, repeatDelay: 2.6 },
       ),
     );
+  }
+
+  /** El auto cruza de izquierda a derecha con estelas de luz, y vuelve a pasar cada unos segundos. */
+  private startFlyby(): void {
+    this.flyby.innerHTML = FLYBY_SVG;
+    const car = this.flyby.firstElementChild;
+    if (!car) return;
+    const pass = gsap.timeline({ repeat: -1, repeatDelay: 4.2, delay: 0.4 });
+    pass.fromTo(car, { xPercent: -140, opacity: 0 }, { xPercent: 40, opacity: 1, duration: 0.55, ease: 'power1.in' });
+    pass.to(car, { xPercent: 260, opacity: 0, duration: 0.5, ease: 'power1.out' });
+    this.own.tween(pass);
   }
 
   private onAnyInput(): void {
@@ -192,3 +208,20 @@ export class SplashScreen extends BaseScreen {
     else ctx.resume().then(play, (error: unknown) => console.warn('[Splash] Audio no disponible.', error));
   }
 }
+
+/** Silueta de un monoplaza de costado (mira a la derecha) con estelas detrás. */
+const FLYBY_SVG = `<svg class="splash__car" viewBox="0 0 900 120">
+  <defs>
+    <linearGradient id="splash-trail" x1="0" x2="1">
+      <stop offset="0" stop-color="#e10600" stop-opacity="0"/>
+      <stop offset="1" stop-color="#ff3b2f" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="62" width="430" height="5" fill="url(#splash-trail)"/>
+  <rect x="80" y="84" width="350" height="3" fill="url(#splash-trail)"/>
+  <rect x="160" y="44" width="270" height="2" fill="url(#splash-trail)"/>
+  <path fill="#14070a" stroke="#ff4a3a" stroke-width="2.5" stroke-linejoin="round" d="M430 82 L452 58 L470 58 L476 46 L520 44 L560 52 L610 50 L650 40 L668 42 L676 56 L760 62 L842 70 L868 80 L880 86 L760 90 L430 92 Z"/>
+  <path fill="#ff2a36" d="M520 52 L640 54 L760 66 L700 70 L560 64 Z"/>
+  <circle cx="500" cy="88" r="20" fill="#08090b" stroke="#ff4a3a" stroke-width="2"/><circle cx="500" cy="88" r="9" fill="#2a2d33"/>
+  <circle cx="790" cy="88" r="17" fill="#08090b" stroke="#ff4a3a" stroke-width="2"/><circle cx="790" cy="88" r="8" fill="#2a2d33"/>
+</svg>`;

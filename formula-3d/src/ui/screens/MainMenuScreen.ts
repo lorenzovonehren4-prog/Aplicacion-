@@ -21,7 +21,11 @@ import type { DriverGesture, DriverPose } from '../../garage/DriverModel';
 import type { StudioScene, StudioShot } from '../../garage/StudioScene';
 import { formatInteger } from '../../core/utils/format';
 import { currentStreak, DAILY_COLOR, dailyChallenge, dailyReward, dateKey, doneToday } from '../../progression/daily';
-import { medalTally } from '../../progression/medals';
+import { licenseFor } from '../../progression/license';
+import { MEDAL_INFO, medalFor, medalTally, nextMedal } from '../../progression/medals';
+import { WEEKLY_COLOR, weeklyEvent } from '../../progression/weekly';
+import { LOADING_TIPS } from '../../data/tips';
+import { formatLapTime } from '../../core/utils/format';
 import { applyUpgrades, carStats, totalLevels, UPGRADE_IDS, UPGRADE_MAX_LEVEL } from '../../progression/upgrades';
 import { DIFFICULTY_INFO, difficultyValue } from '../../race/ai/difficulty';
 import { F1_SPEC } from '../../race/physics/CarSpec';
@@ -96,27 +100,33 @@ interface Feature {
   open: Opener | undefined;
   card: HTMLButtonElement;
   /** Qué acceso es (para el gesto del piloto). */
-  id: MenuItemId | 'continue' | 'daily';
+  id: StageId;
 }
 
+type StageId = MenuItemId | 'continue' | 'daily' | 'weekly';
+
 /**
- * Lo que hace el piloto del estudio al enfocar cada tarjeta: un gesto, una
- * pose fija y, para el perfil, la cámara se acerca a él.
+ * Lo que pasa en el estudio al enfocar cada tarjeta, como en los menús de
+ * los juegos grandes: la cámara va a un encuadre propio del auto (o vuelve a
+ * girar sola) y el piloto hace un gesto o toma una pose.
  */
-const STAGING: Readonly<Record<MenuItemId | 'continue' | 'daily', { gesture?: DriverGesture; pose?: DriverPose; shot?: StudioShot }>> = {
-  continue: { gesture: 'helmet' },
-  daily: { gesture: 'thumbsUp' },
-  practice: { gesture: 'thumbsUp' },
-  quickRace: { gesture: 'helmet' },
-  timeTrial: { gesture: 'helmet', pose: 'hips' },
-  championship: { gesture: 'thumbsUp' },
-  circuits: { gesture: 'point' },
-  garage: { gesture: 'point', pose: 'lean' },
+const STAGING: Readonly<Record<StageId, { gesture?: DriverGesture; pose?: DriverPose; shot?: StudioShot }>> = {
+  continue: { gesture: 'helmet', shot: 'front' },
+  daily: { gesture: 'thumbsUp', shot: 'helmet' },
+  weekly: { gesture: 'point', shot: 'side' },
+  practice: { gesture: 'thumbsUp', shot: 'overview' },
+  quickRace: { gesture: 'helmet', shot: 'front' },
+  timeTrial: { gesture: 'helmet', pose: 'hips', shot: 'wheel' },
+  championship: { gesture: 'thumbsUp', shot: 'rear' },
+  circuits: { gesture: 'point', shot: 'floor' },
+  garage: { gesture: 'point', pose: 'lean', shot: 'engine' },
   pass: { gesture: 'wave' },
   profile: { pose: 'crossed', shot: 'driver' },
   manual: { pose: 'hips' },
   settings: {},
 };
+/** Noticias de la barra de abajo: velocidad del texto (px/s). */
+const TICKER_SPEED = 55;
 /** Tiempo que el foco tiene que quedarse en una tarjeta para que el piloto reaccione (ms). */
 const STAGE_DELAY = 420;
 /** Separación mínima entre gestos (s): navegar rápido no lo vuelve loco. */
@@ -203,7 +213,8 @@ export class MainMenuScreen extends BaseScreen {
     this.studio?.playIntro();
 
     const { profile, progression } = this.game.save.data;
-    this.card = new PlayerCard(profile, progression);
+    const records = this.game.save.data.records;
+    this.card = new PlayerCard(profile, progression, licenseFor(medalTally(TRACKS, (id) => records[id]?.bestLap)));
     this.top.append(
       h(
         'div',
@@ -222,7 +233,7 @@ export class MainMenuScreen extends BaseScreen {
     // Riel: "Continuar" y los accesos por grupo; las opciones van arriba, como botones redondos
     // (el desafío del día primero, con su racha).
     this.rail.append(this.group('Ahora', 2, this.createContinue()));
-    this.chips.append(this.createDaily());
+    this.chips.append(this.createDaily(), this.createWeekly());
     for (const group of MAIN_MENU) {
       if (group.title === 'Opciones') {
         for (const item of group.items) this.chips.append(this.createTile(item, group.title, 'chip'));
@@ -245,7 +256,7 @@ export class MainMenuScreen extends BaseScreen {
     const storageNote = this.game.save.isPersistent
       ? h('span', { class: 'menu__save is-ok', text: 'Progreso guardado en este navegador' })
       : h('span', { class: 'menu__save is-warn', text: 'Tu navegador bloquea el guardado: el progreso se perderá al cerrar' });
-    this.foot.append(this.hints.element, h('div', { class: 'menu__meta' }, storageNote, h('span', { class: 'menu__version', text: `v${GAME_VERSION}` })));
+    this.foot.append(this.hints.element, this.createTicker(), h('div', { class: 'menu__meta' }, storageNote, h('span', { class: 'menu__version', text: `v${GAME_VERSION}` })));
 
     this.root.append(this.fx, h('div', { class: 'menu__scrim' }), this.top, this.hero, this.rail, this.foot);
 
@@ -345,7 +356,7 @@ export class MainMenuScreen extends BaseScreen {
   }
 
   /** El piloto (y la cámara) reaccionan a la tarjeta si el foco se queda en ella. */
-  private stage(id: MenuItemId | 'continue' | 'daily'): void {
+  private stage(id: StageId): void {
     if (this.stageTimer) clearTimeout(this.stageTimer);
     this.stageTimer = setTimeout(() => {
       this.stageTimer = null;
@@ -354,6 +365,7 @@ export class MainMenuScreen extends BaseScreen {
       if (shot !== this.shot) {
         this.shot = shot;
         this.studio?.setShot(shot);
+        this.game.playUi('whooshIn');
       }
       this.studio?.driverPose(staging.pose ?? null);
       const now = performance.now() / 1000;
@@ -551,6 +563,92 @@ export class MainMenuScreen extends BaseScreen {
       id: 'daily',
     }));
     return chip;
+  }
+
+  /**
+   * Botón del evento semanal (arriba, junto al desafío): un circuito fijo toda la semana en
+   * contrarreloj, con tu mejor vuelta, la medalla que sigue, el puesto en la
+   * tabla en línea (si está disponible) y los días que quedan.
+   */
+  private createWeekly(): HTMLButtonElement {
+    const data = this.game.save.data;
+    const now = new Date();
+    const event = weeklyEvent(now, TRACKS);
+    const track = getTrack(event.trackId);
+    const best = data.records[track.id]?.bestLap ?? null;
+    const medal = medalFor(track, best);
+    const next = nextMedal(track, best);
+    const days = Math.max(1, Math.ceil((event.ends.getTime() - now.getTime()) / 86_400_000));
+    const online = this.game.online;
+    const rows = online.status === 'online' ? online.trackRows(track.id) : [];
+    const mine = rows.find((row) => row.entry.id === online.myId) ?? null;
+    const leader = rows[0] ?? null;
+    const card = h(
+      'button',
+      { class: 'mchip mtile mchip--weekly', attrs: { type: 'button', 'aria-label': 'Evento semanal' }, style: { '--card-accent': WEEKLY_COLOR } },
+      svg(ICONS.trophy, 'icon mchip__icon'),
+      h('span', { class: 'mchip__label', text: 'Semanal' }),
+      h('span', { class: 'mchip__streak', text: String(days), attrs: { title: `Cierra en ${days} ${days === 1 ? 'día' : 'días'}` } }),
+    );
+    const stats: Array<[string, string | number]> = [
+      ['Circuito', track.short],
+      ['Tu mejor', best === null ? '—' : formatLapTime(best)],
+      ['Medalla', medal ? MEDAL_INFO[medal].label : 'Ninguna'],
+    ];
+    if (mine) stats.push(['Puesto', `${mine.rank}/${rows.length}`]);
+    else stats.push(['Cierra en', `${days} ${days === 1 ? 'día' : 'días'}`]);
+    this.register(card, () => ({
+      group: 'Evento semanal',
+      icon: 'trophy',
+      title: track.grandPrix,
+      text:
+        `Esta semana se corre en ${track.short}: contrarreloj con tu fantasma. ` +
+        (next ? `Baja de ${formatLapTime(next.time)} para la medalla de ${MEDAL_INFO[next.medal].label.toLowerCase()}.` : 'Ya tienes platino: ve por el primer puesto de la tabla.') +
+        (leader ? ` Récord de la tabla: ${formatLapTime(leader.time)} de ${leader.entry.name}.` : ''),
+      stats,
+      action: 'Correr el evento',
+      note: `Cambia de circuito el lunes. ${online.status === 'online' ? 'Tu vuelta entra sola en la tabla en línea.' : 'La tabla en línea se ve abriendo el juego desde claude.ai.'}`,
+      accent: WEEKLY_COLOR,
+      open: (game) => game.screens.goTo('race', event.race),
+      card,
+      id: 'weekly',
+    }));
+    return card;
+  }
+
+  /**
+   * Barra de noticias del pie, como la de una transmisión: próxima carrera,
+   * evento semanal, desafío del día, récords, licencia y consejos, pasando
+   * solos (se repite el contenido para que el giro no tenga cortes). Sólo
+   * transform con CSS: no carga el 3D. Con "reducir movimiento" queda quieta.
+   */
+  private createTicker(): HTMLElement {
+    const data = this.game.save.data;
+    const items: string[] = [];
+    const state = data.championship;
+    if (state && !isFinished(state)) {
+      const round = nextRound(state);
+      items.push(`PRÓXIMA CARRERA · ${getTrack(state.rounds[round]?.trackId ?? '').grandPrix} (ronda ${round + 1}/${state.rounds.length})`);
+    }
+    const weekly = getTrack(weeklyEvent(new Date(), TRACKS).trackId);
+    items.push(`EVENTO SEMANAL · Contrarreloj en ${weekly.short}`);
+    const today = dateKey(new Date());
+    const daily = dailyChallenge(today, TRACKS, (id) => data.records[id]?.bestLap, difficultyValue(this.game.settings.race));
+    items.push(doneToday(data.daily, today) ? 'DESAFÍO DEL DÍA · Cumplido: vuelve mañana' : `DESAFÍO DEL DÍA · ${daily.title} en ${getTrack(daily.trackId).short}`);
+    const license = licenseFor(medalTally(TRACKS, (id) => data.records[id]?.bestLap));
+    items.push(license.next ? `TU LICENCIA · ${license.tier.name}: faltan ${license.next.missing} medallas para la ${license.next.tier.name}` : `TU LICENCIA · ${license.tier.name}`);
+    const timed = TRACKS.filter((t) => data.records[t.id]?.bestLap);
+    const latest = timed[Math.floor(Math.random() * timed.length)];
+    const latestLap = latest ? data.records[latest.id]?.bestLap : null;
+    if (latest && latestLap) items.push(`TU RÉCORD · ${latest.short}: ${formatLapTime(latestLap)}`);
+    if (data.stats.races > 0) items.push(`TRAYECTORIA · ${data.stats.races} carreras, ${data.stats.wins} victorias, ${data.stats.podiums} podios`);
+    const start = Math.floor(Math.random() * LOADING_TIPS.length);
+    for (let k = 0; k < 3; k++) items.push(`CONSEJO · ${LOADING_TIPS[(start + k) % LOADING_TIPS.length] ?? ''}`);
+    const line = (): HTMLElement => h('span', { class: 'menu__ticker-line' }, ...items.map((text) => h('span', { class: 'menu__ticker-item', text })));
+    const track = h('div', { class: 'menu__ticker-track' }, line(), line());
+    const length = items.join('').length;
+    track.style.setProperty('--ticker-time', `${Math.round((length * 7.5) / TICKER_SPEED)}s`);
+    return h('div', { class: 'menu__ticker', attrs: { 'aria-label': 'Noticias' } }, h('span', { class: 'menu__ticker-tag', text: 'EN VIVO' }), h('div', { class: 'menu__ticker-window' }, track));
   }
 
   private confirm(feature: Feature): void {

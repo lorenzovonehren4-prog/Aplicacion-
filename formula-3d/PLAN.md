@@ -1853,6 +1853,31 @@ la pista en la recta de boxes (el edificio tapaba el auto).
 **Pruebas**: parada en los 24 circuitos sin trabarse, espera del segundo
 auto, coreografía (gatos, ruedas y sonidos) y la repetición con la parada.
 
+### Versión 2.8 — Menú de juego profesional ✅
+
+Pedido: "agregaría algunas cosas de juegos profesionales a la hora del menú…
+todas, pero sin que afecten al juego". Todo es del menú, la portada y la
+pantalla de carga: la carrera no cambia.
+
+- [x] **Evento semanal** (`progression/weekly.ts`): un circuito fijo de
+      lunes a domingo, en contrarreloj, que recorre todo el calendario antes
+      de repetir. Botón arriba (con los días que faltan) y panel con tu mejor
+      vuelta, la medalla, el récord y tu puesto en la tabla en línea.
+- [x] **Licencia del piloto** (`progression/license.ts`): Novato → C → B →
+      A → Súper Licencia según las medallas; va en la tarjeta del piloto.
+- [x] **Barra de noticias** al pie, como en la transmisión: próxima carrera,
+      evento semanal, desafío del día, licencia, tus récords, trayectoria y
+      consejos (sólo CSS; quieta con "reducir movimiento").
+- [x] **Cámara del estudio por opción**: cada acceso lleva la cámara a un
+      encuadre del auto (frente, rueda, motor, alerón trasero…) con sonido.
+- [x] **Pantalla de carga**: tu mejor vuelta con su medalla y la siguiente,
+      y las curvas clave (la más lenta y la rápida con frenada).
+- [x] **Portada**: un monoplaza de neón cruza detrás del logo cada tanto.
+- [x] "Continuar" ya existía (sigue el campeonato o la última carrera).
+
+**Pruebas**: licencia por medallas y evento semanal (misma pista toda la
+semana y todo el calendario sin repetir).
+
 ---
 
 ## 8. Pendientes anotados (lo que una fase deja para otra)
@@ -1950,3 +1975,4 @@ auto, coreografía (gatos, ruedas y sonidos) y la repetición con la parada.
 - **Versión 2.5**: récords en línea con el mismo link: tabla por circuito, ranking de medallas y fantasma del récord (pedido del usuario).
 - **Versión 2.6**: repetición con cámaras de TV, salida en falso y tiempo de reacción, boxes automáticos con desgaste y daño, advertencias y sanciones en vez de vueltas anuladas, y banderas amarilla y azul (pedido del usuario).
 - **Versión 2.7**: paradas más cortas (y sin autos trabados), equipo de boxes animado con gatos, ruedas, pistolas y semáforo, garajes por equipo, toma de TV y cabina profesional con manos, volante completo y pantalla del limitador (pedido del usuario).
+- **Versión 2.8**: menú de juego profesional: evento semanal, licencia del piloto, barra de noticias, cámara del estudio por opción, pantalla de carga con tu vuelta y las curvas clave, y el auto que cruza la portada (pedido del usuario).

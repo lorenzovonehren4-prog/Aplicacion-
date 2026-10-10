@@ -218,6 +218,10 @@
   animation: mchip-pulse 1.6s ease-in-out infinite;
 }
 
+.mchip--weekly {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card-accent) 55%, transparent);
+}
+
 .mchip--daily.is-done {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
@@ -940,6 +944,84 @@
   height: 32px;
 }
 
+.menu__ticker {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 760px;
+  height: 26px;
+  overflow: hidden;
+  background: rgba(10, 11, 15, 0.55);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+}
+
+.menu__ticker-tag {
+  flex: none;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.16em;
+  color: #fff;
+  background: #e10600;
+}
+
+.menu__ticker-window {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+
+.menu__ticker-track {
+  display: flex;
+  width: max-content;
+  animation: menu-ticker var(--ticker-time, 60s) linear infinite;
+}
+
+.menu__ticker-line {
+  display: flex;
+  flex: none;
+}
+
+.menu__ticker-item {
+  padding: 0 28px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--c-text-2);
+}
+
+.menu__ticker-item::before {
+  content: '◆';
+  margin-right: 12px;
+  font-size: 8px;
+  color: var(--menu-accent, #e10600);
+}
+
+@keyframes menu-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__ticker-track {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .menu__ticker {
+    display: none;
+  }
+}
+
 .menu__meta {
   display: flex;
   align-items: center;
@@ -1062,5 +1144,17 @@
   .mcard__track-line {
     animation: none;
     stroke-dashoffset: 0;
+  }
+}
+
+/* Con el desafío y el evento semanal arriba, los botones de opciones quedan sólo con el ícono
+   (el nombre está en su aria-label y en el panel grande al enfocarlos). */
+.menu__season {
+  white-space: nowrap;
+}
+
+@media (max-width: 1600px) {
+  .menu__chips .mchip:not(.mchip--daily):not(.mchip--weekly) .mchip__label {
+    display: none;
   }
 }
