@@ -8,6 +8,34 @@
 
 const readJSON = key => { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } };
 
+// Ápice GP guarda en IndexedDB (base 'apice-gp', almacén 'kv', clave 'save'), que es
+// asíncrono: se lee una vez al abrir el portal y al salir del juego, y se guarda aquí.
+// Nunca se crea la base: si no existe, se aborta la apertura (crearla vacía rompería
+// el guardado del juego).
+let apiceCache = null;
+function loadApice(done) {
+  const fin = () => { if (done) done(); };
+  try { const ls = readJSON('apice-gp:save'); if (ls) apiceCache = ls; } catch (e) { /* nada */ }
+  if (!window.indexedDB) return fin();
+  const open = () => {
+    let rq;
+    try { rq = indexedDB.open('apice-gp'); } catch (e) { return fin(); }
+    rq.onupgradeneeded = () => { try { rq.transaction.abort(); } catch (e) { /* nada */ } };
+    rq.onerror = () => fin();
+    rq.onsuccess = () => {
+      const db = rq.result;
+      if (!db.objectStoreNames.contains('kv')) { db.close(); return fin(); }
+      try {
+        const g = db.transaction('kv', 'readonly').objectStore('kv').get('save');
+        g.onsuccess = () => { if (g.result && typeof g.result === 'object') apiceCache = g.result; db.close(); fin(); };
+        g.onerror = () => { db.close(); fin(); };
+      } catch (e) { db.close(); fin(); }
+    };
+  };
+  if (indexedDB.databases) indexedDB.databases().then(list => { if (list.some(d => d.name === 'apice-gp')) open(); else fin(); }, () => fin());
+  else fin();
+}
+
 const GAMES = [
   {
     id: 'apice-gp',
@@ -34,7 +62,18 @@ const GAMES = [
       [['Esc'], 'Pausa'],
     ],
     tip: 'Las teclas se cambian en Ajustes → Controles. También se juega con mando.',
-    progress() { return null; }, // guarda en IndexedDB
+    progress() {
+      const s = apiceCache;
+      if (!s || !s.stats) return null;
+      const st = s.stats, lvl = (s.progression && s.progression.level) || 1;
+      if (!st.races && lvl <= 1) return null;
+      return {
+        label: `Nivel ${lvl} · ${st.wins || 0} victorias`,
+        pct: Math.min(1, (st.wins || 0) / 10),
+        stats: [['Nivel', lvl], ['Carreras', st.races || 0], ['Victorias', st.wins || 0], ['Podios', st.podiums || 0], ['Km', Math.round(st.distanceKm || 0)]],
+        flags: { wins: st.wins || 0, races: st.races || 0 },
+      };
+    },
   },
   {
     id: 'karting',
@@ -149,7 +188,7 @@ const GAMES = [
     id: 'sazon',
     title: 'Sazón Tycoon',
     tagline: 'De huarique de barrio a cadena de restaurantes en Lima',
-    desc: 'Atiende mesas, contrata mozos y cocineros, arma tu carta criolla y haz crecer tu local hasta tener varios pisos, drive-thru y delivery. Abre locales en Miraflores, Barranco y Gamarra y sobrevive a apagones, críticos de incógnito y partidos de la selección.',
+    desc: 'Atiende mesas, contrata mozos y cocineros, arma tu carta criolla de 17 platos y haz crecer tu local hasta tener varios pisos, drive-thru y delivery. Abre locales en Miraflores, Barranco y Gamarra y sobrevive a apagones, críticos de incógnito y partidos de la selección.',
     url: 'sazon-tycoon/index.html',
     cover: 'portal/img/sazon-cover.webp',
     alt: 'portal/img/sazon-alt.webp',
@@ -158,7 +197,7 @@ const GAMES = [
     color2: '#ffd23f',
     cats: ['simulacion', '3d'],
     tags: ['Tycoon', 'Simulación', '3D', 'Celular'],
-    badge: '',
+    badge: 'ACTUALIZADO',
     featured: true,
     added: '2026-09-20',
     controls: [
@@ -215,7 +254,7 @@ const GAMES = [
     id: 'tower-defense',
     title: 'Reino en Guardia',
     tagline: 'Tower defense contra la horda zombi',
-    desc: 'Construye torres, sube a tu héroe y aguanta 20 oleadas de zombis con minijefes y jefes en 3 mapas: pradera de noche, cañón con tormentas de arena y fragua volcánica. Misiones diarias, logros, rangos, modo infinito y desafíos.',
+    desc: 'Construye torres, sube a tu héroe y aguanta 20 oleadas de zombis con minijefes y jefes en 4 mapas: pradera de noche, cañón con tormentas de arena, fragua volcánica y un glaciar con ventiscas que congelan torres. Misiones diarias, logros, rangos, modo infinito y desafíos.',
     url: 'tower-defense/index.html',
     cover: 'portal/img/tower-defense-cover.webp',
     alt: 'portal/img/tower-defense-alt.webp',
@@ -223,7 +262,7 @@ const GAMES = [
     color2: '#ef4444',
     cats: ['estrategia', 'accion'],
     tags: ['Tower defense', 'Estrategia', 'Zombis'],
-    badge: '',
+    badge: 'ACTUALIZADO',
     controls: [
       [['1', '…', '9'], 'Elegir torre'],
       [['N'], 'Iniciar o adelantar oleada'],
@@ -318,9 +357,11 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'tower-defense', date: '10 oct', title: 'Reino en Guardia: Glaciar Maldito', items: ['Cuarto mapa entre pinos y hielo, con nieve cayendo', 'Ventiscas que congelan torres', 'Jefe nuevo: Yeti Zombi, y el desafío Deshielo'] },
+  { game: 'sazon', date: '10 oct', title: 'Sazón Tycoon: carta criolla', items: ['5 platos nuevos: emoliente, suspiro, arroz con pato, rocoto relleno y parihuela', 'Evento Día de la Canción Criolla: más propina y antojo de anticuchos'] },
   { game: 'combi-rush', date: '10 oct', title: 'Combi Rush, versión 4', items: ['4 viajes nuevos: La Punta, Túpac Amaru, Noche en Miraflores y la ruta más larga', 'Combi Sprinter y Micro chosicano de 40 pasajeros', 'Radio con Cumbia Total, Chicha Andina y Salsa Brava (tecla R)'] },
   { game: 'fuga-urbana', date: '10 oct', title: 'Fuga Urbana: power-ups', items: ['Cajas en la pista: nitro, plata, escudo y pintura', 'La pintura cambia tu color y la policía pierde tu rastro', '2 carros nuevos: La Chatarra y Fantasma'] },
-  { game: 'apice-gp', date: '10 oct', title: 'Ápice GP llega al portal', items: ['Monoplazas con DRS, boxes y radio del ingeniero', 'Se juega con teclado o mando'] },
+  { game: 'apice-gp', date: '10 oct', title: 'Ápice GP en el portal', items: ['Tu nivel y tus victorias ya aparecen en su ficha', 'Insignia nueva: Bandera a cuadros'] },
 ];
 
 const CATS = [

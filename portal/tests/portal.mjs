@@ -136,6 +136,16 @@ await page.keyboard.press('Escape');
 await page.waitForTimeout(400);
 check(await page.locator('#drawer').isHidden(), 'Esc cierra el perfil');
 
+// Ápice GP: el portal no debe crear su base de datos si no existe
+const dbs0 = await page.evaluate(async () => (await indexedDB.databases()).map(d => d.name));
+check(!dbs0.includes('apice-gp'), 'el portal no crea la base de Ápice GP por su cuenta');
+// y si existe (como la deja el juego), la lee
+await page.evaluate(() => new Promise(res => {
+  const rq = indexedDB.open('apice-gp', 1);
+  rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+  rq.onsuccess = () => { const db = rq.result; const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put({ progression: { level: 4 }, stats: { races: 5, wins: 2, podiums: 3, distanceKm: 41.7 } }, 'save'); tx.oncomplete = () => { db.close(); res(); }; };
+}));
+
 // progreso leído del guardado de los juegos
 await page.evaluate(() => {
   localStorage.setItem('kartodromo-save-v1', JSON.stringify({ xp: 450, coins: 320, stats: { races: 6, wins: 2, podiums: 4, cups: 1 } }));
@@ -146,8 +156,10 @@ await page.waitForTimeout(3500);
 await page.goto(base + '#biblioteca'); await page.waitForTimeout(500);
 const kart = await page.locator('.tile[data-tile=karting] small').textContent();
 check(/Piloto nivel 3/.test(kart), 'la ficha del Kartódromo lee el guardado: ' + kart);
+const apice = await page.locator('.tile[data-tile=apice-gp] small').textContent();
+check(/Nivel 4 · 2 victorias/.test(apice), 'la ficha de Ápice GP lee IndexedDB: ' + apice);
 const ach2 = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('anonymousGames_v1')).ach));
-check(['podio', 'copa', 'chef', 'cadena'].every(a => ach2.includes(a)), 'insignias de los juegos: ' + ach2.join(', '));
+check(['podio', 'copa', 'chef', 'cadena', 'bandera'].every(a => ach2.includes(a)), 'insignias de los juegos: ' + ach2.join(', '));
 check(!(await page.isVisible('#intro')), 'la intro no se repite en la misma sesión');
 await shot(page, 'portal-6-progreso.png');
 

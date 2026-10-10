@@ -121,6 +121,7 @@ const ACH = [
   { id: 'flechado', name: 'Flechado', desc: 'Marca un juego como favorito', icon: 'heart', test: () => P.favs.length > 0 },
   { id: 'fantasma', name: 'Fantasma', desc: 'Abre el portal en about:blank', icon: 'blank', test: () => P.cloaked },
   { id: 'maraton', name: 'Maratón', desc: 'Juega 1 hora en total', icon: 'clock', test: () => totalTime() >= 3600 },
+  { id: 'bandera', name: 'Bandera a cuadros', desc: 'Gana una carrera en Ápice GP', icon: 'flag', test: () => flag('apice-gp', 'wins') >= 1 },
   { id: 'podio', name: 'Primera victoria', desc: 'Gana una carrera en Kartódromo', icon: 'flag', test: () => flag('karting', 'wins') >= 1 },
   { id: 'copa', name: 'Campeón', desc: 'Gana un campeonato en Kartódromo', icon: 'trophy', test: () => flag('karting', 'cups') >= 1 },
   { id: 'cobrador', name: 'Cobrador', desc: 'Haz 10 viajes en Combi Rush', icon: 'users', test: () => flag('combi-rush', 'trips') >= 10 },
@@ -537,7 +538,9 @@ function showPlayer() {
   window.scrollTo({ top: Math.max(0, top), behavior: REDUCED ? 'auto' : 'smooth' });
 }
 function stopGame() {
+  const wasApice = UI.frame && UI.game && UI.game.id === 'apice-gp';
   if (UI.frame) { UI.frame.src = 'about:blank'; UI.frame.remove(); UI.frame = null; }
+  if (wasApice) loadApice(refreshAfterLoad);
   UI.playing = false;
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   document.body.classList.remove('pseudo-fs');
@@ -823,6 +826,9 @@ document.addEventListener('fullscreenchange', () => document.body.classList.togg
 // Un juego dentro del iframe que guarda progreso dispara 'storage' aquí: refresca insignias.
 window.addEventListener('storage', () => checkAch());
 
+// Cuando llega el guardado de Ápice GP se vuelve a dibujar la vista (si no se está jugando)
+function refreshAfterLoad() { checkAch(); if (!UI.playing && $('#drawer').hidden) route(); }
+
 /* ---------- arranque ---------- */
 paintIcons();
 persist();
@@ -832,3 +838,4 @@ playIntro(false);
 route();
 // Las insignias ganadas jugando (o en otra visita) aparecen después de la intro.
 setTimeout(() => checkAch(), $('#intro') ? 2600 : 700);
+loadApice(() => { if (apiceCache) refreshAfterLoad(); });
