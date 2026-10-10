@@ -42,7 +42,7 @@ Vereda (`walker`) → entra si quiere y hay mesa con sillas suficientes (`freeTa
 
 ## Eventos (Etapa 3)
 
-- `EVENTS` en `core.js`: partido, crítico, apagón y feriado. `save.event` guarda el evento del día (`{ id, day, ... }`) y `save.nextEvent` el día del próximo (el primero es el día `EVENT_FIRST_DAY`, luego cada 2 o 3 días).
+- `EVENTS` en `core.js`: partido, crítico, apagón, Día de la Canción Criolla (más propina y antojo de anticuchos y picarones) y feriado. `save.event` guarda el evento del día (`{ id, day, ... }`) y `save.nextEvent` el día del próximo (el primero es el día `EVENT_FIRST_DAY`, luego cada 2 o 3 días).
 - En `sim.js`: `startEvent()` al cambiar de día, `updateEvents()` en cada tick, `eventOn(id)` para preguntar si hoy toca, y `eventResult()` arma el texto del resumen.
 - El apagón pone `SIM.blackout` (la cocina no avanza) salvo que el local tenga `save.generator`. El crítico es un cliente con `critic: true` y su reseña pesa como 10.
 - `showEventCard()` en `ui.js` muestra el aviso grande. El resultado sale en el resumen del día.

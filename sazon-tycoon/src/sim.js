@@ -100,6 +100,7 @@ function newOrder(dish, kind, ref) {
   SIM.orders.push(o);
   const c = DISH[dish].cost; save.money -= c; save.dayLog.costs += c;
   if (dish === 'pollo' && eventOn('partido')) save.event.pollos = (save.event.pollos || 0) + 1;
+  if ((dish === 'anticuchos' || dish === 'picarones') && eventOn('criolla')) save.event.criollos = (save.event.criollos || 0) + 1;
   return o;
 }
 function cookSpeed() { return 1 + (save.train.cocinero || 0) * 0.28; }
@@ -200,7 +201,7 @@ function updateParty(party, dt) {
       // combo: si se atendió rápido suma, si tardó mucho se corta
       if ((party.waited || 99) < COMBO_FAST) { SIM.combo = Math.min(COMBO_MAX, SIM.combo + 1); SIM.comboT = COMBO_WINDOW; if (SIM.combo >= 2) onGame('combo', { n: SIM.combo, x: t.x, y: floorY(t.f) + 110, z: t.z }); }
       else if (party.waited > 36) breakCombo();
-      const tipRate = (rv.stars >= 4.5 ? 0.15 : rv.stars >= 4 ? 0.08 : 0) + levelTipBonus() + Math.max(0, SIM.combo - 1) * 0.05;
+      const tipRate = (rv.stars >= 4.5 ? 0.15 : rv.stars >= 4 ? 0.08 : 0) + levelTipBonus() + Math.max(0, SIM.combo - 1) * 0.05 + (eventOn('criolla') ? 0.12 : 0);
       const tip = Math.round(total * tipRate);
       gainXP(XP.party + XP.plate * party.orders.length + (SIM.combo > 1 ? SIM.combo * 2 : 0) + (rv.stars >= 4.5 ? XP.fiveStar : 0));
       if (rv.stars >= 4.5) onGame('fiveStar', { x: t.x, y: floorY(t.f) + 95, z: t.z });
@@ -227,7 +228,8 @@ function takeOrder(party) {
 }
 // durante el tutorial los clientes tienen el doble de paciencia
 const tutSlow = () => save.tutorial >= 0 ? 0.5 : 1;
-function pickDish() { if (eventOn('partido') && save.menu.includes('pollo') && chance(0.8)) return 'pollo'; const foods = save.menu.filter(id => !DISH[id].drink); const pool = foods.length ? foods : save.menu; let tot = 0; for (const id of pool) tot += DISH[id].pop; let r = Math.random() * tot; for (const id of pool) { r -= DISH[id].pop; if (r <= 0) return id; } return pool[0]; }
+function pickDish() { if (eventOn('partido') && save.menu.includes('pollo') && chance(0.8)) return 'pollo';
+  if (eventOn('criolla')) { const fav = ['anticuchos', 'picarones'].filter(id => save.menu.includes(id)); if (fav.length && chance(0.55)) return pick(fav); } const foods = save.menu.filter(id => !DISH[id].drink); const pool = foods.length ? foods : save.menu; let tot = 0; for (const id of pool) tot += DISH[id].pop; let r = Math.random() * tot; for (const id of pool) { r -= DISH[id].pop; if (r <= 0) return id; } return pool[0]; }
 function leaveParty(party, angry) {
   const t = party.table;
   if (angry) breakCombo();
@@ -490,6 +492,7 @@ function eventResult(ev) {
   if (ev.id === 'partido') { const n = ev.pollos || 0, a = irand(1, 3), b = irand(0, 2); return (save.menu.includes('pollo') || n ? 'Vendiste ' + n + ' pollos a la brasa. ' : 'No tenías pollo a la brasa y la gente se quejó. ') + (a > b ? 'Perú ganó ' + a + '-' + b + ' y todos celebraron en tu local.' : 'Perú empató ' + b + '-' + b + ', pero la barra no paró.'); }
   if (ev.id === 'critico') return ev.review ? 'El crítico te puso ' + ev.review.stars.toFixed(1) + ' ★: “' + ev.review.text + '”' : 'El crítico nunca apareció. Quizás mañana…';
   if (ev.id === 'apagon') return ev.genUsed ? 'Tu generador salvó el día: la cocina nunca paró.' : 'Sin luz, la cocina estuvo parada' + (ev.lostOrders ? ' y se ' + (ev.lostOrders === 1 ? 'fue 1 mesa' : 'fueron ' + ev.lostOrders + ' mesas') + ' sin comer.' : '.') + ' Un generador cuesta ' + soles(GENERATOR_COST) + '.';
+  if (ev.id === 'criolla') { const n = ev.criollos || 0; const has = save.menu.includes('anticuchos') || save.menu.includes('picarones'); return n ? 'Vendiste ' + n + ' anticuchos y picarones al ritmo del vals.' : has ? 'Hoy no salió ni un anticucho ni un picarón. Será para la próxima jarana.' : 'Sin anticuchos ni picarones en la carta, te perdiste el antojo criollo.'; }
   if (ev.id === 'feriado') return 'Atendiste a ' + (save.stats.customers - (ev.c0 || 0)) + ' clientes en el feriado.';
   return '';
 }

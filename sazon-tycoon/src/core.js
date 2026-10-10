@@ -42,6 +42,11 @@ const DISHES = [
   { id: 'pollo', name: 'Pollo a la brasa', price: 26, cost: 9, cook: 8, unlock: 2800, col: '#B5652A', top: '#F2C230', pop: 5 },
   { id: 'jalea', name: 'Jalea mixta', price: 28, cost: 10, cook: 8, unlock: 4500, col: '#E0A040', top: '#FF7A1A', pop: 3 },
   { id: 'tallarines', name: 'Tallarines verdes', price: 16, cost: 5, cook: 6, unlock: 6500, col: '#4F8A3A', top: '#8B3A1F', pop: 3 },
+  { id: 'emoliente', name: 'Emoliente', price: 4, cost: 1, cook: 2, unlock: 3500, drink: true, col: '#8A5A2B', pop: 3 },
+  { id: 'suspiro', name: 'Suspiro a la limeña', price: 11, cost: 3, cook: 3, unlock: 5200, col: '#F5E6C8', top: '#C89A5A', pop: 3 },
+  { id: 'pato', name: 'Arroz con pato', price: 30, cost: 11, cook: 9, unlock: 9000, col: '#3F7A2E', top: '#7A3A1F', pop: 4 },
+  { id: 'rocoto', name: 'Rocoto relleno', price: 24, cost: 8, cook: 7, unlock: 12000, col: '#C8261E', top: '#F2E6C8', pop: 3 },
+  { id: 'parihuela', name: 'Parihuela', price: 32, cost: 12, cook: 9, unlock: 16000, col: '#D9542A', top: '#F4EAD2', pop: 3 },
 ];
 const DISH = Object.fromEntries(DISHES.map(d => [d.id, d]));
 const ROLES = {
@@ -104,6 +109,7 @@ const EVENTS = {
   partido: { name: '¡Juega la selección!', short: 'Partido', desc: 'Hoy juega Perú y todo el mundo quiere pollo a la brasa. Si no está en tu carta, agrégalo ya.', color: '#E23B3B' },
   critico: { name: 'Crítico de incógnito', short: 'Crítico', desc: 'Dicen que hoy viene un crítico gastronómico disfrazado de cliente. Su reseña vale por 10. Que todo esté impecable.', color: '#7B3FF2' },
   apagon: { name: 'Apagón en la tarde', short: 'Apagón', desc: 'La compañía de luz anunció un corte. Sin luz la cocina se detiene… a menos que tengas un generador.', color: '#3A3A44' },
+  criolla: { name: 'Día de la Canción Criolla', short: 'Criolla', desc: 'Suena el vals en todo Lima: la gente deja más propina y se antoja de anticuchos y picarones. Tenlos en la carta.', color: '#FF7A1A' },
   feriado: { name: 'Feriado largo', short: 'Feriado', desc: 'Todo Lima salió a comer: hoy llega el doble de clientes. Prepara mesas y personal.', color: '#19A35A' },
 };
 const EVENT_FIRST_DAY = 4, GENERATOR_COST = 800;
