@@ -36,6 +36,8 @@ button{ font-family:inherit; }
 .logo span{ color:var(--acc); display:block; }
 .tbox p{ opacity:.8; line-height:1.45; }
 .tbox .b{ width:100%; margin-top:10px; font-size:16px; padding:13px; }
+/* pantallas bajas: el panel del título se achica y se puede desplazar en vez de cortarse */
+@media (max-height:560px){ .tbox{ max-height:calc(100% - 20px); overflow-y:auto; padding:18px 22px; } .tbox .logo{ font-size:clamp(26px, 9vh, 40px); } .tbox .b{ margin-top:7px; padding:10px; font-size:15px; } }
 #t-best{ font-size:13px; opacity:.8; margin-top:14px; }
 /* crear */
 #create{ display:flex; align-items:center; justify-content:center; background:rgba(8,8,14,.7); }
