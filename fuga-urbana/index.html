@@ -445,6 +445,12 @@
           <li><b>3:00</b> interceptores y tiras de clavos, que ponchan las llantas.</li>
           <li><b>5:00</b> enjambre, blindados y helicóptero. Si su foco te alumbra, todos saben dónde estás.</li>
         </ul></section>
+        <section><h3>Power-ups</h3><ul>
+          <li>En las avenidas aparecen cajas que giran. Pasa por encima para agarrarlas (también salen en el radar).</li>
+          <li><b>N</b> nitro lleno · <b>$</b> bolsa de plata (más puntos con más estrellas).</li>
+          <li><b>P</b> pintura nueva: cambias de color y la policía que no te ve pierde tu rastro.</li>
+          <li><b>E</b> escudo: 7 segundos sin recibir daño.</li>
+        </ul></section>
         <section><h3>Trucos</h3><ul>
           <li>Gira a buena velocidad y el carro derrapa solo: suma puntos y carga el turbo. Si chocas a mitad del derrape, lo pierdes.</li>
           <li>Guarda el turbo para las rectas y abre distancia.</li>
@@ -591,6 +597,8 @@ const CARS = [
   { id: 'bisonte', name: 'Bisonte',     kind: 'Offroad beast',    rarity: 'raro',       color: '#56634f', max: 400, accel: 330, turn: 2.5, grip: 7.5, hp: 240, len: 50, wid: 25, style: 'armor',  mass: 1.9 },
   { id: 'vibora',  name: 'Víbora',      kind: 'Supercar V8',      rarity: 'epico',      color: '#ff2d55', max: 535, accel: 500, turn: 3.3, grip: 8.5, hp: 100, len: 45, wid: 22, style: 'super',  mass: 1 },
   { id: 'proto',   name: 'Prototipo X', kind: 'Prototype racing', rarity: 'epico',      color: '#18c8a0', max: 560, accel: 545, turn: 3.4, grip: 9.5, hp: 90,  len: 46, wid: 23, style: 'proto',  mass: 0.95 },
+  { id: 'chatarra', name: 'La Chatarra', kind: 'Combi de Combi Rush', rarity: 'raro',     color: '#d9cba3', max: 370, accel: 300, turn: 2.3, grip: 7,   hp: 260, len: 54, wid: 25, style: 'van',    mass: 1.8 },
+  { id: 'fantasma', name: 'Fantasma',   kind: 'Superauto furtivo', rarity: 'legendario', color: '#20232f', max: 585, accel: 560, turn: 3.5, grip: 9.2, hp: 110, len: 45, wid: 22, style: 'super',  mass: 1 },
   { id: 'cometa',  name: 'Cometa',      kind: 'Hypercar V12',     rarity: 'legendario', color: '#e6dfcf', max: 595, accel: 570, turn: 3.4, grip: 9,   hp: 95,  len: 46, wid: 21, style: 'hyper',  mass: 1 },
 ];
 // Todo va un poco más lento para que se vea la ciudad
@@ -907,7 +915,8 @@ const TEX = {
 /* ================= Estado ================= */
 let W = 0, H = 0, dpr = 1, zoom = 1;
 let state = 'intro';
-let player = null, enemies = [], civs = [], shells = [], parts = [], skids = [], decals = [], wrenches = [];
+let player = null, enemies = [], civs = [], shells = [], parts = [], skids = [], decals = [], wrenches = [], boosts = [];
+let shieldT = 0, boostT = 0, boostsTaken = 0;
 const target = null; // ya no hay carros que robar: la partida es escapar
 let time = 0, heat = 0, level = 0, maxLevel = 0, bonus = 0, kills = 0, escapes = 0, wantedT = 0, calmT = 0, bust = 0, flash = 0, shake = 0;
 let spawnTimer = 0, civTimer = 0, overTimer = 0, endReason = '', hudT = 0, dark = 0, clock = 0;
@@ -1269,6 +1278,7 @@ function explode(x, y, power) {
 }
 function hurt(n) {
   if (state !== 'play') return;
+  if (shieldT > 0) { shake = Math.max(shake, 2); return; }
   n *= D().dmg;
   player.hp -= n; flash = Math.min(0.6, flash + 0.25 + n / 80);
   shake = Math.max(shake, Math.min(10, n / 3));
@@ -1467,6 +1477,36 @@ function updateCiv(c, dt, cars) {
   }
   if (!laneDrive(c, dt, cars)) c.loose = true;
 }
+/* Power-ups en la pista: aparecen en las avenidas y se recogen pasando por encima. */
+const BOOSTS = {
+  nitro:   { name: 'Nitro lleno',      color: '#3db8ff', icon: 'N', w: 3 },
+  plata:   { name: 'Bolsa de plata',   color: '#ffc93c', icon: '$', w: 3 },
+  pintura: { name: 'Pintura nueva',    color: '#ff4fd8', icon: 'P', w: 2 },
+  escudo:  { name: 'Escudo',           color: '#a98bff', icon: 'E', w: 2 },
+};
+const PAINTS = ['#ff2d55', '#18c8a0', '#f2b705', '#1f9ed1', '#f4f1e8', '#8a5cf6', '#ff7a1a', '#57d17a'];
+function spawnBoost() {
+  const p = randomTile([R], 450, 2300); if (!p) return;
+  let r = Math.random() * Object.values(BOOSTS).reduce((a, b) => a + b.w, 0), k = 'nitro';
+  for (const [id, b] of Object.entries(BOOSTS)) { r -= b.w; if (r <= 0) { k = id; break; } }
+  boosts.push({ x: p.x, y: p.y, k, life: 45 });
+}
+function takeBoost(b) {
+  boostsTaken++;
+  const B = BOOSTS[b.k];
+  if (b.k === 'nitro') { nitro = 1; toast('Nitro lleno'); Snd.blip([392, 587, 784]); }
+  else if (b.k === 'plata') { const n = 300 + 100 * level; bonus += n; toast(`Bolsa de plata +${n}`); Snd.blip([659, 880, 1175]); }
+  else if (b.k === 'escudo') { shieldT = 7; toast('Escudo: 7 s sin daño'); Snd.blip([330, 494, 659, 988]); }
+  else if (b.k === 'pintura') {
+    // Cambias de color: la policía que no te está viendo pierde tu rastro
+    player.paint = pick(PAINTS.filter(c => c !== (player.paint || player.def.color)));
+    for (let i = 0; i < 18; i++) puff(player.x + (Math.random() - 0.5) * 40, player.y + (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 120, (Math.random() - 0.5) * 120, 0.9, 8 + Math.random() * 6, player.paint, 18);
+    if (level > 0) { heat = Math.max(1, heat - 45); lastSeenT = Math.min(lastSeenT, time - 2); for (const e of enemies) if (Math.hypot(e.x - player.x, e.y - player.y) > 420) e.alert = false; toast('Pintura nueva: ya no te reconocen'); }
+    else toast('Pintura nueva');
+    Snd.blip([523, 440, 659]);
+  }
+  for (let i = 0; i < 12; i++) { const a = Math.random() * 6.28, v = 90 + Math.random() * 180; puff(b.x, b.y, Math.cos(a) * v, Math.sin(a) * v, 0.45, 2.5 + Math.random() * 2.5, B.color, 0, true); }
+}
 function spawnWrench() { const p = randomTile([SW], 350, 2600); if (p) wrenches.push({ x: p.x, y: p.y }); }
 
 /* ================= Nivel de búsqueda ================= */
@@ -1507,7 +1547,7 @@ function startIntro() {
   buildIntroRoute();
   introRun.s = 600; introRun.v = 400;
   player = makeCar(INTRO_CAR, START.x, START.y, -Math.PI / 2);
-  enemies = []; shells = []; wrenches = [];
+  enemies = []; shells = []; wrenches = []; boosts = []; shieldT = 0;
   for (let k = 0; k < 2; k++) {
     const e = makeCar(Object.assign({ type: 'police' }, ENEMY.police), START.x, START.y, -Math.PI / 2);
     Object.assign(e, { type: 'police', mode: 'chase', alert: true, hitCd: 0, stuck: 0, rev: 0, revSteer: 1, ox: 0, oy: 0, ta: 0, cd: 0, aim: false });
@@ -1521,7 +1561,7 @@ function startIntro() {
 function showGarage() {
   hideAll();
   state = 'garage';
-  player = null; enemies = []; shells = []; wrenches = []; spikes = []; heli = null;
+  player = null; enemies = []; shells = []; wrenches = []; boosts = []; shieldT = 0; boosts = []; shieldT = 0; spikes = []; heli = null;
   cam.rot = 0;
   gIdx = Math.max(0, CARS.findIndex(c => c.id === save.selected));
   gPop = 0; gacha.t = -1; gacha.car = null; $('gachaMsg').textContent = ''; preview = null;
@@ -1547,6 +1587,8 @@ function startGame() {
   spawnTimer = 1.5; civTimer = 0; flowSrc = -1; flowTimer = 0;
   buildFlow(player.x, player.y);
   for (let i = 0; i < 4; i++) spawnWrench();
+  boosts = []; shieldT = 0; boostT = 8; boostsTaken = 0;
+  for (let i = 0; i < 3; i++) spawnBoost();
   cam.x = player.x; cam.y = player.y; cam.rot = 0;
   $('hud').hidden = false; $('mid').hidden = false; $('padL').classList.add('live'); $('padR').classList.add('live');
   // La persecución empieza desde el primer segundo
@@ -1892,6 +1934,14 @@ function update(dt) {
         toast('Reparación +35%'); Snd.blip([440, 660]); spawnWrench();
       }
     }
+    for (let i = boosts.length - 1; i >= 0; i--) {
+      const b = boosts[i]; b.life -= dt;
+      if (Math.hypot(b.x - player.x, b.y - player.y) < player.r + 22) { boosts.splice(i, 1); takeBoost(b); }
+      else if (b.life <= 0 && Math.hypot(b.x - player.x, b.y - player.y) > 700) boosts.splice(i, 1);
+    }
+    boostT -= dt;
+    if (boostT <= 0) { boostT = 9 + Math.random() * 6; if (boosts.length < 4) spawnBoost(); }
+    if (shieldT > 0) shieldT = Math.max(0, shieldT - dt);
     // Escondido: si pasa mucho tiempo, una cámara de tráfico te vuelve a delatar
     if (level > 0) { wantedT += dt; calmT = 0; }
     else { calmT += dt; if (calmT > CALM_MAX) crime('Una cámara de tráfico te detectó', 5); }
@@ -2182,7 +2232,7 @@ const hasSiren = c => !!c.type && (c.mode !== 'patrol' || c.alert) && !c.leave;
 function carView(c) {
   const d = c.def;
   const mine = c === player && state !== 'intro';
-  return { style: d.style, color: d.color, len: d.len, wid: d.wid, steer: c.steer, braking: c.braking, phase: c.phase, track: c.track, turret: c.type === 'tank' ? c.ta - c.a : 0, nitro: c === player && nitroOn, siren: hasSiren(c), mods: mine ? playerMods() : null, accel: mine && (key.up || nitroOn) };
+  return { style: d.style, color: (c === player && c.paint) || d.color, len: d.len, wid: d.wid, steer: c.steer, braking: c.braking, phase: c.phase, track: c.track, turret: c.type === 'tank' ? c.ta - c.a : 0, nitro: c === player && nitroOn, siren: hasSiren(c), mods: mine ? playerMods() : null, accel: mine && (key.up || nitroOn) };
 }
 function playerMods(pv) {
   const e = Object.assign({}, save.equip), col = id => id && itemById(id) ? itemById(id).color : null;
@@ -2368,6 +2418,26 @@ function drawHeli(h, t) {
   for (let k = 0; k < 2; k++) { const a = h.rot + k * Math.PI / 2; ctx.beginPath(); ctx.moveTo(Math.cos(a) * -40, Math.sin(a) * -40); ctx.lineTo(Math.cos(a) * 40, Math.sin(a) * 40); ctx.stroke(); }
   ctx.restore();
 }
+function drawBoost(b, t) {
+  const B = BOOSTS[b.k], bob = Math.sin(t * 4 + b.x) * 3, fade = b.life < 5 ? 0.4 + 0.6 * Math.abs(Math.sin(t * 8)) : 1;
+  ctx.globalAlpha = 0.28 * fade; ctx.fillStyle = B.color;
+  ctx.beginPath(); ctx.arc(b.x, b.y, 24 + Math.sin(t * 5) * 4, 0, 6.28); ctx.fill();
+  ctx.globalAlpha = fade;
+  ctx.save(); ctx.translate(b.x, b.y + bob); ctx.rotate(t * 1.6);
+  ctx.fillStyle = B.color; ctx.fillRect(-11, -11, 22, 22);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.strokeRect(-11, -11, 22, 22);
+  ctx.rotate(-t * 1.6);
+  ctx.fillStyle = '#14151a'; ctx.font = '900 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(B.icon, 0, 1);
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function drawShield(t) {
+  if (!player || shieldT <= 0) return;
+  const k = shieldT < 2 ? 0.35 + 0.65 * Math.abs(Math.sin(t * 10)) : 1;
+  ctx.save(); ctx.globalAlpha = 0.55 * k; ctx.strokeStyle = '#a98bff'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(player.x, player.y, player.r + 18 + Math.sin(t * 6) * 2, 0, 6.28); ctx.stroke();
+  ctx.globalAlpha = 0.12 * k; ctx.fillStyle = '#a98bff'; ctx.fill(); ctx.restore();
+}
 function drawWrench(w, t) {
   const bob = Math.sin(t * 4 + w.x) * 3;
   ctx.fillStyle = 'rgba(87,209,122,0.25)'; ctx.beginPath(); ctx.arc(w.x, w.y, 20 + Math.sin(t * 4) * 3, 0, 6.28); ctx.fill();
@@ -2428,6 +2498,7 @@ function lightPass(visCars, visLamps, sx, sy) {
   for (const [bx, by] of beacons) punch(bx, by, 26, 0.9);
   if (heli) punch(heli.x, heli.y, 115, 0.95);
   for (const w of wrenches) punch(w.x, w.y, 40, 0.6);
+  for (const b of boosts) punch(b.x, b.y, 44, 0.7);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.drawImage(lc, 0, 0, W, H);
 }
@@ -2476,8 +2547,9 @@ function render(t) {
 
   for (const sp of spikes) if (inView(sp, 80)) drawSpikes(sp);
   const visCars = allCars().filter(c => inView(c, 90));
-  if (state !== 'intro') for (const w of wrenches) drawWrench(w, t);
+  if (state !== 'intro') { for (const w of wrenches) drawWrench(w, t); for (const b of boosts) if (inView(b, 60)) drawBoost(b, t); }
   for (const c of visCars) if (!(c === player && state === 'over' && endReason === 'wrecked')) drawCar(c, t);
+  drawShield(t);
   ctx.fillStyle = '#2b2b2b';
   for (const s of shells) { ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, 6.28); ctx.fill(); }
   for (const p of parts) {
@@ -2688,7 +2760,7 @@ function syncGarage() {
   $('odds').innerHTML = pool.length ? groups.map(gr => {
     const p = gr.cars.reduce((a, e) => a + e.p, 0), R0 = RARITY[gr.k];
     return `<div class="odd"><span style="color:${R0.color};font-weight:700">${R0.name}</span><div class="bar"><i style="width:${Math.round(p * 100)}%;background:${R0.color}"></i></div><span class="pct">${pct(p)}</span><small>${gr.cars.map(e => `${e.car.name} ${pct(e.p)}`).join(' · ')}</small></div>`;
-  }).join('') : '<p class="g-note">¡Ya tienes los 10 carros!</p>';
+  }).join('') : '<p class="g-note">¡Ya tienes los ${CARS.length} carros!</p>';
   const gb = $('gachaBtn');
   gb.innerHTML = `Abrir garaje · <i class="coin"></i> ${fmtN(GACHA_COST)}`;
   gb.disabled = !pool.length || save.coins < GACHA_COST || gacha.t >= 0;
@@ -2854,6 +2926,7 @@ function drawRadar(t) {
     mctx.beginPath(); mctx.arc(lx0, ly0, 16 + Math.sin(t * 4) * 3, 0, 6.28); mctx.stroke(); mctx.setLineDash([]);
   }
   for (const w of wrenches) { const [x, y, e] = toR(w.x, w.y); if (!e) { mctx.fillStyle = '#57d17a'; mctx.fillRect(x - 3, y - 3, 6, 6); } }
+  for (const b of boosts) { const [x, y, e] = toR(b.x, b.y); if (!e) { mctx.fillStyle = BOOSTS[b.k].color; mctx.beginPath(); mctx.arc(x, y, 3.5, 0, 6.28); mctx.fill(); } }
   for (const e of enemies) {
     const [x, y] = toR(e.x, e.y);
     const active = hasSiren(e);
@@ -3080,6 +3153,7 @@ function step(now) {
   }
 }
 window.__fuga = { car() { return { sp: Math.round(Math.hypot(player.vx, player.vy)), lat: Math.round(player.lat), fwd: Math.round(player.fwd), dk: +(player.driftK || 0).toFixed(2), nitro: +nitro.toFixed(2), nos: nitroOn, driftPts: Math.round(drift.pts), bank: bonus, audio: Snd.ac ? Snd.ac.state : 'none', gear: Snd.gear }; }, where() { const tx = Math.floor(player.x / T), ty = Math.floor(player.y / T), names = ['calle','vereda','edificio','pasto','estacionamiento','agua','plaza','industrial','campo','borde']; const near = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) near.push(names[tileAt(tx + i, ty + j)] || '?'); const e = edgeInfo(player); return { tile: names[tileAt(tx, ty)], near: [...new Set(near)].join(','), edge: Math.round(e.d), police: enemies.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 80).length, civ: civs.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < 70).length, tree: obstacles.filter(o => Math.hypot(o.x - player.x, o.y - player.y) < o.r + 30).length, box: boxes.filter(b => player.x > b.x - 30 && player.x < b.x + b.w + 30 && player.y > b.y - 30 && player.y < b.y + b.h + 30).length }; }, introHits() { let n = 0; for (const c of [player, ...enemies]) { const r = c.r * 0.7; if (isSolid(tileAt(Math.floor(c.x / T), Math.floor(c.y / T))) && tileAt(Math.floor(c.x / T), Math.floor(c.y / T)) !== BLD) n++; if (boxes.some(b => c.x > b.x - r && c.x < b.x + b.w + r && c.y > b.y - r && c.y < b.y + b.h + r)) n++; if (obstacles.some(o => Math.hypot(o.x - c.x, o.y - c.y) < o.r + r)) n++; } return n; }, tp(x, y) { Object.assign(player, { x, y, vx: 0, vy: 0, a: -Math.PI / 2, heading: -Math.PI / 2, steer: 0, driftK: 0 }); cam.x = x; cam.y = y; }, esc() { escape(); }, calm(v) { calmT = v; }, st() { return { level, calmT: +calmT.toFixed(1), x: Math.round(player.x), y: Math.round(player.y), W: WORLD, enemies: enemies.length, time: +time.toFixed(1) }; }, stress() { heat = 170; time = 200; lastSeenT = time; }, hp(v) { if (player) player.hp = v; }, coins(n) { save.coins += n; persist(); if (state === 'garage') syncGarage(); }, time(t) { time = t; }, peek() { return { heli: heli ? 1 : 0, spikes: spikes.length, block: enemies.filter(e => e.mode === 'block').length, interceptor: enemies.filter(e => e.type === 'interceptor').length }; } };
+Object.assign(window.__fuga, { startGame, crime, setNitro(v) { nitro = v; }, boosts: () => boosts, dropBoost(k) { boosts.push({ x: player.x, y: player.y, k, life: 45 }); }, shield: () => shieldT, player: () => player, hurt, cars: () => CARS.map(c => c.id), getHeat: () => heat, getLevel: () => level });
 startIntro();
 requestAnimationFrame(frame);
 })();
