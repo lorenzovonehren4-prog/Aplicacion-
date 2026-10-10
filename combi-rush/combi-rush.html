@@ -365,6 +365,11 @@ kbd{ font-family:'Bungee', Impact, sans-serif; font-size:calc(12*var(--u)); back
 #gps-sub{ font-size:calc(13*var(--u)); font-weight:700; opacity:.75; }
 #btn-pause{ position:absolute; top:calc(14*var(--u)); right:calc(200*var(--u)); pointer-events:auto; width:calc(46*var(--u)); height:calc(46*var(--u)); background:#fff; color:var(--tinta); border:calc(3*var(--u)) solid var(--tinta); border-radius:calc(12*var(--u)); box-shadow:calc(3*var(--u)) calc(3*var(--u)) 0 var(--tinta); cursor:pointer; padding:calc(6*var(--u)); }
 #btn-pause svg{ width:100%; height:100%; }
+#btn-radio{ position:absolute; top:calc(14*var(--u)); right:calc(256*var(--u)); pointer-events:auto; width:calc(64*var(--u)); height:calc(46*var(--u)); display:flex; align-items:center; justify-content:center; gap:calc(3*var(--u)); padding:0 calc(5*var(--u)); background:#FFE14D; color:var(--tinta); border:calc(3*var(--u)) solid var(--tinta); border-radius:calc(12*var(--u)); box-shadow:calc(3*var(--u)) calc(3*var(--u)) 0 var(--tinta); cursor:pointer; }
+#btn-radio svg{ width:calc(24*var(--u)); height:calc(24*var(--u)); flex:none; }
+#btn-radio small{ font-family:'Bungee', Impact, sans-serif; font-size:calc(11*var(--u)); line-height:1; }
+#btn-radio[data-off="1"]{ background:#fff; opacity:.75; }
+#btn-radio:focus-visible{ outline:calc(3*var(--u)) solid #fff; }
 #paxwrap{ position:absolute; left:50%; transform:translateX(-50%); bottom:calc(14*var(--u)); display:flex; flex-direction:column; align-items:center; gap:calc(6*var(--u)); background:rgba(27,21,35,.8); border-radius:calc(18*var(--u)); padding:calc(8*var(--u)) calc(12*var(--u)); max-width:calc(min(100% - 24*var(--u), 700*var(--u))); }
 .touch #paxwrap{ bottom:calc(196*var(--u)); }
 .moodrow{ display:flex; align-items:center; gap:calc(8*var(--u)); width:100%; color:#fff; font-weight:800; font-size:calc(11*var(--u)); }
@@ -376,6 +381,7 @@ kbd{ font-family:'Bungee', Impact, sans-serif; font-size:calc(12*var(--u)); back
 .portrait #gps.bump{ animation:none; }
 .portrait #tripcard{ width:calc(210*var(--u)); left:calc(10*var(--u)); top:calc(10*var(--u)); }
 .portrait #btn-pause{ right:calc(128*var(--u)); top:calc(10*var(--u)); }
+.portrait #btn-radio{ right:calc(182*var(--u)); top:calc(10*var(--u)); }
 .portrait .face, .portrait .face svg{ width:calc(34*var(--u)); } .portrait .face{ height:calc(38*var(--u)); } .portrait .face svg{ height:calc(34*var(--u)); }
 /* banner de salida */
 #modebanner{ top:18% !important; padding:calc(16*var(--u)) calc(22*var(--u)) !important; max-width:calc(460*var(--u)) !important; }
@@ -667,6 +673,7 @@ details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; 
     </div>
     <div id="gps" data-tone="info"><span class="gps-ico" id="gps-ico"></span><span class="gps-txt"><b id="gps-main"></b><small id="gps-sub"></small></span></div>
     <button id="btn-map" aria-label="Ver el mapa de la ruta (M)" title="Mapa (M)"></button>
+    <button id="btn-radio" aria-label="Radio (R)" title="Radio (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M6 8 17 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="8.5" cy="14" r="2.6" fill="currentColor"/><path d="M14 12h4M14 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><small>94.5</small></button>
     <button id="btn-pause" aria-label="Pausa"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.5" fill="currentColor"/></svg></button>
     <div id="paxwrap"><div class="seatrow" id="seatrow"><span>Asientos</span><div class="seats" id="seats"></div><b id="seat-txt"></b></div><div class="moodrow"><span>Ánimo a bordo</span><div class="bar"><i id="m-bal"></i></div><b id="m-pct">0%</b></div><div id="paxpanel" aria-label="Ánimo de los pasajeros"></div></div>
     <div id="coach" hidden><div class="co-av"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18.5" fill="#FF2E88"/><circle cx="20" cy="21" r="15" fill="#A56B45" stroke="#1B1523" stroke-width="1.6"/><path d="M6 17a14 13 0 0 1 28 0q-5-5-14-5t-14 5z" fill="#1B1523"/><path d="M5 14a15 12 0 0 1 30 0z" fill="#1B1523"/><rect x="2" y="12" width="20" height="4" rx="2" fill="#1B1523"/><path d="M12 19q2.5-3 5 0M23 19q2.5-3 5 0" stroke="#1B1523" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M13 25q7 7 14 0z" fill="#fff" stroke="#1B1523" stroke-width="1.8"/></svg></div><div class="co-body"><small>Tío Lucho, tu cobrador</small><b id="co-title"></b><p id="co-text"></p><div id="co-keys"></div><div id="co-dots"></div></div></div>
@@ -777,6 +784,7 @@ details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; 
         <kbd>Curvas</kbd><span>En las vueltas la combi se abre: frena antes y gira hacia adentro</span>
         <kbd>P</kbd><span>Pausa</span>
         <kbd>M</kbd><span>Mapa de la ruta (o toca el minimapa)</span>
+        <kbd>R</kbd><span>Radio: Cumbia Total, Chicha Andina o Salsa Brava</span>
       </div>
       <details class="more"><summary>Más consejos</summary>
       <ul class="tips">
@@ -898,7 +906,9 @@ const UPG = {
 };
 const VEHS = {
   combi: { name: 'Combi Toyota', desc: 'Tu primera combi. Vieja y lenta, pero tuya.', cost: 0, w: 50, l: 110, maxV: 360, acc: 175, brk: 380, grip: 0.72, seats: [8, 10, 12, 14, 16], dmgMul: 1 },
+  sprinter: { name: 'Combi Sprinter', desc: 'Moderna y liviana: la más rápida de la flota, pero lleva poca gente.', cost: 1800, w: 52, l: 122, maxV: 430, acc: 215, brk: 430, grip: 0.86, seats: [10, 12, 14, 16, 18], dmgMul: 0.9 },
   custer: { name: 'Cúster', desc: 'Más larga y resistente: entran muchos más pasajeros.', cost: 900, w: 54, l: 142, maxV: 380, acc: 165, brk: 400, grip: 0.8, seats: [16, 19, 22, 25, 28], dmgMul: 0.8 },
+  micro: { name: 'Micro chosicano', desc: 'El micro de toda la vida: lento y pesado, pero entran hasta 40 pasajeros y aguanta todo.', cost: 3500, w: 60, l: 176, maxV: 345, acc: 140, brk: 360, grip: 0.76, seats: [26, 30, 34, 37, 40], dmgMul: 0.6 },
 };
 const RIVAL_NAMES = [['El Chato', 0.48, 60, '#C62E3A'], ['Doña Pili', 0.56, 40, '#6A2C91'], ['Kevin "Rayo"', 0.66, 25, '#2E6BFF'], ['Tío Lucho', 0.78, 15, '#19A35A']];
 function rivalsFor(ti) { const T0 = TRIPS[ti], tt = tripTime(Object.assign({}, T0)); return RIVAL_NAMES.map(([name, f, prize, col], i) => ({ name, time: Math.round(tt * (f + ti * 0.004) * 10) / 10, prize: Math.round(prize * (1 + ti * 0.15)), col })); }
@@ -1145,30 +1155,91 @@ const MUS = {
   ],
 };
 const hz = s => 440 * Math.pow(2, s / 12);
+/* ---------- radio de la combi: tres emisoras sintetizadas ----------
+   Tecla R o el botón de la radio para cambiar. 'off' apaga sólo la radio. */
+const STATIONS = [
+  { id: 'cumbia', name: 'Cumbia Total', fm: '94.5 FM', bpm: 100, bars: MUS.bars },
+  { id: 'chicha', name: 'Chicha Andina', fm: '101.7 FM', bpm: 116, bars: [
+    { root: -26, third: 3, riff: [12, 15, 17, 15, 12, 10, 12, null] },
+    { root: -28, third: 3, riff: [10, 12, 15, 12, 10, 7, 10, null] },
+    { root: -31, third: 4, riff: [7, 10, 12, 10, 7, 5, 7, null] },
+    { root: -26, third: 3, riff: [12, null, 10, 12, 15, 17, 15, 12] },
+  ] },
+  { id: 'salsa', name: 'Salsa Brava', fm: '88.3 FM', bpm: 184, bars: [
+    { root: -27, third: 4, riff: [null, 19, null, 16, 19, null, 21, 19] },
+    { root: -22, third: 4, riff: [null, 21, null, 19, 21, null, 23, 21] },
+    { root: -20, third: 3, riff: [null, 22, null, 19, 22, null, 24, 22] },
+    { root: -27, third: 4, riff: [19, null, 16, null, 14, 16, null, 12] },
+  ] },
+  { id: 'off', name: 'Radio apagada', fm: '' },
+];
+const CLAVE = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0];
+function station() { return STATIONS[(save.radio | 0) % STATIONS.length]; }
+function playStation(st, t, s, e) {
+  const bar = st.bars[Math.floor(s / 8) % st.bars.length], i = s % 8, M = AU.mus;
+  if (st.id === 'cumbia') {
+    playNoise(t, i % 2 === 0 ? 0.09 : 0.04, i % 2 === 0 ? 0.09 : 0.05, 'highpass', 5200, M);
+    if (i === 0) playTone(t, hz(bar.root), e * 1.6, 'triangle', 0.34, M);
+    if (i === 3) playTone(t, hz(bar.root + 7), e * 0.9, 'triangle', 0.26, M);
+    if (i === 4) playTone(t, hz(bar.root + 7), e * 1.6, 'triangle', 0.3, M);
+    if (i === 7) playTone(t, hz(bar.root + 12), e * 0.9, 'triangle', 0.2, M);
+    if (i % 2 === 1) {
+      playTone(t, 587, 0.05, 'square', 0.025, M);
+      playTone(t, hz(bar.root + 24), 0.09, 'sawtooth', 0.018, M);
+      playTone(t, hz(bar.root + 24 + bar.third), 0.09, 'sawtooth', 0.016, M);
+      playTone(t, hz(bar.root + 31), 0.09, 'sawtooth', 0.016, M);
+    }
+    const n = bar.riff[i];
+    if (n !== null && Math.floor(s / 32) % 2 === 0) playTone(t, hz(n), e * 0.85, 'square', 0.04, M);
+    if (n !== null && Math.floor(s / 32) % 2 === 1) playTone(t, hz(n - 12), e * 0.85, 'triangle', 0.07, M);
+  } else if (st.id === 'chicha') {
+    // güiro raspado en cada corchea, bajo que salta entre tónica y quinta, guitarra punteada
+    playNoise(t, 0.07, i % 4 === 0 ? 0.1 : 0.05, 'bandpass', 3800, M);
+    if (i === 0 || i === 4) playTone(t, hz(bar.root), e * 1.4, 'triangle', 0.32, M);
+    if (i === 2 || i === 6) playTone(t, hz(bar.root + 7), e * 1.2, 'triangle', 0.26, M);
+    if (i === 7) playNoise(t, 0.12, 0.12, 'lowpass', 900, M);
+    const n = bar.riff[i];
+    if (n !== null) { playTone(t, hz(n), e * 0.9, 'square', 0.035, M); playTone(t + 0.012, hz(n) * 1.006, e * 0.85, 'sawtooth', 0.02, M); }
+    if (i % 2 === 1) playTone(t, hz(bar.root + 24 + bar.third), 0.08, 'triangle', 0.03, M);
+  } else if (st.id === 'salsa') {
+    // clave 3-2, campana, tumbao del bajo y montuno del piano
+    const k = s % 16;
+    if (CLAVE[k]) playTone(t, 2100, 0.04, 'square', 0.05, M);
+    if (i % 2 === 0) playTone(t, 1250, 0.03, 'triangle', 0.035, M);
+    if (i === 3) playTone(t, hz(bar.root), e * 1.8, 'triangle', 0.34, M);
+    if (i === 6) playTone(t, hz(bar.root + 7), e * 1.8, 'triangle', 0.3, M);
+    if (i === 2 || i === 5) playNoise(t, 0.08, 0.08, 'lowpass', 600, M);
+    const n = bar.riff[i];
+    if (n !== null) { playTone(t, hz(n), e * 0.8, 'triangle', 0.06, M); playTone(t, hz(n - 12 + bar.third), e * 0.8, 'triangle', 0.04, M); }
+  }
+}
 function musicTick() {
   const c = AU.ctx; if (!c) return;
-  const e = 60 / MUS.bpm / 2;
+  const st = station();
+  const e = 60 / (st.bpm || 100) / 2;
   if (AU.nextNote < c.currentTime - 0.2) AU.nextNote = c.currentTime + 0.05;
   while (AU.nextNote < c.currentTime + 0.15) {
-    const t = AU.nextNote, s = AU.step, bar = MUS.bars[Math.floor(s / 8) % 4], i = s % 8;
-    if (save.music && musicOn) {
-      playNoise(t, i % 2 === 0 ? 0.09 : 0.04, i % 2 === 0 ? 0.09 : 0.05, 'highpass', 5200, AU.mus);
-      if (i === 0) playTone(t, hz(bar.root), e * 1.6, 'triangle', 0.34, AU.mus);
-      if (i === 3) playTone(t, hz(bar.root + 7), e * 0.9, 'triangle', 0.26, AU.mus);
-      if (i === 4) playTone(t, hz(bar.root + 7), e * 1.6, 'triangle', 0.3, AU.mus);
-      if (i === 7) playTone(t, hz(bar.root + 12), e * 0.9, 'triangle', 0.2, AU.mus);
-      if (i % 2 === 1) {
-        playTone(t, 587, 0.05, 'square', 0.025, AU.mus);
-        playTone(t, hz(bar.root + 24), 0.09, 'sawtooth', 0.018, AU.mus);
-        playTone(t, hz(bar.root + 24 + bar.third), 0.09, 'sawtooth', 0.016, AU.mus);
-        playTone(t, hz(bar.root + 31), 0.09, 'sawtooth', 0.016, AU.mus);
-      }
-      const n = bar.riff[i];
-      if (n !== null && Math.floor(s / 32) % 2 === 0) playTone(t, hz(n), e * 0.85, 'square', 0.04, AU.mus);
-      if (n !== null && Math.floor(s / 32) % 2 === 1) playTone(t, hz(n - 12), e * 0.85, 'triangle', 0.07, AU.mus);
-    }
+    if (save.music && musicOn && st.bars) playStation(st, AU.nextNote, AU.step, e);
     AU.nextNote += e; AU.step++;
   }
+}
+function nextStation() {
+  save.radio = ((save.radio | 0) + 1) % STATIONS.length;
+  const st = station();
+  if (st.id !== 'off') { save.radioHeard = save.radioHeard || []; if (!save.radioHeard.includes(st.id)) save.radioHeard.push(st.id); }
+  if (AU.ctx) { AU.nextNote = AU.ctx.currentTime + 0.25; AU.step = 0; playNoise(AU.ctx.currentTime, 0.18, 0.12, 'bandpass', 2400, AU.sfx); }
+  persist();
+  paintRadio();
+  toast(st.id === 'off' ? '<b>Radio apagada</b>' : '<b>' + esc(st.name) + '</b> ' + esc(st.fm));
+  if (typeof checkGoals === 'function') checkGoals();
+}
+function paintRadio() {
+  const b = document.getElementById('btn-radio'); if (!b) return;
+  const st = station();
+  b.dataset.off = st.id === 'off' ? '1' : '';
+  b.setAttribute('aria-label', 'Radio: ' + st.name + ' (R para cambiar)');
+  b.title = 'Radio: ' + st.name + ' (R)';
+  const l = b.querySelector('small'); if (l) l.textContent = st.id === 'off' ? 'OFF' : st.fm.replace(' FM', '');
 }
 function setAudioGains() {
   if (!AU.ctx) return;
@@ -1179,7 +1250,7 @@ function setAudioGains() {
 /* ================== ENTRADA ================== */
 const keys = { left: false, right: false, up: false, down: false };
 const pressed = new Set();
-const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Space: 'cobrar', KeyH: 'bocina', KeyP: 'pausa', Escape: 'pausa', KeyM: 'mapa' };
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Space: 'cobrar', KeyH: 'bocina', KeyP: 'pausa', Escape: 'pausa', KeyM: 'mapa', KeyR: 'radio' };
 let inGameFocus = () => false;
 window.addEventListener('keydown', e => {
   const k = KEYMAP[e.code]; if (!k) return;
@@ -2279,7 +2350,17 @@ TRIPS.push(
   { pace: 350, fare: 3.5, name: 'Noche en el Centro', from: 'Plaza Bolognesi', to: 'la Plaza de Armas', lights: 7, cops: 2, traffic: 10, stops: 5, baches: 18, amb: 'noche', pax: 14, mix: { tranquilo: 3, apurado: 3, senora: 2, abuelo: 2, escolar: 1 }, color: '#5B6BFF', tip: 'De noche el Centro brilla, pero los peatones y los ambulantes aparecen de golpe. Prende los ojos.',
     route: [{ street: 'Paseo Colón', len: 4800, zone: 'avenida', feats: [{ t: 'parque', at: 0.5, len: 1300, name: 'Parque de la Exposición' }] }, { turn: 'L', street: 'Av. Garcilaso de la Vega', len: 5200, zone: 'avenida' }, { turn: 'R', street: 'Jr. Quilca', len: 3800 }, { turn: 'R', street: 'Av. Tacna', len: 5000, zone: 'avenida' }, { turn: 'L', street: 'Jr. de la Unión', len: 3800, feats: [{ t: 'parque', at: 0.55, len: 1000, name: 'Plaza San Martín' }] }] },
 );
-const TRIP_MOTOR = [0, 0, 1, 1, 2, 3, 2, 3, 3, 4, 4, 4];
+TRIPS.push(
+  { pace: 370, fare: 3.0, name: 'Rumbo a La Punta', from: 'Bellavista', to: 'La Punta', lights: 5, cops: 1, traffic: 9, stops: 4, baches: 14, amb: 'atardecer', pax: 13, mix: { tranquilo: 4, senora: 3, apurado: 3, escolar: 2 }, color: '#1FB5A8', tip: 'Cruzas el Callao hasta el malecón de La Punta, con el mar al lado y el sol cayendo.',
+    route: [{ street: 'Av. Colonial', len: 6000, zone: 'avenida' }, { turn: 'R', street: 'Av. Sáenz Peña', len: 4200, feats: [{ t: 'parque', at: 0.5, len: 1200, name: 'Plaza Grau del Callao' }] }, { turn: 'L', street: 'Malecón Figueredo', len: 8200, zone: 'costa', zoneName: 'Malecón de La Punta', sea: 'R' }, { turn: 'R', street: 'Jr. Bolognesi', len: 3400, feats: [{ t: 'parque', at: 0.5, len: 1100, name: 'Plaza de La Punta' }] }] },
+  { pace: 360, fare: 3.0, name: 'Túpac Amaru en hora punta', from: 'Comas', to: 'Plaza Norte', lights: 7, cops: 2, traffic: 13, stops: 6, baches: 26, amb: 'dia', pax: 15, mix: { apurado: 5, senora: 3, escolar: 3, tranquilo: 3, abuelo: 1 }, color: '#E85D2A', tip: 'La avenida más cargada del cono norte: paraderos cada cuadra y combis peleando el pasajero.',
+    route: [{ street: 'Av. Túpac Amaru', len: 9000, zone: 'avenida', feats: [{ t: 'puente', at: 0.2, len: 900, name: 'Puente sobre el río Chillón' }] }, { turn: 'L', street: 'Av. Los Alisos', len: 4200 }, { turn: 'R', street: 'Panamericana Norte', len: 8000, zone: 'carretera', zoneName: 'Panamericana Norte' }, { turn: 'R', street: 'Av. Tomás Valle', len: 3600, zone: 'avenida' }] },
+  { pace: 355, fare: 3.5, name: 'Noche en Miraflores', from: 'Surquillo', to: 'el Parque Kennedy', lights: 6, cops: 2, traffic: 10, stops: 5, baches: 12, amb: 'noche', pax: 14, mix: { tranquilo: 4, apurado: 3, mareado: 3, senora: 2 }, color: '#B44CFF', tip: 'Avenidas iluminadas, el malecón sobre el mar y gente que sale de fiesta. Maneja suave.',
+    route: [{ street: 'Av. Angamos', len: 5000, zone: 'avenida' }, { turn: 'L', street: 'Av. Arequipa', len: 6000, zone: 'avenida' }, { turn: 'R', street: 'Malecón Cisneros', len: 6400, zone: 'costa', zoneName: 'Malecón de Miraflores', sea: 'R', feats: [{ t: 'parque', at: 0.5, len: 1300, name: 'Parque del Amor' }] }, { turn: 'L', street: 'Av. Larco', len: 4200, zone: 'avenida', feats: [{ t: 'parque', at: 0.75, len: 1100, name: 'Parque Kennedy' }] }] },
+  { pace: 400, fare: 4.5, name: 'La ruta más larga', from: 'Ventanilla', to: 'Villa El Salvador', lights: 6, cops: 3, traffic: 13, stops: 6, baches: 28, amb: 'garua', pax: 16, mix: { apurado: 4, abuelo: 3, senora: 3, mareado: 3, tranquilo: 3 }, color: '#5B8DEF', tip: 'De norte a sur cruzando toda Lima con garúa. Solo para choferes con experiencia y buen motor.',
+    route: [{ street: 'Av. Néstor Gambetta', len: 7000, zone: 'carretera', zoneName: 'Av. Néstor Gambetta' }, { turn: 'L', street: 'Av. Elmer Faucett', len: 5600, zone: 'avenida', feats: [{ t: 'puente', at: 0.5, len: 900, name: 'Puente sobre el río Rímac' }] }, { turn: 'L', street: 'Vía Expresa Sur', len: 8400, zone: 'carretera', zoneName: 'Vía Expresa Sur' }, { turn: 'R', street: 'Panamericana Sur', len: 7000, zone: 'carretera', zoneName: 'Panamericana Sur', feats: [{ t: 'puente', at: 0.4, len: 800, name: 'Puente Atocongo' }] }] },
+);
+const TRIP_MOTOR = [0, 0, 1, 1, 2, 3, 2, 3, 3, 4, 4, 4, 3, 4, 4, 5];
 for (const T0 of TRIPS) T0.length = routeLen(T0.route);
 const CALLES = ['Av. Arequipa', 'Jr. de la Unión', 'Av. Colonial', 'Av. Túpac Amaru', 'Av. Universitaria', 'Av. Angamos', 'Av. Benavides', 'Jr. Lampa', 'Av. Salaverry', 'Av. Wilson', 'Av. Aviación', 'Av. La Marina', 'Jr. Cusco', 'Av. Emancipación', 'Av. Larco', 'Av. Faucett'];
 const PERS = {
@@ -4785,6 +4866,12 @@ const GOALS = [
   { id: 'g17', t: 'Junta las ' + TRIPS.length * 3 + ' estampitas del álbum', r: 300, ok: () => albumCount() >= TRIPS.length * 3 },
   { id: 'g18', t: 'Maneja por la Costa Verde (viaje 9)', r: 80, ok: () => ((save.tripStars || [])[8] || 0) >= 1 },
   { id: 'g19', t: 'Termina un viaje de noche', r: 60, ok: () => !!save.stats.night },
+  { id: 'g20', t: 'Compra la Combi Sprinter', r: 200, ok: () => save.owned.includes('sprinter') },
+  { id: 'g21', t: 'Compra el Micro chosicano', r: 300, ok: () => save.owned.includes('micro') },
+  { id: 'g22', t: 'Llega a La Punta (viaje 13)', r: 90, ok: () => ((save.tripStars || [])[12] || 0) >= 1 },
+  { id: 'g23', t: 'Lleva 30 pasajeros a la vez', r: 200, ok: () => (save.stats.maxOn || 0) >= 30 },
+  { id: 'g24', t: 'Termina la ruta más larga (viaje 16)', r: 250, ok: () => ((save.tripStars || [])[15] || 0) >= 1 },
+  { id: 'g25', t: 'Escucha las 3 emisoras de la radio', r: 25, ok: () => (save.radioHeard || []).length >= 3 },
 ];
 function albumCount() { let n = 0; for (const m of save.album || []) for (let i = 0; i < 3; i++) if ((m >> i) & 1) n++; return n; }
 /* ---------- bono diario y encargos del día ---------- */
@@ -5213,6 +5300,8 @@ $('#btn-random').addEventListener('click', () => sorteoViaje());
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.id === 'opt-back' && b.dataset.go === 'pausa') paused = true; }));
 $('#btn-quick').addEventListener('click', () => sorteoViaje());
 $('#btn-pause').addEventListener('click', () => pause());
+$('#btn-radio').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); nextStation(); });
+paintRadio();
 $('#p-resume').addEventListener('click', () => resume());
 $('#btn-map').addEventListener('click', () => { if (screen === 'play') pause(); });
 window.addEventListener('resize', () => { if (screen === 'pausa') drawPauseMap(); });
@@ -5243,6 +5332,7 @@ function frame(t) {
     if (pressed.has('pausa') || pressed.has('mapa')) { if (screen === 'play') pause(); else if (screen === 'pausa') resume(); }
     if (screen !== 'pausa' && !(screen === 'opciones' && optFrom === 'pausa')) {
       if (screen === 'play' && !G.done && pressed.has('bocina')) horn();
+      if (screen === 'play' && pressed.has('radio')) nextStation();
       update(dt);
       if (G.attract && G.p.wy > G.R.length - 1500) startAttract();
     }
@@ -5275,7 +5365,7 @@ Promise.race([fontsReady, new Promise(r => setTimeout(r, 1800))]).then(boot, boo
 window.__combi = {
   snap() { const p = G.p; wpos(p.wy - 215 - p.v * 0.09, 270 + (p.x - 270) * 0.55, 122 + p.v * 0.03, camPos); wpos(p.wy + 280, 270 + (p.x - 270) * 0.72, 16, camLook); },
   step(n) { for (let i = 0; i < n; i++) { update(1 / 30); pressed.clear(); } },
-  get G() { return G; }, TUT_STEPS, rivalsFor, startRun, update, render, show, horn, save, showResults, sorteoViaje, lightState, laneFree, laneX, avgMood, nextTurn,
+  get G() { return G; }, TUT_STEPS, rivalsFor, startRun, update, render, show, horn, save, showResults, sorteoViaje, nextStation, station, TRIPS, VEHS, buildTaller, lightState, laneFree, laneX, avgMood, nextTurn,
 };
 
 })();

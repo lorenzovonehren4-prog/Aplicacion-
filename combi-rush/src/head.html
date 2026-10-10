@@ -365,6 +365,11 @@ kbd{ font-family:'Bungee', Impact, sans-serif; font-size:calc(12*var(--u)); back
 #gps-sub{ font-size:calc(13*var(--u)); font-weight:700; opacity:.75; }
 #btn-pause{ position:absolute; top:calc(14*var(--u)); right:calc(200*var(--u)); pointer-events:auto; width:calc(46*var(--u)); height:calc(46*var(--u)); background:#fff; color:var(--tinta); border:calc(3*var(--u)) solid var(--tinta); border-radius:calc(12*var(--u)); box-shadow:calc(3*var(--u)) calc(3*var(--u)) 0 var(--tinta); cursor:pointer; padding:calc(6*var(--u)); }
 #btn-pause svg{ width:100%; height:100%; }
+#btn-radio{ position:absolute; top:calc(14*var(--u)); right:calc(256*var(--u)); pointer-events:auto; width:calc(64*var(--u)); height:calc(46*var(--u)); display:flex; align-items:center; justify-content:center; gap:calc(3*var(--u)); padding:0 calc(5*var(--u)); background:#FFE14D; color:var(--tinta); border:calc(3*var(--u)) solid var(--tinta); border-radius:calc(12*var(--u)); box-shadow:calc(3*var(--u)) calc(3*var(--u)) 0 var(--tinta); cursor:pointer; }
+#btn-radio svg{ width:calc(24*var(--u)); height:calc(24*var(--u)); flex:none; }
+#btn-radio small{ font-family:'Bungee', Impact, sans-serif; font-size:calc(11*var(--u)); line-height:1; }
+#btn-radio[data-off="1"]{ background:#fff; opacity:.75; }
+#btn-radio:focus-visible{ outline:calc(3*var(--u)) solid #fff; }
 #paxwrap{ position:absolute; left:50%; transform:translateX(-50%); bottom:calc(14*var(--u)); display:flex; flex-direction:column; align-items:center; gap:calc(6*var(--u)); background:rgba(27,21,35,.8); border-radius:calc(18*var(--u)); padding:calc(8*var(--u)) calc(12*var(--u)); max-width:calc(min(100% - 24*var(--u), 700*var(--u))); }
 .touch #paxwrap{ bottom:calc(196*var(--u)); }
 .moodrow{ display:flex; align-items:center; gap:calc(8*var(--u)); width:100%; color:#fff; font-weight:800; font-size:calc(11*var(--u)); }
@@ -376,6 +381,7 @@ kbd{ font-family:'Bungee', Impact, sans-serif; font-size:calc(12*var(--u)); back
 .portrait #gps.bump{ animation:none; }
 .portrait #tripcard{ width:calc(210*var(--u)); left:calc(10*var(--u)); top:calc(10*var(--u)); }
 .portrait #btn-pause{ right:calc(128*var(--u)); top:calc(10*var(--u)); }
+.portrait #btn-radio{ right:calc(182*var(--u)); top:calc(10*var(--u)); }
 .portrait .face, .portrait .face svg{ width:calc(34*var(--u)); } .portrait .face{ height:calc(38*var(--u)); } .portrait .face svg{ height:calc(34*var(--u)); }
 /* banner de salida */
 #modebanner{ top:18% !important; padding:calc(16*var(--u)) calc(22*var(--u)) !important; max-width:calc(460*var(--u)) !important; }
@@ -667,6 +673,7 @@ details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; 
     </div>
     <div id="gps" data-tone="info"><span class="gps-ico" id="gps-ico"></span><span class="gps-txt"><b id="gps-main"></b><small id="gps-sub"></small></span></div>
     <button id="btn-map" aria-label="Ver el mapa de la ruta (M)" title="Mapa (M)"></button>
+    <button id="btn-radio" aria-label="Radio (R)" title="Radio (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M6 8 17 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="8.5" cy="14" r="2.6" fill="currentColor"/><path d="M14 12h4M14 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><small>94.5</small></button>
     <button id="btn-pause" aria-label="Pausa"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.5" fill="currentColor"/></svg></button>
     <div id="paxwrap"><div class="seatrow" id="seatrow"><span>Asientos</span><div class="seats" id="seats"></div><b id="seat-txt"></b></div><div class="moodrow"><span>Ánimo a bordo</span><div class="bar"><i id="m-bal"></i></div><b id="m-pct">0%</b></div><div id="paxpanel" aria-label="Ánimo de los pasajeros"></div></div>
     <div id="coach" hidden><div class="co-av"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18.5" fill="#FF2E88"/><circle cx="20" cy="21" r="15" fill="#A56B45" stroke="#1B1523" stroke-width="1.6"/><path d="M6 17a14 13 0 0 1 28 0q-5-5-14-5t-14 5z" fill="#1B1523"/><path d="M5 14a15 12 0 0 1 30 0z" fill="#1B1523"/><rect x="2" y="12" width="20" height="4" rx="2" fill="#1B1523"/><path d="M12 19q2.5-3 5 0M23 19q2.5-3 5 0" stroke="#1B1523" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M13 25q7 7 14 0z" fill="#fff" stroke="#1B1523" stroke-width="1.8"/></svg></div><div class="co-body"><small>Tío Lucho, tu cobrador</small><b id="co-title"></b><p id="co-text"></p><div id="co-keys"></div><div id="co-dots"></div></div></div>
@@ -777,6 +784,7 @@ details.more summary{ cursor:pointer; font-family:'Bungee', Impact, sans-serif; 
         <kbd>Curvas</kbd><span>En las vueltas la combi se abre: frena antes y gira hacia adentro</span>
         <kbd>P</kbd><span>Pausa</span>
         <kbd>M</kbd><span>Mapa de la ruta (o toca el minimapa)</span>
+        <kbd>R</kbd><span>Radio: Cumbia Total, Chicha Andina o Salsa Brava</span>
       </div>
       <details class="more"><summary>Más consejos</summary>
       <ul class="tips">

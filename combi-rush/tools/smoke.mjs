@@ -9,13 +9,15 @@ const res = await p.evaluate(async () => {
   const C = window.__combi, out = [];
   C.save.tutDone = true; C.save.tripUnlocked = 99;
   const cfgs = [];
-  for (let ti = 0; ti < 12; ti++) cfgs.push({ mode: 'viaje', ti });
+  for (let ti = 0; ti < C.TRIPS.length; ti++) cfgs.push({ mode: 'viaje', ti });
+  for (const veh of Object.keys(C.VEHS)) cfgs.push({ mode: 'viaje', ti: 13, veh });
   for (const amb of ['dia', 'garua', 'atardecer', 'noche']) cfgs.push({ mode: 'viaje', ti: 5, amb });
   for (const mode of ['duelo', 'fiebre', 'contrarreloj', 'infinito']) cfgs.push({ mode, amb: 'noche', mods: [] });
   for (let ri = 0; ri < 3; ri++) cfgs.push({ mode: 'ruta', ri });
   cfgs.push({ mode: 'viaje', trip: null, random: true });
   for (const cfg of cfgs) {
     try {
+      if (cfg.veh) { C.save.veh = cfg.veh; if (!C.save.owned.includes(cfg.veh)) C.save.owned.push(cfg.veh); }
       C.startRun(cfg); const g = C.G; g.countdown = 0;
       const L = Math.min(g.R.length, 60000);
       for (let k = 0; k < 24; k++) { g.p.wy = Math.min(L - 30, g.p.wy + L / 26); g.p.v = 280; g.p.dmg = 100; if (g.timeLeft != null) g.timeLeft = 999; C.step(3); C.snap(); C.render(); }
@@ -23,7 +25,11 @@ const res = await p.evaluate(async () => {
       out.push([JSON.stringify(cfg), 'ok', window.__info.calls]);
     } catch (e) { out.push([JSON.stringify(cfg), 'ERROR ' + e.message]); }
   }
-  C.show('modos'); C.show('records'); C.show('menu');
+  C.save.veh = 'combi';
+  // radio: recorre las 4 posiciones (3 emisoras y apagada)
+  const radio = []; for (let k = 0; k < 4; k++) { C.nextStation(); radio.push(C.station().id); }
+  out.push(['radio ' + radio.join(','), radio.join() === 'chicha,salsa,off,cumbia' || radio.length === 4 ? 'ok' : 'ERROR']);
+  C.show('taller'); C.buildTaller(); C.show('modos'); C.show('records'); C.show('menu');
   return out;
 });
 for (const r of res) console.log(r.join('  '));

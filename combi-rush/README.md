@@ -28,6 +28,18 @@ Opciones. En Chrome incógnito, que sí guarda pero borra todo al cerrar la vent
 avisa. En **Opciones → Código de partida** puedes copiar un código con todo tu progreso
 (plata, mejoras, viajes, metas) y cargarlo después en cualquier navegador.
 
+## Versión 4: más Lima, más flota y radio
+
+- **4 viajes nuevos (ahora son 16):**
+  13. **Rumbo a La Punta**, Bellavista → La Punta, al atardecer por el malecón.
+  14. **Túpac Amaru en hora punta**, Comas → Plaza Norte: paraderos cada cuadra.
+  15. **Noche en Miraflores**, Surquillo → Parque Kennedy, por el Malecón Cisneros.
+  16. **La ruta más larga**, Ventanilla → Villa El Salvador con garúa.
+- **Flota nueva en el Taller:** Combi Sprinter (la más rápida, S/ 1 800) y Micro chosicano (hasta 40 pasajeros, S/ 3 500).
+- **Radio de la combi:** tres emisoras sintetizadas (Cumbia Total 94.5, Chicha Andina 101.7 y Salsa Brava 88.3) o apagada. Tecla **R** o el botón de la radio en la pantalla.
+- **6 metas nuevas:** comprar la Sprinter y el micro, llegar a La Punta, llevar 30 pasajeros, terminar la ruta más larga y escuchar las 3 emisoras.
+- La prueba de humo recorre los 16 viajes, los 4 vehículos y la radio.
+
 ## Versión 3: jugabilidad más clara
 
 - **Paraderos con información:** tarjeta flotante sobre el próximo paradero (cuántos esperan, cuántos bajan, asientos libres o "¡Combi llena!") e indicación de qué hacer ("Pásate al carril derecho", "Frena sobre la marca amarilla").
