@@ -76,6 +76,28 @@ button, input, select{ font-family:inherit; color:inherit; }
 .m-edit{ --mc:#2BE07F; } .m-race{ --mc:#EF4A43; } .m-best{ --mc:#2AD4FF; } .m-champ{ --mc:#F5C542; } .m-garage{ --mc:#B36BFF; }
 .foot{ position:absolute; left:0; right:0; bottom:14px; text-align:center; color:var(--muted); font-size:12px; letter-spacing:.04em; }
 @media (max-width:900px){ .modes{ grid-template-columns:repeat(2, minmax(0, 1fr)); } .hero{ display:none; } }
+/* Pantallas medianas o bajas (laptops chicas, celular acostado, dentro de un marco):
+   el menú pasa de piezas fijas a una columna que fluye, para que las tarjetas no tapen
+   el título ni el perfil. Si no entra, se desplaza. */
+@media (max-width:1180px), (max-height:700px){
+  #title.on{ display:flex; flex-direction:column; gap:14px; padding:14px 18px 36px; overflow-y:auto; }
+  #title .topbar{ position:relative; padding:0; flex:none; }
+  #title .hero{ position:relative; left:auto; top:auto; width:auto; max-width:520px; flex:none; }
+  #title .herot{ font-size:clamp(28px, 4vw, 42px); margin:6px 0 8px; }
+  #title .herosub{ margin-bottom:12px; }
+  #title .kartplate{ display:none; }
+  #title .modes{ position:relative; left:auto; right:auto; bottom:auto; margin-top:auto; flex:none; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; }
+  #title .mode{ min-height:0; padding:12px 14px; }
+  #title .mt{ font-size:19px; }
+  #title .md{ font-size:12.5px; }
+  #title .mk{ display:none; }
+  #title .foot{ position:relative; bottom:auto; flex:none; }
+}
+@media (max-height:620px){
+  #title .herosub, #title .nextunlock{ display:none; }
+  #title .statrow b{ font-size:19px; }
+  #title .mi{ width:38px; height:38px; } #title .mi svg{ width:22px; height:22px; }
+}
 
 /* elegir pista */
 #tracks{ background:radial-gradient(ellipse at 70% 40%, rgba(124,77,255,.18), transparent 60%), rgba(10,8,16,.86); }
@@ -332,7 +354,7 @@ body.replaying #labels .tagname{ font-size:11px; }
   <aside class="hero">
     <div class="eyebrow">Temporada 1 · Lima</div>
     <h1 class="h herot">¿Listo para<br>la largada?</h1>
-    <p class="herosub">4 pistas de un minuto, con túneles y segundos pisos. Suelta el acelerador en las curvas y frena solo donde de verdad hace falta.</p>
+    <p class="herosub">10 pistas de un minuto, con túneles y segundos pisos. Suelta el acelerador en las curvas y frena solo donde de verdad hace falta.</p>
     <div class="statrow">
       <div><b id="stRaces">0</b><span>Carreras</span></div>
       <div><b id="stWins">0</b><span>Victorias</span></div>
@@ -359,7 +381,7 @@ body.replaying #labels .tagname{ font-size:11px; }
     <button class="mode m-champ" data-act="champ" id="btnChamp">
       <span class="mi"><svg viewBox="0 0 24 24"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3Zm10 4v3a2 2 0 0 0 1-1.7V7ZM6 7v1.3A2 2 0 0 0 7 10V7Z" fill="currentColor"/></svg></span>
       <span class="mt h">Campeonato</span>
-      <span class="md" id="champSub">4 carreras por puntos. El campeón se lleva el premio grande.</span>
+      <span class="md" id="champSub">10 carreras por puntos. El campeón se lleva el premio grande.</span>
       <span class="mk">Enter</span>
     </button>
     <button class="mode m-edit" data-act="editor">
