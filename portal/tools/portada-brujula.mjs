@@ -17,8 +17,7 @@ const result = async (page, id, name) => {
   await page.evaluate(([id, name]) => {
     localStorage.clear();
     const i = IDEOS.find(x => x.id === id);
-    S.name = name;
-    S.answers = Q.map(([, w]) => { let d = 0; for (const k in w) d += w[k] * i.p[k]; return Math.max(-2, Math.min(2, Math.round(d * 2))); });
+    S.answers = Q.map(([, w]) => { let d = 0; for (const k in w) d += w[k] * i.p[k]; return Math.max(-2, Math.min(2, Math.round(d * 2)) || 0); });
     finish(); localStorage.clear();
   }, [id, name]);
   await page.waitForTimeout(1000);

@@ -19,7 +19,6 @@ for (const [tag, vp] of [['pc', { width: 1280, height: 860 }], ['cel', { width: 
   await page.goto(url);
   await page.screenshot({ path: path.join(out, `brujula-${tag}-inicio.png`) });
   check(!(await page.isVisible('#resume')), `${tag}: sin test a medias no aparece "Seguir"`);
-  await page.fill('#name', 'Javier');
   await page.click('#go');
   await page.waitForSelector('#s-quiz.on');
   for (let i = 0; i < 30; i++) { await page.keyboard.press(String(1 + (i % 5))); await page.waitForTimeout(200); }
@@ -33,7 +32,8 @@ for (const [tag, vp] of [['pc', { width: 1280, height: 860 }], ['cel', { width: 
   await page.waitForSelector('#s-res.on');
   await page.waitForTimeout(900);
   check(await page.locator('.ax__row').count() === 6, `${tag}: tarjeta con los 6 ejes`);
-  check((await page.textContent('.card__name')) === 'Javier', `${tag}: el nombre sale en la tarjeta`);
+  check(await page.locator('.card #compass circle').count() > 10, `${tag}: la brújula está en la tarjeta`);
+  check(await page.locator('.lst--def > div').count() === 3, `${tag}: muestra lo que más te define`);
   const sw = await page.evaluate(() => document.documentElement.scrollWidth);
   check(sw <= vp.width, `${tag}: sin scroll horizontal (${sw})`);
   await page.screenshot({ path: path.join(out, `brujula-${tag}-resultado.png`), fullPage: true });

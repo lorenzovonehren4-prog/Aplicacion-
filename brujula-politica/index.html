@@ -88,17 +88,9 @@
   .card__head { position: relative; margin-top: 26px; }
   .card__lado { letter-spacing: 5px; font-weight: 700; font-size: 15px; text-transform: uppercase; color: rgba(255,255,255,.85); }
   .card__ideo { font-size: clamp(32px, 7vw, 54px); line-height: 1.02; margin-top: 4px; }
-  .card__name { position: relative; z-index: 2; display: inline-block; margin: -4px 0 -8px 18%; font: 700 clamp(30px, 7vw, 50px) 'Fred'; color: #ffd23f; transform: rotate(-3deg);
-    -webkit-text-stroke: 2px #4a2a00; paint-order: stroke fill; text-shadow: 0 4px 0 #4a2a00, 0 8px 18px rgba(0,0,0,.5); }
   .card__grid { position: relative; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 16px; margin-top: 14px; }
   .box { background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; padding: 18px; }
   .box h4 { letter-spacing: 3px; font-size: 13px; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; color: rgba(255,255,255,.88); }
-  .match { display: flex; flex-direction: column; justify-content: flex-end; min-height: 300px; background: radial-gradient(90% 60% at 50% 25%, color-mix(in srgb, var(--c) 55%, transparent), transparent 75%), rgba(0,0,0,.22); }
-  .match__emb { width: 120px; height: 120px; margin: 0 auto auto; padding: 22px; border-radius: 50%; background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.25); color: #fff; }
-  .match__pct { font: 700 64px/1 'Fred'; margin-top: 20px; }
-  .match small { letter-spacing: 3px; font-weight: 700; font-size: 13px; text-transform: uppercase; color: rgba(255,255,255,.8); }
-  .match b { display: block; font: 700 26px 'Fred'; margin-top: 8px; }
-  .match p { color: rgba(255,255,255,.75); font-size: 14px; line-height: 1.45; margin-top: 4px; }
   .ax { display: grid; gap: 13px; }
   .ax__row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
   .ax__ic { width: 30px; height: 30px; border-radius: 8px; background: var(--k); display: grid; place-items: center; color: #fff; }
@@ -115,15 +107,18 @@
   .lst b { font-weight: 600; font-size: 15px; line-height: 1.2; }
   .lst b small { display: block; color: rgba(255,255,255,.55); font-weight: 400; font-size: 12px; margin-top: 2px; }
   .lst strong { font: 700 18px 'Fred'; }
-  .av { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font: 700 15px 'Fred'; color: #fff; background: var(--k); border: 2px solid rgba(255,255,255,.3); }
+  .cpct { text-align: center; margin-top: 10px; font-size: 15px; color: rgba(255,255,255,.85); }
+  .cpct b { font: 700 24px 'Fred'; color: #fff; }
+  .lst--def div { grid-template-columns: 30px minmax(0, 1fr) auto; }
+  .lst--def b { font-weight: 500; font-size: 14px; line-height: 1.35; }
   .chip { width: 42px; height: 28px; border-radius: 6px; background: var(--k); border: 1px solid rgba(255,255,255,.3); }
   .card__foot { position: relative; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.2); letter-spacing: 4px; font-weight: 700; font-size: 12px; color: rgba(255,255,255,.75); }
 
-  .more { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 18px; }
+  .more { margin-top: 18px; }
   .panel { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; }
   .panel h3 { font-size: 19px; margin-bottom: 4px; }
   .panel > p { font-size: 14px; color: var(--mut); margin-bottom: 12px; line-height: 1.45; }
-  .compass { width: 100%; max-width: 340px; display: block; margin: 0 auto; }
+  .compass { width: 100%; max-width: 360px; display: block; margin: 0 auto; }
   .spec { position: relative; height: 18px; border-radius: 18px; margin: 30px 0 10px;
     background: linear-gradient(90deg, #b91c1c, #ef4444 20%, #f472b6 36%, #a3a3a3 50%, #60a5fa 64%, #2563eb 80%, #1e3a8a); }
   .spec i { position: absolute; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: #fff; border: 4px solid #0d1117; box-shadow: 0 0 0 2px #fff, 0 4px 14px rgba(0,0,0,.5); transition: left .8s cubic-bezier(.2,.8,.2,1); }
@@ -138,14 +133,8 @@
 
   @media (max-width: 720px) {
     .card { padding: 20px 16px 16px; border-radius: 22px; }
-    .card__grid, .card__low, .more { grid-template-columns: 1fr; }
-    .match { min-height: 0; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0 16px; }
-    .match__emb { width: 84px; height: 84px; padding: 16px; margin: 0; }
-    .match__pct { font-size: 52px; margin: 0; }
-    .match > div { flex: 1; min-width: 150px; }
-    .card__name { margin-left: 8%; }
-  }
-  @media (max-width: 420px) { .ax__lbl span { display: none; } }
+    .card__grid, .card__low { grid-template-columns: 1fr; }
+            @media (max-width: 420px) { .ax__lbl span { display: none; } }
   @media (max-width: 380px) {
     .wrap { padding: 16px 12px 32px; }
     .ans button { font-size: 15px; padding: 12px; }
@@ -166,12 +155,10 @@
         <path d="M50 14l9 36-9 36-9-36z" fill="#fff"/><path d="M50 14l9 36H41z" fill="#ef4444"/><circle cx="50" cy="50" r="5" fill="#0d1117"/>
       </svg>
       <h1>Brújula Política</h1>
-      <p>Responde 60 frases sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra. Al final verás tu ideología, tu lado político y con qué pensadores coincides más.</p>
+      <p>Responde 60 frases sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra. Al final verás tu ideología, tu lado político, tu lugar en la brújula y lo que más te define.</p>
       <div class="facts"><span>60 preguntas</span><span>6 ejes</span><span>16 ideologías</span><span>Unos 10 minutos</span></div>
     </div>
     <div class="start">
-      <label for="name">Tu nombre (sale en la tarjeta)</label>
-      <input id="name" maxlength="18" autocomplete="off" placeholder="Ej. Marco">
       <button class="btn btn--main" id="go">Empezar el test</button>
       <button class="btn" id="resume" hidden>Seguir donde me quedé</button>
     </div>
@@ -206,11 +193,6 @@
         <div class="spec" id="spec"><b></b><i></i></div>
         <div class="spec__lbl"><span>Extrema izq.</span><span>Izquierda</span><span>Centro</span><span>Derecha</span><span>Extrema der.</span></div>
         <p class="why" id="why"></p>
-      </div>
-      <div class="panel">
-        <h3>Brújula</h3>
-        <p>Izquierda o derecha en la economía, y autoridad o libertad en el gobierno. Los puntos chicos son las ideologías.</p>
-        <svg class="compass" id="compass" viewBox="0 0 320 320" role="img" aria-label="Tu posición en la brújula política"></svg>
       </div>
     </div>
     <div class="acts">
@@ -260,11 +242,11 @@ const Q = [
   ['Las empresas privadas administran mejor las cosas que el Estado.', { e: 1 }],
   ['Los que más ganan deberían pagar un porcentaje de impuestos mucho mayor que el resto.', { e: -1 }],
   ['El libre mercado es la mejor forma de sacar a la gente de la pobreza.', { e: 1 }],
-  ['El agua, la luz y el gas deberían ser siempre del Estado, no de empresas privadas.', { e: -1 }],
+  ['El agua, la luz y el gas deberían ser sólo del Estado, sin ninguna empresa privada.', { e: -1 }],
   ['Si tengo dos celulares y alguien no tiene ninguno, debería regalarle uno.', { e: -1 }],
   ['Si tuviera una empresa, el Estado no debería decirme cuánto pagarles a mis trabajadores.', { e: 1, a: -.3 }],
   ['Las minas, las grandes empresas y las tierras deberían pasar a manos del pueblo.', { e: -1, a: .3 }],
-  ['Cada uno debería poder dejarle toda su fortuna a sus hijos sin pagar impuestos por eso.', { e: 1 }],
+  ['Lo mejor para la luz y el agua es que el Estado y empresas privadas las manejen juntos, con reglas claras.', { e: .5 }],
   ['Si tuviera 10 casas, regalaría algunas a familias que no tienen dónde vivir.', { e: -1 }],
   ['Si gané mi plata trabajando duro, es justo quedarme con casi toda, aunque otros tengan mucho menos.', { e: 1 }],
   ['El Estado debería fijar el precio de los productos básicos como el arroz o el pan.', { e: -1, a: .3 }],
@@ -330,65 +312,64 @@ const ORDER = (() => {
   for (let r = 0; out.length < Q.length; r++) for (const g of groups) if (g[r] !== undefined) out.push(g[r]);
   return out;
 })();
+// "De acuerdo" cuenta casi como "Muy de acuerdo"; "Neutral" queda justo en el medio (un poco de ambos)
 const OPTS = [
   ['Muy de acuerdo', 2, '#22c55e'],
-  ['De acuerdo', 1, '#86efac'],
-  ['Neutral / no sé', 0, '#cbd5e1'],
-  ['En desacuerdo', -1, '#fca5a5'],
+  ['De acuerdo', 1.5, '#86efac'],
+  ['Neutral / un poco de ambos', 0, '#cbd5e1'],
+  ['En desacuerdo', -1.5, '#fca5a5'],
   ['Muy en desacuerdo', -2, '#ef4444'],
 ];
 
 /* ---------- ideologías: posición en los 6 ejes ---------- */
 const IDEOS = [
   { id: 'comunismo', n: 'Comunismo', lado: 'Extrema izquierda', c: '#c81e1e', ic: 'aut', p: { e: -1, a: .75, s: 0, n: .2, v: .4, m: .5 },
-    d: 'Quiere abolir la propiedad privada de empresas y tierras: todo es del Estado o de la comunidad, y un partido único dirige la economía.',
-    f: [['Karl Marx', 'Filósofo y economista alemán'], ['Vladímir Lenin', 'Líder de la Revolución rusa']] },
+    d: 'Quiere abolir la propiedad privada de empresas y tierras: todo es del Estado o de la comunidad, y un partido único dirige la economía.' },
   { id: 'anarquismo', n: 'Anarquismo', lado: 'Extrema izquierda', c: '#1f1f1f', ic: 'lib', p: { e: -.9, a: -1, s: -.7, n: -.8, v: -.4, m: -.8 },
-    d: 'Rechaza el Estado y toda autoridad: propone comunidades libres que se organizan solas y comparten lo que producen.',
-    f: [['Piotr Kropotkin', 'Pensador anarquista ruso'], ['Mijaíl Bakunin', 'Revolucionario ruso']] },
+    d: 'Rechaza el Estado y toda autoridad: propone comunidades libres que se organizan solas y comparten lo que producen.' },
   { id: 'socialismo', n: 'Socialismo democrático', lado: 'Izquierda', c: '#e0313a', ic: 'igual', p: { e: -.75, a: -.25, s: -.5, n: -.1, v: -.3, m: -.5 },
-    d: 'Busca que los trabajadores y el Estado controlen los sectores clave de la economía, pero mediante elecciones y con libertades.',
-    f: [['José Carlos Mariátegui', 'Pensador socialista peruano'], ['Salvador Allende', 'Presidente de Chile (1970-1973)']] },
+    d: 'Busca que los trabajadores y el Estado controlen los sectores clave de la economía, pero mediante elecciones y con libertades.' },
   { id: 'ecologismo', n: 'Ecologismo', lado: 'Izquierda', c: '#2f8f46', ic: 'eco', p: { e: -.5, a: -.2, s: -.6, n: -.5, v: -1, m: -.85 },
-    d: 'Pone al planeta primero: frenar el cambio climático, proteger bosques y ríos y repartir mejor la riqueza.',
-    f: [['Petra Kelly', 'Fundadora de los Verdes alemanes'], ['Chico Mendes', 'Defensor de la Amazonía brasileña']] },
+    d: 'Pone al planeta primero: frenar el cambio climático, proteger bosques y ríos y repartir mejor la riqueza.' },
   { id: 'nacpop', n: 'Nacionalismo de izquierda', lado: 'Izquierda', c: '#b4462a', ic: 'nac', p: { e: -.7, a: .45, s: .15, n: .8, v: .3, m: .35 },
-    d: 'Mezcla la defensa de lo nacional con un Estado fuerte que nacionaliza recursos y reparte la riqueza.',
-    f: [['Juan Velasco Alvarado', 'Presidente del Perú (1968-1975)'], ['Lázaro Cárdenas', 'Presidente de México (1934-1940)']] },
+    d: 'Mezcla la defensa de lo nacional con un Estado fuerte que nacionaliza recursos y reparte la riqueza.' },
   { id: 'socialdemocracia', n: 'Socialdemocracia', lado: 'Centro izquierda', c: '#e2557a', ic: 'igual', p: { e: -.45, a: -.15, s: -.4, n: -.3, v: -.3, m: -.3 },
-    d: 'Acepta el mercado, pero con un Estado de bienestar grande: salud, educación y pensiones para todos, pagadas con impuestos.',
-    f: [['Olof Palme', 'Primer ministro de Suecia'], ['Clement Attlee', 'Primer ministro británico']] },
+    d: 'Acepta el mercado, pero con un Estado de bienestar grande: salud, educación y pensiones para todos, pagadas con impuestos.' },
   { id: 'progresismo', n: 'Liberalismo progresista', lado: 'Centro izquierda', c: '#d9468f', ic: 'prog', p: { e: -.1, a: -.55, s: -.8, n: -.6, v: -.35, m: -.35 },
-    d: 'Defiende las libertades personales, los derechos de las minorías y la apertura al mundo, con algo de ayuda del Estado.',
-    f: [['John Stuart Mill', 'Filósofo liberal inglés'], ['John Rawls', 'Filósofo de la justicia']] },
+    d: 'Defiende las libertades personales, los derechos de las minorías y la apertura al mundo, con algo de ayuda del Estado.' },
   { id: 'centro', n: 'Centrismo', lado: 'Centro', c: '#64748b', ic: 'igual', p: { e: 0, a: 0, s: 0, n: 0, v: 0, m: 0 },
-    d: 'Evita los extremos: toma ideas de la izquierda y de la derecha según cada problema y busca acuerdos.',
-    f: [['Aristóteles', 'Filósofo griego del justo medio'], ['Montesquieu', 'Pensador de la división de poderes']] },
+    d: 'Evita los extremos: toma ideas de la izquierda y de la derecha según cada problema y busca acuerdos.' },
   { id: 'libcentro', n: 'Centrismo liberal', lado: 'Centro', c: '#475569', ic: 'glob', p: { e: .4, a: -.2, s: -.2, n: -.5, v: .2, m: .1 },
-    d: 'Economía de mercado abierta al mundo, instituciones fuertes y cambios graduales, sin ir a ningún extremo.',
-    f: [['Alexis de Tocqueville', 'Pensador liberal francés'], ['Raymond Aron', 'Sociólogo liberal francés']] },
+    d: 'Economía de mercado abierta al mundo, instituciones fuertes y cambios graduales, sin ir a ningún extremo.' },
   { id: 'dc', n: 'Democracia cristiana', lado: 'Centro derecha', c: '#d97706', ic: 'trad', p: { e: .1, a: .2, s: .65, n: 0, v: 0, m: .1 },
-    d: 'Une valores cristianos y familia con una economía de mercado que también ayuda a los más pobres.',
-    f: [['Konrad Adenauer', 'Canciller de Alemania'], ['Alcide De Gasperi', 'Primer ministro de Italia']] },
+    d: 'Une valores cristianos y familia con una economía de mercado que también ayuda a los más pobres.' },
   { id: 'libclasico', n: 'Liberalismo clásico', lado: 'Centro derecha', c: '#ca8a04', ic: 'merc', p: { e: .7, a: -.6, s: .1, n: -.4, v: .4, m: -.1 },
-    d: 'Libertad individual, propiedad privada y libre comercio, con un Estado pequeño que asegure la ley y el orden.',
-    f: [['Adam Smith', 'Padre de la economía moderna'], ['John Locke', 'Filósofo de los derechos naturales']] },
+    d: 'Libertad individual, propiedad privada y libre comercio, con un Estado pequeño que asegure la ley y el orden.' },
   { id: 'conservadurismo', n: 'Conservadurismo', lado: 'Derecha', c: '#1d4ed8', ic: 'trad', p: { e: .5, a: .45, s: .8, n: .45, v: .35, m: .55 },
-    d: 'Valora la tradición, la familia, la religión y el orden; prefiere cambios lentos y un mercado libre.',
-    f: [['Edmund Burke', 'Padre del conservadurismo'], ['Winston Churchill', 'Primer ministro británico']] },
-  { id: 'libertarismo', n: 'Libertarismo', lado: 'Derecha', c: '#eab308', ic: 'lib', p: { e: .7, a: -.7, s: 0, n: -.3, v: .4, m: -.3 },
-    d: 'El Estado debe ser mínimo: bajos impuestos, libre mercado total y que cada adulto decida sobre su vida.',
-    f: [['Milton Friedman', 'Economista estadounidense'], ['Robert Nozick', 'Filósofo estadounidense']] },
+    d: 'Valora la tradición, la familia, la religión y el orden; prefiere cambios lentos y un mercado libre.' },
+  { id: 'libertarismo', n: 'Libertarismo', lado: 'Derecha', c: '#eab308', ic: 'lib', p: { e: .85, a: -.85, s: -.3, n: -.3, v: .4, m: -.3 },
+    d: 'El Estado debe ser mínimo: bajos impuestos, libre mercado total y que cada adulto decida sobre su vida.' },
   { id: 'ancap', n: 'Anarcocapitalismo', lado: 'Extrema derecha', c: '#a16207', ic: 'merc', p: { e: 1, a: -1, s: 0, n: -.6, v: .6, m: -.6 },
-    d: 'Propone eliminar el Estado y que todo, hasta la seguridad y la justicia, lo den empresas privadas en un mercado libre.',
-    f: [['Murray Rothbard', 'Economista estadounidense'], ['David Friedman', 'Economista estadounidense']] },
+    d: 'Propone eliminar el Estado y que todo, hasta la seguridad y la justicia, lo den empresas privadas en un mercado libre.' },
   { id: 'nacconserv', n: 'Nacionalismo conservador', lado: 'Derecha', c: '#1e3a8a', ic: 'nac', p: { e: .3, a: .7, s: .8, n: .9, v: .6, m: .8 },
-    d: 'La nación por encima de todo: fronteras firmes, tradición, ejército fuerte y un gobierno con mano firme.',
-    f: [['Charles de Gaulle', 'Presidente de Francia'], ['Otto von Bismarck', 'Canciller de Alemania']] },
+    d: 'La nación por encima de todo: fronteras firmes, tradición, ejército fuerte y un gobierno con mano firme.' },
   { id: 'autoritarismo', n: 'Nacionalismo autoritario', lado: 'Extrema derecha', c: '#0b1a4a', ic: 'aut', p: { e: .2, a: 1, s: 1, n: 1, v: .6, m: 1 },
-    d: 'Un líder o partido con todo el poder, sin oposición, que impone el orden, la tradición y la grandeza de la nación.',
-    f: [['Francisco Franco', 'Dictador de España (1939-1975)'], ['Charles Maurras', 'Pensador nacionalista francés']] },
+    d: 'Un líder o partido con todo el poder, sin oposición, que impone el orden, la tradición y la grandeza de la nación.' },
 ];
+const DEF = {
+  Igualdad: 'Quieres que la riqueza se reparta más y que el Estado ayude a los que menos tienen.',
+  Mercado: 'Confías en el libre mercado y en la empresa privada.',
+  Libertad: 'Defiendes la libertad de cada persona frente al Estado.',
+  Autoridad: 'Prefieres un Estado firme, con orden y castigos duros.',
+  Progreso: 'Apoyas los cambios en la sociedad y los nuevos derechos.',
+  'Tradición': 'Valoras la familia, la fe y las costumbres.',
+  Globalismo: 'Eres abierto al mundo, al comercio y a los extranjeros.',
+  Nacionalismo: 'Pones a tu país primero y quieres fronteras firmes.',
+  'Ecología': 'Para ti el planeta va antes que el crecimiento.',
+  Desarrollo: 'Para ti el crecimiento y las obras van primero.',
+  Pacifismo: 'Rechazas la guerra y prefieres gastar en educación.',
+  Militarismo: 'Quieres un ejército fuerte y listo para defender.',
+};
 const W = { e: 1.35, a: 1.2, s: 1.15, n: .9, v: .8, m: .8 };
 const LADOS = ['Extrema izquierda', 'Izquierda', 'Centro izquierda', 'Centro', 'Centro derecha', 'Derecha', 'Extrema derecha'];
 
@@ -433,7 +414,6 @@ function show(id) { document.querySelectorAll('.scr').forEach(s => s.classList.t
 
 /* ---------- inicio ---------- */
 function renderHome() {
-  $('#name').value = S.name || '';
   const answered = S.answers.filter(v => v !== null && v !== undefined).length;
   $('#resume').hidden = !(answered > 0 && answered < Q.length);
   $('#resume').textContent = `Seguir donde me quedé (${answered}/${Q.length})`;
@@ -443,11 +423,10 @@ function renderHome() {
     const d = new Date(h.t);
     return `<button data-h="${S.history.length - 1 - k}"><i style="background:${i.c}"></i><b>${esc(i.n)} <span class="mut">· ${esc(h.lado)}</span></b><small>${h.pct}% · ${d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</small></button>`;
   }).join('');
-  $('#ideos').innerHTML = IDEOS.map(i => `<div class="ideo" style="--c:${i.c === '#1f1f1f' || i.c === '#0b1a4a' ? '#94a3b8' : i.c}"><h3>${esc(i.n)}</h3><em>${esc(i.lado)}</em><p>${esc(i.d)}</p><small>Pensadores: ${i.f.map(f => esc(f[0])).join(', ')}</small></div>`).join('');
+  $('#ideos').innerHTML = IDEOS.map(i => `<div class="ideo" style="--c:${i.c === '#1f1f1f' || i.c === '#0b1a4a' ? '#94a3b8' : i.c}"><h3>${esc(i.n)}</h3><em>${esc(i.lado)}</em><p>${esc(i.d)}</p></div>`).join('');
   show('s-home');
 }
 function start(fresh) {
-  S.name = $('#name').value.trim().slice(0, 18);
   if (fresh) { S.answers = Array(Q.length).fill(null); S.idx = 0; }
   else S.idx = Math.max(0, ORDER.findIndex(i => S.answers[i] === null || S.answers[i] === undefined));
   save(); renderQ(); show('s-quiz');
@@ -477,7 +456,7 @@ function answer(v) {
 }
 function finish() {
   const sc = scores(S.answers), rk = ranking(sc);
-  S.history.push({ t: Date.now(), id: rk[0].i.id, pct: rk[0].pct, lado: side(sc).lado, sc, name: S.name });
+  S.history.push({ t: Date.now(), id: rk[0].i.id, pct: rk[0].pct, lado: side(sc).lado, sc });
   if (S.history.length > 30) S.history = S.history.slice(-30);
   S.answers = []; S.idx = 0; save();
   renderRes(S.history[S.history.length - 1]);
@@ -496,29 +475,25 @@ function renderRes(h) {
     return `<div class="ax__row" style="--k:${side.c}"><span class="ax__ic">${svg(side.ic)}</span><span class="ax__lbl">${side.n}<span>${v >= 0 ? ax.neg.n : ax.pos.n} ${100 - pct}%</span></span><span class="ax__pct">${pct}%</span><span class="ax__bar"><u></u><i style="left:${left}%;width:${Math.max(w, 1.5)}%"></i></span></div>`;
   }).join('');
   const near = rk.slice(1, 4).map(r => `<div style="--k:${r.i.c}"><span class="chip"></span><b>${esc(r.i.n)}<small>${esc(r.i.lado)}</small></b><strong>${r.pct}%</strong></div>`).join('');
-  // pensadores: el segundo de tu ideología y los de las dos siguientes
-  const people = [[ideo.f[1], ideo, top.pct - 1], [rk[1].i.f[0], rk[1].i, rk[1].pct], [rk[2].i.f[0], rk[2].i, rk[2].pct]];
-  const ini = n => n.split(' ').filter(w => /^[A-ZÁÉÍÓÚ]/.test(w)).slice(0, 2).map(w => w[0]).join('');
-  const peo = people.map(([f, i, p]) => `<div style="--k:${i.c}"><span class="av">${ini(f[0])}</span><b>${esc(f[0])}<small>${esc(f[1])}</small></b><strong>${p}%</strong></div>`).join('');
-  const [fig, figDesc] = ideo.f[0];
+  const def = AXES.map(ax => ({ ax, v: sc[ax.k] })).sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 3).map(({ ax, v }) => {
+    const p = v >= 0 ? ax.pos : ax.neg;
+    return `<div style="--k:${p.c}"><span class="ax__ic">${svg(p.ic)}</span><b>${esc(DEF[p.n])}</b><strong>${Math.round(50 + 50 * Math.abs(v))}%</strong></div>`;
+  }).join('');
   card.innerHTML = `
     <div class="card__top"><span class="card__brand">Brújula Política</span><hr><span>MI RESULTADO</span></div>
     <div class="card__head">
       <div class="card__lado">${esc(lado)}</div>
       <h2 class="card__ideo">${esc(ideo.n)}</h2>
-      ${h.name ? `<div class="card__name">${esc(h.name)}</div>` : ''}
     </div>
     <div class="card__grid">
-      <div class="box match">
-        <span class="match__emb">${svg(ideo.ic, 1.8)}</span>
-        <div><div class="match__pct">${top.pct}%</div>
-        <small>Más compatible con</small>
-        <b>${esc(fig)}</b><p>${esc(figDesc)}</p></div>
+      <div class="box"><h4>Tu brújula</h4>
+        <svg class="compass" id="compass" viewBox="0 0 320 320" role="img" aria-label="Tu posición en la brújula política"></svg>
+        <p class="cpct"><b>${top.pct}%</b> compatible con ${esc(ideo.n)}</p>
       </div>
       <div class="box"><h4>Tus 6 ejes</h4><div class="ax">${axRows}</div></div>
     </div>
     <div class="card__low">
-      <div class="box"><h4>Pensadores afines</h4><div class="lst">${peo}</div></div>
+      <div class="box"><h4>Lo que más te define</h4><div class="lst lst--def">${def}</div></div>
       <div class="box"><h4>Ideologías cercanas</h4><div class="lst">${near}</div></div>
     </div>
     <div class="card__foot"><span>DESCUBRE TU IDEOLOGÍA</span><span>ANONYMOUS GAMES</span></div>`;
@@ -550,7 +525,7 @@ function copyRes() {
   if (!last) return;
   const rk = ranking(last.sc), top = rk[0];
   const ax = AXES.map(a => { const v = last.sc[a.k]; return `${(v >= 0 ? a.pos : a.neg).n} ${Math.round(50 + 50 * Math.abs(v))}%`; }).join(' · ');
-  const txt = `${last.name ? last.name + ': ' : ''}${top.i.n} (${top.pct}%) · ${side(last.sc).lado}\n${ax}\nBrújula Política · Anonymous Games`;
+  const txt = `${top.i.n} (${top.pct}%) · ${side(last.sc).lado}\n${ax}\nBrújula Política · Anonymous Games`;
   const ok = () => toast('Resultado copiado'), no = () => toast('No se pudo copiar');
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, no);
   else no();
@@ -559,11 +534,10 @@ function copyRes() {
 /* ---------- eventos ---------- */
 $('#go').onclick = () => start(true);
 $('#resume').onclick = () => start(false);
-$('#name').addEventListener('keydown', e => { if (e.key === 'Enter') start(true); });
 $('#ans').onclick = e => { const b = e.target.closest('button'); if (b) answer(+b.dataset.v); };
 $('#back').onclick = () => { if (S.idx > 0) { S.idx--; save(); renderQ(); } };
 $('#exit').onclick = () => { save(); renderHome(); };
-$('#again').onclick = () => { $('#name').value = S.name || ''; start(true); };
+$('#again').onclick = () => start(true);
 $('#home').onclick = renderHome;
 $('#copy').onclick = copyRes;
 $('#hist').onclick = e => { const b = e.target.closest('[data-h]'); if (b) renderRes(S.history[+b.dataset.h]); };

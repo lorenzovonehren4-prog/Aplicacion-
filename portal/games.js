@@ -448,7 +448,7 @@ const GAMES = [
     id: 'brujula-politica',
     title: 'Brújula Política',
     tagline: '60 preguntas para descubrir tu ideología',
-    desc: 'Responde 60 frases sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra. Al final ves tu ideología entre 16 (de comunismo a anarcocapitalismo), tu lado político de extrema izquierda a extrema derecha, tus 6 ejes, una brújula y los pensadores con los que más coincides, en una tarjeta con tu nombre.',
+    desc: 'Responde 60 frases sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra. Al final ves tu ideología entre 16 (de comunismo a anarcocapitalismo), tu lado político de extrema izquierda a extrema derecha, tus 6 ejes, tu lugar en la brújula y lo que más te define.',
     url: 'brujula-politica/index.html',
     cover: 'portal/img/brujula-cover.webp',
     box: 'portal/img/brujula-politica-box.webp',
@@ -483,7 +483,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
-  { game: 'brujula-politica', date: '11 oct', title: 'Juego nuevo: Brújula Política', items: ['60 preguntas sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra', '16 ideologías y tu lado, de extrema izquierda a extrema derecha', 'Tarjeta de resultado con tu nombre, tus 6 ejes y una brújula'] },
+  { game: 'brujula-politica', date: '11 oct', title: 'Juego nuevo: Brújula Política', items: ['60 preguntas sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra', '16 ideologías y tu lado, de extrema izquierda a extrema derecha', 'Tarjeta de resultado con tu brújula, tus 6 ejes y lo que más te define'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo: cabina, nitro y estrellas', items: ['Cabina por dentro con relojes, volante y mapa', 'Nitro, marcas de llantas, humo y fuego', 'Garaje en vitrina, 3 estrellas por misión y patrulleros más listos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo se ve como juego profesional', items: ['Carros nuevos con reflejos, faros y brillo', 'Barrio con más detalle: casas, carros estacionados, postes y nubes', 'Menú y velocímetro nuevos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Juego nuevo: Código Rojo', items: ['Barrio 3D con puentes, túnel, rampas, semáforos y tráfico', 'Sé el ladrón contra 3 patrulleros o la policía', '14 misiones, partida libre y garaje con 6 carros'] },
