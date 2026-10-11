@@ -16,6 +16,12 @@ Abrir `index.html` (scripts clásicos, también con `file://`). `vendor/three.mi
 
 Controles: ↑/W acelerar, ↓/S/Espacio frenar y reversa, ←→/A D girar, C cámara (cabina o afuera), P/Esc pausa. En pantallas táctiles salen botones. Los menús se recorren con flechas y Enter.
 
+## Aviso de frenada
+
+`speedProfile` es la velocidad máxima en cada metro sabiendo que vas a frenar a fondo (`brakeDecel`: freno + aire, al 92 %). En `paceNote` el punto de frenada es el primer metro adelante donde esa curva queda por debajo de tu velocidad (menos 0,12 s de reacción): primero "Frena en X m", en el punto pita y dice "¡FRENA YA!", luego "¡Dobla! · mantén…" y "¡Acelera!" pasado lo más lento de la curva. `tests/frenada.mjs` lo comprueba con un piloto que sólo hace lo que dice el aviso.
+
+El menú tiene un modo demostración (`startAttract`, `attractStep`): el carro baja solo por la montaña con tomas de TV.
+
 ## Archivos (orden de carga)
 
 - `src/data.js`: ambientes (`THEMES`), montañas (`LEVELS`: largo, ancho, radios de curva, pendiente, mezcla de bordes `mix`, barandas `guard`, rocas, agarre, objetivos `obj`, requisitos `unlock`), `freeLevel`, mejoras (`UPGRADES`, `carStats`), pinturas, insignias (`ACHS`) y guardado (`save`, clave `cornisa_v1`).
@@ -33,6 +39,8 @@ Los tiempos de los objetivos se calibraron con el piloto automático de la prueb
 ```bash
 CHROMIUM_PATH=... node tests/smoke.mjs [--shots] [ids…]   # maneja cada montaña con piloto automático y prueba la caída
 CHROMIUM_PATH=... node tests/movil.mjs [--shots]          # celular en vertical, botones táctiles, final y Ruta libre
+CHROMIUM_PATH=... node tests/frenada.mjs [ids…]           # el aviso "¡FRENA YA!" es exacto: frenando ahí llegas a ±12 km/h de la velocidad justa
+CHROMIUM_PATH=... node tests/menus.mjs                     # capturas de inicio, mapa, detalle y taller (compu y celular)
 CHROMIUM_PATH=... node tools/portadas.mjs                  # imágenes del portal (luego a webp en portal/img/)
 ```
 

@@ -165,15 +165,21 @@ function racingLine(T) {
 }
 
 // Velocidad máxima recomendada en cada metro para un carro con valores st.
-function speedProfile(T, st) {
+// Velocidad con la que se puede tomar cada metro de la línea (sólo el agarre, sin pensar en frenar).
+function cornerSpeeds(T, st) {
   const n = T.n, v = new Float32Array(n), g = st.grip * T.L.grip * 9.8 * 0.88;
   for (let q = 0; q < n; q++) {
     let k = 0;
     for (let j = Math.max(0, q - 3); j <= Math.min(n - 1, q + 3); j++) k = Math.max(k, Math.abs(T.lk[j]));
     v[q] = Math.min(st.top * 0.99, k > 1e-4 ? Math.sqrt(g / k) : st.top);
   }
-  const b = st.brake * 0.72;
-  for (let q = n - 2; q >= 0; q--) v[q] = Math.min(v[q], Math.sqrt(v[q + 1] * v[q + 1] + 2 * b));
+  return v;
+}
+// Frenada real del carro a fondo (freno + resistencia del aire), en m/s².
+const brakeDecel = (st, v) => st.brake + 0.0009 * v * v;
+function speedProfile(T, st) {
+  const n = T.n, v = cornerSpeeds(T, st);
+  for (let q = n - 2; q >= 0; q--) v[q] = Math.min(v[q], Math.sqrt(v[q + 1] * v[q + 1] + 2 * brakeDecel(st, v[q + 1]) * 0.92));
   return v;
 }
 

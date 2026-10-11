@@ -59,39 +59,86 @@ h1,h2,h3{ font-family:Fredoka,Rubik,sans-serif; margin:0; }
 @keyframes roadmove{ to{ background-position:0 60px; } }
 
 /* ---------- menú ---------- */
-#menu{ justify-content:flex-end; padding-bottom:max(6vh,24px); background:linear-gradient(180deg,rgba(22,17,15,0) 40%,rgba(22,17,15,.85) 100%); }
-#menu .logo{ position:absolute; top:12vh; left:0; right:0; }
-#menu .logo h1{ font-size:clamp(48px,10vw,110px); }
-.menu-btns{ display:flex; flex-direction:column; gap:12px; width:min(360px,100%); }
-.menu-btns .btn{ width:100%; }
-.menu-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.menu-foot{ margin-top:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+#menu{ flex-direction:row; align-items:stretch; justify-content:space-between; padding:0; background:linear-gradient(90deg,rgba(14,10,8,.92) 0%,rgba(14,10,8,.7) 30%,rgba(14,10,8,0) 55%), linear-gradient(0deg,rgba(14,10,8,.5),rgba(14,10,8,0) 30%); }
+.mm-side{ width:min(430px,100%); padding:clamp(20px,5vh,48px) 28px 24px; display:flex; flex-direction:column; gap:18px; }
+#menu .logo{ text-align:left; }
+#menu .logo h1{ font-size:clamp(46px,6.5vw,84px); }
+#menu .logo p{ letter-spacing:.35em; }
+.mm{ display:flex; flex-direction:column; gap:8px; margin-top:auto; }
+.mm-b{ position:relative; display:flex; align-items:center; gap:14px; width:100%; padding:12px 16px; border-radius:16px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); text-align:left; outline:none; transition:background .18s, transform .18s, border-color .18s; overflow:hidden; }
+.mm-b::before{ content:''; position:absolute; left:0; top:12%; bottom:12%; width:4px; border-radius:4px; background:var(--acc); transform:scaleY(0); transition:transform .2s; }
+.mm-b:hover,.mm-b:focus-visible{ background:rgba(255,122,47,.16); border-color:rgba(255,160,90,.45); transform:translateX(6px); }
+.mm-b:hover::before,.mm-b:focus-visible::before{ transform:scaleY(1); }
+.mm-b .ico{ width:42px; height:42px; flex:none; display:grid; place-items:center; border-radius:12px; background:rgba(255,255,255,.07); font-size:20px; }
+.mm-b .tx{ flex:1; min-width:0; }
+.mm-b b{ display:block; font-family:Fredoka; font-size:21px; letter-spacing:.3px; }
+.mm-b small{ display:block; color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mm-b .arr{ font-size:26px; color:rgba(255,255,255,.3); transition:transform .2s, color .2s; }
+.mm-b:hover .arr,.mm-b:focus-visible .arr{ color:var(--acc2); transform:translateX(4px); }
+.mm-b.main{ background:linear-gradient(90deg,#ff8f45,#ff6a1f); border-color:#ffb27a; color:#1d0f06; box-shadow:0 10px 30px rgba(255,106,31,.35); }
+.mm-b.main .ico{ background:rgba(0,0,0,.15); } .mm-b.main small{ color:#4a2108; font-weight:600; } .mm-b.main .arr{ color:#4a2108; }
+.mm-b.main:hover,.mm-b.main:focus-visible{ background:linear-gradient(90deg,#ffa05c,#ff7a2f); }
+.mm-foot{ display:flex; gap:8px; flex-wrap:wrap; }
+.mm-foot .coins{ font-size:15px; padding:6px 12px; }
+.mm-card{ align-self:flex-end; margin:24px; width:min(360px,34vw); border-radius:22px; overflow:hidden; background:rgba(16,12,10,.78); border:1px solid rgba(255,255,255,.12); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:0 20px 50px rgba(0,0,0,.45); }
+.mm-card .art{ height:120px; }
+.mm-card .in{ padding:14px 16px 16px; }
+.mm-card .k{ font-size:12px; letter-spacing:2px; color:#ffd9b8; font-weight:800; }
+.mm-card h3{ font-size:24px; margin:2px 0 6px; }
+.mm-card .stars{ font-size:18px; letter-spacing:3px; }
+.mm-card ul{ list-style:none; padding:0; margin:8px 0 0; display:grid; gap:4px; font-size:13px; color:var(--muted); }
+.mm-card ul li.ok{ color:#9ff0c0; }
+.art{ position:relative; overflow:hidden; } .art svg{ display:block; width:100%; height:100%; }
+@media (max-width:760px){
+  #menu{ flex-direction:column; background:linear-gradient(0deg,rgba(14,10,8,.95) 0%,rgba(14,10,8,.75) 55%,rgba(14,10,8,0) 85%); }
+  .mm-side{ width:100%; padding:18px 16px 16px; gap:12px; height:100%; }
+  #menu .logo{ text-align:center; } #menu .logo h1{ font-size:clamp(40px,13vw,64px); }
+  .mm-b{ padding:9px 12px; } .mm-b .ico{ width:36px; height:36px; } .mm-b b{ font-size:18px; }
+  .mm-foot{ justify-content:center; }
+  .mm-card{ display:none; }
+}
+@media (max-height:620px){ .mm-b small{ display:none; } .mm-card .art{ height:80px; } }
 
 /* ---------- mapa de montañas ---------- */
-#map{ justify-content:flex-start; padding-top:76px; overflow:auto; background:linear-gradient(180deg,rgba(22,17,15,.6),rgba(22,17,15,.92)); }
+#map{ justify-content:flex-start; padding-top:76px; overflow:auto; background:linear-gradient(180deg,rgba(14,10,8,.75),rgba(14,10,8,.94)); }
 #map h2{ font-size:clamp(26px,5vw,40px); margin-bottom:4px; text-align:center; }
-.levels{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; width:min(1100px,100%); margin-top:16px; padding-bottom:30px; }
-.lv{ position:relative; text-align:left; padding:16px; border-radius:20px; border:2px solid var(--line); background:var(--panel2); overflow:hidden; min-height:150px; transition:transform .18s, border-color .18s; outline:none; }
-.lv::before{ content:''; position:absolute; inset:0; background:var(--g); opacity:.55; z-index:0; }
-.lv::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:60%; background:var(--m) bottom/100% 100% no-repeat; opacity:.9; z-index:0; }
-.lv > *{ position:relative; z-index:1; }
-.lv:hover,.lv:focus-visible{ transform:translateY(-3px); border-color:var(--acc); }
-.lv .num{ font-family:Fredoka; font-size:14px; font-weight:700; letter-spacing:2px; color:#ffd9b8; }
-.lv h3{ font-size:22px; margin:2px 0 6px; text-shadow:0 2px 6px rgba(0,0,0,.6); }
-.lv .stars{ font-size:20px; letter-spacing:3px; text-shadow:0 2px 4px rgba(0,0,0,.7); }
-.lv .best{ font-size:13px; color:#ffe7d2; margin-top:4px; text-shadow:0 1px 3px #000; }
-.lv.locked{ filter:saturate(.25) brightness(.7); }
-.lv.locked .lock{ position:absolute; top:12px; right:12px; font-size:22px; }
-.lv .req{ margin:6px 0 0; padding:0; list-style:none; font-size:13px; }
-.lv .req li{ text-shadow:0 1px 3px #000; }
-.lv .req li.ok{ color:#9ff0c0; } .lv .req li.no{ color:#ffd0c0; }
-.lv.free{ --g:linear-gradient(135deg,#2a1640,#ff7a2f); }
+.levels{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; width:min(1120px,100%); margin-top:18px; padding-bottom:30px; counter-reset:lv; }
+.lv{ position:relative; text-align:left; padding:0; border-radius:20px; border:2px solid rgba(255,255,255,.1); background:var(--panel2); overflow:hidden; transition:transform .18s, border-color .18s, box-shadow .18s; outline:none; display:flex; flex-direction:column; }
+.lv .art{ height:110px; }
+.lv .badge{ position:absolute; top:10px; left:10px; z-index:2; font-family:Fredoka; font-weight:700; font-size:13px; letter-spacing:1.5px; padding:4px 10px; border-radius:999px; background:rgba(0,0,0,.55); color:#ffe2c6; }
+.lv .done{ position:absolute; top:10px; right:10px; z-index:2; font-size:12px; font-weight:800; padding:4px 9px; border-radius:999px; background:rgba(61,220,132,.9); color:#05250f; }
+.lv .in{ padding:12px 14px 14px; display:flex; flex-direction:column; gap:6px; flex:1; }
+.lv:hover,.lv:focus-visible{ transform:translateY(-4px); border-color:var(--acc); box-shadow:0 14px 34px rgba(0,0,0,.45), 0 0 0 3px rgba(255,122,47,.25); }
+.lv h3{ font-size:21px; margin:0; }
+.lv .row2{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.lv .stars{ font-size:19px; letter-spacing:2px; color:#ffc53d; }
+.lv .stars i{ font-style:normal; color:rgba(255,255,255,.2); }
+.lv .best{ font-size:12px; color:var(--muted); }
+.pips{ display:grid; grid-template-columns:auto 1fr; gap:2px 10px; font-size:12px; color:var(--muted); align-items:center; }
+.pips span{ letter-spacing:3px; color:var(--acc2); font-size:11px; } .pips span i{ font-style:normal; color:rgba(255,255,255,.18); }
+.lv.locked .art{ filter:grayscale(.85) brightness(.55); }
+.lv.locked .lock{ position:absolute; top:34px; left:50%; transform:translateX(-50%); font-size:30px; z-index:2; filter:drop-shadow(0 4px 8px #000); }
+.lv .req{ margin:2px 0 0; padding:0; list-style:none; font-size:13px; display:grid; gap:3px; }
+.lv .req li.ok{ color:#9ff0c0; } .lv .req li.no{ color:#ffc0b0; }
+.lv.next{ border-color:rgba(255,197,61,.7); }
+.lv.next::after{ content:'SIGUIENTE'; position:absolute; top:10px; right:10px; z-index:2; font-size:11px; font-weight:900; letter-spacing:1px; padding:4px 9px; border-radius:999px; background:var(--acc2); color:#2a1a00; animation:blink 1.6s infinite; }
 
 /* detalle de una montaña */
-#detail{ background:rgba(10,8,7,.6); z-index:8; }
-#detail .card{ width:min(460px,100%); padding:22px; }
+#detail{ background:rgba(10,8,7,.7); z-index:8; overflow:auto; justify-content:flex-start; }
+#detail .dcard{ margin:auto; flex:none; }
+.dart{ position:relative; overflow:hidden; } .dart svg{ display:block; width:100%; height:100%; }
+.dcard{ width:min(620px,100%); padding:0 !important; overflow:hidden; text-align:left; }
+.dcard .dart{ height:120px; }
+@media (max-height:760px){ .dcard .dart{ height:70px; } #detail .desc{ display:none; } .objs li{ padding:7px 10px; } }
+.dcard .dbody{ padding:16px 20px 20px; }
 #detail h2{ font-size:30px; }
-#detail .desc{ color:var(--muted); margin:6px 0 14px; line-height:1.4; }
+#detail .desc{ color:var(--muted); margin:4px 0 12px; line-height:1.4; }
+.dgrid{ display:grid; grid-template-columns:minmax(0,1.2fr) 1fr; gap:12px; margin-bottom:12px; }
+#dRoute{ width:100%; height:auto; aspect-ratio:3/2; border-radius:14px; background:rgba(0,0,0,.35); border:1px solid var(--line); }
+.dfacts{ display:grid; gap:6px; align-content:start; }
+.dfacts div{ display:flex; justify-content:space-between; gap:8px; padding:7px 10px; border-radius:10px; background:rgba(255,255,255,.05); font-size:14px; }
+.dfacts b{ font-weight:800; } .dfacts span{ color:var(--muted); }
+@media (max-width:560px){ .dgrid{ grid-template-columns:1fr; } .dcard .dart{ height:90px; } }
 .objs{ list-style:none; margin:0 0 16px; padding:0; display:grid; gap:8px; }
 .objs li{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); font-weight:600; }
 .objs li .st{ font-size:20px; filter:grayscale(1) brightness(.6); }
@@ -103,6 +150,19 @@ h1,h2,h3{ font-family:Fredoka,Rubik,sans-serif; margin:0; }
 #garage{ align-items:flex-end; justify-content:center; padding-top:70px; }
 #garage .card{ width:min(440px,100%); max-height:calc(100% - 20px); overflow:auto; padding:18px; }
 #garage h2{ font-size:26px; margin-bottom:8px; }
+#garage{ align-items:flex-end; padding-right:max(16px,3vw); }
+.gcard{ width:min(460px,100%) !important; }
+.cbars{ display:grid; gap:7px; margin-bottom:12px; padding:12px; border-radius:14px; background:rgba(0,0,0,.25); border:1px solid var(--line); }
+.cbar{ display:grid; grid-template-columns:92px 1fr 64px; gap:10px; align-items:center; font-size:13px; }
+.cbar span{ color:var(--muted); } .cbar b{ text-align:right; font-variant-numeric:tabular-nums; }
+.cbar .tr{ position:relative; height:9px; border-radius:5px; background:rgba(255,255,255,.08); overflow:hidden; }
+.cbar .tr i{ position:absolute; left:0; top:0; bottom:0; border-radius:5px; transition:width .35s cubic-bezier(.2,1,.3,1); }
+.cbar .tr .nx{ background:rgba(61,220,132,.55); box-shadow:0 0 10px rgba(61,220,132,.5); }
+.cbar .tr .cu{ background:linear-gradient(90deg,var(--acc),var(--acc2)); }
+.upg .ui{ font-size:22px; grid-row:1 / span 3; }
+.upg{ grid-template-columns:auto 1fr auto !important; }
+.upg b,.upg small,.upg .bars{ grid-column:2 !important; }
+.upg .btn{ grid-column:3 !important; }
 #garage .card{ text-align:left; }
 @media (max-height:760px){ .upg small{ display:none; } }
 .upg{ display:grid; grid-template-columns:1fr auto; gap:4px 12px; align-items:center; padding:9px 12px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid var(--line); margin-bottom:8px; text-align:left; }
@@ -203,7 +263,11 @@ body.touch.driving #touch{ display:flex; }
 .note svg{ width:54px; height:54px; color:#1ec8ff; flex:none; }
 .note b{ display:block; font-family:Fredoka; font-size:clamp(18px,3vw,26px); white-space:nowrap; }
 .note small{ display:block; font-weight:800; font-size:15px; color:#9fe8ff; }
-.note.brake{ border-color:#ff4d4d; background:rgba(60,8,8,.8); }
+.note.brake{ border-color:#ff4d4d; background:rgba(150,10,10,.88); transform:translate(-50%,0) scale(1.12); }
+.note.brake small{ color:#fff !important; font-size:20px; }
+.note.prep{ border-color:#ffb020; } .note.prep small{ color:#ffd27a; }
+.note .nbar{ display:block; height:5px; margin-top:4px; border-radius:3px; background:rgba(255,255,255,.12); overflow:hidden; }
+.note .nbar i{ display:block; height:100%; background:linear-gradient(90deg,#ff4d4d,#ffb020); transform-origin:left; transform:scaleX(0); }
 .note.brake svg{ color:#ff5a4a; } .note.brake small{ color:#ffb0a0; animation:blink .4s infinite; }
 #nav{ position:fixed; left:14px; bottom:14px; width:200px; height:200px; z-index:5; display:none; pointer-events:none; filter:drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
 body.driving #nav{ display:block; }
@@ -252,16 +316,18 @@ body.ready #loading{ opacity:0; pointer-events:none; }
 </section>
 
 <section class="screen" id="menu">
-  <div class="logo pop"><h1><small>DRIVE IN THE</small>SERRÍN</h1><p>Rutas de montaña</p></div>
-  <div class="menu-btns pop">
-    <button class="btn main" data-act="play">▶ Jugar</button>
-    <div class="menu-row">
-      <button class="btn" data-act="garage">🔧 Taller</button>
-      <button class="btn" data-act="badges">🏅 Insignias</button>
-    </div>
-    <button class="btn" data-act="options">⚙ Opciones</button>
+  <div class="mm-side">
+    <div class="logo pop"><h1><small>DRIVE IN THE</small>SERRÍN</h1><p>Rally de montaña</p></div>
+    <nav class="mm pop" aria-label="Menú principal">
+      <button class="mm-b main" data-act="continue"><span class="ico">▶</span><span class="tx"><b id="mmGoT">Jugar</b><small id="mmNext"></small></span><span class="arr">›</span></button>
+      <button class="mm-b" data-act="play"><span class="ico">⛰️</span><span class="tx"><b>Montañas</b><small id="mmMaps"></small></span><span class="arr">›</span></button>
+      <button class="mm-b" data-act="garage"><span class="ico">🔧</span><span class="tx"><b>Taller</b><small id="mmGar"></small></span><span class="arr">›</span></button>
+      <button class="mm-b" data-act="badges"><span class="ico">🏅</span><span class="tx"><b>Insignias</b><small id="mmAch"></small></span><span class="arr">›</span></button>
+      <button class="mm-b" data-act="options"><span class="ico">⚙️</span><span class="tx"><b>Opciones</b><small>Sonido, copiloto, línea y cámara</small></span><span class="arr">›</span></button>
+    </nav>
+    <div class="mm-foot pop"><span class="coins"><i class="coin"></i><b class="coinN">0</b></span><span class="coins" id="starsN">★ 0/24</span><span class="coins" id="lvlN"></span></div>
   </div>
-  <div class="menu-foot pop"><span class="coins"><i class="coin"></i><b class="coinN">0</b></span><span class="coins" id="starsN">★ 0/24</span></div>
+  <aside class="mm-card pop" id="mmCard"></aside>
 </section>
 
 <section class="screen" id="map">
@@ -272,23 +338,30 @@ body.ready #loading{ opacity:0; pointer-events:none; }
 </section>
 
 <section class="screen" id="detail">
-  <div class="card panel pop">
-    <div class="hint" id="dNum"></div>
-    <h2 id="dName"></h2>
-    <p class="desc" id="dDesc"></p>
-    <ul class="objs" id="dObjs"></ul>
-    <div class="row"><button class="btn" data-act="map">Volver</button><button class="btn main" id="dGo" data-act="go">¡Manejar!</button></div>
+  <div class="card panel pop dcard">
+    <div class="dart" id="dArt"></div>
+    <div class="dbody">
+      <div class="hint" id="dNum"></div>
+      <h2 id="dName"></h2>
+      <p class="desc" id="dDesc"></p>
+      <div class="dgrid">
+        <canvas id="dRoute" width="300" height="200" aria-label="Forma de la ruta"></canvas>
+        <div class="dfacts" id="dFacts"></div>
+      </div>
+      <ul class="objs" id="dObjs"></ul>
+      <div class="row"><button class="btn" data-act="map">Volver</button><button class="btn main" id="dGo" data-act="go">¡Manejar!</button></div>
+    </div>
   </div>
 </section>
 
 <section class="screen" id="garage">
   <div class="topbar"><button class="btn back" data-act="menu">← Menú</button><span class="coins"><i class="coin"></i><b class="coinN">0</b></span></div>
-  <div class="card panel pop">
+  <div class="card panel pop gcard">
     <h2>Taller</h2>
+    <div class="cbars" id="cbars"></div>
     <div id="upgs"></div>
     <b>Pintura</b>
     <div class="paints" id="paints"></div>
-    <div class="stats" id="cstats"></div>
   </div>
 </section>
 
@@ -315,7 +388,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
   <div class="speed-big"><b id="hSpd">0</b><small>km/h</small></div>
 </section>
 <div class="warn" id="warn">¡ABISMO!</div>
-<div class="note" id="note"><svg id="noteIco" viewBox="0 0 100 100" aria-hidden="true"></svg><div><b id="noteTxt"></b><small id="noteDist"></small></div></div>
+<div class="note" id="note"><svg id="noteIco" viewBox="0 0 100 100" aria-hidden="true"></svg><div><b id="noteTxt"></b><small id="noteDist"></small><i class="nbar"><i id="noteBar"></i></i></div></div>
 <canvas id="nav" width="200" height="200" aria-hidden="true"></canvas>
 <div id="crack" aria-hidden="true"></div>
 <div id="count"></div>

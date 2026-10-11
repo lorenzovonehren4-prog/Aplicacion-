@@ -152,6 +152,7 @@ const SFX = {
     [0.6, 0.85, 1.1].forEach(d => this.burst(0.08, 2000 + Math.random() * 2000, 0.15, 'bandpass', d)); // piezas que caen
   },
   guard() { this.metal(0.4); this.sweep(0.7, 2600, 600, 0.35); this.burst(0.3, 500, 0.7); },
+  brakeCue() { this.tone(1760, 0.09, 'square', 0.13); this.tone(1760, 0.09, 'square', 0.13, 0.12); },
   radio() { this.tone(1400, 0.05, 'square', 0.04); this.burst(0.12, 2500, 0.05, 'bandpass', 0.02); },
   // Voz del copiloto (voz del navegador en español). urgent corta lo que estaba diciendo.
   voice() {

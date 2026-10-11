@@ -60,6 +60,17 @@ function startRun(L) {
   for (const rk of G.T.rocks) rk.cool = 0;
   inp.steer = 0;
   G.prof = speedProfile(G.T, G.st);
+  // para cada curva: la velocidad justa para entrar y dónde está el punto más lento
+  const vc = cornerSpeeds(G.T, G.st);
+  for (const n of G.T.notes) {
+    let m = Infinity, at = n.s;
+    for (let q = Math.max(0, n.s - 30); q <= Math.min(G.T.n - 1, n.end); q++) if (vc[q] < m) { m = vc[q]; at = q; }
+    n.vc = m; n.sm = at;
+    // fin del tramo lento: desde ahí ya se puede acelerar
+    let ex = at;
+    for (let q = at; q <= Math.min(G.T.n - 1, n.end); q++) if (vc[q] <= m * 1.04) ex = q;
+    n.sx = ex;
+  }
   setLineSpeeds(G.prof);
   W.line.material.uniforms.uOn.value = save.opt.line === false ? 0 : 1;
   G.noteIdx = 0; G.noteSaid = -1; G.said = {}; G.urgentSaid = -1; G.slow = 1; G.crashCam = null;
@@ -194,6 +205,31 @@ function onCarEvent(name, v) {
   }
 }
 
+// Modo demostración del menú: el carro baja solo por la montaña (con la línea de guía).
+function startAttract() {
+  const T = G.T;
+  G.st = curStats();
+  G.prof = speedProfile(T, G.st);
+  G.attractProf = G.prof.map(v => v * 0.82);
+  if (W.line) { setLineSpeeds(G.prof); W.line.material.uniforms.uOn.value = save.opt.line === false ? 0 : 1; }
+  resetCarLook(G.car); fxClear();
+  const p = roadPoint(T, 20, 0);
+  Object.assign(G.C, newCarState(T, G.st), { x: p.x, z: p.z, y: p.y, h: p.h, s: 20, i: 20 });
+  G.attractT = 0; G.shot = -1; G.acc = 0;
+}
+function attractStep(dt) {
+  const C = G.C, T = G.T;
+  G.attractT += dt;
+  G.acc += dt;
+  while (G.acc >= STEP) {
+    G.acc -= STEP;
+    const a = aiInput(C, T, G.attractProf);
+    C.steer += Math.max(-STEP * 4, Math.min(STEP * 4, a.steer - C.steer));
+    stepCar(C, { thr: a.thr, brk: a.brk, steer: C.steer }, T, G.st, STEP, () => {});
+    if (C.state !== 'drive' || C.s > T.n - 50) { startAttract(); return; }
+  }
+}
+
 function crashCamera() {
   const C = G.C;
   W.scene.attach(W.camera);
@@ -304,6 +340,20 @@ function updateCamera(dt) {
     cam.lookAt(C.x, C.y + 1, C.z);
     return;
   }
+  if (G.mode === 'menu' && G.attract) {
+    // tomas de televisión mientras el carro baja solo por la montaña
+    const T = G.T, fx = Math.sin(C.h), fz = Math.cos(C.h);
+    const shot = Math.floor(G.attractT / 6) % 4;
+    if (shot !== G.shot) { G.shot = shot; G.snap = true; const sd = Math.random() < 0.5 ? -1 : 1; const p = roadPoint(T, Math.min(T.n - 1, C.s + 45), sd * (T.hw + 0.3)); G.shotPos = new THREE.Vector3(p.x, roadY(T, C.s + 45) + 1.3, p.z); }
+    if (shot === 0) _cv.set(C.x - fx * 8, C.y + 3.2, C.z - fz * 8);
+    else if (shot === 1) _cv.copy(G.shotPos);
+    else if (shot === 2) { const p = roadPoint(T, Math.min(T.n - 1, C.s + 10), 0); _cv.set(p.x, roadY(T, C.s + 10) + 1.7, p.z); }
+    else _cv.set(C.x - fx * 14, C.y + 26, C.z - fz * 14);
+    if (G.snap) { cam.position.copy(_cv); G.snap = false; }
+    cam.position.lerp(_cv, Math.min(1, dt * (shot === 1 ? 10 : 4)));
+    if (shot === 3) cam.lookAt(C.x + fx * 14, C.y, C.z + fz * 14); else cam.lookAt(C.x + fx * 2, C.y + 1, C.z + fz * 2);
+    return;
+  }
   if (G.mode === 'menu') {
     // la cámara pasea por encima de la carretera alrededor del carro (nunca entra al cerro)
     G.menuAng += dt * 0.16;
@@ -407,20 +457,47 @@ function paceNote() {
   const show = G.mode === 'drive' && n && dist < Math.max(90, C.f * 4.5);
   el.classList.toggle('on', !!show);
   if (!show) return;
-  const brake = G.prof[Math.min(T.n - 1, n.s + 4)] < C.f - 4;
-  el.classList.toggle('brake', brake && dist > -5);
-  const key = G.noteIdx + (brake ? 'b' : '');
-  if (el.dataset.k !== key) {
+  // Punto exacto de frenada: G.prof es la velocidad máxima en cada metro sabiendo que vas a
+  // frenar a fondo. Frenas justo donde tu velocidad choca con esa curva más adelante.
+  const v = C.f, P = G.prof, s0 = Math.round(C.s), lim = Math.min(T.n - 1, s0 + 450);
+  let q = s0 + 1;
+  while (q < lim && P[q] >= v - 0.3) q++;
+  const needBrake = q < lim && v > 3;
+  const toBrake = needBrake ? q - C.s - v * 0.12 : Infinity;   // 0,12 s de reacción
+  let target = n.vc;
+  if (needBrake) { target = Infinity; for (let j = q; j < Math.min(T.n, q + 140); j++) target = Math.min(target, P[j]); }
+  const bn = needBrake ? (notes.slice(G.noteIdx, G.noteIdx + 3).find(m => q <= m.end) || n) : n;
+  const over = v - target;
+  let st;
+  if (needBrake) st = toBrake > 0 ? 'prep' : 'ya';
+  else if (C.s > n.sx) st = 'sal';
+  else if (C.s >= n.s - 10 || v > P[Math.min(T.n - 1, s0 + 3)] - 2) st = 'dobla';
+  else st = v - n.vc > -4 ? 'suelta' : 'fondo';
+  el.classList.toggle('brake', st === 'ya');
+  el.classList.toggle('prep', st === 'prep');
+  const key = G.noteIdx;
+  if (el.dataset.k !== String(key)) {
     el.dataset.k = key;
     document.getElementById('noteIco').innerHTML = noteIcon(n);
     document.getElementById('noteTxt').textContent = noteLabel(n) + (n.then ? ' · luego ' + n.then : '');
   }
-  const hard = G.prof[Math.min(T.n - 1, n.s + 4)] < C.f - 15;
-  document.getElementById('noteDist').textContent = brake && dist > 0 ? `${hard ? '¡FRENA FUERTE!' : '¡FRENA!'} · ${Math.max(0, Math.round(dist / 10) * 10)} m` : dist > 0 ? `${Math.round(dist / 10) * 10} m` : 'ahora';
+  const kmh = Math.round(target * 3.6);
+  const txt = st === 'prep' ? `Frena en ${Math.max(0, Math.round(toBrake / 5) * 5)} m · a ${kmh} km/h`
+    : st === 'ya' ? `¡FRENA YA! · a ${kmh} km/h`
+    : st === 'dobla' ? `¡Dobla! · mantén ${Math.round(Math.min(n.vc, P[Math.min(T.n - 1, s0 + 3)]) * 3.6)} km/h` : st === 'sal' ? '¡Acelera!' : st === 'suelta' ? `Suelta un poco · ${dist > 0 ? Math.round(dist / 10) * 10 + ' m' : 'ahora'}` : `A fondo · ${dist > 0 ? Math.round(dist / 10) * 10 + ' m' : 'ahora'}`;
+  document.getElementById('noteDist').textContent = txt;
+  const bar = document.getElementById('noteBar');
+  bar.style.transform = `scaleX(${st === 'prep' ? Math.max(0, Math.min(1, toBrake / 120)) : 0})`;
   if (G.noteSaid !== G.noteIdx) {
     G.noteSaid = G.noteIdx;
-    G.urgentSaid = -1;
-    SFX.say(noteSpeech(n, hard ? 2 : brake ? 1 : 0));
+    G.urgentSaid = -1; G.brakeSaid = -1;
+    SFX.say(noteSpeech(n, 0));
+  }
+  const bi = notes.indexOf(bn);
+  if (st === 'ya' && G.brakeSaid !== bi) {
+    G.brakeSaid = bi;
+    SFX.brakeCue();
+    SFX.say(over > 12 ? '¡Frena fuerte!' : '¡Frena!', true);
   }
 }
 
@@ -446,7 +523,7 @@ function copilot() {
   G.said = G.said || {};
   if (n) {
     const dist = n.s - C.s, need = G.prof[Math.min(T.n - 1, n.s + 4)];
-    if (dist > 0 && dist < 45 && C.f > need + 7 && !inp.brk && G.urgentSaid !== G.noteIdx) { G.urgentSaid = G.noteIdx; SFX.say('¡Frena, frena!', true); }
+    if (dist > 0 && C.f > need + 7 && !inp.brk && G.brakeSaid >= G.noteIdx && G.urgentSaid !== G.noteIdx) { G.urgentSaid = G.noteIdx; SFX.say('¡Frena, frena!', true); }
   }
   // recta larga a fondo
   const prev = T.notes[G.noteIdx - 1];
