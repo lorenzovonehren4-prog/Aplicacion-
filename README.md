@@ -37,13 +37,18 @@ Y entrar a <http://localhost:8000>. El portal también abre con doble clic en
   "Classes"), el sonido, la hora y **tu perfil**. En celular las pestañas van
   en una barra fija abajo.
 - **Inicio, menú de consola**: el juego elegido llena la pantalla (fondo,
-  título grande, etiquetas, tu progreso, Jugar / Detalles / Favorito) y abajo
-  está el estante con los 11 juegos. Se recorre con `←` `→`, el mouse o la
-  cruceta del mando; `Enter` o A juega, `I` abre los detalles, `F` o Y marca
-  favorito, B vuelve. Debajo, "Sigue jugando" y "Tu sala".
-- **Biblioteca**: cuadrícula con categorías (Carreras, Acción, Simulación,
-  Deportes, Estrategia, Plataformas, Puzzles, 3D, Multijugador, Favoritos) y
-  búsqueda. Las fichas leen el guardado de cada juego.
+  título grande, etiquetas, tu progreso, Jugar / Detalles / Favorito; en
+  pantallas anchas, a la derecha, dos imágenes, un anillo de avance con datos
+  y sus categorías) y abajo está el estante "Tus juegos" (con el número del
+  elegido). Se recorre con `←` `→`, el mouse o la cruceta del mando; `Enter`
+  o A juega, `I` abre los detalles, `F` o Y marca favorito, B vuelve. Debajo,
+  "Explora por categoría", "Novedades", "Sigue jugando" y "Tu sala".
+- **Biblioteca**: fichas estilo tienda (carátula con logo que cambia a otra
+  imagen al pasar el mouse; abajo nombre, progreso, categorías y tiempo
+  jugado), filtros por categoría (Carreras, Acción, Simulación, Deportes,
+  Estrategia, Plataformas, Puzzles, 3D, Multijugador, Favoritos) y búsqueda.
+  Las fichas leen el guardado de cada juego. Varias insignias seguidas se
+  juntan en un solo aviso.
 - **Logros**: las 18 insignias y tu nivel.
 - **Página de juego** con reproductor (el juego va en un `iframe`), favorito,
   reiniciar, pantalla completa (`F`), controles, tu progreso y más juegos.

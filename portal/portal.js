@@ -186,12 +186,24 @@ const SFX = (() => {
 })();
 
 /* ---------- avisos ---------- */
+let achToast = null;
 function toast(title, text, icon = 'star', kind = '') {
+  // varias insignias seguidas se juntan en un solo aviso
+  if (kind === 'ach' && achToast && Date.now() - achToast.t < 2500 && achToast.el.isConnected) {
+    const a = achToast; a.names.push(text.split(' · ')[0]); a.t = Date.now();
+    a.el.querySelector('b').textContent = `¡${a.names.length} insignias desbloqueadas!`;
+    a.el.querySelector('small').textContent = a.names.slice(0, 3).join(' · ') + (a.names.length > 3 ? ` y ${a.names.length - 3} más` : '') + ` · +${a.names.length * ACH_XP} XP`;
+    a.el.classList.remove('bump'); void a.el.offsetWidth; a.el.classList.add('bump');
+    return;
+  }
   const t = document.createElement('div');
   t.className = 'toast ' + kind;
   t.innerHTML = `<span class="toast__ico">${ic(icon)}</span><span><b>${esc(title)}</b>${text ? `<small>${esc(text)}</small>` : ''}</span>`;
   $('#toasts').append(t);
-  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 3600);
+  if (kind === 'ach') achToast = { el: t, names: [String(text || '').split(' · ')[0]], t: Date.now() };
+  // como mucho tres avisos a la vez
+  const all = $$('#toasts .toast:not(.out)'); if (all.length > 3) { all[0].classList.add('out'); setTimeout(() => all[0].remove(), 400); }
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, kind === 'ach' ? 4600 : 3600);
 }
 
 /* ---------- botón de perfil (arriba a la derecha) ---------- */
@@ -213,18 +225,24 @@ const view = $('#view');
 const UI = { cat: 'todos', q: '', sel: 0, game: null, frame: null, playing: false, autoplay: false, tab: 'inicio' };
 const gameHref = g => '#juego-' + g.id;
 
-function tileHTML(g, size = '') {
-  const p = prog(g.id), fav = P.favs.includes(g.id);
-  const sub = p ? p.label : g.tagline;
-  // la ficha grande usa la carátula (ya trae el nombre escrito)
-  const box = size === 'tile--w3' && g.box;
-  return `<a class="tile ${size} ${box ? 'has-box' : ''}" href="${gameHref(g)}" data-tile="${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="Jugar ${esc(g.title)}">
-    <span class="tile__art"><img class="tile__img" src="${box ? g.box : g.cover}" alt="" loading="lazy" decoding="async"><img class="tile__alt" src="${g.alt}" alt="" loading="lazy" decoding="async"></span>
-    ${g.badge ? `<span class="tile__badge">${g.badge}</span>` : ''}
-    ${fav ? `<span class="tile__fav">${ic('heart')}</span>` : ''}
-    <span class="tile__play">${ic('play')}</span>
-    <span class="tile__meta"><b>${esc(g.title)}</b><small>${esc(sub)}</small></span>
-    ${p && p.pct ? `<span class="tile__prog"><i style="width:${Math.max(4, Math.round(p.pct * 100))}%"></i></span>` : ''}
+// Ficha de la biblioteca, como en una tienda: la carátula con el logo (al pasar el mouse
+// cambia a otra imagen del juego) y abajo el nombre, el progreso y las categorías.
+function tileHTML(g, big = false) {
+  const p = prog(g.id), fav = P.favs.includes(g.id), st = gstat(g.id);
+  const cats = g.cats.map(c => (CATS.find(x => x.id === c) || {}).name).filter(Boolean).slice(0, 3);
+  return `<a class="lcard ${big ? 'lcard--big' : ''}" href="${gameHref(g)}" data-tile="${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="${esc(g.title)}">
+    <span class="lcard__art">
+      <img class="lcard__img" src="${g.box || g.cover}" alt="" loading="lazy" decoding="async"><img class="lcard__alt" src="${g.alt || g.cover}" alt="" loading="lazy" decoding="async">
+      ${g.badge ? `<span class="lcard__badge">${g.badge}</span>` : ''}
+      ${fav ? `<span class="lcard__fav">${ic('heart')}</span>` : ''}
+      <span class="lcard__play">${ic('play')}</span>
+      ${p && p.pct ? `<span class="lcard__prog"><i style="width:${Math.max(4, Math.round(p.pct * 100))}%"></i></span>` : ''}
+    </span>
+    <span class="lcard__cap">
+      <b>${esc(g.title)}</b>
+      <small>${esc(p ? p.label : big ? g.desc : g.tagline)}</small>
+      <span class="lcard__tags">${cats.map(c => `<em>${esc(c)}</em>`).join('')}${st.time ? `<em class="t">${ic('clock')}${fmtTime(st.time)}</em>` : ''}</span>
+    </span>
   </a>`;
 }
 
@@ -264,6 +282,8 @@ function renderDash() {
       <div class="dash__bg" aria-hidden="true"><img class="dash__art" id="art0" alt=""><img class="dash__art" id="art1" alt=""></div>
       <div class="dash__shade" aria-hidden="true"></div>
       <div class="dash__info" id="dashInfo" aria-live="polite"></div>
+      <aside class="dash__side" id="dashSide" aria-hidden="true"></aside>
+      <div class="shelf__head"><b>${ic('gamepad')} Tus juegos</b><span id="selN"></span><a href="#biblioteca">Ver biblioteca ${ic('grid')}</a></div>
       <div class="shelf" id="shelf" role="listbox" aria-label="Elige un juego" tabindex="0">
         ${GAMES.map((g, i) => {
           const p = prog(g.id), fav = P.favs.includes(g.id);
@@ -285,6 +305,16 @@ function renderDash() {
         <span><kbd>Q</kbd><kbd>E</kbd> Pestañas</span>
         <span class="hints__pad" id="padHint" hidden>${ic('gamepad')} Mando conectado</span>
       </div>
+    </section>
+    <section class="sec">
+      <h2 class="sec__title">${ic('grid')} Explora por categoría</h2>
+      <div class="cats">${CATS.filter(c => c.id !== 'todos' && c.id !== 'favs').map(c => {
+        const list = GAMES.filter(g => g.cats.includes(c.id));
+        if (!list.length) return '';
+        const g = list[0];
+        return `<button class="catcard" type="button" data-catgo="${c.id}" style="--c:${g.color};--c2:${g.color2}">
+          <img src="${g.cover}" alt="" loading="lazy"><span class="catcard__ico">${ic(c.icon)}</span><b>${esc(c.name)}</b><small>${list.length} ${list.length === 1 ? 'juego' : 'juegos'}</small></button>`;
+      }).join('')}</div>
     </section>
     <section class="sec">
       <h2 class="sec__title">${ic('bolt')} Novedades</h2>
@@ -371,6 +401,19 @@ function setSel(i, { quiet = false, instant = false, center = true } = {}) {
     </div>`;
   const info = $('#dashInfo');
   info.classList.remove('swap'); void info.offsetWidth; info.classList.add('swap');
+  $('#selN').innerHTML = `<b>${String(i + 1).padStart(2, '0')}</b> / ${String(GAMES.length).padStart(2, '0')}`;
+  // panel de la derecha: imágenes del juego, tu avance y sus categorías
+  const pct = p && p.pct ? Math.round(p.pct * 100) : 0;
+  const stats = p && p.stats ? p.stats.slice(0, 3) : [['Partidas', st.plays || 0], ['Tiempo', st.time ? fmtTime(st.time) : '—'], ['Controles', (g.controls || []).length + ' teclas']];
+  const side = $('#dashSide');
+  side.innerHTML = `
+    <div class="dside__media"><img src="${g.cover}" alt=""><img src="${g.alt || g.cover}" alt=""></div>
+    <div class="dside__card">
+      <div class="dside__ring" style="--p:${pct}"><b>${pct}%</b><small>avance</small></div>
+      <ul class="dside__stats">${stats.map(([k, v]) => `<li><small>${esc(k)}</small><b>${esc(String(v))}</b></li>`).join('')}</ul>
+    </div>
+    <div class="dside__cats">${g.cats.map(c => (CATS.find(x => x.id === c) || {})).filter(c => c.name).map(c => `<span>${ic(c.icon)}${esc(c.name)}</span>`).join('')}</div>`;
+  side.classList.remove('swap'); void side.offsetWidth; side.classList.add('swap');
 }
 
 /* ---------- biblioteca ---------- */
@@ -396,7 +439,7 @@ function gridHTML() {
   if (!list.length) {
     return `<div class="empty">${ic('mask')}<b>${UI.cat === 'favs' ? 'Aún no tienes favoritos' : 'No encontramos ese juego'}</b><small>${UI.cat === 'favs' ? 'Toca el corazón en cualquier juego para guardarlo aquí.' : 'Prueba con “carreras”, “zombis” o “3D”.'}</small></div>`;
   }
-  return `<div class="grid">${list.map((g, i) => tileHTML(g, i === 0 ? 'tile--w3' : 'tile--w2')).join('')}</div>`;
+  return `<div class="lib">${list.map((g, i) => tileHTML(g, i === 0 && list.length > 3)).join('')}</div>`;
 }
 
 /* ---------- logros ---------- */
@@ -419,9 +462,9 @@ function renderAch() {
 
 /* ---------- efectos de las fichas ---------- */
 function bindTiles() {
-  for (const t of $$('.tile[data-tile], .cont, .mini')) {
+  for (const t of $$('.lcard, .cont, .mini, .catcard')) {
     t.addEventListener('pointerenter', () => SFX.tick());
-    if (REDUCED || !t.classList.contains('tile')) continue;
+    if (REDUCED || !t.classList.contains('lcard')) continue;
     t.addEventListener('pointermove', e => {
       const r = t.getBoundingClientRect();
       t.style.setProperty('--rx', ((e.clientY - r.top) / r.height - 0.5) * -7 + 'deg');
@@ -744,8 +787,9 @@ document.addEventListener('pointerdown', () => SFX.unlock(), { once: true, captu
 window.addEventListener('hashchange', route);
 
 view.addEventListener('click', e => {
-  const t = e.target.closest('[data-cat],[data-fav],[data-sel],[data-play],[data-act]');
+  const t = e.target.closest('[data-cat],[data-catgo],[data-fav],[data-sel],[data-play],[data-act]');
   if (!t) return;
+  if (t.dataset.catgo) { UI.cat = t.dataset.catgo; UI.q = ''; SFX.click(); if (location.hash === '#biblioteca') renderLibrary(); else location.hash = '#biblioteca'; return; }
   if (t.dataset.cat) { UI.cat = t.dataset.cat; SFX.click(); renderLibrary(); return; }
   if (t.dataset.sel) { const i = +t.dataset.sel; if (i === UI.sel && t.classList.contains('is-sel')) playSel(); else { SFX.click(); setSel(i); } return; }
   if (t.dataset.play) { e.preventDefault(); playGame(gameById(t.dataset.play)); return; }

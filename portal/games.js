@@ -122,7 +122,7 @@ const GAMES = [
     id: 'codigo-rojo',
     title: 'Código Rojo',
     tagline: 'Sé el ladrón o la policía en un barrio 3D',
-    desc: 'Un barrio entero con casas, tiendas, un canal con 6 puentes, un túnel bajo el cerro, rampas, semáforos y tráfico, cerrado por paredes rojas. Escapa de 3 patrulleros o persigue al ladrón hasta llenar la barra de arresto. 14 misiones por dificultad, partida libre de día, tarde o noche, y un garaje con 6 carros.',
+    desc: 'Un barrio entero con casas, tiendas, un canal con 6 puentes, un túnel bajo el cerro, rampas, semáforos y tráfico, cerrado por paredes rojas. Escapa de 3 patrulleros o persigue al ladrón hasta llenar la barra de arresto. Cabina por dentro con relojes, nitro, derrapes que dejan marcas y 3 estrellas por misión. 14 misiones por dificultad, partida libre de día, tarde o noche, y un garaje con 6 carros.',
     url: 'codigo-rojo/index.html',
     cover: 'portal/img/codigo-rojo-cover.webp',
     box: 'portal/img/codigo-rojo-box.webp',
@@ -139,6 +139,7 @@ const GAMES = [
       [['↑', '↓'], 'Acelerar / frenar y reversa (W, S)'],
       [['←', '→'], 'Girar (A, D)'],
       [['Espacio'], 'Freno de mano (derrape)'],
+      [['Shift'], 'Nitro (también N)'],
       [['C'], 'Cámara: atrás o cabina'],
       [['H'], 'Bocina'],
       [['R'], 'Volver a la calle'],
@@ -446,6 +447,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo: cabina, nitro y estrellas', items: ['Cabina por dentro con relojes, volante y mapa', 'Nitro, marcas de llantas, humo y fuego', 'Garaje en vitrina, 3 estrellas por misión y patrulleros más listos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo se ve como juego profesional', items: ['Carros nuevos con reflejos, faros y brillo', 'Barrio con más detalle: casas, carros estacionados, postes y nubes', 'Menú y velocímetro nuevos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Juego nuevo: Código Rojo', items: ['Barrio 3D con puentes, túnel, rampas, semáforos y tráfico', 'Sé el ladrón contra 3 patrulleros o la policía', '14 misiones, partida libre y garaje con 6 carros'] },
   { game: 'cornisa', date: '11 oct', title: 'Juego nuevo: Drive In The Serrín', items: ['Rally desde la cabina por 8 montañas con horquillas', 'Línea de guía, copiloto y mapa GPS', 'Si te sales o chocas fuerte, pierdes (con caída o choque animado)', 'Taller de mejoras, pinturas, insignias y Ruta libre al pasarte el juego'] },
