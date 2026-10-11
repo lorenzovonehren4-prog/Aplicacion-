@@ -152,6 +152,8 @@ const SFX = {
     [0.6, 0.85, 1.1].forEach(d => this.burst(0.08, 2000 + Math.random() * 2000, 0.15, 'bandpass', d)); // piezas que caen
   },
   guard() { this.metal(0.4); this.sweep(0.7, 2600, 600, 0.35); this.burst(0.3, 500, 0.7); },
+  boom(s = 1) { this.tone(45, 1.6, 'sine', 0.9 * s, 0, -25); this.burst(1.8 * s, 260, 1); this.burst(0.5, 1400, 0.6 * s); this.sweep(1.4, 900, 120, 0.5 * s, 0.1); },
+  pop() { this.burst(0.08, 1800, 0.25, 'bandpass'); this.tone(900 + Math.random() * 600, 0.6, 'sine', 0.03, 0.05, -500); },
   brakeCue() { this.tone(1760, 0.09, 'square', 0.13); this.tone(1760, 0.09, 'square', 0.13, 0.12); },
   radio() { this.tone(1400, 0.05, 'square', 0.04); this.burst(0.12, 2500, 0.05, 'bandpass', 0.02); },
   // Voz del copiloto (voz del navegador en español). urgent corta lo que estaba diciendo.

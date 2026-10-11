@@ -1,6 +1,7 @@
 'use strict';
 // Catálogo de Anonymous Games. Para sumar un juego nuevo basta con agregarlo aquí
 // (carpeta propia con su index.html y una portada en portal/img/).
+// box: carátula con el logo (la arma portal/tools/caratulas.mjs a partir de la mejor imagen).
 //
 // progress(): lee el guardado que el propio juego deja en localStorage (mismo origen)
 // para mostrar en el portal cuánto llevas. Si el juego cambia el formato, sólo hay
@@ -44,6 +45,7 @@ const GAMES = [
     desc: 'Campeonato de monoplazas con equipos y pilotos ficticios: clasificación, carrera, paradas en boxes, DRS, radio del ingeniero, cámaras de cabina y repetición con helicóptero. Ayudas de frenado y dirección para empezar, y caja automática de 8 marchas.',
     url: 'formula-3d/apice-gp.html',
     cover: 'portal/img/apice-gp-cover.webp',
+    box: 'portal/img/apice-gp-box.webp',
     alt: 'portal/img/apice-gp-alt.webp',
     hero: 'portal/img/apice-gp-hero.webp',
     color: '#ff1e3c',
@@ -82,6 +84,7 @@ const GAMES = [
     desc: 'Carreras de karts bajo techo y al aire libre: rampas, segundos pisos y túneles. Corre contra 5 bots, gana el campeonato, pinta tu kart con acabados de oro o neón, mira la repetición con cámaras de TV y dibuja tus propias pistas.',
     url: 'karting/index.html',
     cover: 'portal/img/karting-cover.webp',
+    box: 'portal/img/karting-box.webp',
     alt: 'portal/img/karting-alt.webp',
     hero: 'portal/img/karting-hero.webp',
     color: '#ff4d3d',
@@ -122,6 +125,7 @@ const GAMES = [
     desc: 'Rally a fondo desde la cabina de un 4x4 por carreteras de montaña: cañón, bosque, nieve, niebla, volcán, noche y tormenta. Sigue la línea de guía (verde a fondo, roja frena), escucha al copiloto y mira el mapa GPS para las horquillas. Si te sales al abismo o chocas fuerte, pierdes. Junta monedas, mejora motor, frenos, llantas y carrocería, y abre cada montaña cumpliendo lo que pide la anterior hasta la Cima del Cóndor.',
     url: 'cornisa/index.html',
     cover: 'portal/img/cornisa-cover.webp',
+    box: 'portal/img/cornisa-box.webp',
     alt: 'portal/img/cornisa-alt.webp',
     hero: 'portal/img/cornisa-hero.webp',
     color: '#ff7a2f',
@@ -160,6 +164,7 @@ const GAMES = [
     desc: 'Recoge pasajeros en los paraderos, llévalos a tiempo, esquiva huecos y conos, respeta la roja y no los hagas enojar. 16 viajes por Lima (La Punta, Túpac Amaru, Miraflores de noche y más), una flota de 4 vehículos hasta el micro de 40 pasajeros y radio con cumbia, chicha y salsa.',
     url: 'combi-rush/combi-rush.html',
     cover: 'portal/img/combi-rush-cover.webp',
+    box: 'portal/img/combi-rush-box.webp',
     alt: 'portal/img/combi-rush-alt.webp',
     hero: 'portal/img/combi-rush-hero.webp',
     color: '#ff2d8a',
@@ -197,6 +202,7 @@ const GAMES = [
     desc: 'La policía te busca desde que arrancas: aguanta el mayor tiempo posible. Derrapa para cargar el turbo, agarra power-ups en la pista (nitro, plata, escudo y pintura que despista a la policía) y sobrevive a patrullas, bloqueos, clavos y helicópteros. 12 carros para ganar en el garaje.',
     url: 'fuga-urbana/index.html',
     cover: 'portal/img/fuga-urbana-cover.webp',
+    box: 'portal/img/fuga-urbana-box.webp',
     alt: 'portal/img/fuga-urbana-alt.webp',
     color: '#ffb800',
     color2: '#ff3d71',
@@ -230,6 +236,7 @@ const GAMES = [
     desc: 'Atiende mesas, contrata mozos y cocineros, arma tu carta criolla de 17 platos y haz crecer tu local hasta tener varios pisos, drive-thru y delivery. Abre locales en Miraflores, Barranco y Gamarra y sobrevive a apagones, críticos de incógnito y partidos de la selección.',
     url: 'sazon-tycoon/index.html',
     cover: 'portal/img/sazon-cover.webp',
+    box: 'portal/img/sazon-box.webp',
     alt: 'portal/img/sazon-alt.webp',
     hero: 'portal/img/sazon-hero.webp',
     color: '#ff7a1a',
@@ -264,6 +271,7 @@ const GAMES = [
     desc: 'Empiezas en un club peruano y cada semana decides cómo entrenar, descansar o salir de fiesta. Fichajes, contratos, selección, casa, carros y familia en escenas 3D. Al retirarte recibes un puntaje de carrera del 1 al 100.',
     url: 'modo-carrera-futbol/index.html',
     cover: 'portal/img/futbol-cover.webp',
+    box: 'portal/img/futbol-box.webp',
     alt: 'portal/img/futbol-alt.webp',
     color: '#22c55e',
     color2: '#facc15',
@@ -296,6 +304,7 @@ const GAMES = [
     desc: 'Construye torres, sube a tu héroe y aguanta 20 oleadas de zombis con minijefes y jefes en 4 mapas: pradera de noche, cañón con tormentas de arena, fragua volcánica y un glaciar con ventiscas que congelan torres. Misiones diarias, logros, rangos, modo infinito y desafíos.',
     url: 'tower-defense/index.html',
     cover: 'portal/img/tower-defense-cover.webp',
+    box: 'portal/img/tower-defense-box.webp',
     alt: 'portal/img/tower-defense-alt.webp',
     color: '#f59e0b',
     color2: '#ef4444',
@@ -333,6 +342,7 @@ const GAMES = [
     desc: 'Salta, rebota en trampolines y agárrate de apoyos que se mueven, se rompen o resbalan para subir 6 cumbres. Junta monedas para la tienda de colores, gorros y estelas, y juega con amigos por internet en salas compartidas.',
     url: 'escalada/index.html',
     cover: 'portal/img/escalada-cover.webp',
+    box: 'portal/img/escalada-box.webp',
     alt: 'portal/img/escalada-alt.webp',
     color: '#38bdf8',
     color2: '#ffd700',
@@ -364,6 +374,7 @@ const GAMES = [
     desc: 'Acertijos, códigos ocultos, interruptores, sudokus, cables y habitaciones a oscuras. Cada nivel es un puzzle distinto y sólo hay una forma de salir. Usa las pistas si te trabas, pero cuestan estrellas.',
     url: 'mind-escape/index.html',
     cover: 'portal/img/mind-escape.svg',
+    box: 'portal/img/mind-escape-box.webp',
     alt: 'portal/img/mind-escape-alt.webp',
     hero: 'portal/img/mind-escape.svg',
     color: '#00d4ff',

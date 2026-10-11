@@ -247,7 +247,7 @@ function renderOptions() {
     <div class="opt"><span>Sonido</span>${seg('sound', [[true, 'Sí'], [false, 'No']])}</div>
     <div class="opt"><span>Volumen</span><input type="range" min="0" max="1" step="0.05" value="${o.vol}" id="vol"></div>
     <div class="opt"><span>Cámara</span>${seg('cam', [['cabina', 'Cabina'], ['afuera', 'Afuera']])}</div>
-    <div class="opt"><span>Línea de guía</span>${seg('line', [[true, 'Sí'], [false, 'No']])}</div>
+    <div class="opt"><span>Línea de guía</span>${seg('line', [['simple', 'Simple'], ['color', 'Con colores'], ['no', 'No']])}</div>
     <div class="opt"><span>Voz del copiloto</span>${seg('copi', [[true, 'Sí'], [false, 'No']])}</div>
     <div class="opt"><span>Dirección</span>${seg('sens', [[0.75, 'Suave'], [1, 'Normal'], [1.35, 'Rápida']])}</div>
     <div class="opt"><span>Gráficos</span>${seg('quality', [['alta', 'Altos'], ['baja', 'Bajos']])}</div>
@@ -358,6 +358,7 @@ document.addEventListener('click', e => {
     save.opt[k] = raw === 'true' ? true : raw === 'false' ? false : isNaN(+raw) ? raw : +raw;
     persist(); SFX.setVol(); SFX.click();
     if (k === 'quality') applyQuality();
+    if (k === 'line') applyLineOpt();
     if (k === 'cam') G.cam = save.opt.cam;
     renderOptions();
     $(`[data-opt=${k}][data-val="${raw}"]`)?.focus();
@@ -442,6 +443,9 @@ function step(dt) {
     poseCar(G.car, G.C, G.mode === 'pause' ? 0 : dt);
     if (G.cam === 'cabina' || G.mode === 'menu') poseCockpit(G.car, G.C);
     updateCamera(dt);
+    // a más velocidad se abre un poco el ángulo de la cámara (sensación de velocidad)
+    const fovT = W.baseFov + (G.mode === 'drive' ? Math.max(0, G.C.f / G.st.top - 0.35) * 14 : 0);
+    if (Math.abs(W.camera.fov - fovT) > 0.05) { W.camera.fov += (fovT - W.camera.fov) * Math.min(1, dt * 3); W.camera.updateProjectionMatrix(); }
     if (W.line) { W.line.material.uniforms.uS.value = G.C.s; W.line.material.uniforms.uV.value = G.C.f; }
     // la sombra sigue al carro
     W.sun.position.set(G.C.x + W.sunDir.x * 120, G.C.y + W.sunDir.y * 120, G.C.z + W.sunDir.z * 120);

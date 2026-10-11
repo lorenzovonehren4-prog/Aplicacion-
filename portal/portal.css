@@ -246,13 +246,20 @@ code { font-family: ui-monospace, Consolas, monospace; background: rgba(255,255,
 }
 .shelf::-webkit-scrollbar { display: none; }
 .gcard {
-  position: relative; flex: none; width: clamp(150px, 15vw, 224px); aspect-ratio: 16 / 10; max-width: 100%; border-radius: 16px; overflow: visible;
+  position: relative; flex: none; width: clamp(160px, 17vw, 260px); aspect-ratio: 16 / 10; max-width: 100%; border-radius: 16px; overflow: visible;
   transform-origin: 50% 100%; transition: transform .28s cubic-bezier(.2,.9,.3,1), filter .28s, opacity .28s; filter: saturate(.75) brightness(.78);
 }
 .gcard img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; box-shadow: 0 12px 30px rgba(0,0,0,.55); border: 1px solid var(--line2); }
 .gcard:hover { filter: none; }
 .gcard.is-sel { transform: scale(1.16); filter: none; z-index: 2; }
 .gcard.is-sel img { border-color: transparent; box-shadow: 0 0 0 3px #fff, 0 0 0 7px var(--c), 0 18px 50px rgba(0,0,0,.6), 0 0 60px color-mix(in srgb, var(--c) 55%, transparent); }
+.gcard__shine { position: absolute; inset: 0; border-radius: 16px; overflow: hidden; pointer-events: none; }
+.gcard__shine::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-18deg); opacity: 0; }
+.gcard.is-sel .gcard__shine::after { opacity: 1; animation: shine 3.2s ease-in-out infinite; }
+.gcard.is-sel { animation: selpop .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes selpop { from { transform: scale(1); } }
+.tile.has-box .tile__meta { opacity: 0; transition: opacity .3s; }
+.tile.has-box:hover .tile__meta { opacity: 1; }
 .gcard__name { position: absolute; left: 0; right: 0; top: calc(100% + 12px); font: 600 13px var(--display); text-align: center; opacity: 0; transform: translateY(-4px); transition: opacity .2s, transform .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gcard.is-sel .gcard__name { opacity: 1; transform: none; }
 .gcard__badge { position: absolute; left: 8px; top: 8px; padding: 2px 7px; border-radius: 6px; background: var(--c); color: #fff; font: 700 9.5px var(--display); letter-spacing: .12em; }

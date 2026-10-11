@@ -1,6 +1,6 @@
-// El aviso de frenada es exacto: un "piloto" que va a fondo y sólo frena cuando el copiloto
-// dice "¡FRENA YA!" (y suelta cuando dice "¡Dobla!") tiene que llegar a cada curva a la
-// velocidad justa y terminar la montaña sin choques fuertes.
+// El aviso de frenada es exacto: un "piloto" que va a fondo y sólo frena (a fondo, hasta la
+// velocidad de la curva) cuando sale el único aviso "FRENA", tiene que llegar a cada curva a
+// la velocidad justa y terminar la montaña sin choques fuertes.
 // Uso: node tests/frenada.mjs [ids…]
 import { chromium } from 'playwright';
 import http from 'node:http';
@@ -26,34 +26,36 @@ for (const id of ids.length ? ids : [1, 3, 6, 8]) {
   const r = await page.evaluate(id => {
     save.upg = { motor: 2, frenos: 1, llantas: 1, chasis: 0 };
     startRun(LEVELS.find(l => l.id === id)); G.mode = 'drive'; G.T.rocks = [];
-    const el = document.getElementById('note'), C = G.C, T = G.T, dt = 1 / 120;
+    const C = G.C, T = G.T, dt = 1 / 120;
+    // espía del aviso: sólo se sabe que hay que frenar cuando sale "FRENA"
+    let cue = null, cues = 0;
+    const orig = showCue;
+    window.showCue = (n, brake) => { if (brake) { cue = n; cues++; } orig(n, brake); };
     const res = [];
-    let mark = null;
+    let mark = null, hold = null;
     for (let i = 0; i < 120 * 400 && G.mode === 'drive'; i++) {
       document.body.classList.add('driving');
       paceNote();
       const n = T.notes[G.noteIdx];
-      const txt = document.getElementById('noteDist').textContent;
-      const ya = el.classList.contains('on') && el.classList.contains('brake');
       const a = aiInput(C, T, G.prof);
-      // al pasar el punto más lento de la curva, anota la velocidad
-      if (n && mark !== G.noteIdx && C.s >= n.sm && n.sm > n.s - 6) { mark = G.noteIdx; if (n.vc < C.f + 30 && n.lvl >= 4) res.push({ lvl: n.lvl, vc: Math.round(n.vc * 3.6), v: Math.round(C.f * 3.6) }); }
-      const brk = ya ? 1 : 0;
-      const on = el.classList.contains('on');
-      const thr = brk ? 0 : on && txt.startsWith('Suelta') ? 0 : on && txt.startsWith('¡Dobla') ? (C.f < G.prof[Math.min(T.n - 1, Math.round(C.s) + 3)] - 0.5 ? 1 : 0) : 1;
+      if (n && mark !== G.noteIdx && C.s >= n.sm && n.sm > n.s - 6) { mark = G.noteIdx; if (n.lvl >= 4) res.push({ lvl: n.lvl, vc: Math.round(n.vc * 3.6), v: Math.round(C.f * 3.6) }); }
+      let thr = 1, brk = 0;
+      if (cue) { if (C.f > cue.vc + 0.3) { brk = 1; thr = 0; } else { hold = cue; cue = null; } }
+      if (!cue && hold) { if (C.s > hold.sx) hold = null; else thr = C.f < hold.vc - 0.3 ? 1 : 0; }
       inp.steer += Math.max(-dt * 5, Math.min(dt * 5, a.steer - inp.steer));
       inp.brk = brk; inp.thr = thr;
       stepCar(C, { thr, brk, steer: inp.steer }, T, G.st, dt, onCarEvent);
       C.steer = inp.steer;
       if (C.s >= T.n - 45) { G.mode = 'finish'; break; }
     }
-    const nn = T.notes[G.noteIdx]; return { dbg: { d: +C.d.toFixed(2), hw: T.hw, slide: +C.slide.toFixed(2), steer: +inp.steer.toFixed(2), lvl: nn && nn.lvl, R: nn && T.curves[G.noteIdx].R.toFixed(0), lo: +T.lo[Math.round(C.s)].toFixed(2) }, mode: G.mode, res, hits: C.hits, s: Math.round(C.s), n: T.n, v: Math.round(C.f * 3.6), txt: document.getElementById('noteDist').textContent, on: el.className };
+    window.showCue = orig;
+    return { mode: G.mode, res, hits: C.hits, cues, s: Math.round(C.s), n: T.n };
   }, id);
   const errs = r.res.map(x => x.v - x.vc);
   const worst = Math.max(...errs.map(Math.abs));
   const ok = r.mode === 'finish' && worst <= 12;
   if (!ok) fails++;
-  console.log(`${ok ? 'ok   ' : 'FALLA'} montaña ${id}: ${r.mode} ${r.s}/${r.n} ${r.v}km/h ${r.txt} ${r.on}, ${r.res.length} curvas cerradas, diferencia con la velocidad justa: ${errs.join(' ')} km/h (peor ${worst}), choques ${r.hits} ${JSON.stringify(r.dbg)}`);
+  console.log(`${ok ? 'ok   ' : 'FALLA'} montaña ${id}: ${r.mode} ${r.s}/${r.n}, ${r.cues} avisos de FRENA, ${r.res.length} curvas cerradas, diferencia con la velocidad justa: ${errs.join(' ')} km/h (peor ${worst}), choques ${r.hits}`);
 }
 console.log(errors.length ? 'ERRORES ' + errors.join(' | ') : 'sin errores');
 await browser.close(); server.close();

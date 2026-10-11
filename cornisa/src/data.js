@@ -160,7 +160,7 @@ function newSave() {
     lv: {},            // id → { stars: [b, b, b], best: segundos, done }
     ach: {}, beat: false,
     stats: { runs: 0, falls: 0, wins: 0, coins: 0, top: 0, km: 0, free: 0 },
-    opt: { sound: true, vol: 0.8, cam: 'cabina', quality: 'alta', sens: 1, line: true, copi: true },
+    opt: { sound: true, vol: 0.8, cam: 'cabina', quality: 'alta', sens: 1, line: 'simple', copi: true },
   };
 }
 let save = (() => {
@@ -168,7 +168,8 @@ let save = (() => {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) {
       const d = newSave();
-      return Object.assign(d, s, { upg: Object.assign(d.upg, s.upg), stats: Object.assign(d.stats, s.stats), opt: Object.assign(d.opt, s.opt) });
+      const o = Object.assign(d.opt, s.opt); if (typeof o.line === 'boolean') o.line = o.line ? 'simple' : 'no';
+      return Object.assign(d, s, { upg: Object.assign(d.upg, s.upg), stats: Object.assign(d.stats, s.stats), opt: o });
     }
   } catch (e) { /* guardado roto o sin acceso: se empieza de cero */ }
   return newSave();

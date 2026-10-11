@@ -55,7 +55,8 @@ function resizeWorld() {
   W.renderer.setSize(w, h, false);
   W.camera.aspect = w / h;
   // en vertical (celular) se abre más el ángulo para ver la carretera
-  W.camera.fov = w < h ? 92 : 68;
+  W.baseFov = w < h ? 92 : 68;
+  W.camera.fov = W.baseFov;
   W.camera.updateProjectionMatrix();
 }
 
@@ -535,26 +536,57 @@ function updateWorld(t, dt) {
 // ---------- efectos: chispas, humo, polvo y piezas que salen volando ----------
 const FX = { sparks: null, smoke: [], debris: [], emit: [] };
 function fxInit() {
-  const n = 500, pos = new Float32Array(n * 3);
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const n = 900, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   g.setDrawRange(0, 0);
-  FX.sparks = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffc860, size: 0.12, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  FX.sparks = new THREE.Points(g, new THREE.PointsMaterial({ vertexColors: true, size: 0.22, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  FX.flash = new THREE.PointLight(0xffa040, 0, 60, 1.6);
+  W.scene.add(FX.flash);
   FX.sparks.frustumCulled = false;
   FX.sp = [];
   W.scene.add(FX.sparks);
   FX.smokeTex = canvasTex(64, 64, (g, w) => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 31); r.addColorStop(0, 'rgba(255,255,255,0.9)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, w); });
 }
 function fxClear() {
+  if (FX.flash) FX.flash.intensity = 0;
   for (const p of FX.smoke) W.scene.remove(p.m);
   for (const d of FX.debris) W.scene.remove(d.m);
   FX.smoke = []; FX.debris = []; FX.sp = []; FX.emit = [];
 }
-function fxSparks(x, y, z, n, spd = 6) {
-  for (let i = 0; i < n && FX.sp.length < 500; i++) FX.sp.push({ x, y, z, vx: (Math.random() - 0.5) * spd, vy: Math.random() * spd * 0.7, vz: (Math.random() - 0.5) * spd, life: 0.3 + Math.random() * 0.5 });
+function fxSparks(x, y, z, n, spd = 6, color = 0xffc860, life = 0.5, grav = 9.8) {
+  const c = new THREE.Color(color);
+  for (let i = 0; i < n && FX.sp.length < 900; i++) {
+    // dirección al azar dentro de una esfera
+    const u = Math.random() * 2 - 1, a = Math.random() * 6.283, r = Math.sqrt(1 - u * u), k = spd * (0.5 + Math.random() * 0.5);
+    FX.sp.push({ x, y, z, vx: Math.cos(a) * r * k, vy: Math.abs(u) * k * 0.8 + (grav > 5 ? 0 : u * k * 0.4), vz: Math.sin(a) * r * k, life: life * (0.6 + Math.random() * 0.8), r: c.r, g: c.g, b: c.b, grav });
+  }
+}
+// Llamas: manchas que suben y pasan de amarillo a rojo.
+function fxFire(x, y, z, n, size = 1.2, life = 0.7) {
+  for (let i = 0; i < n; i++) {
+    if (FX.smoke.length > 140) { const o = FX.smoke.shift(); W.scene.remove(o.m); o.m.material.dispose(); }
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.smokeTex, color: 0xffa040, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending }));
+    m.position.set(x + (Math.random() - 0.5) * size, y + Math.random() * 0.3, z + (Math.random() - 0.5) * size);
+    m.scale.setScalar(size * (0.5 + Math.random() * 0.6));
+    W.scene.add(m);
+    FX.smoke.push({ m, life: life * (0.7 + Math.random() * 0.6), t: 0, vy: 1.5 + Math.random() * 2, vx: (Math.random() - 0.5) * 0.8, vz: (Math.random() - 0.5) * 0.8, grow: size * 0.6, fire: true });
+  }
+}
+// Explosión: destello de luz, bola de fuego, chispas y humo negro.
+function fxExplosion(x, y, z, s = 1) {
+  FX.flash.position.set(x, y + 1.5, z); FX.flash.intensity = 220 * s; FX.flashT = 1;
+  fxFire(x, y + 0.5, z, Math.round(16 * s), 2.2 * s, 1.0);
+  fxSparks(x, y + 0.8, z, Math.round(160 * s), 14 * s, 0xffb040, 0.9);
+  setTimeout(() => fxSmoke(x, y + 2, z, Math.round(12 * s), 0x1e1a18, 4 * s, 5), 250);
+}
+// Fuegos artificiales en la meta.
+function fxFirework(x, y, z) {
+  const cols = [0xff4d6d, 0x4dd2ff, 0xffd23f, 0x7dff8a, 0xc77dff, 0xffffff];
+  fxSparks(x, y, z, 110, 11, cols[Math.floor(Math.random() * cols.length)], 1.5, 2.5);
 }
 function fxSmoke(x, y, z, n, col = 0x555555, size = 1.6, life = 2.5) {
   for (let i = 0; i < n; i++) {
-    if (FX.smoke.length > 90) { const o = FX.smoke.shift(); W.scene.remove(o.m); o.m.material.dispose(); }
+    if (FX.smoke.length > 140) { const o = FX.smoke.shift(); W.scene.remove(o.m); o.m.material.dispose(); }
     const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.smokeTex, color: col, transparent: true, opacity: 0.7, depthWrite: false }));
     m.position.set(x + (Math.random() - 0.5), y + Math.random() * 0.5, z + (Math.random() - 0.5));
     m.scale.setScalar(size * (0.6 + Math.random() * 0.6));
@@ -587,15 +619,26 @@ function groundAt(x, z, hint) {
 function fxUpdate(dt) {
   if (!FX.sparks) return;
   const pos = FX.sparks.geometry.attributes.position.array;
+  const col = FX.sparks.geometry.attributes.color.array;
   FX.sp = FX.sp.filter(p => (p.life -= dt) > 0);
-  FX.sp.forEach((p, i) => { p.vy -= 9.8 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z; });
+  FX.sp.forEach((p, i) => {
+    p.vy -= p.grav * dt; p.vx *= 1 - dt * 0.8; p.vz *= 1 - dt * 0.8;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+    pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z;
+    const f = Math.min(1, p.life * 3);
+    col[i * 3] = p.r * f; col[i * 3 + 1] = p.g * f; col[i * 3 + 2] = p.b * f;
+  });
+  FX.sparks.geometry.attributes.color.needsUpdate = true;
+  if (FX.flashT > 0) { FX.flashT = Math.max(0, FX.flashT - dt * 2.2); FX.flash.intensity *= Math.pow(0.02, dt); if (!FX.flashT) FX.flash.intensity = 0; }
   FX.sparks.geometry.setDrawRange(0, FX.sp.length);
   FX.sparks.geometry.attributes.position.needsUpdate = true;
   for (const p of FX.smoke) {
     p.t += dt;
     p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt;
     p.m.scale.addScalar(p.grow * dt);
-    p.m.material.opacity = Math.max(0, 0.7 * (1 - p.t / p.life));
+    const k = p.t / p.life;
+    if (p.fire) { p.m.material.color.setHSL(0.11 * (1 - k), 1, 0.5 - k * 0.25); p.m.material.opacity = Math.max(0, 0.7 * (1 - k)); }
+    else p.m.material.opacity = Math.max(0, 0.7 * (1 - k));
   }
   FX.smoke = FX.smoke.filter(p => { if (p.t < p.life) return true; W.scene.remove(p.m); p.m.material.dispose(); return false; });
   for (const d of FX.debris) {
@@ -613,7 +656,7 @@ function fxUpdate(dt) {
     }
   }
   // humo que sigue saliendo de algo (el carro destrozado)
-  for (const e of FX.emit) { e.acc = (e.acc || 0) + dt; if (e.acc > e.every) { e.acc = 0; const p = e.at(); fxSmoke(p.x, p.y, p.z, 1, e.col, e.size, 3); } }
+  for (const e of FX.emit) { e.acc = (e.acc || 0) + dt; if (e.acc > e.every) { e.acc = 0; const p = e.at(); if (e.fire) fxFire(p.x, p.y, p.z, 2, e.size, 0.6); else fxSmoke(p.x, p.y, p.z, 1, e.col, e.size, 3); } }
 }
 
 // La baranda se rompe donde pasó el carro: se esconde ese tramo y salen pedazos volando.
@@ -659,10 +702,10 @@ function lineMesh(T) {
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
-    uniforms: { uS: { value: 0 }, uV: { value: 0 }, uOn: { value: 1 } },
+    uniforms: { uS: { value: 0 }, uV: { value: 0 }, uOn: { value: 1 }, uCol: { value: 0 } },
     vertexShader: 'attribute float ss; attribute float vs; varying float vS; varying float vV; varying vec2 vUv;' +
       'void main(){ vS = ss; vV = vs; vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: 'uniform float uS; uniform float uV; uniform float uOn; varying float vS; varying float vV; varying vec2 vUv;' +
+    fragmentShader: 'uniform float uS; uniform float uV; uniform float uOn; uniform float uCol; varying float vS; varying float vV; varying vec2 vUv;' +
       'void main(){ float ahead = vS - uS;' +
       'float a = smoothstep(4.0, 9.0, ahead) * (1.0 - smoothstep(120.0, 170.0, ahead)) * uOn;' +
       'float t = fract(vS / 2.2 - abs(vUv.x - 0.5) * 1.1);' +
@@ -670,6 +713,7 @@ function lineMesh(T) {
       'float over = uV - vV;' +
       'vec3 c = mix(vec3(0.15, 0.95, 0.35), vec3(1.0, 0.85, 0.1), smoothstep(-2.0, 1.0, over));' +
       'c = mix(c, vec3(1.0, 0.15, 0.1), smoothstep(1.5, 5.0, over));' +
+      'c = mix(vec3(0.75, 0.92, 1.0), c, uCol);' +
       'if (a < 0.01) discard; gl_FragColor = vec4(c, a * 0.85); }',
   });
   const mesh = new THREE.Mesh(g, mat);
@@ -677,6 +721,14 @@ function lineMesh(T) {
   mesh.renderOrder = 2;
   W.line = mesh;
   return mesh;
+}
+// Opción de la línea: 'simple' (sólo el camino), 'color' (verde/amarillo/rojo) o 'no'.
+function applyLineOpt() {
+  if (!W.line) return;
+  let o = save.opt.line;
+  if (o === true || o === undefined) o = 'simple'; if (o === false) o = 'no';
+  W.line.material.uniforms.uOn.value = o === 'no' ? 0 : o === 'simple' ? 0.55 : 1;
+  W.line.material.uniforms.uCol.value = o === 'color' ? 1 : 0;
 }
 // Pone en la línea la velocidad recomendada (depende de las mejoras del carro).
 function setLineSpeeds(v) {

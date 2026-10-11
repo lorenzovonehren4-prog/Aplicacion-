@@ -18,7 +18,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 page.setDefaultTimeout(120000);
 await page.goto(`http://localhost:${server.address().port}/index.html`);
 await page.waitForFunction(() => document.body.classList.contains('ready'));
-await page.addStyleTag({ content: '.screen,#toast,#count,.warn{display:none!important}' });
+await page.addStyleTag({ content: '.screen,#toast,#count,.warn,#nav,.cue{display:none!important}' });
 // Coloca el carro en un tramo con abismo y fija la cámara.
 const pose = (lvId, cam, fr) => page.evaluate(([lvId, cam, fr]) => {
   const L = LEVELS.find(l => l.id === lvId);

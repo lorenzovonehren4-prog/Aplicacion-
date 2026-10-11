@@ -214,8 +214,10 @@ const gameHref = g => '#juego-' + g.id;
 function tileHTML(g, size = '') {
   const p = prog(g.id), fav = P.favs.includes(g.id);
   const sub = p ? p.label : g.tagline;
-  return `<a class="tile ${size}" href="${gameHref(g)}" data-tile="${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="Jugar ${esc(g.title)}">
-    <span class="tile__art"><img class="tile__img" src="${g.cover}" alt="" loading="lazy" decoding="async"><img class="tile__alt" src="${g.alt}" alt="" loading="lazy" decoding="async"></span>
+  // la ficha grande usa la carátula (ya trae el nombre escrito)
+  const box = size === 'tile--w3' && g.box;
+  return `<a class="tile ${size} ${box ? 'has-box' : ''}" href="${gameHref(g)}" data-tile="${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="Jugar ${esc(g.title)}">
+    <span class="tile__art"><img class="tile__img" src="${box ? g.box : g.cover}" alt="" loading="lazy" decoding="async"><img class="tile__alt" src="${g.alt}" alt="" loading="lazy" decoding="async"></span>
     ${g.badge ? `<span class="tile__badge">${g.badge}</span>` : ''}
     ${fav ? `<span class="tile__fav">${ic('heart')}</span>` : ''}
     <span class="tile__play">${ic('play')}</span>
@@ -264,7 +266,7 @@ function renderDash() {
         ${GAMES.map((g, i) => {
           const p = prog(g.id), fav = P.favs.includes(g.id);
           return `<button class="gcard" type="button" role="option" data-sel="${i}" id="card-${g.id}" style="--c:${g.color};--c2:${g.color2}" aria-label="${esc(g.title)}" tabindex="-1">
-            <img src="${g.cover}" alt="" ${i > 4 ? 'loading="lazy"' : ''} decoding="async">
+            <img src="${g.box || g.cover}" alt="" ${i > 4 ? 'loading="lazy"' : ''} decoding="async"><span class="gcard__shine"></span>
             ${g.badge ? `<span class="gcard__badge">${g.badge}</span>` : ''}
             ${fav ? `<span class="gcard__fav">${ic('heart')}</span>` : ''}
             ${p && p.pct ? `<span class="gcard__prog"><i style="width:${Math.max(4, Math.round(p.pct * 100))}%"></i></span>` : ''}

@@ -258,17 +258,14 @@ body.touch.driving #touch{ display:flex; }
 .confetti i{ position:absolute; top:-20px; width:10px; height:16px; animation:conf linear forwards; }
 @keyframes conf{ to{ transform:translateY(110vh) rotate(720deg); } }
 
-.note{ position:fixed; left:50%; top:120px; transform:translate(-50%,-10px); display:flex; align-items:center; gap:12px; padding:8px 18px 8px 10px; border-radius:16px; background:rgba(10,12,18,.72); border:2px solid rgba(255,255,255,.15); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; z-index:6; color:#fff; }
-.note.on{ opacity:1; transform:translate(-50%,0); }
-.note svg{ width:54px; height:54px; color:#1ec8ff; flex:none; }
-.note b{ display:block; font-family:Fredoka; font-size:clamp(18px,3vw,26px); white-space:nowrap; }
-.note small{ display:block; font-weight:800; font-size:15px; color:#9fe8ff; }
-.note.brake{ border-color:#ff4d4d; background:rgba(150,10,10,.88); transform:translate(-50%,0) scale(1.12); }
-.note.brake small{ color:#fff !important; font-size:20px; }
-.note.prep{ border-color:#ffb020; } .note.prep small{ color:#ffd27a; }
-.note .nbar{ display:block; height:5px; margin-top:4px; border-radius:3px; background:rgba(255,255,255,.12); overflow:hidden; }
-.note .nbar i{ display:block; height:100%; background:linear-gradient(90deg,#ff4d4d,#ffb020); transform-origin:left; transform:scaleX(0); }
-.note.brake svg{ color:#ff5a4a; } .note.brake small{ color:#ffb0a0; animation:blink .4s infinite; }
+.cue{ position:fixed; left:50%; top:184px; display:flex; align-items:center; gap:6px; padding:5px 12px 5px 6px; border-radius:999px; background:rgba(10,12,18,.62); border:1px solid rgba(255,255,255,.18); color:#fff; pointer-events:none; z-index:6; opacity:0; transform:translate(-50%,-6px) scale(.9); transition:opacity .25s, transform .25s; }
+.cue.on{ opacity:1; transform:translate(-50%,0) scale(1); }
+.cue svg{ width:26px; height:26px; color:#9fe8ff; }
+.cue b{ font-family:Fredoka; font-size:16px; letter-spacing:.4px; white-space:nowrap; }
+.cue.brake{ background:rgba(200,20,20,.85); border-color:#ff8a7a; }
+.cue.brake svg{ color:#fff; } .cue.brake b{ letter-spacing:2px; }
+.cue.brake.on{ animation:cuepop .35s cubic-bezier(.2,1.8,.4,1); }
+@keyframes cuepop{ from{ transform:translate(-50%,0) scale(1.5); } }
 #nav{ position:fixed; left:14px; bottom:14px; width:200px; height:200px; z-index:5; display:none; pointer-events:none; filter:drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
 body.driving #nav{ display:block; }
 body.touch #nav{ width:120px; height:120px; left:auto; right:12px; bottom:auto; top:150px; }
@@ -286,11 +283,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
   .levels{ grid-template-columns:1fr; }
   .hp{ width:100px; }
   .prog{ width:92%; margin-top:14px; }
-  .note{ left:12px; top:184px; transform:none; padding:6px 12px 6px 6px; gap:8px; max-width:calc(100% - 156px); }
-  .note.on{ transform:none; }
-  .note svg{ width:38px; height:38px; }
-  .note b{ font-size:15px; white-space:normal; }
-  .note small{ font-size:13px; }
+  .cue{ top:206px; }
   .hud-l .time{ font-size:22px; }
   #touch button{ width:66px; height:66px; }
 }
@@ -388,7 +381,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
   <div class="speed-big"><b id="hSpd">0</b><small>km/h</small></div>
 </section>
 <div class="warn" id="warn">¡ABISMO!</div>
-<div class="note" id="note"><svg id="noteIco" viewBox="0 0 100 100" aria-hidden="true"></svg><div><b id="noteTxt"></b><small id="noteDist"></small><i class="nbar"><i id="noteBar"></i></i></div></div>
+<div class="cue" id="cue"><svg id="cueIco" viewBox="0 0 100 100" aria-hidden="true"></svg><b id="cueTxt"></b></div>
 <canvas id="nav" width="200" height="200" aria-hidden="true"></canvas>
 <div id="crack" aria-hidden="true"></div>
 <div id="count"></div>
