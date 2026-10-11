@@ -314,6 +314,13 @@ function step(dt) {
   W.sun.position.set(focus.x + W.sunDir.x * 150, W.sunDir.y * 150, focus.z + W.sunDir.z * 150);
   W.sun.target.position.set(focus.x, 0, focus.z);
   W.sky.position.copy(_cam); W.stars.position.copy(_cam);
+  if (G.mode !== 'pause' && !G.garage) updatePeds(dt, _cam);
+  // desenfoque de velocidad (a fondo y con nitro)
+  if (POST.on && POST.mats.final) {
+    const P = G.player && G.mode === 'play' ? G.player.body : null;
+    const sp = P ? clamp((Math.abs(P.f) / P.spec.top - 0.55) * 0.06, 0, 0.022) + (P.boost ? 0.02 : 0) : 0;
+    const u = POST.mats.final.uniforms.speed; u.value += (sp - u.value) * Math.min(1, dt * 4);
+  }
   if (G.head && G.player) { const b = G.player.body; G.head.position.set(b.x + Math.sin(b.h) * 2, b.y + 1, b.z + Math.cos(b.h) * 2); G.head.target.position.set(b.x + Math.sin(b.h) * 25, b.y - 1, b.z + Math.cos(b.h) * 25); }
   (G.copLights || []).forEach((l, i) => { const c = G.cops.filter(x => !x.player)[i]; if (!c) { l.intensity = 0; return; } l.position.set(c.body.x, c.body.y + 2.5, c.body.z); l.color.set(Math.floor(W.t * 8) % 2 ? 0xff2030 : 0x2050ff); l.intensity = c.body.dead ? 0 : 40; });
   // sonido
@@ -339,6 +346,7 @@ function boot() {
 }
 function boot2() {
   initWorld($('#gl'));
+  initPeds();
   resizeWorld();
   window.addEventListener('resize', resizeWorld);
   G.mode = 'menu';

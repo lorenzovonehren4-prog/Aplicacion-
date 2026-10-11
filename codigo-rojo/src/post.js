@@ -37,7 +37,7 @@ function initPost() {
   POST.mats.copy = sm(`uniform sampler2D tSrc; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(tSrc, vUv).rgb, 1.0); }`, { tSrc: { value: null } });
   POST.mats.final = sm(`
     uniform sampler2D tScene; uniform sampler2D tB1; uniform sampler2D tB2; uniform sampler2D tB3;
-    uniform float bloom; uniform float exposure; uniform float vignette; uniform float sat; uniform vec3 tint;
+    uniform float bloom; uniform float exposure; uniform float vignette; uniform float sat; uniform vec3 tint; uniform float speed;
     varying vec2 vUv;
     vec3 RRTAndODTFit(vec3 v){ vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
     vec3 aces(vec3 color){
@@ -47,7 +47,15 @@ function initPost() {
     }
     vec3 toSRGB(vec3 c){ return mix(pow(c, vec3(1.0 / 2.4)) * 1.055 - 0.055, c * 12.92, vec3(lessThanEqual(c, vec3(0.0031308)))); }
     void main(){
-      vec3 c = texture2D(tScene, vUv).rgb;
+      vec2 dc = vUv - 0.5;
+      vec3 c;
+      if (speed > 0.001) {
+        // desenfoque radial: el centro queda nítido y los bordes se estiran
+        c = vec3(0.0);
+        float w = smoothstep(0.12, 0.5, length(dc));
+        for (int i = 0; i < 8; i++) { float k = float(i) / 7.0; c += texture2D(tScene, vUv - dc * k * speed * w).rgb; }
+        c /= 8.0;
+      } else c = texture2D(tScene, vUv).rgb;
       vec3 b = texture2D(tB1, vUv).rgb * 0.6 + texture2D(tB2, vUv).rgb * 0.8 + texture2D(tB3, vUv).rgb * 1.0;
       c += b * bloom;
       c = aces(c * tint);
@@ -57,7 +65,7 @@ function initPost() {
       gl_FragColor = vec4(toSRGB(c), 1.0);
     }`, {
     tScene: { value: null }, tB1: { value: null }, tB2: { value: null }, tB3: { value: null },
-    bloom: { value: POST.bloom }, exposure: { value: 1 }, vignette: { value: 0.28 }, sat: { value: 1.08 }, tint: { value: new THREE.Vector3(1, 1, 1) },
+    bloom: { value: POST.bloom }, exposure: { value: 1 }, vignette: { value: 0.28 }, sat: { value: 1.08 }, tint: { value: new THREE.Vector3(1, 1, 1) }, speed: { value: 0 },
   });
   resizePost();
 }

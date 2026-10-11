@@ -15,6 +15,7 @@ Persecuciones en un barrio 3D (siempre el mismo, semilla fija), cerrado por pare
 - **Más**: nitro (se recarga solo y más rápido derrapando o en el aire) con llama azul; marcas de llantas en el piso (`fxSkid`), humo de llantas, humo y fuego del motor dañado (`fxFire`); cabina por dentro con tablero, relojes dibujados en vivo, pantalla con mapa, volante, asientos y espejos (la carrocería se recorta detrás del parabrisas con un plano de recorte); cámara de atrás que no atraviesa casas (`camClip`); cerros con relieve y la ciudad a lo lejos con ventanas que se prenden de noche; garaje en una vitrina aparte (`src/showroom.js`); resultados con 3 estrellas (meta, motor sano, y no dejarse acorralar o atraparlo rápido), guardadas por misión en `save.stars`.
 - **IA**: frenar parado con `stop` no mete reversa (antes los patrulleros esperando y el tráfico en rojo iban para atrás); da la vuelta en tres movimientos cuando el objetivo quedó atrás y retrocede si no avanza en 3 s.
 - **Interfaz**: menú tipo consola (rango, misión destacada, atajos), velocímetro circular con marcha y vida, anillo del tiempo, porcentaje de arresto y pantalla de carga con consejos.
+- **Vida en la calle** (`src/peds.js`, personas de `src/people.js` copiadas de Último Disparo en versión liviana): peatones que dan la vuelta a la manzana por la vereda cerca de la cámara y saltan a un lado cuando viene un carro (nadie sale herido). Árboles de 3 tipos con copa de varias bolas, cancha con franjas y líneas, manos con guantes y brazos en el volante de la cabina, y desenfoque de velocidad a fondo y con nitro.
 - Guardado en `localStorage` (`codigorojo_v1`). El portal lee misiones, fugas y arrestos.
 
 ## Cómo correrlo
@@ -23,7 +24,7 @@ Abrir `index.html` (scripts clásicos, también con `file://`). three.js r160 en
 
 Controles: ↑/W acelerar, ↓/S frenar y reversa, ←→/A D girar, Espacio freno de mano, Shift/N nitro, C cámara, H bocina, R volver a la calle, P/Esc pausa. En pantallas táctiles salen botones.
 
-Orden de carga: `data.js` → `city.js` → `world.js` → `post.js` → `car.js` → `ai.js` → `audio.js` → `showroom.js` → `game.js` → `ui.js`.
+Orden de carga: `data.js` → `city.js` → `world.js` → `post.js` → `car.js` → `people.js` → `peds.js` → `ai.js` → `audio.js` → `showroom.js` → `game.js` → `ui.js`.
 
 ## Pruebas
 

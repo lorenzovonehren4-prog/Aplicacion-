@@ -297,6 +297,22 @@ function makeCockpit(car) {
   const mark = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.03), new THREE.MeshBasicMaterial({ color: 0xff3b3b })); mark.position.set(0, 0.185, 0); steer.add(mark);
   wheelG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.36, 10).rotateX(Math.PI / 2).translate(0, 0, 0.2), soft));
   ck.add(wheelG);
+  // manos con guantes en el volante (a las 10 y 2) y brazos desde los hombros
+  const glove = new THREE.MeshStandardMaterial({ color: 0x1b1c1f, roughness: 0.7 });
+  const sleeve = new THREE.MeshStandardMaterial({ color: 0x2d3a52, roughness: 0.85 });
+  const hands = [];
+  for (const sd of [-1, 1]) {
+    const h = new THREE.Group(); const a = Math.PI / 2 + sd * 1.0;
+    h.position.set(Math.cos(a) * 0.185, Math.sin(a) * 0.185, 0.012); h.rotation.z = a - Math.PI / 2;
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), glove); palm.scale.set(1.15, 0.85, 0.75); h.add(palm);
+    for (let f = 0; f < 4; f++) { const fg = new THREE.Mesh(new THREE.CapsuleGeometry(0.011, 0.03, 3, 6), glove); fg.position.set(-0.027 + f * 0.018, -0.02, 0.03); fg.rotation.x = 1.2; h.add(fg); }
+    const th = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.03, 3, 6), glove); th.position.set(-sd * 0.035, 0.015, 0.02); th.rotation.z = sd * 0.9; h.add(th);
+    steer.add(h);
+    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.04, 1, 12), sleeve), upper = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.038, 1, 12), sleeve);
+    ck.add(fore, upper);
+    hands.push({ h, fore, upper, sd, shoulder: new THREE.Vector3(dx - sd * 0.21, eye.y - 0.34, eye.z - 0.06) });
+  }
+  car.hands = hands;
   // parantes del parabrisas, parante del medio, techo y espejo
   const pil = new THREE.MeshStandardMaterial({ color: 0x2b2d32, roughness: 0.85 });
   for (const sd of [-1, 1]) {
@@ -374,6 +390,17 @@ function poseCockpit(car, s) {
   if (!car.cockpit || !car.cockpit.visible) return;
   updateCockpitClip(car);
   car.steerWheel.rotation.z = s.steer * 2.4;
+  // brazos: del hombro al codo (afuera y abajo) y del codo a la mano que sigue al volante
+  if (car.hands) {
+    const ck = car.cockpit, hp = new THREE.Vector3(), el = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+    ck.updateMatrixWorld();
+    const place = (m, a, b) => { const d = b.clone().sub(a); m.position.copy(a).addScaledVector(d, 0.5); m.scale.set(1, d.length(), 1); m.quaternion.setFromUnitVectors(up, d.normalize()); };
+    for (const H of car.hands) {
+      H.h.getWorldPosition(hp); ck.worldToLocal(hp);
+      el.copy(H.shoulder).lerp(hp, 0.5); el.x -= H.sd * 0.1; el.y -= 0.14;
+      place(H.upper, H.shoulder, el); place(H.fore, el, hp);
+    }
+  }
   car.dashT = (car.dashT || 0) + 1;
   if (car.dashT % 2 === 0) drawDash(car, s);
   if (car.dashT % 6 === 0) drawNav(car, s);

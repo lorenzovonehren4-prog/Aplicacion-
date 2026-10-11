@@ -539,7 +539,8 @@ function buildSpecial(G) {
       parts.push({ ...boxAt(X1 - X0 - 4, 9, 20, l.x, 4.5, Z1 - 12), c: 0xe0b070 }, { ...boxAt(X1 - X0 - 3.6, 0.5, 20.4, l.x, 9.25, Z1 - 12), c: 0x7a3a2a });
       for (let x = X0 + 6; x < X1 - 4; x += 5) for (const y of [2.5, 6.5]) parts.push({ ...boxAt(2.4, 1.6, 0.1, x, y, Z1 - 22.06), c: 0x8fb6cf });
       // cancha de fútbol
-      parts.push({ ...boxAt(48, 0.05, 30, l.x, 0.03, Z0 + 20), c: 0x3f9a4a }, { ...boxAt(48, 0.06, 0.25, l.x, 0.04, Z0 + 20), c: 0xffffff });
+      const pitch = new THREE.Mesh(new THREE.PlaneGeometry(48, 30).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: pitchTex(), roughness: 0.95 }));
+      pitch.position.set(l.x, 0.05, Z0 + 20); pitch.receiveShadow = true; G.add(pitch);
       for (const gx of [l.x - 24, l.x + 24]) parts.push({ ...boxAt(0.2, 2.4, 7, gx, 1.2, Z0 + 20), c: 0xffffff });
       const s = new THREE.Mesh(new THREE.PlaneGeometry(14, 2.4), new THREE.MeshBasicMaterial({ map: signTex('COLEGIO N.º 7', '#1e4f8f', '#fff') }));
       s.position.set(l.x, 7.6, Z1 - 22.1); s.rotation.y = Math.PI; G.add(s);
@@ -549,15 +550,55 @@ function buildSpecial(G) {
   m.castShadow = true; m.receiveShadow = true; G.add(m);
 }
 
+// Cancha con franjas de pasto y líneas pintadas.
+function pitchTex() {
+  return canvasTex(512, 320, (g, w, h) => {
+    for (let i = 0; i < 12; i++) { g.fillStyle = i % 2 ? '#3d8c3e' : '#469a45'; g.fillRect(i * w / 12, 0, w / 12 + 1, h); }
+    for (let i = 0; i < 3000; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255' : '0,0,0'},${Math.random() * 0.06})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 4;
+    g.strokeRect(10, 10, w - 20, h - 20); g.beginPath(); g.moveTo(w / 2, 10); g.lineTo(w / 2, h - 10); g.stroke();
+    g.beginPath(); g.arc(w / 2, h / 2, 44, 0, Math.PI * 2); g.stroke();
+    for (const x of [10, w - 10]) { const s = x < w / 2 ? 1 : -1; g.strokeRect(Math.min(x, x + s * 80), h / 2 - 80, 80, 160); g.strokeRect(Math.min(x, x + s * 30), h / 2 - 40, 30, 80); }
+  }, false);
+}
+
+// Árboles: 3 tipos (frondoso, alto y pino), cada uno con tronco, ramas y copa de varias bolas
+// en tonos de verde; se dibujan con instancias (una llamada por tipo).
+function treeGeo(kind) {
+  const parts = [], bark = 0x5b4330;
+  const R = (() => { let a = kind.length * 977; return () => { a = (a * 16807) % 2147483647; return a / 2147483647; }; })();
+  const P = (geo, x, y, z, c, sx = 1, sy = 1, sz = 1, rx = 0, rz = 0) => parts.push({ geo, m: M4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, 0, rz)), new THREE.Vector3(sx, sy, sz)), c });
+  const leaf = new THREE.IcosahedronGeometry(1, 2), lp = leaf.attributes.position;
+  for (let k = 0; k < lp.count; k++) { const f = 1 + (Math.sin(lp.getX(k) * 7.1) + Math.cos(lp.getZ(k) * 6.3) + Math.sin(lp.getY(k) * 5.7)) * 0.06; lp.setXYZ(k, lp.getX(k) * f, lp.getY(k) * f, lp.getZ(k) * f); }
+  const trunk = new THREE.CylinderGeometry(0.6, 1, 1, 8), cone = new THREE.ConeGeometry(1, 1, 10);
+  const greens = kind === 'pine' ? [0x2f5a2c, 0x35663a, 0x284f2a] : [0x3f7a2e, 0x4b8a34, 0x356b28, 0x5a9a3c, 0x447f30];
+  if (kind === 'pine') {
+    P(trunk, 0, 1, 0, bark, 0.2, 2, 0.2);
+    for (let k = 0; k < 4; k++) P(cone, 0, 2.3 + k * 1.15, 0, greens[k % 3], 2 - k * 0.4, 2.1, 2 - k * 0.4);
+  } else {
+    const th = kind === 'tall' ? 4 : 2.5;
+    P(trunk, 0, th / 2, 0, bark, 0.17, th, 0.17);
+    for (let k = 0; k < 3; k++) { const a = k * 2.1 + R(); P(trunk, Math.cos(a) * 0.35, th - 0.2, Math.sin(a) * 0.35, bark, 0.06, 1.1, 0.06, Math.sin(a) * 0.7, -Math.cos(a) * 0.7); }
+    const n = kind === 'tall' ? 5 : 7;
+    for (let k = 0; k < n; k++) {
+      const a = k / n * Math.PI * 2 + R(), r = k === 0 ? 0 : 0.7 + R() * 0.5, sz = (k === 0 ? 1.6 : 1.05 + R() * 0.4) * (kind === 'tall' ? 0.8 : 1);
+      P(leaf, Math.cos(a) * r, th + 0.9 + (k === 0 ? 0.6 : R() * 0.9), Math.sin(a) * r, greens[Math.floor(R() * greens.length)], sz, sz * 0.9, sz);
+    }
+  }
+  return mergeGeos(parts);
+}
 function buildTrees(G) {
-  const parts = [{ geo: new THREE.CylinderGeometry(0.18, 0.26, 2.4, 6).translate(0, 1.2, 0), c: 0x5a3c26 },
-    { geo: new THREE.IcosahedronGeometry(1.9, 0).translate(0, 3.6, 0), c: 0x3f7a34 }, { geo: new THREE.IcosahedronGeometry(1.3, 0).translate(0.6, 4.6, 0.3), c: 0x4c8a3c }];
-  const geo = mergeGeos(parts);
-  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }), CITY.trees.length);
-  const mtx = M4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3(), e = new THREE.Euler();
-  CITY.trees.forEach((t, i) => { e.set(0, t.x * 13 % 6, 0); q.setFromEuler(e); mtx.compose(v.set(t.x, 0, t.z), q, s.setScalar(t.s)); mesh.setMatrixAt(i, mtx); });
-  mesh.castShadow = true;
-  G.add(mesh);
+  const kinds = ['round', 'tall', 'pine'], mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true });
+  const by = kinds.map(() => []);
+  CITY.trees.forEach((t, i) => by[Math.floor(Math.abs(Math.sin(t.x * 3.1 + t.z * 1.7)) * 2.999)].push(t));
+  const mtx = M4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3(), e = new THREE.Euler();
+  kinds.forEach((k, ki) => {
+    if (!by[ki].length) return;
+    const mesh = new THREE.InstancedMesh(treeGeo(k), mat, by[ki].length);
+    by[ki].forEach((t, i) => { e.set(0, t.x * 13 % 6, 0); q.setFromEuler(e); mtx.compose(v.set(t.x, 0, t.z), q, sc.setScalar(t.s * 0.95)); mesh.setMatrixAt(i, mtx); });
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    G.add(mesh);
+  });
 }
 
 // Postes de luz, semáforos y nombres de calles.

@@ -5,6 +5,7 @@
 // Se animan por articulaciones; miran hacia +Z local. kind: 'enemy', 'hostage' o 'civil'.
 
 const pick = a => a[Math.floor(Math.random() * a.length)];
+let PERSON_LITE_MAT = null;
 const SKINS = [0xf3cfb0, 0xe6b48e, 0xc98e63, 0xa86e48, 0x7d4f33, 0x5a3825, 0xeec1a0];
 const SHIRTS = [0x2f6fde, 0xd8433a, 0x2e9a62, 0xf0b432, 0x8e5bc9, 0xe8742b, 0x25a9b8, 0xeeeae2, 0xd34f86, 0x6c8a3a, 0x34508f, 0xb9b2a4, 0x8a2e3b, 0x2b2f36];
 const JACKETS = [0x3a3f47, 0x6b4a2e, 0x24324d, 0x5b5f3a, 0x7a1f2a, 0x1f1f22, 0x8f8a80];
@@ -83,7 +84,7 @@ function fabricTex(kind) {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); t.colorSpace = THREE.SRGBColorSpace;
   return (PTEX[kind] = t);
 }
-const hex = n => '#' + n.toString(16).padStart(6, '0');
+const colHex = n => '#' + n.toString(16).padStart(6, '0');
 // Cara en una textura que envuelve la cabeza (el frente está en u = 0.25).
 function faceTex(skin, o) {
   const key = [skin, o.eye, o.fem, o.mask, o.lip, o.brow].join('|');
@@ -190,7 +191,7 @@ class Person {
     add(j.neck, PG.neck, enemy ? M(0x121214, 0.95) : skin, 0, 0.04, 0, 'head');
     j.head = G(j.neck, 0, 0.15, 0.005);
     const faceMat = M(0xffffff, 0.6, faceTex(skinC, {
-      eye: pick(EYES), fem, mask: enemy, lip: fem ? pick(['#b5485a', '#c0605a', '#9a4048']) : hex(new THREE.Color(skinC).multiplyScalar(0.72).getHex()), brow: hex(pick(HAIRS)),
+      eye: pick(EYES), fem, mask: enemy, lip: fem ? pick(['#b5485a', '#c0605a', '#9a4048']) : colHex(new THREE.Color(skinC).multiplyScalar(0.72).getHex()), brow: colHex(pick(HAIRS)),
     }));
     this.headMesh = add(j.head, PG.head, faceMat, 0, 0, 0, 'head');
     this.headMesh.rotation.y = 0;
@@ -261,6 +262,7 @@ class Person {
       gun.rotation.x = -Math.PI / 2; gun.position.set(0, -0.05, 0.02);
       j.rHand.add(gun);
     }
+    if (o.lite) this.liteMerge();
     const sc = o.scale || (enemy ? 1.06 : kind === 'hostage' ? (fem ? 0.95 : 0.98) : (fem ? 0.93 : 1) + (Math.random() - 0.5) * 0.08);
     root.scale.setScalar(sc);
     this.scale = sc;
@@ -275,6 +277,26 @@ class Person {
     this.vel = new THREE.Vector3();
     this.fall = null;
     this.blend = null; // pose anterior para suavizar los cambios de estado
+  }
+  // Junta las piezas de cada articulación en una malla con color por vértice (de ~45 a ~16
+  // llamadas de dibujo por persona). La cabeza con la cara queda aparte por su textura.
+  liteMerge() {
+    const groups = new Set(this.meshes.map(m => m.parent));
+    PERSON_LITE_MAT = PERSON_LITE_MAT || new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
+    const keep = [];
+    for (const gp of groups) {
+      const ms = gp.children.filter(c => c.isMesh && c !== this.headMesh && this.meshes.includes(c));
+      if (ms.length < 2) { keep.push(...ms); continue; }
+      const parts = ms.map(m => { m.updateMatrix(); return { geo: m.geometry, m: m.matrix.clone(), c: m.material.color.getHex() }; });
+      const merged = new THREE.Mesh(mergeGeos(parts), PERSON_LITE_MAT);
+      merged.castShadow = true; merged.userData.person = this; merged.userData.part = ms[0].userData.part;
+      for (const m of ms) gp.remove(m);
+      gp.add(merged); keep.push(merged);
+      if (ms.includes(this.torso)) this.torso = merged;
+    }
+    keep.push(this.headMesh);
+    this.meshes = keep;
+    this.hat = null;
   }
   get pos() { return this.root.position; }
   set heading(h) { this.root.rotation.y = h; }
