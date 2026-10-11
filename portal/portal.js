@@ -43,6 +43,7 @@ const ICONS = {
   star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.8 2.8 5.9 6.4.8-4.7 4.4 1.2 6.3L12 17.1l-5.7 3.1 1.2-6.3-4.7-4.4 6.4-.8z"/></svg>',
   fire: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 5 5.5 5 11a5 5 0 0 1-10 0c0-2.4 1.2-4 2.5-5 0 2 .8 3.2 2 3.5C11 8.5 11 5 12 2z"/></svg>',
   gamepad: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10a5 5 0 0 1 4.9 6l-.8 4a2.5 2.5 0 0 1-4.3 1.2L14.5 16h-5l-2.3 2.2A2.5 2.5 0 0 1 2.9 17l-.8-4A5 5 0 0 1 7 7z"/><path d="M8 10v4M6 12h4" stroke="var(--mask-ink,#07060d)" stroke-width="1.8" stroke-linecap="round"/><circle cx="15.5" cy="11" r="1.1" fill="var(--mask-ink,#07060d)"/><circle cx="17.5" cy="13" r="1.1" fill="var(--mask-ink,#07060d)"/></svg>',
+  compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z" fill="currentColor"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 4 14h7l-1 8 9.5-12h-7z"/></svg>',
   pencil: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 4.5l4 4L9 19H5v-4z"/><path d="M14 6l4 4" stroke="var(--mask-ink,#07060d)" stroke-width="1.5"/></svg>',
   shield: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 20 5.5v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z"/></svg>',
@@ -134,6 +135,7 @@ const ACH = [
   { id: 'cornisa', name: 'Rey del Serrín', desc: 'Llega a la Cima del Cóndor en Drive In The Serrín', icon: 'up', test: () => flag('cornisa', 'beat') >= 1 },
   { id: 'cumbre', name: 'No miré abajo', desc: "Llega a la cima en Don't Look Up", icon: 'up', test: () => flag('escalada', 'done') >= 1 },
   { id: 'mente', name: 'Mente abierta', desc: 'Supera 10 niveles de Mind Escape', icon: 'puzzle', test: () => flag('mind-escape', 'done') >= 10 },
+  { id: 'brujula', name: 'Sé quién soy', desc: 'Termina el test de Brújula Política', icon: 'compass', test: () => flag('brujula-politica', 'tests') >= 1 },
   { id: 'escape', name: 'Escapaste', desc: 'Supera los 30 niveles de Mind Escape', icon: 'bolt', test: () => flag('mind-escape', 'done') >= 30 },
 ];
 const ACH_XP = 50;

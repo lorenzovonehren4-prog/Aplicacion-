@@ -16,6 +16,7 @@ repositorio en un solo lugar. HTML, CSS y JavaScript sin compilación.
 | **Reino en Guardia** | `tower-defense/` | Tower defense contra zombis |
 | **Don't Look Up** | `escalada/` | Escalada / plataformas, online |
 | **Mind Escape** | `mind-escape/` | Puzzles y acertijos |
+| **Brújula Política** | `brujula-politica/` | Test de ideología: 50 preguntas, 16 ideologías |
 
 Cada juego vino de su propia rama y está tal cual, en su carpeta.
 

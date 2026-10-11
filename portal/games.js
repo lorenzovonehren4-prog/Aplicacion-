@@ -443,10 +443,47 @@ const GAMES = [
         flags: { done, stars },
       };
     },
+  },
+  {
+    id: 'brujula-politica',
+    title: 'Brújula Política',
+    tagline: '50 preguntas para descubrir tu ideología',
+    desc: 'Responde 50 frases sobre economía, libertad, sociedad, el mundo, el planeta y la guerra. Al final ves tu ideología entre 16 (de comunismo a anarcocapitalismo), tu lado político de extrema izquierda a extrema derecha, tus 6 ejes, una brújula y los pensadores con los que más coincides, en una tarjeta con tu nombre.',
+    url: 'brujula-politica/index.html',
+    cover: 'portal/img/brujula-cover.webp',
+    box: 'portal/img/brujula-politica-box.webp',
+    alt: 'portal/img/brujula-alt.webp',
+    hero: 'portal/img/brujula-hero.webp',
+    color: '#14b8a6',
+    color2: '#6366f1',
+    cats: ['tests'],
+    tags: ['Test', 'Política', 'Ideologías'],
+    badge: 'NUEVO',
+    added: '2026-10-11',
+    controls: [
+      [['Clic'], 'Elegir qué tan de acuerdo estás'],
+      [['1', '…', '5'], 'Responder con el teclado'],
+      [['←'], 'Volver a la pregunta anterior'],
+    ],
+    tip: 'No hay respuestas buenas ni malas. Si sales a la mitad, sigues donde te quedaste.',
+    progress() {
+      const s = readJSON('brujula_politica_v1');
+      const h = s && Array.isArray(s.history) ? s.history : [];
+      const done = s && Array.isArray(s.answers) ? s.answers.filter(v => v !== null && v !== undefined).length : 0;
+      if (!h.length && !done) return null;
+      const last = h[h.length - 1];
+      return {
+        label: last ? `${last.lado} · ${last.pct}%` : `Test a la mitad · ${done}/50`,
+        pct: last ? 1 : done / 50,
+        stats: [['Tests', h.length], ...(last ? [['Lado', last.lado], ['Compatibilidad', last.pct + '%']] : [['Respondidas', `${done}/50`]])],
+        flags: { tests: h.length },
+      };
+    },
   },];
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'brujula-politica', date: '11 oct', title: 'Juego nuevo: Brújula Política', items: ['50 preguntas sobre economía, libertad, sociedad, el mundo, el planeta y la guerra', '16 ideologías y tu lado, de extrema izquierda a extrema derecha', 'Tarjeta de resultado con tu nombre, tus 6 ejes y una brújula'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo: cabina, nitro y estrellas', items: ['Cabina por dentro con relojes, volante y mapa', 'Nitro, marcas de llantas, humo y fuego', 'Garaje en vitrina, 3 estrellas por misión y patrulleros más listos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo se ve como juego profesional', items: ['Carros nuevos con reflejos, faros y brillo', 'Barrio con más detalle: casas, carros estacionados, postes y nubes', 'Menú y velocímetro nuevos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Juego nuevo: Código Rojo', items: ['Barrio 3D con puentes, túnel, rampas, semáforos y tráfico', 'Sé el ladrón contra 3 patrulleros o la policía', '14 misiones, partida libre y garaje con 6 carros'] },
@@ -467,6 +504,7 @@ const CATS = [
   { id: 'estrategia', name: 'Estrategia', icon: 'shield' },
   { id: 'plataformas', name: 'Plataformas', icon: 'up' },
   { id: 'puzzles', name: 'Puzzles', icon: 'puzzle' },
+  { id: 'tests', name: 'Tests', icon: 'compass' },
   { id: '3d', name: '3D', icon: 'cube' },
   { id: 'multi', name: 'Multijugador', icon: 'users' },
   { id: 'favs', name: 'Favoritos', icon: 'heart' },
