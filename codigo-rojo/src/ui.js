@@ -42,8 +42,19 @@ function renderMenu() {
   $('#mmMis').textContent = `${done}/${MISSIONS.length} completas · ladrón o policía`;
   $('#mmGar').textContent = `${save.cars.length}/${CARS.length} carros · ${carById(save.car).name}`;
   $('#mmAch').textContent = `${Object.keys(save.ach).length}/${ACHS.length} ganadas`;
-  $('#winsN').textContent = `🏆 ${save.stats.wins} ganadas`;
+  $('#winsN').textContent = `🏆 ${save.stats.wins}`;
+  const R = rankOf(save.stats.wins);
+  $('#mmRank').innerHTML = `<i>${R.icon}</i>${R.name}`;
+  // misión destacada: la siguiente sin ganar (alternando ladrón y policía)
+  const m = MISSIONS.find(x => missionOpen(x) && !save.done[x.id]) || MISSIONS[MISSIONS.length - 1];
+  const art = { dia: 'linear-gradient(160deg,#4a8fd9,#d3e7f4)', tarde: 'linear-gradient(160deg,#34508f,#ffad72)', noche: 'linear-gradient(160deg,#04070f,#2a3560)' }[m.time];
+  $('#mmFeat').innerHTML = `<div class="art" style="background:${art}">${m.role === 'ladron' ? '💰' : '🚓'}</div><div class="in">
+    <div class="k">${save.done[m.id] ? 'REPETIR' : 'SIGUIENTE MISIÓN'} · ${m.role === 'ladron' ? 'LADRÓN' : 'POLICÍA'}</div><h3>${m.name}</h3><p>${m.desc}</p>
+    <div class="tags"><span class="tag ${m.diff}">${DIFFS[m.diff].name}</span><span class="tag">${TIME_ICON[m.time]} ${TIMES[m.time].name}</span><span class="tag">⏱ ${m.t} s</span><span class="tag">🪙 ${Math.round(150 * DIFFS[m.diff].reward)}+</span></div>
+    <button class="btn main" data-mis="${m.id}">▶ Jugar ahora</button></div>`;
 }
+const RANKS = [[0, 'Novato', '🔰'], [2, 'Callejero', '🛞'], [5, 'Profesional', '⭐'], [9, 'Experto', '🔥'], [14, 'Leyenda', '👑']];
+function rankOf(w) { let r = RANKS[0]; for (const x of RANKS) if (w >= x[0]) r = x; return { name: r[1], icon: r[2] }; }
 
 function renderMissions() {
   for (const role of ['ladron', 'policia']) {
@@ -308,10 +319,16 @@ function step(dt) {
     hud();
   }
   if (G.mode !== 'pause') updateWorld(G.t, dt);
-  W.renderer.render(W.scene, W.camera);
+  renderFrame(W.scene, W.camera);
 }
 
+const TIPS = ['De ladrón, los puentes y el túnel sirven para perder a los patrulleros.', 'De policía: chócalo de costado para frenarlo y quédate pegado para llenar la barra.', 'El freno de mano (Espacio) te ayuda a doblar en las esquinas sin frenar tanto.', 'Las rampas te hacen saltar por encima del tráfico.', 'Si te trabas, la tecla R te devuelve a la calle.', 'De noche los patrulleros iluminan la calle con su circulina: los ves venir.'];
 function boot() {
+  $('#ldTip').textContent = 'Consejo: ' + TIPS[Math.floor(Math.random() * TIPS.length)];
+  // deja que se pinte la pantalla de carga antes de armar el barrio
+  setTimeout(boot2, 60);
+}
+function boot2() {
   initWorld($('#gl'));
   resizeWorld();
   window.addEventListener('resize', resizeWorld);

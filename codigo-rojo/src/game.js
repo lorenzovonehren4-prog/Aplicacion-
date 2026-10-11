@@ -35,8 +35,8 @@ function spawnActor(spec, x, z, h, opts = {}) {
   return a;
 }
 function removeActor(a) {
+  // (las geometrías son compartidas entre carros del mismo tipo: no se liberan)
   W.scene.remove(a.car.root);
-  a.car.root.traverse(o => { if (o.geometry) o.geometry.dispose(); });
 }
 function clearGame() {
   for (const a of G.all) removeActor(a);
@@ -245,6 +245,7 @@ function checkDead(b) {
   fxSmoke(b.x, b.y + 1, b.z, 6, 0x333333, 2.2, 3);
   if (a.role === 'policia' && !a.player) { G.wrecked++; a.respawn = 7; unlockAch('chatarra'); if (G.cfg.role === 'ladron') toast('¡Un patrullero quedó fuera de combate!'); }
   if (a === G.player && G.cfg.role === 'policia') endWith(false, 'Tu patrullero quedó destrozado');
+  if (a === G.thief && G.cfg.role === 'policia' && G.mode === 'play') endWith(true, '¡El ladrón chocó y quedó atrapado!');
 }
 
 // Reglas de la partida: arresto, bolsas, guarida, tiempo, semáforos, puentes y túnel.
@@ -416,6 +417,7 @@ function attractCamera(dt) {
 function hudStatic() {
   const cfg = G.cfg;
   document.getElementById('hName').textContent = cfg.name || (cfg.role === 'ladron' ? 'Ladrón' : 'Policía');
+  document.getElementById('hRole').textContent = cfg.role === 'ladron' ? '💰 LADRÓN' : '🚓 POLICÍA';
   document.getElementById('hGoal').textContent = goalText(cfg);
   document.body.classList.toggle('modo-poli', cfg.role === 'policia');
 }
@@ -432,9 +434,14 @@ function hud() {
   const bar = document.getElementById('hBar');
   bar.firstElementChild.style.width = (G.bar * 100) + '%';
   bar.parentElement.classList.toggle('hot', G.bar > 0.01);
-  document.getElementById('hSpd').textContent = Math.round(Math.abs(P.f) * 3.6);
-  const hp = P.hp / P.hpMax, hb = document.getElementById('hHp');
-  hb.firstElementChild.style.width = (hp * 100) + '%'; hb.classList.toggle('low', hp < 0.3);
+  const kmh = Math.abs(P.f) * 3.6;
+  document.getElementById('hSpd').textContent = Math.round(kmh);
+  document.getElementById('hGear').textContent = P.gear < 0 ? 'R' : P.f < 0.5 && !inp.thr ? 'N' : P.gear + 'ª';
+  document.getElementById('gArc').style.strokeDasharray = `${Math.min(245, kmh / 240 * 245)} 400`;
+  const hp = P.hp / P.hpMax, gh = document.getElementById('gHp');
+  gh.style.strokeDasharray = `${207 * hp} 400`; gh.style.stroke = hp < 0.3 ? '#ff4d4d' : hp < 0.6 ? '#ffc53d' : '#3ddc84';
+  document.getElementById('hRing').style.strokeDashoffset = 106.8 * (1 - left / cfg.t);
+  document.getElementById('hPct').textContent = G.bar > 0.01 ? Math.round(G.bar * 100) + '%' : '';
   drawRadar();
 }
 

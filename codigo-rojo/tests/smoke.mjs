@@ -86,7 +86,7 @@ const r2 = await page.evaluate(() => {
 });
 console.log('policía:', JSON.stringify(r2));
 check(r2.thiefOdo > 200, 'el ladrón huye');
-check(r2.mode === 'busted' && r2.why === '¡Ladrón atrapado!', 'el patrullero (con IA) lo atrapa');
+check(r2.mode === 'busted' && /atrapado/.test(r2.why), 'el patrullero (con IA) lo atrapa');
 await page.waitForTimeout(1200);
 await shot('4-policia');
 await page.evaluate(() => { for (let i = 0; i < 400 && G.mode === 'busted'; i++) simulate(1 / 60); });

@@ -446,6 +446,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo se ve como juego profesional', items: ['Carros nuevos con reflejos, faros y brillo', 'Barrio con más detalle: casas, carros estacionados, postes y nubes', 'Menú y velocímetro nuevos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Juego nuevo: Código Rojo', items: ['Barrio 3D con puentes, túnel, rampas, semáforos y tráfico', 'Sé el ladrón contra 3 patrulleros o la policía', '14 misiones, partida libre y garaje con 6 carros'] },
   { game: 'cornisa', date: '11 oct', title: 'Juego nuevo: Drive In The Serrín', items: ['Rally desde la cabina por 8 montañas con horquillas', 'Línea de guía, copiloto y mapa GPS', 'Si te sales o chocas fuerte, pierdes (con caída o choque animado)', 'Taller de mejoras, pinturas, insignias y Ruta libre al pasarte el juego'] },
   { game: 'tower-defense', date: '10 oct', title: 'Reino en Guardia: Glaciar Maldito', items: ['Cuarto mapa entre pinos y hielo, con nieve cayendo', 'Ventiscas que congelan torres', 'Jefe nuevo: Yeti Zombi, y el desafío Deshielo'] },
