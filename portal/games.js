@@ -119,6 +119,45 @@ const GAMES = [
     },
   },
   {
+    id: 'codigo-rojo',
+    title: 'Código Rojo',
+    tagline: 'Sé el ladrón o la policía en un barrio 3D',
+    desc: 'Un barrio entero con casas, tiendas, un canal con 6 puentes, un túnel bajo el cerro, rampas, semáforos y tráfico, cerrado por paredes rojas. Escapa de 3 patrulleros o persigue al ladrón hasta llenar la barra de arresto. 14 misiones por dificultad, partida libre de día, tarde o noche, y un garaje con 6 carros.',
+    url: 'codigo-rojo/index.html',
+    cover: 'portal/img/codigo-rojo-cover.webp',
+    box: 'portal/img/codigo-rojo-box.webp',
+    alt: 'portal/img/codigo-rojo-alt.webp',
+    hero: 'portal/img/codigo-rojo-hero.webp',
+    color: '#ff2a3a',
+    color2: '#2a6bff',
+    cats: ['carreras', 'accion', '3d'],
+    tags: ['Persecución', 'Policías', '3D', 'Mundo abierto'],
+    badge: 'NUEVO',
+    featured: true,
+    added: '2026-10-11',
+    controls: [
+      [['↑', '↓'], 'Acelerar / frenar y reversa (W, S)'],
+      [['←', '→'], 'Girar (A, D)'],
+      [['Espacio'], 'Freno de mano (derrape)'],
+      [['C'], 'Cámara: atrás o cabina'],
+      [['H'], 'Bocina'],
+      [['R'], 'Volver a la calle'],
+      [['P', 'Esc'], 'Pausa'],
+    ],
+    tip: 'De ladrón: los puentes y el túnel ayudan a perderlos. De policía: chócalo hasta frenarlo y quédate pegado para llenar la barra.',
+    progress() {
+      const s = readJSON('codigorojo_v1');
+      if (!s || !s.stats || !s.stats.runs) return null;
+      const done = Object.keys(s.done || {}).length, cars = (s.cars || []).length;
+      return {
+        label: `${done}/14 misiones · ${s.stats.wins || 0} ganadas`,
+        pct: done / 14,
+        stats: [['Misiones', `${done}/14`], ['Fugas', s.stats.thiefWins || 0], ['Arrestos', s.stats.copWins || 0], ['Carros', cars], ['Monedas', s.coins || 0]],
+        flags: { done, thief: s.stats.thiefWins || 0, cop: s.stats.copWins || 0 },
+      };
+    },
+  },
+  {
     id: 'cornisa',
     title: 'Drive In The Serrín',
     tagline: 'Rally de montaña desde la cabina. Si te sales, pierdes',
@@ -407,6 +446,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'codigo-rojo', date: '11 oct', title: 'Juego nuevo: Código Rojo', items: ['Barrio 3D con puentes, túnel, rampas, semáforos y tráfico', 'Sé el ladrón contra 3 patrulleros o la policía', '14 misiones, partida libre y garaje con 6 carros'] },
   { game: 'cornisa', date: '11 oct', title: 'Juego nuevo: Drive In The Serrín', items: ['Rally desde la cabina por 8 montañas con horquillas', 'Línea de guía, copiloto y mapa GPS', 'Si te sales o chocas fuerte, pierdes (con caída o choque animado)', 'Taller de mejoras, pinturas, insignias y Ruta libre al pasarte el juego'] },
   { game: 'tower-defense', date: '10 oct', title: 'Reino en Guardia: Glaciar Maldito', items: ['Cuarto mapa entre pinos y hielo, con nieve cayendo', 'Ventiscas que congelan torres', 'Jefe nuevo: Yeti Zombi, y el desafío Deshielo'] },
   { game: 'sazon', date: '10 oct', title: 'Sazón Tycoon: carta criolla', items: ['5 platos nuevos: emoliente, suspiro, arroz con pato, rocoto relleno y parihuela', 'Evento Día de la Canción Criolla: más propina y antojo de anticuchos'] },

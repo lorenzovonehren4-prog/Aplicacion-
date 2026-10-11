@@ -3,7 +3,7 @@
 // Deja en la carpeta:
 //   anonymous-games.html  la página (sin <!DOCTYPE>/<head>/<body>: el Artifact los pone)
 //   files.json            mapa { ruta publicada: archivo del repo } con lo que cargan
-//                         el portal y los 10 juegos (sin pruebas, herramientas ni fuentes TS)
+//                         el portal y los 11 juegos (sin pruebas, herramientas ni fuentes TS)
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -30,7 +30,7 @@ const web = rel => /\.(html|js|css|json|woff2?|webp|png|svg)$/.test(rel) && !/\/
 ['portal/portal.css', 'portal/games.js', 'portal/portal.js'].forEach(add);
 walk('portal/img'); walk('portal/fonts', r => r.endsWith('.woff2'));
 add('formula-3d/apice-gp.html');
-for (const g of ['karting', 'cornisa', 'sazon-tycoon', 'modo-carrera-futbol']) { add(`${g}/index.html`); walk(`${g}/src`); walk(`${g}/vendor`, r => /\.(js|woff2)$/.test(r)); }
+for (const g of ['karting', 'cornisa', 'codigo-rojo', 'sazon-tycoon', 'modo-carrera-futbol']) { add(`${g}/index.html`); walk(`${g}/src`); walk(`${g}/vendor`, r => /\.(js|woff2)$/.test(r)); }
 add('tower-defense/index.html'); add('tower-defense/style.css'); walk('tower-defense/src');
 add('mind-escape/index.html'); walk('mind-escape/styles', web); walk('mind-escape/js', web); add('mind-escape/data/levels-meta.json');
 add('fuga-urbana/index.html'); add('escalada/index.html'); add('combi-rush/combi-rush.html');

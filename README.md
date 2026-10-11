@@ -7,6 +7,7 @@ repositorio en un solo lugar. HTML, CSS y JavaScript sin compilación.
 | --- | --- | --- |
 | **Ápice GP** | `formula-3d/` | Monoplazas estilo F1 en 3D |
 | **Kartódromo** | `karting/` | Carreras de karts 3D, 2 jugadores |
+| **Código Rojo** | `codigo-rojo/` | Persecuciones ladrón/policía en un barrio 3D |
 | **Drive In The Serrín** | `cornisa/` | Manejar por montañas desde la cabina (3D) |
 | **Combi Rush** | `combi-rush/` | Manejar una combi por Lima (3D) |
 | **Fuga Urbana** | `fuga-urbana/` | Escapar de la policía |
@@ -37,7 +38,7 @@ Y entrar a <http://localhost:8000>. El portal también abre con doble clic en
   en una barra fija abajo.
 - **Inicio, menú de consola**: el juego elegido llena la pantalla (fondo,
   título grande, etiquetas, tu progreso, Jugar / Detalles / Favorito) y abajo
-  está el estante con los 10 juegos. Se recorre con `←` `→`, el mouse o la
+  está el estante con los 11 juegos. Se recorre con `←` `→`, el mouse o la
   cruceta del mando; `Enter` o A juega, `I` abre los detalles, `F` o Y marca
   favorito, B vuelve. Debajo, "Sigue jugando" y "Tu sala".
 - **Biblioteca**: cuadrícula con categorías (Carreras, Acción, Simulación,
@@ -67,7 +68,7 @@ portal/
   fonts/              Fredoka y Rubik (sin internet)
   tests/portal.mjs    prueba en navegador
   tools/              scripts para sacar capturas nuevas
-formula-3d/ karting/ cornisa/ combi-rush/ fuga-urbana/ sazon-tycoon/
+formula-3d/ karting/ cornisa/ codigo-rojo/ combi-rush/ fuga-urbana/ sazon-tycoon/
 modo-carrera-futbol/ tower-defense/ escalada/ mind-escape/   cada juego, sin cambios
 ```
 

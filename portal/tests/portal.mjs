@@ -35,7 +35,7 @@ check(await page.isVisible('#intro'), 'la intro aparece la primera vez');
 await page.waitForSelector('#intro', { state: 'detached', timeout: 6000 });
 await page.waitForTimeout(600);
 await shot(page, 'portal-1-inicio.png');
-check(await page.locator('.shelf .gcard[data-sel]').count() === 10, 'los 10 juegos en el estante del menú');
+check(await page.locator('.shelf .gcard[data-sel]').count() === 11, 'los 11 juegos en el estante del menú');
 check(await page.locator('.gcard.is-sel').count() === 1, 'hay un juego elegido');
 check(await page.locator('.tile--soon, .soon__q').count() === 0, 'sin fichas de "Próximamente"');
 // teclado: flecha derecha cambia el juego elegido y el título grande
@@ -61,7 +61,7 @@ await page.waitForTimeout(200);
 check(await page.locator('.tile[data-tile]').count() === 1, 'buscar "karts" abre la biblioteca con sólo el Kartódromo');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
-check(await page.locator('.tile[data-tile]').count() === 10, 'Esc limpia la búsqueda');
+check(await page.locator('.tile[data-tile]').count() === 11, 'Esc limpia la búsqueda');
 
 // categorías
 await page.click('[data-cat=puzzles]');
