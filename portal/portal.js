@@ -129,6 +129,7 @@ const ACH = [
   { id: 'cadena', name: 'Cadenero', desc: 'Abre un segundo local en Sazón Tycoon', icon: 'fire', test: () => flag('sazon', 'locales') >= 2 },
   { id: 'leyenda', name: 'Leyenda', desc: 'Termina una carrera en Modo Carrera Fútbol', icon: 'trophy', test: () => flag('futbol', 'careers') >= 1 },
   { id: 'muralla', name: 'Muralla', desc: 'Gana una partida en Reino en Guardia', icon: 'shield', test: () => flag('tower-defense', 'wins') >= 1 },
+  { id: 'cornisa', name: 'Rey de la cornisa', desc: 'Llega a la Cima del Cóndor en Cornisa', icon: 'up', test: () => flag('cornisa', 'beat') >= 1 },
   { id: 'cumbre', name: 'No miré abajo', desc: "Llega a la cima en Don't Look Up", icon: 'up', test: () => flag('escalada', 'done') >= 1 },
   { id: 'mente', name: 'Mente abierta', desc: 'Supera 10 niveles de Mind Escape', icon: 'puzzle', test: () => flag('mind-escape', 'done') >= 10 },
   { id: 'escape', name: 'Escapaste', desc: 'Supera los 30 niveles de Mind Escape', icon: 'bolt', test: () => flag('mind-escape', 'done') >= 30 },

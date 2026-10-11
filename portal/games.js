@@ -114,7 +114,46 @@ const GAMES = [
         flags: { wins: st.wins || 0, cups: st.cups || 0, races: st.races || 0 },
       };
     },
-  },  {
+  },
+  {
+    id: 'cornisa',
+    title: 'Cornisa',
+    tagline: 'Maneja por la cornisa de la montaña. Si te caes, pierdes',
+    desc: 'Vas desde la cabina de un 4x4 por carreteras de montaña: cañón, bosque, nieve, niebla, volcán, noche y tormenta. Si te sales por el abismo, pierdes. Junta monedas, mejora motor, frenos, llantas y carrocería, y abre cada montaña cumpliendo lo que pide la anterior hasta la Cima del Cóndor.',
+    url: 'cornisa/index.html',
+    cover: 'portal/img/cornisa-cover.webp',
+    alt: 'portal/img/cornisa-alt.webp',
+    hero: 'portal/img/cornisa-hero.webp',
+    color: '#ff7a2f',
+    color2: '#ffc53d',
+    cats: ['carreras', 'simulacion', '3d'],
+    tags: ['Manejo', 'Montaña', '3D', 'Cabina'],
+    badge: 'NUEVO',
+    featured: true,
+    added: '2026-10-11',
+    controls: [
+      [['↑'], 'Acelerar (W)'],
+      [['↓'], 'Frenar y reversa (S)'],
+      [['←', '→'], 'Girar (A, D)'],
+      [['C'], 'Cámara: cabina o afuera'],
+      [['P', 'Esc'], 'Pausa'],
+    ],
+    tip: 'Frena antes de las curvas: las flechas amarillas avisan. Donde no hay baranda, el borde es el abismo.',
+    progress() {
+      const s = readJSON('cornisa_v1');
+      if (!s || !s.stats || !s.stats.runs) return null;
+      const lv = Object.values(s.lv || {});
+      const done = lv.filter(l => l.done).length;
+      const stars = lv.reduce((a, l) => a + (l.stars || []).filter(Boolean).length, 0);
+      return {
+        label: s.beat ? `¡Juego pasado! · ${stars}/24 ★` : `Montaña ${Math.min(8, done + 1)}/8 · ${stars} ★`,
+        pct: s.beat ? 1 : done / 8,
+        stats: [['Montañas', `${done}/8`], ['Estrellas', `${stars}/24`], ['Monedas', s.coins || 0], ['Caídas', s.stats.falls || 0]],
+        flags: { done, stars, beat: s.beat ? 1 : 0 },
+      };
+    },
+  },
+  {
     id: 'combi-rush',
     title: 'Combi Rush',
     tagline: 'Maneja una combi por Lima y llena tus asientos',
@@ -357,6 +396,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'cornisa', date: '11 oct', title: 'Juego nuevo: Cornisa', items: ['Maneja un 4x4 desde la cabina por 8 montañas', 'Si te caes al abismo, pierdes', 'Taller de mejoras, pinturas, insignias y Ruta libre al pasarte el juego'] },
   { game: 'tower-defense', date: '10 oct', title: 'Reino en Guardia: Glaciar Maldito', items: ['Cuarto mapa entre pinos y hielo, con nieve cayendo', 'Ventiscas que congelan torres', 'Jefe nuevo: Yeti Zombi, y el desafío Deshielo'] },
   { game: 'sazon', date: '10 oct', title: 'Sazón Tycoon: carta criolla', items: ['5 platos nuevos: emoliente, suspiro, arroz con pato, rocoto relleno y parihuela', 'Evento Día de la Canción Criolla: más propina y antojo de anticuchos'] },
   { game: 'combi-rush', date: '10 oct', title: 'Combi Rush, versión 4', items: ['4 viajes nuevos: La Punta, Túpac Amaru, Noche en Miraflores y la ruta más larga', 'Combi Sprinter y Micro chosicano de 40 pasajeros', 'Radio con Cumbia Total, Chicha Andina y Salsa Brava (tecla R)'] },
