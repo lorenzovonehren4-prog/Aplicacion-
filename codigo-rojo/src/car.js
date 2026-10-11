@@ -192,7 +192,7 @@ function makeCar(spec, opts = {}) {
   PLATE = PLATE || plateTex();
   for (const sd of [1, -1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.11), new THREE.MeshBasicMaterial({ map: PLATE })); p.position.set(0, B.clr + 0.32, sd * (B.L / 2 + 0.065)); p.rotation.y = sd > 0 ? 0 : Math.PI; body.add(p); }
   // patrullero: puertas blancas, letras, escudo, defensa y circulina
-  const bar = [];
+  const bar = []; let car_ant = null;
   if (police) {
     const dz = (B.zW + B.zB) / 2 + 0.1, dl = (B.zW - B.zB) * 0.95;
     for (const sd of [-1, 1]) {
@@ -212,8 +212,8 @@ function makeCar(spec, opts = {}) {
     }
     const push = new THREE.Mesh(new THREE.BoxGeometry(B.W * 0.7, 0.32, 0.1), new THREE.MeshStandardMaterial({ color: 0x0c0c0e, roughness: 0.6, metalness: 0.4 }));
     push.position.set(0, B.clr + 0.32, B.L / 2 + 0.12); body.add(push);
-    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.7), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-    ant.position.set(-B.W * 0.3, B.roof + 0.35, B.zR2 + 0.1); body.add(ant);
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.4), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+    ant.position.set(-B.W * 0.3, B.roof + 0.2, B.zR2 + 0.1); body.add(ant); car_ant = ant;
   }
   // ruedas
   const wheels = [];
@@ -227,47 +227,156 @@ function makeCar(spec, opts = {}) {
   BLOB = BLOB || blobTex();
   const blob = new THREE.Mesh(new THREE.PlaneGeometry(B.W * 1.5, B.L * 1.2), new THREE.MeshBasicMaterial({ map: BLOB, transparent: true, depthWrite: false }));
   blob.rotation.x = -Math.PI / 2; blob.position.y = 0.04; blob.renderOrder = 1; root.add(blob);
-  const car = { root, body, wheels, bar, paint, headMat, tailMat, B, police, roof, cab };
+  const car = { root, body, wheels, bar, paint, headMat, tailMat, B, police, roof, cab, ant: car_ant };
   if (opts.cockpit) makeCockpit(car);
   return car;
 }
 
-// Cabina por dentro: tablero, volante, pantalla con la velocidad y parantes.
+// Cabina por dentro: tablero con tablero de relojes, volante, consola, espejo, parantes,
+// techo y puertas. El capó (la carrocería de afuera) se sigue viendo por el parabrisas.
+let DASH_TEX = null;
+function dashTex() {
+  // plástico granulado del tablero
+  if (DASH_TEX) return DASH_TEX;
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'); g.fillStyle = '#4a4d55'; g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,255,255'},${Math.random() * 0.06})`; g.fillRect(Math.random() * 128, Math.random() * 128, 2, 2); }
+  DASH_TEX = new THREE.CanvasTexture(c); DASH_TEX.colorSpace = THREE.SRGBColorSpace; DASH_TEX.wrapS = DASH_TEX.wrapT = THREE.RepeatWrapping; DASH_TEX.repeat.set(4, 2);
+  return DASH_TEX;
+}
+function rod(a, b, r, mat) {
+  // cilindro de a hasta b (para parantes)
+  const d = new THREE.Vector3().subVectors(b, a), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.15, d.length(), 10), mat);
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  return m;
+}
 function makeCockpit(car) {
-  const B = car.B, ck = new THREE.Group(), y0 = B.belt;
-  const front = B.zW;
-  const dark = new THREE.MeshStandardMaterial({ color: 0x1b1c1f, roughness: 0.85 });
-  const dash = new THREE.Mesh(new THREE.BoxGeometry(B.W - 0.15, 0.2, 0.45), dark); dash.position.set(0, y0 - 0.04, front - 0.2); ck.add(dash);
-  const wheelG = new THREE.Group(); wheelG.position.set(0.38, y0 - 0.06, front - 0.62); wheelG.rotation.x = -0.4;
+  // La carrocería se corta por detrás del parabrisas (plano de recorte) y adentro se arma la cabina.
+  const B = car.B, ck = new THREE.Group(), y0 = B.belt, front = B.zW;
+  const cw = B.W * 0.86, dx = 0.37;                           // ancho de la cabina, el chofer va a la izquierda (+x)
+  const eye = new THREE.Vector3(dx, Math.min(y0 + 0.36, B.roof - 0.12), front - 1.3);
+  const dash = new THREE.MeshStandardMaterial({ color: 0x9a9ca2, map: dashTex(), roughness: 0.82 });
+  const soft = new THREE.MeshStandardMaterial({ color: 0x2a2c31, roughness: 0.9 });
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, roughness: 0.25, metalness: 0.9 });
+  const leather = new THREE.MeshStandardMaterial({ color: 0x18191c, roughness: 0.6 });
+  const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); ck.add(m); return m; };
+  // tablero
+  const dz = 0.8, back = front - dz + 0.02;
+  add(new THREE.BoxGeometry(B.W - 0.1, 0.44, dz), dash, 0, y0 - 0.16, front - dz / 2 + 0.02);
+  add(new THREE.CylinderGeometry(0.09, 0.09, B.W - 0.1, 18, 1, false, 0, Math.PI), dash, 0, y0 + 0.06, back + 0.08, 0, 0, Math.PI / 2);
+  // visera de los relojes, relojes, pantalla y salidas de aire
+  const vr = Math.min(0.12, (eye.y - y0) * 0.32);
+  add(new THREE.CylinderGeometry(vr, vr, 0.16, 20, 1, true, -Math.PI / 2, Math.PI), new THREE.MeshStandardMaterial({ color: 0x1e2024, roughness: 0.85, side: THREE.DoubleSide }), dx, y0 + 0.1, back - 0.02, -Math.PI / 2, 0, 0);
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 192;
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  add(new THREE.PlaneGeometry(0.3, 0.112), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), dx, y0 + 0.04, back - 0.005, -0.12, Math.PI, 0);
+  const ncv = document.createElement('canvas'); ncv.width = 256; ncv.height = 160;
+  const ntex = new THREE.CanvasTexture(ncv); ntex.colorSpace = THREE.SRGBColorSpace;
+  add(new THREE.PlaneGeometry(0.22, 0.137), new THREE.MeshBasicMaterial({ map: ntex, toneMapped: false }), 0, y0 - 0.06, back - 0.005, -0.1, Math.PI, 0);
+  for (const x of [-cw / 2 + 0.14, -0.17, 0.17, cw / 2 - 0.14]) add(new THREE.BoxGeometry(0.1, 0.045, 0.02), chrome, x, y0 - 0.17, back - 0.005);
+  // consola entre los asientos, piso y puertas por dentro
+  add(new THREE.BoxGeometry(0.3, 0.3, 1.2), dash, 0, y0 - 0.42, back - 0.6);
+  add(new THREE.BoxGeometry(B.W - 0.1, 0.04, front - B.zB), soft, 0, B.clr + 0.16, (front + B.zB) / 2);
+  for (const sd of [-1, 1]) {
+    add(new THREE.BoxGeometry(0.06, y0 - B.clr - 0.1, front - B.zB), soft, sd * (B.W / 2 - 0.06), (y0 + B.clr + 0.1) / 2 + 0.05, (front + B.zB) / 2);
+    add(new THREE.BoxGeometry(0.12, 0.05, front - B.zB - 0.2), dash, sd * (B.W / 2 - 0.1), y0 + 0.08, (front + B.zB) / 2 - 0.1);
+    add(new THREE.BoxGeometry(0.03, 0.04, 0.22), chrome, sd * (B.W / 2 - 0.1), y0 - 0.12, back - 0.5);
+  }
+  // asientos (se ven al costado)
+  for (const x of [dx, -dx]) {
+    add(new THREE.BoxGeometry(0.5, 0.14, 0.5), leather, x, y0 - 0.32, eye.z - 0.05);
+    add(new THREE.BoxGeometry(0.5, 0.7, 0.12), leather, x, y0 + 0.02, eye.z - 0.33, -0.18, 0, 0);
+  }
+  // volante
+  const wheelG = new THREE.Group(); wheelG.position.set(dx, eye.y - 0.38, eye.z + 0.44); wheelG.rotation.x = 0.38;
   const steer = new THREE.Group(); wheelG.add(steer);
-  steer.add(new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.024, 10, 36), dark));
-  for (const a of [0, 2.1, -2.1]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.16, 0.02), new THREE.MeshStandardMaterial({ color: 0x777777, metalness: 0.7 })); s.position.set(Math.sin(a) * -0.09, Math.cos(a) * -0.09, 0); s.rotation.z = a; steer.add(s); }
+  steer.add(new THREE.Mesh(new THREE.TorusGeometry(0.185, 0.026, 12, 40), leather));
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.06, 18).rotateX(Math.PI / 2), soft); steer.add(hub);
+  for (const a of [Math.PI / 2, -Math.PI / 2, Math.PI]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.035, 0.02), soft); s.position.set(Math.cos(a) * 0.1, Math.sin(a) * 0.1, 0); s.rotation.z = a; steer.add(s); }
+  const mark = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.03), new THREE.MeshBasicMaterial({ color: 0xff3b3b })); mark.position.set(0, 0.185, 0); steer.add(mark);
+  wheelG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.36, 10).rotateX(Math.PI / 2).translate(0, 0, 0.2), soft));
   ck.add(wheelG);
-  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
-  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.1), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-  scr.position.set(0.38, y0 + 0.08, front - 0.42); scr.rotation.y = Math.PI; scr.rotation.x = 0.3;
-  ck.add(scr);
-  const cw = B.W * 0.84;
-  for (const sd of [-1, 1]) { const len = Math.hypot(B.roof - B.belt, B.zR1 - B.zW); const p = new THREE.Mesh(new THREE.BoxGeometry(0.07, len, 0.07), dark); p.position.set(sd * (cw / 2 - 0.06), (B.roof + B.belt) / 2, (B.zW + B.zR1) / 2); p.rotation.x = Math.atan2(B.zR1 - B.zW, B.roof - B.belt) * -1; ck.add(p); }
-  const rf = new THREE.Mesh(new THREE.BoxGeometry(cw, 0.05, B.zR1 - B.zR2 + 0.2), dark); rf.position.set(0, B.roof - 0.04, (B.zR1 + B.zR2) / 2); ck.add(rf);
+  // parantes del parabrisas, parante del medio, techo y espejo
+  const pil = new THREE.MeshStandardMaterial({ color: 0x2b2d32, roughness: 0.85 });
+  for (const sd of [-1, 1]) {
+    ck.add(rod(new THREE.Vector3(sd * (cw / 2 + 0.02), y0 + 0.06, front + 0.02), new THREE.Vector3(sd * (cw / 2 - 0.1), B.roof - 0.04, B.zR1), 0.045, pil));
+    ck.add(rod(new THREE.Vector3(sd * (cw / 2), y0, (B.zR1 + B.zR2) / 2 - 0.1), new THREE.Vector3(sd * (cw / 2 - 0.08), B.roof - 0.04, (B.zR1 + B.zR2) / 2 - 0.1), 0.06, pil));
+    add(new THREE.BoxGeometry(0.05, 0.11, 0.18), pil, sd * (B.W / 2 + 0.08), y0 + 0.14, front - 0.1, 0, sd * 0.2, 0);
+  }
+  add(new THREE.BoxGeometry(cw, 0.06, 0.12), pil, 0, B.roof - 0.05, B.zR1 - 0.02);
+  add(new THREE.BoxGeometry(cw, 0.03, Math.max(0.3, B.zR1 - B.zR2) + 0.1), new THREE.MeshStandardMaterial({ color: 0x8d8a84, roughness: 0.95 }), 0, B.roof - 0.03, (B.zR1 + B.zR2) / 2);
+  add(new THREE.BoxGeometry(0.02, 0.07, 0.02), pil, 0, B.roof - 0.1, B.zR1 - 0.1);
+  add(new THREE.BoxGeometry(0.26, 0.075, 0.03), pil, 0, B.roof - 0.16, B.zR1 - 0.12);
+  add(new THREE.PlaneGeometry(0.24, 0.06), new THREE.MeshStandardMaterial({ color: 0x9fb6cc, roughness: 0.05, metalness: 1 }), 0, B.roof - 0.16, B.zR1 - 0.137, 0, Math.PI, 0);
+  // reflejo leve en el parabrisas
+  const ws = new THREE.Mesh(new THREE.PlaneGeometry(cw, Math.hypot(B.roof - y0, B.zR1 - front)), new THREE.MeshPhysicalMaterial({ color: 0x9fc4e8, transparent: true, opacity: 0.07, roughness: 0.05, depthWrite: false, side: THREE.DoubleSide }));
+  ws.position.set(0, (B.roof + y0) / 2, (B.zR1 + front) / 2); ws.rotation.x = Math.atan2(front - B.zR1, B.roof - y0) - Math.PI / 2; ck.add(ws);
   car.body.add(ck);
-  car.cockpit = ck; car.steerWheel = steer; car.speedCv = cv; car.speedTex = tex; car.lastKmh = -1;
-  car.eye = new THREE.Vector3(0.38, B.belt + (B.roof - B.belt) * 0.5, B.zR1 - 0.35);
+  car.cockpit = ck; car.steerWheel = steer; car.dashCv = cv; car.dashTex = tex; car.navCv = ncv; car.navTex = ntex;
+  car.eye = eye;
+  car.clip = new THREE.Plane();
   ck.visible = false;
+}
+// Con la cámara adentro, la pintura de la carrocería se recorta detrás del parabrisas.
+function setCockpitClip(car, on) {
+  car.paint.clippingPlanes = on ? [car.clip] : null;
+  car.paint.needsUpdate = true;
+}
+const _cn = new THREE.Vector3(), _cp = new THREE.Vector3();
+function updateCockpitClip(car) {
+  car.body.updateMatrixWorld();
+  _cn.set(0, 0, 1).transformDirection(car.body.matrixWorld);
+  _cp.set(0, 0, car.B.zW - 0.03).applyMatrix4(car.body.matrixWorld);
+  car.clip.setFromNormalAndCoplanarPoint(_cn, _cp);
+}
+
+// Dibuja los relojes: velocímetro, tacómetro, marcha y vida.
+function drawDash(car, s) {
+  const g = car.dashCv.getContext('2d'), W = 512, H = 192;
+  const kmh = Math.abs(s.f) * 3.6;
+  g.fillStyle = '#05070b'; g.fillRect(0, 0, W, H);
+  const dial = (cx, val, max, label, ticks, red, txt) => {
+    const r = 82, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
+    g.lineWidth = 5; g.strokeStyle = '#1b2230'; g.beginPath(); g.arc(cx, 96, r, a0, a1); g.stroke();
+    if (red) { g.strokeStyle = '#b3202a'; g.beginPath(); g.arc(cx, 96, r, a0 + (a1 - a0) * red, a1); g.stroke(); }
+    g.strokeStyle = '#d9e4f2'; g.lineWidth = 2;
+    for (let i = 0; i <= ticks; i++) { const a = a0 + (a1 - a0) * i / ticks; g.beginPath(); g.moveTo(cx + Math.cos(a) * (r - 4), 96 + Math.sin(a) * (r - 4)); g.lineTo(cx + Math.cos(a) * (r - 14), 96 + Math.sin(a) * (r - 14)); g.stroke(); }
+    const a = a0 + (a1 - a0) * clamp(val / max, 0, 1);
+    g.strokeStyle = '#ff3b3b'; g.lineWidth = 4; g.beginPath(); g.moveTo(cx, 96); g.lineTo(cx + Math.cos(a) * (r - 10), 96 + Math.sin(a) * (r - 10)); g.stroke();
+    g.fillStyle = '#ff3b3b'; g.beginPath(); g.arc(cx, 96, 7, 0, 7); g.fill();
+    g.fillStyle = '#e8f3ff'; g.font = '700 30px Arial'; g.textAlign = 'center'; g.fillText(txt, cx, 150);
+    g.fillStyle = '#7f8ba0'; g.font = '600 13px Arial'; g.fillText(label, cx, 172);
+  };
+  dial(110, s.rpm, 7500, 'x1000 rpm', 15, 0.8, s.gear < 0 ? 'R' : s.gear);
+  dial(402, kmh, 260, 'km/h', 13, 0, Math.round(kmh));
+  // vida al medio
+  const hp = s.hp / s.hpMax;
+  g.fillStyle = '#1b2230'; g.fillRect(226, 70, 60, 10); g.fillStyle = hp < 0.3 ? '#ff4d4d' : hp < 0.6 ? '#ffc53d' : '#3ddc84'; g.fillRect(226, 70, 60 * hp, 10);
+  g.fillStyle = '#7f8ba0'; g.font = '600 12px Arial'; g.textAlign = 'center'; g.fillText('MOTOR', 256, 62);
+  if (s.nitro !== undefined) { g.fillStyle = '#1b2230'; g.fillRect(226, 108, 60, 10); g.fillStyle = '#3fb6ff'; g.fillRect(226, 108, 60 * s.nitro, 10); g.fillStyle = '#7f8ba0'; g.fillText('NITRO', 256, 100); }
+  car.dashTex.needsUpdate = true;
+}
+// Pantalla de la consola: un mapa chico con el norte arriba.
+function drawNav(car, s) {
+  const g = car.navCv.getContext('2d'), W = 256, H = 160, k = 0.55;
+  g.fillStyle = '#0b1220'; g.fillRect(0, 0, W, H);
+  g.strokeStyle = '#3a4659'; g.lineWidth = ROAD_W * k;
+  const tx = x => W / 2 - (x - s.x) * k, tz = z => H / 2 - (z - s.z) * k;
+  for (const c of GRID) { g.beginPath(); g.moveTo(tx(c), 0); g.lineTo(tx(c), H); g.stroke(); g.beginPath(); g.moveTo(0, tz(c)); g.lineTo(W, tz(c)); g.stroke(); }
+  if (typeof G !== 'undefined' && G.thief && G.thief.body !== s) { g.fillStyle = '#ff8a00'; g.beginPath(); g.arc(tx(G.thief.body.x), tz(G.thief.body.z), 5, 0, 7); g.fill(); }
+  if (typeof G !== 'undefined') for (const c of G.cops || []) if (c.body !== s) { g.fillStyle = '#3070ff'; g.beginPath(); g.arc(tx(c.body.x), tz(c.body.z), 4, 0, 7); g.fill(); }
+  g.save(); g.translate(W / 2, H / 2); g.rotate(Math.PI - s.h); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(0, -9); g.lineTo(6, 7); g.lineTo(0, 3); g.lineTo(-6, 7); g.closePath(); g.fill(); g.restore();
+  car.navTex.needsUpdate = true;
 }
 
 function poseCockpit(car, s) {
   if (!car.cockpit || !car.cockpit.visible) return;
-  car.steerWheel.rotation.z = s.steer * 2.2;
-  const k = Math.round(Math.abs(s.f) * 3.6);
-  if (k !== car.lastKmh) {
-    car.lastKmh = k;
-    const g = car.speedCv.getContext('2d'); g.fillStyle = '#060a10'; g.fillRect(0, 0, 128, 64);
-    g.fillStyle = '#7ff0ff'; g.font = '700 38px "Courier New", monospace'; g.textAlign = 'center'; g.fillText(k, 64, 40);
-    g.font = '600 13px Arial'; g.fillText('km/h', 64, 58);
-    car.speedTex.needsUpdate = true;
-  }
+  updateCockpitClip(car);
+  car.steerWheel.rotation.z = s.steer * 2.4;
+  car.dashT = (car.dashT || 0) + 1;
+  if (car.dashT % 2 === 0) drawDash(car, s);
+  if (car.dashT % 6 === 0) drawNav(car, s);
 }
 
 // ---------- física ----------
@@ -281,13 +390,18 @@ function stepBody(c, inp, dt, ev) {
   const sp = c.spec;
   const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -fz, rz = fx;
   let f = c.vx * fx + c.vz * fz, l = c.vx * rx + c.vz * rz;
-  const top = sp.top * (c.topMul || 1) * (c.dead ? 0.15 : 1);
+  // nitro (sólo el jugador lo tiene): más empuje y más velocidad tope mientras dure
+  c.boost = !!(inp.nitro && c.nitro > 0.02 && !c.dead && f > -0.5);
+  if (c.nitro !== undefined) c.nitro = clamp(c.nitro + (c.boost ? -0.32 : 0.035 + (c.slide > 3 || c.air ? 0.12 : 0)) * dt, 0, 1);
+  const top = sp.top * (c.topMul || 1) * (c.dead ? 0.15 : 1) * (c.boost ? 1.22 : 1);
   if (!c.air) {
     c.grass = !onRoad(c.x, c.z);
     const grip = sp.grip * (c.grass ? 0.78 : 1) * (inp.hand ? 0.5 : 1);
     let a = 0;
     if (inp.thr > 0 && f > -0.5) a += sp.acc * inp.thr * Math.max(0, 1 - Math.pow(Math.max(0, f) / top, 2.4));
-    if (inp.brk > 0) { if (f > 0.5) a -= sp.brake * inp.brk; else if (inp.thr <= 0) a -= 5 * inp.brk; }
+    if (c.boost) a += sp.acc * 0.9 * Math.max(0, 1 - Math.pow(Math.max(0, f) / top, 2));
+    // frenar parado es reversa, salvo que sea "quedarse quieto" (stop)
+    if (inp.brk > 0) { if (f > 0.5) a -= sp.brake * inp.brk; else if (inp.stop) a -= Math.sign(f) * Math.min(Math.abs(f) / dt, sp.brake); else if (inp.thr <= 0) a -= 5 * inp.brk; }
     if (inp.thr <= 0 && inp.brk <= 0) a -= Math.sign(f) * Math.min(Math.abs(f) / dt, 1.2 + Math.abs(f) * 0.02);
     if (inp.hand) a -= Math.sign(f) * 3;
     a -= f * Math.abs(f) * 0.0007 + (c.grass ? f * 0.25 : 0);

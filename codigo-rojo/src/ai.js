@@ -45,8 +45,8 @@ function followRoute(c, ai, lane, look) {
 // Volante y pedales para ir hacia (tx, tz) a velocidad v.
 function driveTo(c, tx, tz, v) {
   const ang = wrapAng(Math.atan2(tx - c.x, tz - c.z) - c.h);
-  const inp = { thr: 0, brk: 0, steer: clamp(-ang * 2.4, -1, 1), hand: false };
-  if (c.f < v - 0.5) inp.thr = 1; else if (c.f > v + 1.5) inp.brk = 1;
+  const inp = { thr: 0, brk: 0, steer: clamp(-ang * 2.4, -1, 1), hand: false, ang };
+  if (c.f < v - 0.5) inp.thr = 1; else if (c.f > v + 1.5) { inp.brk = 1; inp.stop = true; }
   // si el objetivo quedó atrás, frena y dobla fuerte
   if (Math.abs(ang) > 1.6 && c.f > 6) { inp.thr = 0; inp.brk = 1; }
   return inp;
@@ -74,11 +74,20 @@ function carAhead(c, all, range = 16) {
   return best ? { o: best, d: bd } : null;
 }
 
-// Si se queda trabado contra algo, retrocede un rato.
+// Si se queda trabado contra algo, retrocede un rato. Si el objetivo quedó atrás y va lento,
+// da la vuelta en tres movimientos (adelante, reversa con el volante al revés, adelante).
 function unstick(c, ai, inp, dt) {
+  ai.kCd = Math.max(0, (ai.kCd || 0) - dt);
   if (ai.rev > 0) { ai.rev -= dt; return { thr: 0, brk: 1, steer: -ai.revSteer, hand: false }; }
   if (Math.abs(c.f) < 1.2 && inp.thr > 0) ai.stuck = (ai.stuck || 0) + dt; else ai.stuck = 0;
   if (ai.stuck > 1.1) { ai.stuck = 0; ai.rev = 1.0; ai.revSteer = inp.steer >= 0 ? 1 : -1; }
+  if (ai.kind !== 'trafico' && inp.ang !== undefined && Math.abs(inp.ang) > 2.1 && Math.abs(c.f) < 3.5 && !ai.kCd) { ai.kCd = 2.6; ai.rev = 0.9; ai.revSteer = inp.ang < 0 ? 1 : -1; }
+  // va y viene sin avanzar: cada 3 s revisa cuánto se movió
+  ai.chkT = (ai.chkT || 0) + dt;
+  if (ai.chkT > 3) {
+    if (ai.chkX !== undefined && Math.hypot(c.x - ai.chkX, c.z - ai.chkZ) < 4 && inp.thr > 0) { ai.rev = 1.3; ai.revSteer = Math.random() < 0.5 ? 1 : -1; }
+    ai.chkT = 0; ai.chkX = c.x; ai.chkZ = c.z;
+  }
   return inp;
 }
 
@@ -107,7 +116,7 @@ function trafficInput(c, ai, all, t, dt) {
   const ah = carAhead(c, all, 18);
   if (ah) v = Math.min(v, Math.max(0, (ah.d - 7) * 0.8), Math.max(0, ah.o.f));
   const inp = driveTo(c, fr.tx, fr.tz, v);
-  if (v < 0.5) { inp.thr = 0; inp.brk = 1; }
+  if (v < 0.5) { inp.thr = 0; inp.brk = 1; inp.stop = true; }
   c.braking = inp.brk > 0;
   return unstick(c, ai, inp, dt);
 }

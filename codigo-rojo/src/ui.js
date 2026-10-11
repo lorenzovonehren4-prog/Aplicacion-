@@ -64,7 +64,7 @@ function renderMissions() {
       return `<button class="ms ${open ? '' : 'locked'}" data-mis="${m.id}"><span class="n">${open ? i + 1 : '🔒'}</span>
         <span><b>${m.name}</b><small>${open ? m.desc : 'Gana la misión anterior para abrirla'}</small>
         <span class="tags"><span class="tag ${m.diff}">${DIFFS[m.diff].name}</span><span class="tag">${TIME_ICON[m.time]} ${TIMES[m.time].name}</span><span class="tag">⏱ ${m.t} s</span></span></span>
-        <span class="st">${done ? '✅' : ''}</span></button>`;
+        <span class="st">${done ? `<span class="mstars">${[0, 1, 2].map(k => `<i class="${k < (save.stars[m.id] || 1) ? 'on' : ''}">★</i>`).join('')}</span>` : ''}</span></button>`;
     }).join('');
   }
 }
@@ -88,11 +88,10 @@ let garageCar = null;
 function showGarageCar() {
   clearGame();
   G.garage = true;
-  setTimeOfDay('tarde');
-  const n = nodeAt(1 * 6 + 1);
-  garageCar = spawnActor(carById(save.car), n.x + 3, n.z + 14, Math.PI * 0.75);
-  G.all.push(garageCar);
   G.thief = null;
+  showroomCar(carById(save.car));
+  garageCar = SHOW.car;
+  setPostLook({ bloom: 0.5, threshold: 0.9, vignette: 0.42, sat: 1.12, tint: [1, 1, 1.03] });
 }
 function renderGarage() {
   const cur = carById(save.car);
@@ -114,7 +113,7 @@ function pickCar(id) {
   } else SFX.click();
   save.car = id; persist();
   // cambia el carro de la vitrina
-  if (garageCar) { const i = G.all.indexOf(garageCar); removeActor(garageCar); const n = nodeAt(1 * 6 + 1); garageCar = spawnActor(c, n.x + 3, n.z + 14, Math.PI * 0.75); G.all[i] = garageCar; }
+  if (G.garage) { showroomCar(c); garageCar = SHOW.car; }
   renderGarage();
   $(`[data-car=${id}]`)?.focus();
 }
@@ -134,7 +133,7 @@ function renderOptions() {
     <div class="opt"><span>Cámara</span>${seg('cam', [['afuera', 'Atrás'], ['cabina', 'Cabina']])}</div>
     <div class="opt"><span>Dirección</span>${seg('sens', [[0.75, 'Suave'], [1, 'Normal'], [1.35, 'Rápida']])}</div>
     <div class="opt"><span>Gráficos</span>${seg('quality', [['alta', 'Altos'], ['baja', 'Bajos']])}</div>
-    <p class="hint">↑ acelerar · ↓ frenar y reversa · ← → girar · Espacio freno de mano · C cámara · H bocina · R volver a la calle · P o Esc pausa. También W A S D.</p>
+    <p class="hint">↑ acelerar · ↓ frenar y reversa · ← → girar · Espacio freno de mano · Shift nitro · C cámara · H bocina · R volver a la calle · P o Esc pausa. También W A S D.</p>
     <button class="btn" id="reset">Borrar progreso</button>`;
   if (o.voz === undefined) o.voz = true;
   $('#vol').oninput = e => { save.opt.vol = +e.target.value; SFX.setVol(); persist(); };
@@ -147,10 +146,21 @@ function renderOptions() {
 function showResult(res) {
   const el = $('#result');
   el.classList.toggle('win', res.win); el.classList.toggle('lose', !res.win);
-  $('#rTitle').textContent = res.win ? '¡Ganaste!' : 'Perdiste';
+  const cfg0 = G.cfg, mis = cfg0.mission && MISSIONS.find(m => m.id === cfg0.mission);
+  $('#rKick').textContent = (mis ? mis.name : 'Partida libre') + ' · ' + (cfg0.role === 'ladron' ? 'Ladrón' : 'Policía') + ' · ' + DIFFS[cfg0.diff].name;
+  $('#rBadge').textContent = res.win ? (cfg0.role === 'ladron' ? '💰' : '🚔') : (cfg0.role === 'ladron' ? '🚨' : '💨');
+  $('#rTitle').textContent = res.win ? (cfg0.role === 'ladron' ? '¡Escapaste!' : '¡Caso cerrado!') : (cfg0.role === 'ladron' ? '¡Te atraparon!' : 'Se escapó');
   $('#rSub').textContent = res.why;
-  $('#rList').innerHTML = res.lines.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('');
-  $('#rCoins').textContent = `+${res.coins} monedas`;
+  $('#rStars').innerHTML = res.starWhy.map(([t, on], i) => `<span class="star ${on ? 'on' : ''}" style="--d:${0.35 + i * 0.32}s" title="${t}">★</span>`).join('');
+  $('#rStarWhy').innerHTML = res.starWhy.map(([t, on]) => `<span class="${on ? 'on' : ''}">${on ? '✔' : '✖'} ${t}</span>`).join('');
+  $('#rStats').innerHTML = res.stats.map(([i, a, b]) => `<div><i>${i}</i><b>${b}</b><small>${a}</small></div>`).join('');
+  $('#rList').innerHTML = res.lines.map(([a, b], i) => `<li style="--d:${1.2 + i * 0.12}s"><span>${a}</span><b>${b}</b></li>`).join('');
+  // estrellas con sonido y monedas que suben contando
+  for (let i = 0; i < res.stars; i++) setTimeout(() => SFX.star(i), 350 + i * 320);
+  const t0 = performance.now() + 1300, el2 = $('#rCoins');
+  el2.textContent = '+0';
+  const tick = now => { const k = clamp((now - t0) / 900, 0, 1); el2.textContent = '+' + Math.round(res.coins * (1 - Math.pow(1 - k, 3))).toLocaleString('es-PE'); if (k < 1) requestAnimationFrame(tick); else if (res.coins) SFX.coin(); };
+  requestAnimationFrame(tick);
   const cfg = G.cfg, btns = ['<button class="btn" data-act="retry">Reintentar</button>'];
   if (cfg.mission) {
     const same = MISSIONS.filter(m => m.role === cfg.role), i = same.findIndex(m => m.id === cfg.mission), nx = same[i + 1];
@@ -232,7 +242,7 @@ function navMove(dx, dy) {
   }
   if (best) { best.focus(); best.scrollIntoView({ block: 'nearest' }); SFX.tone(440, 0.03, 'triangle', 0.05); }
 }
-const DRIVE_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
+const DRIVE_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight', 'KeyN'];
 window.addEventListener('keydown', e => {
   if (screen === 'intro') { e.preventDefault(); leaveIntro(); return; }
   if (G.mode === 'play' || G.mode === 'count' || G.mode === 'busted') {
@@ -287,21 +297,20 @@ function step(dt) {
   else if (G.mode !== 'pause' && G.mode !== 'result') simulate(dt);
   else if (G.mode === 'result') stepTraffic(dt);
   for (const a of G.all) poseCar(a.car, a.body, G.mode === 'pause' ? 0 : dt, W.t);
+  if (G.mode !== 'pause' && G.mode !== 'result' && !G.garage) for (const a of G.all) carFx(a, dt);
+  if (G.player) { const bo = !!G.player.body.boost; if (bo && !G.wasBoost) SFX.nitro(); G.wasBoost = bo; }
   if (G.player) poseCockpit(G.player.car, G.player.body);
   // cámara
-  if (G.mode === 'menu' && G.garage && garageCar) {
-    const b = garageCar.body, a = G.t * 0.3;
-    W.camera.position.set(b.x + Math.sin(a) * 7.5, b.y + 2.4, b.z + Math.cos(a) * 7.5);
-    W.camera.lookAt(b.x + (window.innerWidth > 760 ? Math.cos(a) * 1.6 : 0), b.y + 0.8, b.z - (window.innerWidth > 760 ? Math.sin(a) * 1.6 : 0));
-  } else if (G.mode === 'menu' && G.thief) updateCamera(dt);
+  if (G.mode === 'menu' && G.garage && SHOW.car) { renderShowroom(dt); return; }
+  if (G.mode === 'menu' && G.thief) updateCamera(dt);
   else if (G.player) {
     updateCamera(dt);
-    const fovT = W.baseFov + (G.mode === 'play' ? Math.max(0, Math.abs(G.player.body.f) / G.player.body.spec.top - 0.4) * 14 : 0);
+    const fovT = W.baseFov + (G.mode === 'play' ? Math.max(0, Math.abs(G.player.body.f) / G.player.body.spec.top - 0.4) * 14 + (G.player.body.boost ? 9 : 0) : 0);
     if (Math.abs(W.camera.fov - fovT) > 0.05) { W.camera.fov += (fovT - W.camera.fov) * Math.min(1, dt * 3); W.camera.updateProjectionMatrix(); }
   }
   // sol que sigue al jugador (sombras), cielo y faros
   W.camera.getWorldPosition(_cam);
-  const focus = G.player ? G.player.body : G.thief ? G.thief.body : garageCar ? garageCar.body : { x: 0, y: 0, z: 0 };
+  const focus = G.player ? G.player.body : G.thief ? G.thief.body : { x: 0, y: 0, z: 0 };
   W.sun.position.set(focus.x + W.sunDir.x * 150, W.sunDir.y * 150, focus.z + W.sunDir.z * 150);
   W.sun.target.position.set(focus.x, 0, focus.z);
   W.sky.position.copy(_cam); W.stars.position.copy(_cam);
@@ -322,7 +331,7 @@ function step(dt) {
   renderFrame(W.scene, W.camera);
 }
 
-const TIPS = ['De ladrón, los puentes y el túnel sirven para perder a los patrulleros.', 'De policía: chócalo de costado para frenarlo y quédate pegado para llenar la barra.', 'El freno de mano (Espacio) te ayuda a doblar en las esquinas sin frenar tanto.', 'Las rampas te hacen saltar por encima del tráfico.', 'Si te trabas, la tecla R te devuelve a la calle.', 'De noche los patrulleros iluminan la calle con su circulina: los ves venir.'];
+const TIPS = ['De ladrón, los puentes y el túnel sirven para perder a los patrulleros.', 'De policía: chócalo de costado para frenarlo y quédate pegado para llenar la barra.', 'El freno de mano (Espacio) te ayuda a doblar en las esquinas sin frenar tanto.', 'Las rampas te hacen saltar por encima del tráfico.', 'Si te trabas, la tecla R te devuelve a la calle.', 'De noche los patrulleros iluminan la calle con su circulina: los ves venir.', 'Shift (o el botón NITRO) te da un empujón. Se recarga solo, y más rápido si derrapas o saltas.', 'Gana con el motor sano y rápido para sacar las 3 estrellas.'];
 function boot() {
   $('#ldTip').textContent = 'Consejo: ' + TIPS[Math.floor(Math.random() * TIPS.length)];
   // deja que se pinte la pantalla de carga antes de armar el barrio

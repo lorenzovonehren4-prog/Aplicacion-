@@ -155,6 +155,10 @@ body.modo-poli .hrole{ background:rgba(42,107,255,.9); }
 .g-arc{ fill:none; stroke:url(#none); stroke:#ff3b4a; stroke-width:8; stroke-linecap:round; stroke-dasharray:0 400; transition:stroke-dasharray .1s; }
 .g-hpbg{ fill:none; stroke:rgba(255,255,255,.08); stroke-width:4; stroke-dasharray:207 400; }
 .g-hp{ fill:none; stroke:#3ddc84; stroke-width:4; stroke-linecap:round; stroke-dasharray:207 400; transition:stroke-dasharray .2s, stroke .2s; }
+.nitro{ position:absolute; left:-26px; bottom:14px; width:12px; height:104px; border-radius:8px; background:rgba(8,10,18,.65); border:1px solid rgba(255,255,255,.15); overflow:hidden; }
+.nitro i{ position:absolute; left:0; right:0; bottom:0; height:100%; background:linear-gradient(0deg,#1f6bff,#5fd0ff); box-shadow:0 0 12px #3fa0ff; }
+.nitro span{ position:absolute; left:-22px; bottom:40px; transform:rotate(-90deg); font:700 9px Rubik,sans-serif; letter-spacing:.2em; color:#9fcfff; }
+.nitro.on{ border-color:#7fd0ff; box-shadow:0 0 16px #3fa0ff; } .nitro.low i{ background:#3a4b66; box-shadow:none; }
 .g-num{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Fredoka; }
 .g-num b{ font-size:42px; line-height:1; } .g-num small{ color:#c9d3ea; font-size:12px; }
 .g-num em{ position:absolute; bottom:18px; font-style:normal; font-weight:700; font-size:14px; padding:1px 8px; border-radius:6px; background:rgba(255,255,255,.12); }
@@ -180,9 +184,9 @@ body.modo-poli .hrole{ background:rgba(42,107,255,.9); }
 #count{ position:fixed; inset:0; display:grid; place-items:center; pointer-events:none; z-index:7; }
 #count b{ font-family:Fredoka; font-size:clamp(90px,20vw,200px); color:#fff; text-shadow:0 8px 0 #7a0b14, 0 20px 40px rgba(0,0,0,.6); animation:countpop .8s ease both; }
 @keyframes countpop{ 0%{ transform:scale(2.2); opacity:0; } 25%{ transform:scale(1); opacity:1; } 80%{ opacity:1; } 100%{ transform:scale(.7); opacity:0; } }
-#big{ position:fixed; left:50%; top:38%; transform:translate(-50%,-50%) scale(.6); font-family:Fredoka; font-size:clamp(40px,9vw,96px); font-weight:700; text-align:center; opacity:0; pointer-events:none; z-index:8; transition:all .4s cubic-bezier(.2,1.6,.4,1); text-shadow:0 6px 0 rgba(0,0,0,.5); }
+#big{ position:fixed; left:50%; top:38%; transform:translate(-50%,-50%) scale(.6); font-family:Fredoka; font-size:clamp(40px,9vw,96px); font-weight:700; text-align:center; opacity:0; pointer-events:none; z-index:8; transition:all .4s cubic-bezier(.2,1.6,.4,1); white-space:nowrap; letter-spacing:.02em; text-shadow:0 6px 0 rgba(0,0,0,.5),0 0 40px rgba(0,0,0,.35); }
 #big.on{ opacity:1; transform:translate(-50%,-50%) scale(1); }
-#big.long{ font-size:clamp(28px,5vw,56px); width:90vw; }
+#big.long{ font-size:clamp(26px,5vw,56px); width:92vw; white-space:normal; }
 #big.win{ color:#7dffb0; } #big.lose{ color:#ff6a6a; }
 #flash{ position:fixed; inset:0; pointer-events:none; z-index:7; opacity:0; transition:opacity .6s; }
 #flash.on{ opacity:1; animation:fl .25s steps(1) 4; }
@@ -196,11 +200,30 @@ body.touch.playing .gauge{ bottom:96px; width:120px; height:120px; }
 #touch .grp{ display:flex; gap:10px; pointer-events:auto; align-items:flex-end; }
 #touch button{ width:72px; height:72px; border-radius:18px; border:2px solid rgba(255,255,255,.25); background:rgba(8,10,18,.45); font-size:26px; font-weight:900; touch-action:none; }
 #touch button.on{ background:rgba(255,59,74,.55); }
-#touch .hand{ width:60px; height:60px; font-size:13px; }
+#touch .hand{ width:60px; height:60px; font-size:13px; } #touch .nit{ color:#9fd6ff; border-color:rgba(95,208,255,.5); }
 /* pausa y resultado */
 #pause,#result{ background:rgba(6,8,14,.66); z-index:9; }
 .card{ padding:22px; text-align:center; }
-#result .card{ width:min(460px,100%); }
+#result{ backdrop-filter:blur(6px) saturate(.8); -webkit-backdrop-filter:blur(6px) saturate(.8); }
+#result .card{ width:min(500px,100%); position:relative; max-height:calc(100% - 20px); overflow:auto; background:linear-gradient(180deg,rgba(26,30,44,.92),rgba(12,14,22,.94)); box-shadow:0 30px 80px rgba(0,0,0,.6); }
+#result.win .card{ border-color:rgba(125,255,176,.35); } #result.lose .card{ border-color:rgba(255,122,122,.35); }
+.r-badge{ margin:0 auto 8px; width:72px; height:72px; display:grid; place-items:center; font-size:36px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#3a4258,#151925); border:2px solid rgba(255,255,255,.18); box-shadow:0 10px 30px rgba(0,0,0,.5); animation:starIn .6s both; }
+#result.win .r-badge{ box-shadow:0 0 0 6px rgba(125,255,176,.12),0 10px 30px rgba(0,0,0,.5); }
+.r-kick{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+.r-stars{ display:flex; justify-content:center; gap:10px; margin:8px 0 4px; }
+.r-stars .star{ font-size:46px; line-height:1; color:rgba(255,255,255,.12); text-shadow:0 2px 0 rgba(0,0,0,.4); }
+.r-stars .star.on{ color:#ffd23f; text-shadow:0 0 22px rgba(255,210,63,.6),0 3px 0 #b07d00; animation:starIn .5s var(--d) both; }
+.r-stars .star:nth-child(2){ font-size:58px; margin-top:-8px; }
+@keyframes starIn{ 0%{ transform:scale(0) rotate(-90deg); opacity:0; } 70%{ transform:scale(1.35) rotate(10deg); opacity:1; } 100%{ transform:scale(1); } }
+.r-why{ display:flex; flex-wrap:wrap; justify-content:center; gap:4px 12px; font-size:12px; color:var(--muted); margin-bottom:12px; } .r-why .on{ color:#ffe28a; }
+.r-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.r-stats div{ padding:10px 6px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); }
+.r-stats i{ font-style:normal; font-size:18px; display:block; } .r-stats b{ display:block; font-family:Fredoka; font-size:20px; } .r-stats small{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+.rlist li{ animation:rowIn .35s var(--d,0s) both; }
+@keyframes rowIn{ from{ opacity:0; transform:translateX(-12px); } }
+.r-coins{ display:inline-flex; align-items:center; gap:8px; margin:2px 0 16px; padding:8px 18px; border-radius:999px; background:linear-gradient(90deg,rgba(255,210,63,.18),rgba(255,160,40,.12)); border:1px solid rgba(255,210,63,.4); }
+.r-coins b{ font-family:Fredoka; font-size:28px; color:#ffe28a; } .r-coins small{ color:#e9d39a; font-weight:700; }
+.mstars{ display:flex; gap:1px; font-size:16px; } .mstars i{ font-style:normal; color:rgba(255,255,255,.15); } .mstars i.on{ color:#ffd23f; text-shadow:0 0 8px rgba(255,210,63,.5); }
 #result h2{ font-size:clamp(32px,7vw,50px); }
 #result.win h2{ color:#7dffb0; } #result.lose h2{ color:#ff7a7a; }
 .rlist{ list-style:none; padding:0; margin:14px 0; display:grid; gap:6px; text-align:left; }
@@ -308,6 +331,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
       <circle cx="60" cy="60" r="44" class="g-hpbg"/>
       <circle cx="60" cy="60" r="44" class="g-hp" id="gHp"/>
     </svg>
+    <div class="nitro" id="hNitro"><i></i><span>NITRO</span></div>
     <div class="g-num"><b id="hSpd">0</b><small>km/h</small><em id="hGear">1</em></div>
   </div>
 </section>
@@ -317,7 +341,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
 
 <div id="touch">
   <div class="grp"><button data-k="left" aria-label="Izquierda">◀</button><button data-k="right" aria-label="Derecha">▶</button></div>
-  <div class="grp"><button class="hand" data-k="hand" aria-label="Freno de mano">FRENO<br>MANO</button><button data-k="brake" aria-label="Frenar">⏷</button><button data-k="gas" aria-label="Acelerar">⏶</button></div>
+  <div class="grp"><button class="hand nit" data-k="nitro" aria-label="Nitro">NITRO</button><button class="hand" data-k="hand" aria-label="Freno de mano">FRENO<br>MANO</button><button data-k="brake" aria-label="Frenar">⏷</button><button data-k="gas" aria-label="Acelerar">⏶</button></div>
 </div>
 
 <section class="screen" id="pause">
@@ -334,10 +358,15 @@ body.ready #loading{ opacity:0; pointer-events:none; }
 
 <section class="screen" id="result">
   <div class="card panel pop">
+    <div class="r-badge" id="rBadge"></div>
+    <div class="r-kick" id="rKick"></div>
     <h2 id="rTitle"></h2>
     <p class="hint" id="rSub"></p>
+    <div class="r-stars" id="rStars"></div>
+    <div class="r-why" id="rStarWhy"></div>
+    <div class="r-stats" id="rStats"></div>
     <ul class="rlist" id="rList"></ul>
-    <div class="chip" style="font-size:20px;margin-bottom:14px"><i class="coin"></i><b id="rCoins"></b></div>
+    <div class="r-coins"><i class="coin"></i><b id="rCoins"></b><small>monedas</small></div>
     <div class="row" id="rBtns"></div>
   </div>
 </section>
@@ -353,6 +382,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
 <script src="src/car.js"></script>
 <script src="src/ai.js"></script>
 <script src="src/audio.js"></script>
+<script src="src/showroom.js"></script>
 <script src="src/game.js"></script>
 <script src="src/ui.js"></script>
 </body>

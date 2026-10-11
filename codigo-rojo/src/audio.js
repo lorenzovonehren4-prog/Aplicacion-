@@ -209,6 +209,7 @@ const SFX = {
     } catch (e) { /* sin voz */ }
   },
   thunder() { this.burst(2.6, 180, 0.7); this.burst(1.2, 90, 0.5, 'lowpass', 0.2); },
+  nitro() { this.sweep(0.9, 300, 2600, 0.28); this.burst(0.7, 700, 0.35); },
   buy() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.12, i * 0.06)); },
   win() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => this.tone(f, i === 5 ? 0.6 : 0.16, 'square', 0.09, i * 0.13)); },
   lose() { [392, 330, 262, 196].forEach((f, i) => this.tone(f, 0.25, 'triangle', 0.13, i * 0.18)); },

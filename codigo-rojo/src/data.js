@@ -24,7 +24,7 @@ const carById = id => CARS.find(c => c.id === id) || CARS[0];
 // speed: multiplica la velocidad punta de la IA; skill: qué tan bien toma curvas y predice;
 // aggro: cuánto embiste; arrest: qué tan rápido se llena la barra de arresto.
 const DIFFS = {
-  facil: { name: 'Fácil', speed: 0.82, skill: 0.55, aggro: 0.4, arrest: 0.75, traffic: 18, reward: 1 },
+  facil: { name: 'Fácil', speed: 0.8, skill: 0.55, aggro: 0.35, arrest: 0.62, traffic: 18, reward: 1 },
   normal: { name: 'Normal', speed: 0.92, skill: 0.75, aggro: 0.65, arrest: 1, traffic: 24, reward: 1.5 },
   dificil: { name: 'Difícil', speed: 1.0, skill: 0.9, aggro: 0.85, arrest: 1.2, traffic: 28, reward: 2.2 },
   leyenda: { name: 'Leyenda', speed: 1.07, skill: 1.0, aggro: 1, arrest: 1.4, traffic: 32, reward: 3.2 },
@@ -76,7 +76,7 @@ const ACHS = [
 const SAVE_KEY = 'codigorojo_v1';
 function newSave() {
   return {
-    v: 1, coins: 0, car: 'compacto', cars: ['compacto'], done: {}, best: {}, ach: {},
+    v: 1, coins: 0, car: 'compacto', cars: ['compacto'], done: {}, best: {}, stars: {}, ach: {},
     stats: { runs: 0, wins: 0, thiefWins: 0, copWins: 0, arrests: 0, busted: 0, coins: 0, top: 0, reds: 0, wrecked: 0 },
     opt: { sound: true, vol: 0.8, cam: 'afuera', quality: 'alta', sens: 1 },
   };

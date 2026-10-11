@@ -5,9 +5,9 @@
 
 const G = { mode: 'boot', cfg: null, all: [], cops: [], traffic: [], t: 0, time: 0, acc: 0, bar: 0, cam: 'afuera', snap: true };
 const KEYS = {};
-const TOUCH = { left: false, right: false, gas: false, brake: false, hand: false };
+const TOUCH = { left: false, right: false, gas: false, brake: false, hand: false, nitro: false };
 const STEP = 1 / 120;
-const inp = { thr: 0, brk: 0, steer: 0, hand: false };
+const inp = { thr: 0, brk: 0, steer: 0, hand: false, nitro: false };
 
 function readInput(dt) {
   const L = KEYS.ArrowLeft || KEYS.KeyA || TOUCH.left, R = KEYS.ArrowRight || KEYS.KeyD || TOUCH.right;
@@ -18,6 +18,7 @@ function readInput(dt) {
   inp.thr = KEYS.ArrowUp || KEYS.KeyW || TOUCH.gas ? 1 : 0;
   inp.brk = KEYS.ArrowDown || KEYS.KeyS || TOUCH.brake ? 1 : 0;
   inp.hand = !!(KEYS.Space || TOUCH.hand);
+  inp.nitro = !!(KEYS.ShiftLeft || KEYS.ShiftRight || KEYS.KeyN || TOUCH.nitro);
   return inp;
 }
 
@@ -26,6 +27,7 @@ function readInput(dt) {
 function spawnActor(spec, x, z, h, opts = {}) {
   const body = newBody(spec, x, z, h);
   body.state = 'drive';
+  if (opts.player) body.nitro = 1;
   const car = makeCar(spec, { police: opts.police, cockpit: opts.player });
   car.sirenOn = !!opts.police;
   W.scene.add(car.root);
@@ -103,7 +105,7 @@ function startGame(cfg) {
   const D = DIFFS[cfg.diff];
   setTimeOfDay(cfg.time);
   G.time = 0; G.bar = 0; G.acc = 0; G.got = 0; G.reds = 0; G.bridges = 0; G.wrecked = 0; G.tunnel = false; G.lastNode = null; G.onBridge = false;
-  G.stats = { maxJump: 0 };
+  G.stats = { maxJump: 0, top: 0, maxBar: 0 };
   const spec = carById(save.car);
   // salida: el ladrón sale del banco (cerca de la plaza del sur oeste)
   const startSeg = { a: nodeAt(1 * 6 + 0), b: nodeAt(1 * 6 + 1) };      // calle x = -135, de z = -225 a -135
@@ -113,7 +115,7 @@ function startGame(cfg) {
     G.thief = G.player;
     G.all.push(G.player);
     const roles = ['chase', 'cut', 'flank'];
-    for (let i = 0; i < 3; i++) { const c = spawnCop(G.player.body, roles[i], cfg.diff); c.wait = 2 + i * 1.5; G.cops.push(c); G.all.push(c); }
+    for (let i = 0; i < 3; i++) { const c = spawnCop(G.player.body, roles[i], cfg.diff); c.wait = (cfg.diff === 'facil' ? 4.5 : 2) + i * 1.5; G.cops.push(c); G.all.push(c); }
   } else {
     const ts = laneSpot(startSeg.a, startSeg.b, 0.75);
     const tspec = Object.assign({}, carById(THIEF_CAR[cfg.diff]), { color: 0x101010 });
@@ -160,12 +162,33 @@ function setCam() {
   if (!car) return;
   const inside = G.cam === 'cabina' && (G.mode === 'count' || G.mode === 'play' || G.mode === 'pause');
   car.cockpit.visible = inside; car.cab.visible = !inside; car.roof.visible = !inside;
-  car.bar.forEach(b => { b.visible = !inside; });
-  if (inside) { car.body.add(W.camera); W.camera.position.copy(car.eye); W.camera.rotation.set(-0.1, Math.PI, 0, 'YXZ'); }
+  car.bar.forEach(b => { b.visible = !inside; }); if (car.ant) car.ant.visible = !inside;
+  setCockpitClip(car, inside);
+  if (inside) { car.body.add(W.camera); W.camera.position.copy(car.eye); W.camera.rotation.set(-0.15, Math.PI, 0, 'YXZ'); }
   else { W.scene.attach(W.camera); W.camera.rotation.order = 'XYZ'; G.snap = true; }
   document.body.classList.toggle('cam-cabina', inside);
 }
 function toggleCam() { G.cam = G.cam === 'cabina' ? 'afuera' : 'cabina'; save.opt.cam = G.cam; persist(); setCam(); }
+
+// Efectos de cada carro: marcas y humo de llantas al derrapar o frenar fuerte, humo y fuego
+// del motor cuando está dañado, llama azul del nitro.
+function carFx(a, dt) {
+  const b = a.body, B = a.car.B;
+  const fx = Math.sin(b.h), fz = Math.cos(b.h), lx = Math.cos(b.h), lz = -Math.sin(b.h);
+  const hard = !b.air && (b.slide > 2.2 || (b.braking && Math.abs(b.f) > 10 && !a.ai) || (a === G.player && inp.hand && Math.abs(b.f) > 5));
+  const k = clamp(Math.max(b.slide / 7, b.braking ? 0.5 : 0, 0.35), 0, 1);
+  const tw = B.W / 2 - 0.14, rz = -B.wb / 2;
+  const pts = [[b.x + lx * tw + fx * rz, b.z + lz * tw + fz * rz], [b.x - lx * tw + fx * rz, b.z - lz * tw + fz * rz]];
+  if (hard && b.skid) for (let i = 0; i < 2; i++) fxSkid(b.skid[i][0], b.skid[i][1], pts[i][0], pts[i][1], 0.24, k);
+  b.skid = hard ? pts : null;
+  if (hard && b.slide > 3.5 && Math.random() < dt * 14) { const p = pts[Math.random() < 0.5 ? 0 : 1]; fxSmoke(p[0], b.y + 0.3, p[1], 1, 0xd8d8d8, 1.3, 1.4); }
+  // motor dañado
+  const hp = b.hp / b.hpMax, hx = b.x + fx * (B.L / 2 - 0.7), hz = b.z + fz * (B.L / 2 - 0.7);
+  if (hp < 0.45 && Math.random() < dt * (hp < 0.2 ? 14 : 6)) fxSmoke(hx, b.y + B.belt + 0.2, hz, 1, hp < 0.2 ? 0x2a2a2a : 0x8a8a8a, 1.1, 1.6);
+  if (hp < 0.18 && Math.random() < dt * (b.dead ? 30 : 12)) fxFire(hx, b.y + B.belt + 0.1, hz, 1, b.dead ? 1.4 : 0.8);
+  // nitro: llama azul por el escape
+  if (b.boost) { const ex = b.x - fx * (B.L / 2 + 0.2) + lx * 0.4, ez = b.z - fz * (B.L / 2 + 0.2) + lz * 0.4; fxFire(ex, b.y + B.clr + 0.15, ez, 1, 0.55, 0x3f8cff); }
+}
 
 // ---------- simulación ----------
 function simulate(dt) {
@@ -195,13 +218,13 @@ function physicsStep(dt) {
     const b = a.body;
     let i;
     if (a.player && G.mode === 'play') i = readInput(dt);
-    else if (a.player) i = { thr: 0, brk: 1, steer: 0, hand: false };
+    else if (a.player) i = { thr: 0, brk: 1, steer: 0, hand: false, stop: true };
     else if (a.ai.kind === 'trafico') i = trafficInput(b, a.ai, bodies, W.t, dt);
     else if (a.ai.kind === 'policia') {
-      if (a.wait > 0) { a.wait -= dt; i = { thr: 0, brk: 1, steer: 0 }; }
-      else if (b.dead) i = { thr: 0, brk: 1, steer: 0 };
+      if (a.wait > 0) { a.wait -= dt; i = { thr: 0, brk: 1, steer: 0, stop: true }; }
+      else if (b.dead) i = { thr: 0, brk: 1, steer: 0, stop: true };
       else i = copInput(b, a.ai, G.thief.body, bodies, W.t, dt);
-    } else if (a.ai.kind === 'ladron') i = G.mode === 'busted' ? { thr: 0, brk: 1, steer: 0 } : thiefInput(b, a.ai, G.player.body, bodies, W.t, dt);
+    } else if (a.ai.kind === 'ladron') i = G.mode === 'busted' ? { thr: 0, brk: 1, steer: 0, stop: true } : thiefInput(b, a.ai, G.player.body, bodies, W.t, dt);
     b.braking = i.brk > 0;
     stepBody(b, i, dt, onEv);
     b.steer = i.steer;
@@ -302,6 +325,7 @@ function rules(dt) {
   G.onBridge = onB;
   if (P.x > HILL.x0 && P.x < HILL.x1 && Math.abs(P.z - 135) < 6 && !G.tunnel) { G.tunnel = true; unlockAch('tunel'); }
   const kmh = Math.abs(P.f) * 3.6;
+  G.stats.top = Math.max(G.stats.top, kmh); G.stats.maxBar = Math.max(G.stats.maxBar, G.bar);
   if (kmh > save.stats.top) save.stats.top = kmh;
   if (kmh >= 200) unlockAch('veloz');
 }
@@ -332,14 +356,15 @@ function updateCamera(dt) {
   if (G.mode === 'busted') {
     // vuelta lenta alrededor del arresto o del final
     const T = G.thief.body, a = G.endT * 0.5;
-    _v.set(T.x + Math.sin(a) * 11, T.y + 5, T.z + Math.cos(a) * 11);
+    _v.set(clamp(T.x + Math.sin(a) * 11, -LIMIT + 3, LIMIT - 3), T.y + 5, clamp(T.z + Math.cos(a) * 11, -LIMIT + 3, LIMIT - 3));
+    camClip(_v, T.x, T.y + 1.4, T.z);
     if (G.snap) { cam.position.copy(_v); G.snap = false; }
     cam.position.lerp(_v, Math.min(1, dt * 2)); cam.lookAt(T.x, T.y + 1, T.z);
     return;
   }
   if (G.cam === 'cabina' && cam.parent === G.player.car.body) {
     cam.position.set(G.player.car.eye.x + (Math.random() - 0.5) * sh, G.player.car.eye.y + (Math.random() - 0.5) * sh, G.player.car.eye.z);
-    cam.rotation.set(-0.1, Math.PI - b.steer * 0.08, 0, 'YXZ');
+    cam.rotation.set(-0.15, Math.PI - b.steer * 0.08, 0, 'YXZ');
     return;
   }
   // atrás del carro, mirando un poco hacia donde va
@@ -350,10 +375,28 @@ function updateCamera(dt) {
   if (G.snap) { cam.position.copy(_v); G.snap = false; }
   cam.position.lerp(_v, Math.min(1, dt * 7));
   cam.position.x += (Math.random() - 0.5) * sh * 3; cam.position.y += (Math.random() - 0.5) * sh * 3;
-  // que la cámara no se meta dentro de una casa
-  for (const s of solidsNear(cam.position.x, cam.position.z)) if (cam.position.x > s.x0 && cam.position.x < s.x1 && cam.position.z > s.z0 && cam.position.z < s.z1 && cam.position.y < s.h) cam.position.y = s.h + 1;
+  // que la cámara no atraviese casas ni el cerro: se acerca al carro si algo tapa
+  camClip(cam.position, b.x, b.y + 1.4, b.z);
   _t.set(b.x + fx * 5, b.y + 1.1, b.z + fz * 5);
   cam.lookAt(_t);
+}
+
+// Recorre la línea del carro a la cámara; si choca con algo sólido, acerca la cámara.
+function camClip(p, x, y, z) {
+  const dx = p.x - x, dz = p.z - z, L = Math.hypot(dx, dz);
+  if (L < 0.5) return;
+  const n = Math.ceil(L / 0.4);
+  for (let k = 1; k <= n; k++) {
+    const f = k / n, px = x + dx * f, pz = z + dz * f, py = y + (p.y - y) * f;
+    for (const s of solidsNear(px, pz)) {
+      if (s.h < 3) continue;
+      if (px > s.x0 - 0.4 && px < s.x1 + 0.4 && pz > s.z0 - 0.4 && pz < s.z1 + 0.4 && py < s.h + 0.3) {
+        const t = Math.max(0.18, (k - 1) / n);
+        p.x = x + dx * t; p.z = z + dz * t; p.y = Math.max(p.y, y + 0.8);
+        return;
+      }
+    }
+  }
 }
 
 // ---------- demostración del menú: un ladrón y dos patrulleros manejando solos ----------
@@ -441,6 +484,7 @@ function hud() {
   const hp = P.hp / P.hpMax, gh = document.getElementById('gHp');
   gh.style.strokeDasharray = `${207 * hp} 400`; gh.style.stroke = hp < 0.3 ? '#ff4d4d' : hp < 0.6 ? '#ffc53d' : '#3ddc84';
   document.getElementById('hRing').style.strokeDashoffset = 106.8 * (1 - left / cfg.t);
+  const nb = document.getElementById('hNitro'); nb.firstElementChild.style.height = (P.nitro * 100) + '%'; nb.classList.toggle('on', !!P.boost); nb.classList.toggle('low', P.nitro < 0.15);
   document.getElementById('hPct').textContent = G.bar > 0.01 ? Math.round(G.bar * 100) + '%' : '';
   drawRadar();
 }
@@ -518,7 +562,14 @@ function finish(win, why) {
   if (G.wrecked) { const b = G.wrecked * 40; coins += b; lines.push([`Patrulleros destrozados (${G.wrecked})`, `+${b}`]); }
   if (G.reds) lines.push([`Semáforos en rojo`, `${G.reds}`]);
   if (G.stats.maxJump > 5) lines.push(['Salto más largo', `${Math.round(G.stats.maxJump)} m`]);
+  // estrellas: ganar, terminar con el motor sano y una tercera según el rol
+  const P = G.player.body, hp = P.hp / P.hpMax;
+  const s3 = cfg.role === 'ladron' ? G.stats.maxBar < 0.5 : G.time < cfg.t * 0.6;
+  const stars = win ? 1 + (hp > 0.5 ? 1 : 0) + (s3 ? 1 : 0) : 0;
+  const starWhy = [['Meta cumplida', win], ['Motor sano (más de 50 %)', win && hp > 0.5], [cfg.role === 'ladron' ? 'Nunca casi te atrapan' : 'Atrapado rápido', win && s3]];
+  if (cfg.mission && stars > (save.stars[cfg.mission] || 0)) save.stars[cfg.mission] = stars;
+  const stats = [['⏱', 'Tiempo', `${Math.floor(G.time / 60)}:${String(Math.floor(G.time % 60)).padStart(2, '0')}`], ['🏎', 'Vel. máx.', `${Math.round(G.stats.top)} km/h`], ['🔧', 'Motor', `${Math.round(hp * 100)} %`]];
   save.coins += coins; save.stats.coins += coins;
   persist();
-  showResult({ win, why, coins, lines });
+  showResult({ win, why, coins, lines, stars, starWhy, stats });
 }
