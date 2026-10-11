@@ -261,12 +261,12 @@ const Q = [
   ['Los que más ganan deberían pagar un porcentaje de impuestos mucho mayor que el resto.', { e: -1 }],
   ['El libre mercado es la mejor forma de sacar a la gente de la pobreza.', { e: 1 }],
   ['El agua, la luz y el gas deberían ser siempre del Estado, no de empresas privadas.', { e: -1 }],
-  ['El sueldo mínimo debería subir aunque algunas empresas contraten a menos gente.', { e: -1 }],
-  ['Bajar los impuestos a las empresas termina creando más trabajo para todos.', { e: 1 }],
+  ['Si tengo dos celulares y alguien no tiene ninguno, debería regalarle uno.', { e: -1 }],
+  ['Si tuviera una empresa, el Estado no debería decirme cuánto pagarles a mis trabajadores.', { e: 1, a: -.3 }],
   ['Las minas, las grandes empresas y las tierras deberían pasar a manos del pueblo.', { e: -1, a: .3 }],
   ['Cada uno debería poder dejarle toda su fortuna a sus hijos sin pagar impuestos por eso.', { e: 1 }],
-  ['Los sindicatos son necesarios para defender a los trabajadores.', { e: -1 }],
-  ['Es justo que alguien gane muchísimo más que otros si creó una empresa exitosa.', { e: 1 }],
+  ['Si tuviera 10 casas, regalaría algunas a familias que no tienen dónde vivir.', { e: -1 }],
+  ['Si gané mi plata trabajando duro, es justo quedarme con casi toda, aunque otros tengan mucho menos.', { e: 1 }],
   ['El Estado debería fijar el precio de los productos básicos como el arroz o el pan.', { e: -1, a: .3 }],
   // gobierno (- libertad, + autoridad)
   ['Un gobierno de mano dura es lo que hace falta para poner orden en el país.', { a: 1 }],
@@ -277,7 +277,7 @@ const Q = [
   ['La marihuana debería ser legal para los adultos.', { a: -1, s: -.5 }],
   ['En una crisis, el presidente debería poder gobernar sin el Congreso.', { a: 1 }],
   ['La prensa debe ser libre aunque critique duramente al gobierno.', { a: -1 }],
-  ['Es mejor que gobiernen expertos, aunque nadie haya votado por ellos.', { a: 1 }],
+  ['Si un vecino pone música a todo volumen de madrugada, la policía debería poder entrar a su casa sin orden de un juez.', { a: 1 }],
   ['El Estado no debería meterse en lo que cada adulto hace con su propia vida.', { a: -1 }],
   // sociedad (- progreso, + tradición)
   ['Las parejas del mismo sexo deberían poder casarse.', { s: -1 }],
@@ -288,14 +288,14 @@ const Q = [
   ['En los colegios debería enseñarse educación sexual integral.', { s: -1 }],
   ['Los cambios rápidos en la sociedad suelen traer más problemas que soluciones.', { s: 1 }],
   ['Los nuevos movimientos sociales, como el feminismo, son un avance para el país.', { s: -1 }],
-  ['La ciencia debería pesar más que la fe a la hora de hacer leyes.', { s: -1 }],
+  ['Si mi hijo o mi hija me dijera que es gay, lo aceptaría sin problema.', { s: -1 }],
   // el mundo (- globalismo, + nacionalismo)
   ['Hay que proteger lo hecho en el país aunque lo importado salga más barato.', { n: 1, e: -.3 }],
   ['Organismos como la ONU deberían tener más poder sobre los países.', { n: -1 }],
-  ['Debería ser más fácil que los extranjeros vengan a vivir y trabajar aquí.', { n: -1 }],
+  ['Dejaría entrar a mi país a los extranjeros que quieran vivir aquí, pero de forma legal y con reglas claras.', { n: -.5 }],
   ['Lo de mi país es primero, aunque perjudique a otros países.', { n: 1 }],
   ['Los tratados de libre comercio con otros países son buenos.', { n: -1, e: .5 }],
-  ['Me siento ciudadano del mundo antes que de mi país.', { n: -1 }],
+  ['Dejaría que las personas entren a mi país de forma ilegal, sin papeles, si vienen a buscar una vida mejor.', { n: -1, a: -.3 }],
   ['Las fronteras deberían vigilarse con mucha más dureza.', { n: 1, a: .3 }],
   // el planeta (- ecología, + desarrollo)
   ['Cuidar el medio ambiente es más importante que el crecimiento económico.', { v: -1 }],
@@ -303,14 +303,14 @@ const Q = [
   ['Habría que prohibir los carros a gasolina dentro de unos años.', { v: -1, a: .3 }],
   ['Se exagera mucho con el cambio climático.', { v: 1 }],
   ['Las comunidades deberían poder frenar los proyectos que afecten sus tierras y ríos.', { v: -1 }],
-  ['Habría que promover comer menos carne para cuidar el planeta.', { v: -1 }],
+  ['Pagaría un poco más por un producto si así se contamina menos.', { v: -1 }],
   ['Vale la pena construir carreteras, represas y puertos aunque se talen bosques.', { v: 1 }],
   // la guerra (- pacifismo, + militarismo)
   ['Un país fuerte necesita Fuerzas Armadas grandes y bien equipadas.', { m: 1 }],
   ['La guerra nunca está justificada.', { m: -1 }],
   ['El servicio militar debería ser obligatorio.', { m: 1, a: .3 }],
   ['Es mejor gastar en educación que en armas.', { m: -1 }],
-  ['Si atacan a un país aliado, el nuestro debería mandar soldados a defenderlo.', { m: 1 }],
+  ['Si mi país entrara en guerra, me ofrecería como voluntario para pelear.', { m: 1 }],
 ];
 // se mezclan los temas en un orden fijo (así se puede retomar el test)
 const ORDER = (() => {
