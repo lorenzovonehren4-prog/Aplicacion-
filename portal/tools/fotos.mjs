@@ -121,6 +121,23 @@ const SHOTS = {
     // cada toma: n veces C (cámara) y acelerar t ms
     return { cam: async o => { for (let i = 0; i < (o.c || 0); i++) await page.keyboard.press('KeyC'); if (o.t) { await page.keyboard.down('ArrowUp'); await page.waitForTimeout(o.t); await page.keyboard.up('ArrowUp'); } } };
   },
+  // la cámara de bala a punto de llegar al secuestrador, en la Plaza Mayor
+  async 'ultimo-disparo'(page) {
+    await page.goto(url('ultimo-disparo/index.html'));
+    await page.waitForFunction(() => document.body.classList.contains('ready'));
+    await page.evaluate(n => { UD.UI.brief(n); UD.UI.go(); }, +(process.env.NIVEL || 8));
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => { setScope(true); UD.aim('head'); });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => { UD.aim('head'); fire(); });
+    await page.waitForFunction(k => UD.G.bc && UD.G.bc.t > UD.G.bc.dur * k, +(process.env.K || 0.9));
+    await page.evaluate(() => {
+      W.camera.position.copy(W.cine.position); W.camera.quaternion.copy(W.cine.quaternion);
+      W.camera.fov = W.cine.fov; W.camera.updateProjectionMatrix();
+      UD.G.rifleHolder.visible = false; UD.G.mode = 'paused';
+    });
+    await onlyCanvas(page, 'canvas');
+  },
   async escalada(page) {
     await page.goto(url('escalada/index.html'));
     await page.waitForTimeout(2500);

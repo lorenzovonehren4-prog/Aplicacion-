@@ -9,6 +9,7 @@ repositorio en un solo lugar. HTML, CSS y JavaScript sin compilación.
 | **Kartódromo** | `karting/` | Carreras de karts 3D, 2 jugadores |
 | **Código Rojo** | `codigo-rojo/` | Persecuciones ladrón/policía en un barrio 3D |
 | **Drive In The Serrín** | `cornisa/` | Manejar por montañas desde la cabina (3D) |
+| **Último Disparo** | `ultimo-disparo/` | Francotirador de rescate: 30 misiones (3D) |
 | **Combi Rush** | `combi-rush/` | Manejar una combi por Lima (3D) |
 | **Fuga Urbana** | `fuga-urbana/` | Escapar de la policía |
 | **Sazón Tycoon** | `sazon-tycoon/` | Tycoon de restaurantes 3D |
@@ -74,7 +75,7 @@ portal/
   fonts/              Fredoka y Rubik (sin internet)
   tests/portal.mjs    prueba en navegador
   tools/              scripts para sacar capturas nuevas
-formula-3d/ karting/ cornisa/ codigo-rojo/ combi-rush/ fuga-urbana/ sazon-tycoon/
+formula-3d/ karting/ cornisa/ ultimo-disparo/ codigo-rojo/ combi-rush/ fuga-urbana/ sazon-tycoon/
 modo-carrera-futbol/ tower-defense/ escalada/ mind-escape/   cada juego, sin cambios
 ```
 

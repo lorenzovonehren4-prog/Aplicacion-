@@ -133,6 +133,7 @@ const ACH = [
   { id: 'fugitivo', name: 'Fugitivo', desc: 'Escápate de la policía en Código Rojo', icon: 'bolt', test: () => flag('codigo-rojo', 'thief') >= 1 },
   { id: 'sheriff', name: 'Sheriff', desc: 'Atrapa al ladrón en Código Rojo', icon: 'shield', test: () => flag('codigo-rojo', 'cop') >= 1 },
   { id: 'cornisa', name: 'Rey del Serrín', desc: 'Llega a la Cima del Cóndor en Drive In The Serrín', icon: 'up', test: () => flag('cornisa', 'beat') >= 1 },
+  { id: 'rescate', name: 'Ojo de halcón', desc: 'Salva al rehén con un tiro a la cabeza en Último Disparo', icon: 'bolt', test: () => flag('ultimo-disparo', 'heads') >= 1 },
   { id: 'cumbre', name: 'No miré abajo', desc: "Llega a la cima en Don't Look Up", icon: 'up', test: () => flag('escalada', 'done') >= 1 },
   { id: 'mente', name: 'Mente abierta', desc: 'Supera 10 niveles de Mind Escape', icon: 'puzzle', test: () => flag('mind-escape', 'done') >= 10 },
   { id: 'brujula', name: 'Sé quién soy', desc: 'Termina el test de Brújula Política', icon: 'compass', test: () => flag('brujula-politica', 'tests') >= 1 },

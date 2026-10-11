@@ -119,6 +119,47 @@ const GAMES = [
     },
   },
   {
+    id: 'ultimo-disparo',
+    title: 'Último Disparo',
+    tagline: 'Francotirador de rescate: una bala, un rehén',
+    desc: 'Desde una azotea, una torre o un cerro: busca al secuestrador, entra a la mira, haz zoom y contén la respiración para que no tiemble. Dale sólo a él, sin herir al rehén ni a la gente que pasa, antes de que se acabe el tiempo. Cámara de bala en cámara lenta, 30 misiones en la ciudad, el puerto, la noche y el desierto, 4 rifles (con silenciador, calibre .50 y mira térmica) y mejoras de zoom, estabilidad, aliento y tiempo.',
+    url: 'ultimo-disparo/index.html',
+    cover: 'portal/img/ultimo-disparo-cover.webp',
+    box: 'portal/img/ultimo-disparo-box.webp',
+    alt: 'portal/img/ultimo-disparo-alt.webp',
+    hero: 'portal/img/ultimo-disparo-hero.webp',
+    color: '#ff3b30',
+    color2: '#ffb020',
+    cats: ['accion', '3d'],
+    tags: ['Francotirador', 'Rescate', '3D'],
+    badge: 'NUEVO',
+    featured: true,
+    added: '2026-10-11',
+    controls: [
+      [['Mouse'], 'Apuntar'],
+      [['Clic der.', 'Shift'], 'Entrar a la mira'],
+      [['Rueda'], 'Zoom'],
+      [['Espacio'], 'Contener la respiración'],
+      [['Clic'], 'Disparar'],
+      [['T'], 'Mira térmica'],
+      [['Esc'], 'Pausa'],
+    ],
+    tip: 'Espera a que el secuestrador asome la cabeza y que no pase nadie por detrás. En celular: arrastra para apuntar y usa MIRA, AIRE y FUEGO.',
+    progress() {
+      const s = readJSON('ultimo_disparo_v1');
+      if (!s || !s.stats || !s.stats.shots) return null;
+      const lv = Object.values(s.lv || {});
+      const done = lv.filter(l => l.done).length;
+      const stars = lv.reduce((a, l) => a + (l.stars || 0), 0);
+      return {
+        label: s.beat ? `¡Juego pasado! · ${stars}/90 ★` : `Misión ${Math.min(30, done + 1)}/30 · ${stars} ★`,
+        pct: done / 30,
+        stats: [['Misiones', `${done}/30`], ['Estrellas', `${stars}/90`], ['A la cabeza', s.stats.heads || 0], ['Monedas', s.coins || 0]],
+        flags: { done, stars, heads: s.stats.heads || 0, beat: s.beat ? 1 : 0 },
+      };
+    },
+  },
+  {
     id: 'codigo-rojo',
     title: 'Código Rojo',
     tagline: 'Sé el ladrón o la policía en un barrio 3D',
@@ -483,6 +524,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'ultimo-disparo', date: '11 oct', title: 'Juego nuevo: Último Disparo', items: ['Francotirador de rescate: mira con zoom, temblor y contener la respiración', 'Cámara de bala en cámara lenta, sin sangre', '30 misiones en la ciudad, el puerto, la noche y el desierto', '4 rifles y mejoras de zoom, estabilidad, aliento y tiempo'] },
   { game: 'brujula-politica', date: '11 oct', title: 'Juego nuevo: Brújula Política', items: ['60 preguntas sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra', '16 ideologías y tu lado, de extrema izquierda a extrema derecha', 'Tarjeta de resultado con tu brújula, tus 6 ejes y lo que más te define'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo: cabina, nitro y estrellas', items: ['Cabina por dentro con relojes, volante y mapa', 'Nitro, marcas de llantas, humo y fuego', 'Garaje en vitrina, 3 estrellas por misión y patrulleros más listos'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo se ve como juego profesional', items: ['Carros nuevos con reflejos, faros y brillo', 'Barrio con más detalle: casas, carros estacionados, postes y nubes', 'Menú y velocímetro nuevos'] },
