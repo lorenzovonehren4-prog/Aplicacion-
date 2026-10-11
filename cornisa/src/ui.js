@@ -456,7 +456,12 @@ function step(dt) {
     if (driving) hud();
   }
   if (G.mode !== 'pause') updateWorld(G.t, dt);
-  W.renderer.render(W.scene, W.camera);
+  // desenfoque de velocidad a fondo
+  if (POST.on && POST.mats.final) {
+    const sp = G.C && G.mode === 'drive' ? Math.min(0.02, Math.max(0, Math.abs(G.C.f) * 3.6 - 95) / 2500) : 0;
+    const u = POST.mats.final.uniforms.speed; u.value += (sp - u.value) * Math.min(1, dt * 3);
+  }
+  renderFrame(W.scene, W.camera);
 }
 
 function boot() {

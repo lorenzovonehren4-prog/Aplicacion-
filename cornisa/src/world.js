@@ -38,13 +38,31 @@ function initWorld(canvas) {
   W.scene.fog = new THREE.Fog(0xffffff, 100, 1000);
   W.asphalt = asphaltTexture();
   fxInit();
+  W.pmrem = new THREE.PMREMGenerator(r);
+  W.envs = {};
   applyQuality();
+}
+
+// Mapa de entorno para los reflejos (pintura, cromo, vidrio): cielo del ambiente, sol y cerros.
+function makeEnv(id, th) {
+  if (W.envs[id]) return W.envs[id];
+  const s = new THREE.Scene();
+  const geo = new THREE.SphereGeometry(50, 32, 16), col = [], top = new THREE.Color(th.skyTop), bot = new THREE.Color(th.skyBot), gr = new THREE.Color(th.hemiGround).multiplyScalar(0.7), c = new THREE.Color();
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) { const y = p.getY(i) / 50; if (y < 0.04) c.copy(gr).lerp(bot, Math.max(0, (y + 0.2) * 2)); else c.copy(bot).lerp(top, Math.pow(y, 0.6)); col.push(c.r, c.g, c.b); }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  s.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  if (!th.night) { const sun = new THREE.Mesh(new THREE.SphereGeometry(4, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(th.sun).multiplyScalar(th.rain ? 3 : 22) })); sun.position.copy(W.sunDir).multiplyScalar(40); s.add(sun); }
+  const mm = new THREE.MeshBasicMaterial({ color: new THREE.Color(th.far || th.hemiGround).multiplyScalar(th.night ? 0.15 : 0.8) });
+  for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2, h = 6 + (k * 5 % 4) * 4, m = new THREE.Mesh(new THREE.ConeGeometry(9, h, 5), mm); m.position.set(Math.cos(a) * 40, h / 2 - 3, Math.sin(a) * 40); s.add(m); }
+  return (W.envs[id] = W.pmrem.fromScene(s, 0.03).texture);
 }
 
 function applyQuality() {
   const hi = save.opt.quality !== 'baja';
   W.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hi ? 1.6 : 1));
   W.renderer.shadowMap.enabled = hi;
+  if (W.pmrem && hi !== POST.on) { POST.on = false; if (hi) { initPost(); if (W.theme) setPostLook(themeLook(W.theme)); } }
   W.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   W.sun.castShadow = hi;
   W.scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); });
@@ -58,6 +76,12 @@ function resizeWorld() {
   W.baseFov = w < h ? 92 : 68;
   W.camera.fov = W.baseFov;
   W.camera.updateProjectionMatrix();
+  resizePost();
+}
+function themeLook(th) {
+  return th.night ? { bloom: 0.95, threshold: 0.55, vignette: 0.38, sat: 1.1, tint: [0.9, 0.96, 1.1] }
+    : th.rain ? { bloom: 0.45, threshold: 0.8, vignette: 0.36, sat: 0.95, tint: [0.95, 0.98, 1.04] }
+    : { bloom: 0.35, threshold: 0.95, vignette: 0.28, sat: 1.12, tint: [1.03, 1.0, 0.96] };
 }
 
 // ---------- texturas hechas en canvas ----------
@@ -160,6 +184,8 @@ function buildLevel(L) {
   W.hemi.color.set(th.hemiSky); W.hemi.groundColor.set(th.hemiGround); W.hemi.intensity = th.hemiI;
   W.sun.color.set(th.sun); W.sun.intensity = th.sunI;
   W.renderer.toneMappingExposure = th.night ? 1.25 : 1.0;
+  W.scene.environment = makeEnv(L.theme, th);
+  setPostLook(themeLook(th));
 
   G.add(roadMesh(T));
   G.add(lineMesh(T));
@@ -175,6 +201,7 @@ function buildLevel(L) {
   G.add(arch(T, 14, 'SALIDA', '#111', '#eee'));
   G.add(arch(T, T.n - 45, L.id === 8 ? 'CIMA' : 'META', '#111', '#fff'));
   if (th.night) G.add(stars());
+  if (!th.night && !th.rain) condors(G);
   W.weather = weather(th);
   if (W.weather) G.add(W.weather.obj);
   return T;
@@ -517,6 +544,40 @@ function weather(th) {
     g.attributes.position.needsUpdate = true;
   };
   return { obj, update, kind };
+}
+
+// Cóndores que planean en círculos sobre los cerros, adelante del carro; aletean de vez en cuando.
+function condors(grp) {
+  const mat = new THREE.MeshStandardMaterial({ color: 0x18181a, roughness: 0.8, side: THREE.DoubleSide });
+  const white = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.8 });
+  const wingShape = new THREE.Shape(); wingShape.moveTo(0, 0); wingShape.lineTo(1.6, 0.25); wingShape.lineTo(3.0, 0.1); wingShape.lineTo(3.2, -0.25); wingShape.lineTo(1.4, -0.6); wingShape.lineTo(0, -0.45);
+  const wg = new THREE.ShapeGeometry(wingShape); wg.rotateX(-Math.PI / 2);
+  const birds = [];
+  for (let i = 0; i < 3; i++) {
+    const b = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 1.0, 4, 8).rotateX(Math.PI / 2), mat); b.add(body);
+    const neck = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), white); neck.position.set(0, 0.05, 0.62); b.add(neck);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), new THREE.MeshStandardMaterial({ color: 0x8a5a4a })); head.position.set(0, 0.06, 0.82); b.add(head);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.8, 4).rotateX(-Math.PI / 2), mat); tail.scale.set(1, 0.2, 1); tail.position.z = -0.85; b.add(tail);
+    const wl = new THREE.Group(), wr = new THREE.Group();
+    const ml = new THREE.Mesh(wg, mat); wl.add(ml);
+    const mr = new THREE.Mesh(wg, mat); mr.scale.x = -1; wr.add(mr);
+    wl.position.x = 0.15; wr.position.x = -0.15; b.add(wl, wr);
+    b.scale.setScalar(1.3);
+    grp.add(b); birds.push({ b, wl, wr, ph: i * 2.1, r: 30 + i * 12, h: 45 + i * 9, sp: 0.13 + i * 0.02 });
+  }
+  const c = new THREE.Vector3();
+  W.anim.push((t, dt) => {
+    const C = G.C;
+    if (C) c.set(C.x + Math.sin(C.h) * 140, C.y, C.z + Math.cos(C.h) * 140);
+    for (const k of birds) {
+      const a = t * k.sp + k.ph;
+      k.b.position.set(c.x + Math.cos(a) * k.r, c.y + k.h + Math.sin(t * 0.3 + k.ph) * 4, c.z + Math.sin(a) * k.r);
+      k.b.rotation.set(0, -a, 0.35);
+      const flap = Math.sin(t * 0.4 + k.ph) > 0.85 ? Math.sin(t * 7) * 0.5 : 0.08 + Math.sin(t * 1.3 + k.ph) * 0.04;
+      k.wl.rotation.z = flap; k.wr.rotation.z = -flap;
+    }
+  });
 }
 
 function updateWorld(t, dt) {

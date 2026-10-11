@@ -8,6 +8,7 @@ Rally en 3D por carreteras de montaña, visto desde la cabina de un 4x4 (volante
 - **3 estrellas** por montaña: llegar a la meta y dos objetivos (tiempo, monedas o pocos choques).
 - **Taller**: motor, frenos, llantas y carrocería (5 niveles cada una) y 8 pinturas.
 - **Al pasarte la Cima del Cóndor**: pantalla final, todas las pinturas (también la Dorada), la Ruta libre (montaña al azar) y la insignia Cóndor. Se sigue jugando todo.
+- **Gráficos**: 4x4 de rally con carrocería perfilada (pasos de rueda, capó que se dobla al chocar), guardabarros de plástico, parrilla de 7 ranuras, faros redondos cromados, defensas de tubo con winche, jaula antivuelco con techo de lona, barra de faros, snorkel, repuesto con el 07 y ruedas con dibujo y aro beadlock (`buildJeep`). Cabina con guantes y mangas. Posprocesado (`src/post.js`: brillo, tonos de cine, viñeta y desenfoque de velocidad), reflejos del cielo en la pintura y el cromo (`makeEnv`) y cóndores que planean sobre los cerros (`condors`).
 - 14 insignias propias. El portal da la insignia "Rey del Serrín" al pasarte el juego.
 
 ## Cómo correrlo
@@ -26,6 +27,7 @@ El menú tiene un modo demostración (`startAttract`, `attractStep`): el carro b
 
 - `src/data.js`: ambientes (`THEMES`), montañas (`LEVELS`: largo, ancho, radios de curva, pendiente, mezcla de bordes `mix`, barandas `guard`, rocas, agarre, objetivos `obj`, requisitos `unlock`), `freeLevel`, mejoras (`UPGRADES`, `carStats`), pinturas, insignias (`ACHS`) y guardado (`save`, clave `cornisa_v1`).
 - `src/road.js`: genera la ruta con semilla (`buildRoad`): curvatura por metro, rumbo limitado a ±75° de la dirección general (así la ruta nunca se cruza), pendiente, tramos de borde C/L/R/B (pared, abismo a un lado, cresta), barandas, perfil del cerro a cada lado cada 2 m (`T.po`/`T.ph`, `profileHeight`), monedas, rocas y letreros de curva. `locate` da la distancia `s` y el desplazamiento `d` (positivo a la derecha).
+- `src/post.js`: posprocesado (sólo calidad alta y WebGL2).
 - `src/world.js`: escena (cielo con degradado, niebla, luces, sombras que siguen al carro), mallas de la montaña y clima (lluvia, nieve, ceniza, rayos).
 - `src/car.js`: modelo del 4x4 y su cabina (`makeCar`, `poseCockpit`), física (`stepCar`: agarre lateral, la dirección a alta velocidad pide un poco más que el agarre y si te pasas deslizas; pared y baranda frenan y dañan; más allá del borde sin baranda empieza la caída `stepFall`, que rebota por el barranco).
 - `src/audio.js`: sonido sintetizado (`SFX`).

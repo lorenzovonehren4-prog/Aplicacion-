@@ -10,7 +10,126 @@ const EYE = new THREE.Vector3(0.4, 1.7, -0.3);
 
 function paintMat(id) {
   const p = PAINTS.find(q => q.id === id) || PAINTS[0];
-  return new THREE.MeshStandardMaterial({ color: p.c, roughness: p.metal ? 0.25 : 0.5, metalness: p.metal ? 0.85 : 0.1 });
+  return new THREE.MeshPhysicalMaterial({ color: p.c, roughness: p.metal ? 0.25 : 0.42, metalness: p.metal ? 0.85 : 0.15, clearcoat: 0.5, clearcoatRoughness: 0.2, envMapIntensity: 0.65 });
+}
+
+// Perfil 2D (z, y) extruido a lo ancho w con bisel (bordes redondos), centrado en x.
+function sideExtrude(shape, w, bevel) {
+  const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.01, w - bevel * 2), bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 12 });
+  g.translate(0, 0, -(w - bevel * 2) / 2);
+  g.rotateY(-Math.PI / 2);
+  return g;
+}
+function tube(a, b, r, mat) {
+  const d = new THREE.Vector3().subVectors(b, a), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 10), mat);
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  return m;
+}
+let TREAD_TEX = null, DECAL_TEX = null, CANVAS_TEX = null;
+// El 4x4: carrocería con pasos de rueda y capó aparte (se dobla al chocar), guardabarros de
+// plástico, parrilla de 7 ranuras, faros redondos, defensas de tubo con winche, parabrisas,
+// jaula antivuelco con techo de lona, barra de faros de rally, snorkel, repuesto, pisaderas,
+// faldones, número de carrera y ruedas con dibujo y aro beadlock.
+function buildJeep(body, root, P, add) {
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const black = new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.75 });
+  const plastic = new THREE.MeshStandardMaterial({ color: 0x222325, roughness: 0.9 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0x2c2f33, roughness: 0.35, metalness: 0.8 });
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xd8dde3, roughness: 0.12, metalness: 1 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xc8261c, roughness: 0.5 });
+  const lens = new THREE.MeshStandardMaterial({ color: 0xfff6d8, emissive: 0xfff2c4, emissiveIntensity: 0.8, roughness: 0.05 });
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0xbfd8ea, transparent: true, opacity: 0.1, roughness: 0.03, metalness: 0.1, depthWrite: false, side: THREE.DoubleSide });
+  const fw = 1.35, ra = 0.54, cy = 0.47, clr = 0.56;
+  const sh = new THREE.Shape();
+  sh.moveTo(-1.97, 0.66); sh.lineTo(-fw - ra, clr); sh.lineTo(-fw - ra, cy); sh.absarc(-fw, cy, ra, Math.PI, 0, true); sh.lineTo(-fw + ra, clr);
+  sh.lineTo(fw - ra, clr); sh.lineTo(fw - ra, cy); sh.absarc(fw, cy, ra, Math.PI, 0, true); sh.lineTo(fw + ra, clr);
+  sh.lineTo(2.0, 0.66); sh.lineTo(2.03, 1.2); sh.quadraticCurveTo(2.03, 1.27, 1.96, 1.28); sh.lineTo(0.66, 1.29); sh.lineTo(0.52, 1.2); sh.lineTo(-1.88, 1.18); sh.quadraticCurveTo(-1.97, 1.18, -1.97, 1.1); sh.closePath();
+  add(new THREE.Mesh(sideExtrude(sh, 1.84, 0.06), P));
+  // capó con abombado y trabas
+  const hs = new THREE.Shape(); const hw = 0.86, hl = 0.66, hr = 0.08;
+  hs.moveTo(-hw + hr, -hl); hs.lineTo(hw - hr, -hl); hs.quadraticCurveTo(hw, -hl, hw, -hl + hr); hs.lineTo(hw, hl - hr); hs.quadraticCurveTo(hw, hl, hw - hr, hl); hs.lineTo(-hw + hr, hl); hs.quadraticCurveTo(-hw, hl, -hw, hl - hr); hs.lineTo(-hw, -hl + hr); hs.quadraticCurveTo(-hw, -hl, -hw + hr, -hl);
+  const hg = new THREE.ExtrudeGeometry(hs, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.03, bevelSegments: 3 }); hg.rotateX(-Math.PI / 2);
+  const hood = new THREE.Mesh(hg, P); hood.position.set(0, 1.3, 1.33); add(hood);
+  const bulge = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 1.0), P); bulge.position.set(0, 0.06, 0); hood.add(bulge);
+  for (const sx of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.1), black); l.position.set(sx * 0.78, 0.03, 0.58); hood.add(l); }
+  DECAL_TEX = DECAL_TEX || canvasTex(256, 256, (g, w) => { g.fillStyle = '#f4f4f4'; g.beginPath(); g.arc(w / 2, w / 2, 118, 0, 7); g.fill(); g.lineWidth = 10; g.strokeStyle = '#111'; g.stroke(); g.fillStyle = '#111'; g.font = '900 150px Rubik, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('07', w / 2, w / 2 + 8); });
+  const dm = new THREE.MeshStandardMaterial({ map: DECAL_TEX, transparent: true, roughness: 0.5 });
+  const hd = new THREE.Mesh(new THREE.CircleGeometry(0.22, 32), dm); hd.rotation.set(-Math.PI / 2, 0, Math.PI); hd.position.set(0, 0.092, -0.1); hood.add(hd);
+  for (const sx of [-1, 1]) { const d = new THREE.Mesh(new THREE.CircleGeometry(0.2, 32), dm); d.position.set(sx * 0.932, 0.88, -0.25); d.rotation.y = sx * Math.PI / 2; add(d, false); }
+  // franja de rally a los costados
+  for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.07, 3.3), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 })), false).position.set(sx * 0.932, 1.07, 0.05);
+  // parrilla de 7 ranuras y faros redondos con aro cromado
+  add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 0.04), black)).position.set(0, 0.98, 2.035);
+  for (let k = -3; k <= 3; k++) add(new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.32, 0.05), P), false).position.set(k * 0.12, 0.98, 2.05);
+  const bucket = new THREE.LatheGeometry([[0, 0], [0.16, 0], [0.17, 0.02], [0.17, 0.08], [0.12, 0.1], [0, 0.1]].map(([r, y]) => new THREE.Vector2(r, y)), 24); bucket.rotateX(Math.PI / 2);
+  for (const sx of [-1, 1]) {
+    const b = add(new THREE.Mesh(bucket, chrome), false); b.position.set(sx * 0.6, 1.02, 2.11);
+    const l = add(new THREE.Mesh(new THREE.CircleGeometry(0.14, 24), lens), false); l.position.set(sx * 0.6, 1.02, 2.112);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.03), new THREE.MeshStandardMaterial({ color: 0xffa020, emissive: 0xff8a00, emissiveIntensity: 0.4 })), false).position.set(sx * 0.6, 0.8, 2.04);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.04), new THREE.MeshStandardMaterial({ color: 0x8a0a0a, emissive: 0xff1a10, emissiveIntensity: 0.5 })), false).position.set(sx * 0.72, 0.92, -1.99);
+  }
+  // guardabarros de plástico sobre las ruedas
+  const flare = new THREE.TorusGeometry(ra + 0.03, 0.07, 6, 24, Math.PI); flare.rotateY(Math.PI / 2); flare.scale(1.6, 1, 1);
+  for (const sx of [-1, 1]) for (const z of [fw, -fw]) add(new THREE.Mesh(flare, plastic)).position.set(sx * 0.93, cy, z);
+  // defensas de tubo, winche, ganchos rojos y pisaderas
+  add(new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.2, 0.22), steel)).position.set(0, 0.62, 2.15);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 14).rotateZ(Math.PI / 2), black)).position.set(0, 0.62, 2.3);
+  for (const sx of [-1, 1]) { add(new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.016, 6, 12), red), false).position.set(sx * 0.65, 0.6, 2.28); add(tube(V3(sx * 0.55, 0.72, 2.2), V3(sx * 0.35, 1.08, 2.25), 0.03, steel), false); }
+  add(tube(V3(0.35, 1.08, 2.25), V3(-0.35, 1.08, 2.25), 0.03, steel), false);
+  add(new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.2, 0.2), steel)).position.set(0, 0.62, -2.08);
+  for (const sx of [-1, 1]) { add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 1.5), steel)).position.set(sx * 0.98, 0.5, 0); add(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 0.02), black), false).position.set(sx * 0.82, 0.38, -1.92); add(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 0.02), black), false).position.set(sx * 0.82, 0.38, 0.8); }
+  // parabrisas inclinado con marco
+  const wb = 0.66, wt = 0.5, yb = 1.3, yt = 2.0;
+  for (const sx of [-1, 1]) add(tube(V3(sx * 0.86, yb, wb), V3(sx * 0.84, yt, wt), 0.04, black));
+  add(tube(V3(0.86, yt, wt), V3(-0.86, yt, wt), 0.04, black)); add(tube(V3(0.86, yb + 0.02, wb), V3(-0.86, yb + 0.02, wb), 0.035, black), false);
+  const ws = new THREE.Mesh(new THREE.PlaneGeometry(1.66, Math.hypot(yt - yb, wb - wt) - 0.05), glass); ws.position.set(0, (yb + yt) / 2, (wb + wt) / 2); ws.rotation.x = Math.atan2(wb - wt, yt - yb); add(ws, false);
+  // jaula antivuelco y techo de lona
+  const cage = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.45, metalness: 0.5 });
+  for (const sx of [-1, 1]) {
+    add(tube(V3(sx * 0.84, yt, wt), V3(sx * 0.84, 2.02, -1.85), 0.04, cage));
+    add(tube(V3(sx * 0.86, 1.18, -1.85), V3(sx * 0.84, 2.02, -1.85), 0.04, cage));
+    add(tube(V3(sx * 0.86, 1.18, -0.7), V3(sx * 0.84, 2.02, -0.7), 0.035, cage));
+    add(tube(V3(sx * 0.86, 1.18, -1.85), V3(sx * 0.84, 2.02, -0.7), 0.03, cage), false);
+  }
+  add(tube(V3(0.84, 2.02, -0.7), V3(-0.84, 2.02, -0.7), 0.035, cage)); add(tube(V3(0.84, 2.02, -1.85), V3(-0.84, 2.02, -1.85), 0.04, cage));
+  CANVAS_TEX = CANVAS_TEX || canvasTex(128, 128, (g, w) => { g.fillStyle = '#3a3a34'; g.fillRect(0, 0, w, w); for (let i = 0; i < w; i += 3) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, i, w, 1); g.fillRect(i, 0, 1, w); } }, true);
+  const top = add(new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.05, 2.45), new THREE.MeshStandardMaterial({ map: CANVAS_TEX, roughness: 0.95 }))); top.position.set(0, 2.07, -0.66);
+  // barra de faros de rally sobre el parabrisas
+  add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.06), black)).position.set(0, 2.1, 0.46);
+  for (let k = 0; k < 4; k++) {
+    const x = -0.57 + k * 0.38;
+    const b = add(new THREE.Mesh(bucket, black), false); b.scale.setScalar(0.62); b.position.set(x, 2.2, 0.46);
+    add(new THREE.Mesh(new THREE.CircleGeometry(0.087, 20), lens), false).position.set(x, 2.2, 0.525);
+  }
+  // snorkel (lado derecho), espejo y antena
+  add(tube(V3(-0.97, 1.0, 1.25), V3(-0.97, 1.3, 0.85), 0.05, black), false);
+  add(tube(V3(-0.97, 1.3, 0.85), V3(-0.95, 2.05, 0.55), 0.05, black), false);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.14, 12).rotateX(Math.PI / 2), black), false).position.set(-0.95, 2.08, 0.6);
+  add(tube(V3(0.84, 2.05, -1.85), V3(0.84, 3.0, -1.95), 0.006, black), false);
+  // repuesto atrás con funda
+  const spare = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.28, 24).rotateX(Math.PI / 2), black); spare.position.set(0, 1.18, -2.18); add(spare);
+  const cover = new THREE.Mesh(new THREE.CircleGeometry(0.3, 24), dm); cover.position.set(0, 1.18, -2.325); cover.rotation.y = Math.PI; add(cover, false);
+  // ruedas: neumático torneado con dibujo + aro beadlock con pernos
+  TREAD_TEX = TREAD_TEX || canvasTex(256, 64, (g, w, h) => { g.fillStyle = '#1b1b1d'; g.fillRect(0, 0, w, h); g.fillStyle = '#0c0c0d'; for (let i = 0; i < 24; i++) { const x = i * w / 24; g.fillRect(x, (i % 2) * 8 + 6, w / 40, h - 30); g.fillRect(x + 4, h / 2 - 3, w / 30, 6); } }, true);
+  const R = 0.43, tw = 0.32, prof = [];
+  for (let i = 0; i <= 14; i++) { const a = -Math.PI / 2 + i / 14 * Math.PI; prof.push(new THREE.Vector2(R - 0.09 + Math.cos(a) * 0.09, Math.sin(a) * tw / 2)); }
+  const tireG = new THREE.LatheGeometry([new THREE.Vector2(R * 0.58, -tw / 2), ...prof, new THREE.Vector2(R * 0.58, tw / 2)], 32); tireG.rotateZ(Math.PI / 2);
+  const tireM = new THREE.MeshStandardMaterial({ map: TREAD_TEX, color: 0x9a9a9a, roughness: 0.95 });
+  const rimParts = [{ geo: new THREE.CylinderGeometry(R * 0.58, R * 0.58, 0.04, 24).rotateZ(Math.PI / 2), m: new THREE.Matrix4().makeTranslation(0.14, 0, 0), c: 0x2a2c30 },
+    { geo: new THREE.TorusGeometry(R * 0.56, 0.02, 6, 24).rotateY(Math.PI / 2), m: new THREE.Matrix4().makeTranslation(0.165, 0, 0), c: 0xb8bcc2 },
+    { geo: new THREE.CylinderGeometry(0.07, 0.08, 0.36, 12).rotateZ(Math.PI / 2), c: 0xb8bcc2 }];
+  for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; rimParts.push({ geo: new THREE.CylinderGeometry(0.012, 0.012, 0.03, 6).rotateZ(Math.PI / 2), m: new THREE.Matrix4().makeTranslation(0.17, Math.cos(a) * R * 0.5, Math.sin(a) * R * 0.5), c: 0xd8dde3 }); }
+  for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; rimParts.push({ geo: new THREE.BoxGeometry(0.03, 0.05, R * 0.4), m: new THREE.Matrix4().makeRotationX(a).setPosition(0.15, Math.cos(a) * 0.12, Math.sin(a) * 0.12), c: 0x3a3d42 }); }
+  const rimG = mergeGeos(rimParts), rimM = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.8 });
+  const wheels = [];
+  for (const [x, z] of [[0.86, fw], [-0.86, fw], [0.86, -fw], [-0.86, -fw]]) {
+    const w = new THREE.Group(); w.position.set(x, R, z);
+    const t = new THREE.Mesh(tireG, tireM); t.castShadow = true;
+    const rim = new THREE.Mesh(rimG, rimM); if (x < 0) rim.rotation.y = Math.PI;
+    w.add(t, rim); root.add(w); wheels.push(w);
+  }
+  return { hood, wheels };
 }
 
 function box(w, h, l, mat, x, y, z) {
@@ -48,47 +167,17 @@ function makeCar(paint) {
   const grey = new THREE.MeshStandardMaterial({ color: 0x8c9096, roughness: 0.4, metalness: 0.6 });
   const shadowy = [];
   const add = (m, cast = true) => { body.add(m); if (cast) shadowy.push(m); return m; };
-  // --- por fuera ---
-  add(box(1.86, 0.62, 3.9, P, 0, 0.82, 0.05));                 // carrocería baja
-  const hood = add(box(1.78, 0.3, 1.45, P, 0, 1.2, 1.25));     // capó
-  add(box(1.9, 0.12, 4.0, black, 0, 0.5, 0.05));               // estribos
-  add(box(1.96, 0.22, 0.25, black, 0, 0.62, 2.05));            // parachoques
-  add(box(1.96, 0.22, 0.25, black, 0, 0.62, -1.98));
-  add(box(1.5, 0.36, 0.06, black, 0, 1.0, 2.03));              // parrilla
-  for (const sx of [-1, 1]) {
-    add(box(0.32, 0.18, 1.1, P, sx * 0.92, 1.0, 1.35));        // guardabarros
-    add(box(0.32, 0.18, 1.0, P, sx * 0.92, 1.0, -1.35));
-    const hl = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 16), new THREE.MeshStandardMaterial({ color: 0xfff6d8, emissive: 0xfff2c4, emissiveIntensity: 0.6 }));
-    hl.rotation.x = Math.PI / 2; hl.position.set(sx * 0.62, 1.02, 2.06); add(hl, false);
-    add(box(0.18, 0.12, 0.04, new THREE.MeshStandardMaterial({ color: 0xb01010, emissive: 0x600000 }), sx * 0.75, 0.9, -1.97), false);
-    // parantes
-    const a = box(0.08, 0.72, 0.08, black, sx * 0.86, 1.72, 0.5); a.rotation.x = -0.32; add(a);
-    add(box(0.08, 0.72, 0.08, black, sx * 0.86, 1.7, -0.7));
-    add(box(0.08, 0.72, 0.08, black, sx * 0.86, 1.7, -1.85));
-    add(box(0.06, 0.06, 1.0, P, sx * 0.93, 1.15, -0.1), false);  // borde naranja de la puerta
-  }
-  add(box(1.82, 0.06, 2.55, dark, 0, 2.06, -0.65));            // techo
-  add(box(1.78, 0.08, 0.08, black, 0, 2.0, 0.6));              // marco superior del parabrisas
-  add(box(1.78, 0.07, 0.07, black, 0, 1.38, 0.68), false);     // marco inferior
-  const spare = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.26, 18), black);
-  spare.rotation.x = Math.PI / 2; spare.position.set(0, 1.15, -2.15); add(spare);
-  // ruedas
-  const wheels = [];
-  const tg = new THREE.CylinderGeometry(0.43, 0.43, 0.32, 18); tg.rotateZ(Math.PI / 2);
-  const rg = new THREE.CylinderGeometry(0.24, 0.24, 0.34, 10); rg.rotateZ(Math.PI / 2);
-  for (const [x, z] of [[0.86, 1.35], [-0.86, 1.35], [0.86, -1.35], [-0.86, -1.35]]) {
-    const w = new THREE.Group();
-    w.position.set(x, 0.43, z);
-    const t = new THREE.Mesh(tg, black); t.castShadow = true;
-    w.add(t, new THREE.Mesh(rg, grey));
-    root.add(w);
-    wheels.push(w);
-  }
+  // --- por fuera: 4x4 de rally ---
+  const ext = buildJeep(body, root, P, add);
+  const hood = ext.hood, wheels = ext.wheels;
   // --- cabina (lo que se ve desde el asiento) ---
   const cockpit = new THREE.Group();
   body.add(cockpit);
-  const dashM = new THREE.MeshStandardMaterial({ color: 0x232427, roughness: 0.85 });
+  const dashTex = canvasTex(128, 128, (g, w) => { g.fillStyle = '#d0d0d0'; g.fillRect(0, 0, w, w); for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`; g.fillRect(Math.random() * w, Math.random() * w, 2, 2); } }, true);
+  const dashM = new THREE.MeshStandardMaterial({ color: 0x2a2b2f, roughness: 0.8, map: dashTex });
   cockpit.add(box(1.72, 0.32, 0.5, dashM, 0, 1.2, 0.6));                     // tablero
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.72, 20, 1, false, 0, Math.PI), dashM); pad.rotation.z = Math.PI / 2; pad.position.set(0, 1.36, 0.42); cockpit.add(pad); // borde acolchado
+  for (let k = -3; k <= 3; k++) { const st = box(0.006, 0.006, 0.004, new THREE.MeshBasicMaterial({ color: 0x8a6a3a }), 0, 1.455, 0.4); st.scale.x = 1; st.position.x = k * 0.24; cockpit.add(st); }
   const bin = box(0.62, 0.24, 0.24, dashM, 0.4, 1.32, 0.38); cockpit.add(bin); // caja de los relojes
   cockpit.add(box(0.36, 0.05, 0.03, new THREE.MeshStandardMaterial({ color: 0x3b3d42 }), -0.42, 1.24, 0.25)); // rejilla
   cockpit.add(box(0.36, 0.05, 0.03, new THREE.MeshStandardMaterial({ color: 0x3b3d42 }), -0.42, 1.17, 0.25));
@@ -138,21 +227,26 @@ function makeCar(paint) {
   for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff })); b.position.set(Math.cos(i * 1.047) * 0.055, Math.sin(i * 1.047) * 0.055, -0.005); steer.add(b); }
   cockpit.add(wheelTilt);
   const column = box(0.06, 0.06, 0.3, black, 0.4, 1.17, 0.32); column.rotation.x = -0.42; cockpit.add(column);
-  // manos y brazos (piel tipo bloque, como en el dibujo)
-  const skin = new THREE.MeshStandardMaterial({ color: 0xd8b8b0, roughness: 0.8 });
+  // manos con guantes de rally y brazos con mangas de casaca
+  const gloveM = new THREE.MeshStandardMaterial({ color: 0x1c1d20, roughness: 0.65 });
+  const sleeveM = new THREE.MeshStandardMaterial({ color: 0x1f3d6e, roughness: 0.85 });
   const hands = [];
   for (const sx of [1, -1]) {
-    const h = box(0.075, 0.11, 0.08, skin, sx * 0.2, 0.02, -0.01);
+    const h = new THREE.Group(); h.position.set(sx * 0.2, 0.02, -0.01);
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.048, 14, 10), gloveM); palm.scale.set(0.9, 1.25, 0.8); h.add(palm);
+    for (let f = 0; f < 4; f++) { const fg = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.035, 3, 6), gloveM); fg.position.set(sx * 0.03, 0.035 - f * 0.022, 0.03); fg.rotation.z = Math.PI / 2; fg.rotation.y = sx * 0.6; h.add(fg); }
+    const th = new THREE.Mesh(new THREE.CapsuleGeometry(0.013, 0.035, 3, 6), gloveM); th.position.set(-sx * 0.02, 0.04, 0.025); th.rotation.z = sx * 0.5; h.add(th);
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.052, 0.05, 12), new THREE.MeshStandardMaterial({ color: 0xc8261c, roughness: 0.6 })); cuff.position.set(0, -0.07, -0.02); h.add(cuff);
     steer.add(h); hands.push(h);
   }
   const arms = [];
   for (const sx of [1, -1]) {
-    const a = box(0.13, 0.13, 1, skin, 0, 0, 0);
+    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.062, 1, 14).rotateX(Math.PI / 2), sleeveM);
     a.userData.elbow = new THREE.Vector3(0.4 + sx * 0.33, 0.95, -0.42);
     cockpit.add(a); arms.push(a);
   }
   // piernas (jean)
-  const jean = new THREE.MeshStandardMaterial({ color: 0xc4cfe0, roughness: 0.95 });
+  const jean = new THREE.MeshStandardMaterial({ color: 0x34507a, roughness: 0.95 });
   for (const sx of [1, -1]) { const l = box(0.15, 0.14, 0.62, jean, 0.4 + sx * 0.11, 0.86, 0.02); l.rotation.x = 0.18; cockpit.add(l); }
   cockpit.add(box(1.7, 0.05, 2.6, new THREE.MeshStandardMaterial({ color: 0x1d1d1f }), 0, 0.56, -0.4));    // piso
   // puertas por dentro
