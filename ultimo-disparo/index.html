@@ -169,6 +169,8 @@ kbd{ display:inline-block; min-width:30px; text-align:center; padding:3px 8px; b
 .cross::after{ top:50%; left:0; right:0; height:2px; transform:translateY(-50%); }
 #scope{ position:absolute; inset:0; opacity:0; transition:opacity .12s; pointer-events:none; background:radial-gradient(circle at 50% 50%,transparent calc(var(--r) - 1px),#020303 var(--r)); }
 #scope.on{ opacity:1; }
+#scope.kick{ animation:kick .45s cubic-bezier(.2,.9,.3,1); }
+@keyframes kick{ 0%{ transform:scale(1); filter:brightness(1); } 8%{ transform:scale(1.06) translateY(-3%); filter:brightness(2.2); } 100%{ transform:none; filter:none; } }
 #scope .lens{ position:absolute; left:50%; top:50%; width:calc(var(--r) * 2); height:calc(var(--r) * 2); transform:translate(-50%,-50%); border-radius:50%; box-shadow:inset 0 0 calc(var(--r) * .35) rgba(0,0,0,.85), inset 0 0 0 3px #000; background:radial-gradient(circle at 38% 32%,rgba(255,255,255,.06),transparent 40%); }
 #scope svg{ position:absolute; left:50%; top:50%; width:calc(var(--r) * 2); height:calc(var(--r) * 2); transform:translate(-50%,-50%); }
 .sread{ position:absolute; left:50%; top:calc(50% + var(--r) * .62); transform:translateX(-50%); display:flex; gap:14px; font:700 13px Rubik,system-ui,sans-serif; color:#c7f0c7; text-shadow:0 0 4px #000; letter-spacing:.08em; font-variant-numeric:tabular-nums; }
@@ -379,6 +381,8 @@ body.touch .arm-hint{ display:none; }
 <script src="src/data.js"></script>
 <script src="src/audio.js"></script>
 <script src="src/world.js"></script>
+<script src="src/post.js"></script>
+<script src="src/cars.js"></script>
 <script src="src/people.js"></script>
 <script src="src/game.js"></script>
 <script src="src/ui.js"></script>

@@ -49,15 +49,16 @@ await shot('4-mira');
 await page.evaluate(() => { UD.aim('head'); });
 await page.waitForTimeout(200);
 await page.evaluate(() => { UD.aim('head'); fire(); });
-await page.waitForTimeout(300);
 check(await page.evaluate(() => UD.G.mode === 'bulletcam'), 'cámara de bala al darle al secuestrador');
-await page.waitForTimeout(900);
+await page.evaluate(() => { UD.G.freeze = true; UD.step(10, () => UD.G.bc.t > UD.G.bc.dur * 0.45); });
+await page.waitForTimeout(2500);
 await shot('5-bala');
-await page.waitForFunction(() => UD.G.bc && UD.G.bc.phase === 'after', null, { timeout: 30000 });
-await page.waitForTimeout(700);
+await page.evaluate(() => { UD.step(10, () => UD.G.bc.phase === 'after'); UD.step(0.8); });
+await page.waitForTimeout(2500);
 await shot('6-impacto');
-await page.waitForFunction(() => UD.UI.cur === 'result', null, { timeout: 30000 });
-await page.waitForTimeout(1800);
+await page.evaluate(() => { UD.step(8, () => UD.UI.cur === 'result'); UD.G.freeze = false; });
+check(await page.evaluate(() => UD.UI.cur === 'result'), 'pantalla de resultado');
+await page.waitForTimeout(2500);
 check(await page.evaluate(() => UD.save.lv[1] && UD.save.lv[1].done && UD.save.lv[1].stars >= 2), 'misión 1 cumplida con tiro a la cabeza');
 check(await page.evaluate(() => UD.save.coins > 0), 'monedas ganadas');
 await shot('7-cumplida');
@@ -69,16 +70,14 @@ await page.click('#bGo');
 await page.waitForTimeout(800);
 await page.evaluate(() => { setScope(true); aimAtPoint(UD.G.hostage.chestWorld(V())); UD.G.stats.sway = 0; });
 await page.waitForTimeout(200);
-await page.evaluate(() => { aimAtPoint(UD.G.hostage.chestWorld(V())); fire(); });
-await page.waitForFunction(() => UD.UI.cur === 'result', null, { timeout: 30000 });
+await page.evaluate(() => { aimAtPoint(UD.G.hostage.chestWorld(V())); cameraAim(0); aimAtPoint(UD.G.hostage.chestWorld(V())); fire(); UD.step(4, () => UD.UI.cur === 'result'); });
 check(await page.evaluate(() => UD.G.result.reason === 'inocente'), 'darle al rehén falla la misión');
 await page.waitForTimeout(500);
 await shot('8-fallida');
 // volver a intentar y fallar al aire
 await page.click('#rRetry');
 await page.waitForTimeout(800);
-await page.evaluate(() => { setScope(true); UD.G.pitch = 0.2; UD.G.stats.sway = 0; fire(); });
-await page.waitForFunction(() => UD.UI.cur === 'result', null, { timeout: 30000 });
+await page.evaluate(() => { setScope(true); UD.G.pitch = 0.2; UD.G.stats.sway = 0; fire(); UD.step(4, () => UD.UI.cur === 'result'); });
 check(await page.evaluate(() => UD.G.result.reason === 'fallaste'), 'fallar el tiro falla la misión');
 
 // armería
@@ -94,10 +93,10 @@ await shot('9-armeria');
 // cada escenario
 for (const n of [7, 9, 13, 17, 24, 30]) {
   await page.evaluate(n => { UD.UI.brief(n); UD.UI.go(); }, n);
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(4000);
   await shot(`10-nivel${n}-vista`);
   await page.evaluate(() => { setScope(true); UD.G.zoom = UD.G.stats.zoomMax; UD.aim('chest'); });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(4000);
   await shot(`11-nivel${n}-mira`);
 }
 // la Sombra SD da un segundo tiro

@@ -48,11 +48,11 @@ const FX = {
 // objetos sueltos que caen (gorro, pistola)
 const Loose = {
   list: [],
-  add(obj, vel, spin) {
+  add(obj, vel, spin, floor = 0.06) {
     const wp = obj.getWorldPosition(V()), wq = obj.getWorldQuaternion(new THREE.Quaternion()), ws = obj.getWorldScale(V());
     obj.parent.remove(obj); W.scene.add(obj);
     obj.position.copy(wp); obj.quaternion.copy(wq); obj.scale.copy(ws);
-    this.list.push({ obj, vel, spin, rest: false });
+    this.list.push({ obj, vel, spin, rest: false, floor });
   },
   update(dt) {
     for (const l of this.list) {
@@ -60,7 +60,7 @@ const Loose = {
       l.vel.y -= 9.8 * dt;
       l.obj.position.addScaledVector(l.vel, dt);
       l.obj.rotation.x += l.spin.x * dt; l.obj.rotation.z += l.spin.z * dt;
-      if (l.obj.position.y < 0.06) { l.obj.position.y = 0.06; l.vel.multiplyScalar(-0.3); l.vel.y = Math.abs(l.vel.y) < 0.6 ? 0 : l.vel.y; l.spin.multiplyScalar(0.4); if (l.vel.length() < 0.3) l.rest = true; }
+      if (l.obj.position.y < l.floor) { l.obj.position.y = l.floor; l.vel.multiplyScalar(-0.3); l.vel.y = Math.abs(l.vel.y) < 0.6 ? 0 : l.vel.y; l.spin.multiplyScalar(0.4); if (l.vel.length() < 0.3) l.rest = true; }
     }
   },
   clear() { for (const l of this.list) W.scene.remove(l.obj); this.list = []; },
@@ -129,6 +129,14 @@ function spawnPeople(L, lay) {
     p.dirSign = rand() < 0.5 ? 1 : -1;
     p.speed = 1.05 + rand() * 0.5 + L.n * 0.008;
     p.state = 'walk'; p.wait = 0;
+    W.level.add(p.root); G.people.push(p); G.civs.push(p);
+    civStep(p, 0);
+  }
+  // gente paseando por el parque (lejos de la línea de tiro)
+  for (const path of (lay.parkPaths || [])) {
+    const p = new Person('civil');
+    p.path = { a: V(path.a[0], 0, path.a[1]), b: V(path.b[0], 0, path.b[1]) };
+    p.u = rand(); p.dirSign = rand() < 0.5 ? 1 : -1; p.speed = 0.9 + rand() * 0.4; p.state = 'walk'; p.wait = 0;
     W.level.add(p.root); G.people.push(p); G.civs.push(p);
     civStep(p, 0);
   }
@@ -210,6 +218,8 @@ function panicCivs(origin) {
 function loadLevel(n) {
   const L = G.L = LEVELS[n - 1];
   FX.clear(); Loose.clear();
+  if (G.worldRifle) { W.scene.remove(G.worldRifle); G.worldRifle = null; }
+  if (POST.on && POST.mats.final) { POST.mats.final.uniforms.speed.value = 0; POST.mats.final.uniforms.ca.value = 0; }
   G.lay = buildLevel(L);
   G.menuLevel = null;
   G.stats = gunStats();
@@ -304,6 +314,7 @@ function fire() {
     if (ud.thin && st.w.extra === 'penetra') continue;
     hit = h; break;
   }
+  muzzleFx(origin, dir);
   const person = hit && hit.object.userData.person;
   if (person === G.enemy) {
     const head = hit.object.userData.part === 'head';
@@ -311,7 +322,7 @@ function fire() {
     startBulletCam(origin, dir, hit, head);
   } else if (person) {
     save.stats.innocents++;
-    person.state = 'fall'; person.fallT = 0; person.vel.set(0, 0, 0);
+    person.vel.set(0, 0, 0); person.hit(dir, hit.object.userData.part === 'head');
     impactFx(hit.point, false);
     panicCivs(hit.point); SFX.panic();
     endMission(false, 'inocente', 1.6);
@@ -330,6 +341,24 @@ function fire() {
   }
   persist();
 }
+// fogonazo, humo y casquillo que sale volando del rifle
+let SHELL_GEO = null;
+function muzzleFx(origin, dir) {
+  const right = V().crossVectors(dir, V(0, 1, 0)).normalize();
+  const tip = origin.clone().addScaledVector(dir, G.scoped ? 0.9 : 0.55).addScaledVector(right, G.scoped ? 0 : 0.12).add(V(0, G.scoped ? -0.06 : -0.08, 0));
+  FX.spawn(tip, 0xffc56a, 4, 1.4, 0.12, 0.12, true, 0.3);
+  FX.spawn(tip.clone().addScaledVector(dir, 0.4), 0xa0a0a0, 8, 0.8, 2.2, 0.1, false, 0.5);
+  const fl = new THREE.PointLight(0xffb060, 25, 8, 2); fl.position.copy(tip); W.scene.add(fl);
+  let k = 1; const fade = () => { k *= 0.6; fl.intensity = 25 * k; if (k > 0.02) requestAnimationFrame(fade); else W.scene.remove(fl); }; requestAnimationFrame(fade);
+  if (!G.scoped && G.rifle) {
+    SHELL_GEO = SHELL_GEO || new THREE.CylinderGeometry(0.006, 0.006, 0.05, 10).rotateX(Math.PI / 2);
+    const sh = new THREE.Mesh(SHELL_GEO, new THREE.MeshStandardMaterial({ color: 0xd9a441, metalness: 0.9, roughness: 0.25 }));
+    sh.position.set(0.04, 0.03, 0.1); G.rifle.add(sh);
+    Loose.add(sh, right.clone().multiplyScalar(2.2).add(V(0, 2.2, 0)).addScaledVector(dir, -0.5), V(14, 0, 9), G.lay.H - 1.75);
+  }
+  const sc = document.getElementById('scope');
+  if (G.scoped && sc) { sc.classList.remove('kick'); void sc.offsetWidth; sc.classList.add('kick'); }
+}
 function impactFx(p, env) {
   FX.spawn(p, 0xfff1b0, 3, 2, 0.18, 0.25, true, 1);
   FX.spawn(p, env ? 0xb9a58a : 0xcfcfcf, env ? 10 : 6, 2.4, 0.9, 0.35, false, 1.2);
@@ -346,100 +375,149 @@ function alertEnemy() {
 }
 
 // ---------------------------------------------------------------- cámara de bala
+// La bala: perfil torneado de un proyectil real (base cónica, cuerpo y punta ojival) con
+// camisa de cobre y estrías del cañón; se agranda un poco para que se lea en cámara.
+let BULLET_GEO = null, BULLET_MAT = null;
+function bulletMesh() {
+  if (!BULLET_GEO) {
+    const P = [[0, 0], [0.0029, 0], [0.0039, 0.0045], [0.0039, 0.016], [0.0037, 0.02], [0.0032, 0.0245], [0.0024, 0.0285], [0.0014, 0.0315], [0.0005, 0.0333], [0, 0.0338]];
+    BULLET_GEO = new THREE.LatheGeometry(P.map(([r, y]) => new THREE.Vector2(r, y)), 32);
+    BULLET_GEO.rotateX(-Math.PI / 2); // la punta hacia -Z
+    const t = canvasTex(256, 64, (x, w, h) => {
+      const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#c56a2c'); g.addColorStop(0.5, '#e89a5a'); g.addColorStop(1, '#b85f25');
+      x.fillStyle = g; x.fillRect(0, 0, w, h);
+      for (let i = 0; i < 6; i++) { x.fillStyle = 'rgba(70,30,10,.45)'; x.fillRect(i * w / 6, h * 0.25, 5, h * 0.45); x.fillStyle = 'rgba(255,220,180,.35)'; x.fillRect(i * w / 6 + 5, h * 0.25, 2, h * 0.45); }
+    });
+    BULLET_MAT = new THREE.MeshPhysicalMaterial({ map: t, metalness: 0.9, roughness: 0.22, clearcoat: 0.5, envMapIntensity: 1.6 });
+  }
+  const m = new THREE.Mesh(BULLET_GEO, BULLET_MAT);
+  m.scale.setScalar(2.2);
+  return m;
+}
 function startBulletCam(origin, dir, hit, head) {
   G.mode = 'bulletcam';
   G.scoped = false; UI.scope(false); setThermal(false);
   G.rifleHolder.visible = false;
+  // el rifle en el mundo (apoyado en el parapeto) para ver salir la bala
+  if (G.worldRifle) W.scene.remove(G.worldRifle);
+  const wr = G.worldRifle = makeRifle(G.stats.w);
+  wr.position.copy(origin).add(V(0, -0.14, 0));
+  wr.lookAt(wr.position.clone().sub(dir));
+  W.scene.add(wr);
+  wr.updateMatrixWorld();
+  const start = wr.localToWorld(V(0, 0.012, wr.userData.tipZ));
   const local = hit.object.worldToLocal(hit.point.clone());
-  const start = origin.clone().addScaledVector(dir, 1.5).add(V(0, -0.05, 0));
   const dist = start.distanceTo(hit.point);
   G.bc = {
-    t: 0, dur: 1.5 + Math.min(1, dist / 250) * 0.7, start, mesh: hit.object, local, head, dist,
-    end: hit.point.clone(), side: null, phase: 'fly', after: 0, ringT: 0,
+    t: 0, dur: 1.9 + Math.min(1, dist / 250) * 0.8, start, mesh: hit.object, local, head, dist, dir: dir.clone(),
+    end: hit.point.clone(), side: null, phase: 'fly', after: 0, ringT: 0, puffT: 0, stop: 0, shake: 0,
   };
-  // la bala
-  const b = new THREE.Group();
-  const brass = new THREE.MeshStandardMaterial({ color: 0xf0c060, metalness: 0.45, roughness: 0.28, emissive: 0x3a2400 });
-  const copper = new THREE.MeshStandardMaterial({ color: 0xe08850, metalness: 0.45, roughness: 0.3 });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.045, 24), brass); body.rotation.x = Math.PI / 2; b.add(body);
-  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.011, 0.035, 16), copper); tip.rotation.x = -Math.PI / 2; tip.position.z = -0.04; b.add(tip);
-  b.scale.setScalar(1.1);
-  const glow = new THREE.PointLight(0xfff0d0, 0.25, 0.8, 2); glow.position.set(0.08, 0.1, -0.02); b.add(glow);
-  const trail = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.025, 1, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false, fog: false }));
-  W.scene.add(b, trail);
-  G.bc.bullet = b; G.bc.trail = trail; G.bc.rings = [];
+  // fogonazo, humo y anillo de humo en la boca del cañón
+  FX.spawn(start, 0xffd27a, 6, 1.2, 0.5, 0.18, true, 0.4);
+  FX.spawn(start, 0xfff6d8, 2, 0.2, 0.3, 0.18, true, 0.1);
+  FX.spawn(start.clone().addScaledVector(dir, 0.3), 0x9a9a9a, 14, 0.7, 6, 0.12, false, 0.3);
+  const flash = new THREE.PointLight(0xffc070, 30, 6, 2); flash.position.copy(start); W.scene.add(flash);
+  const b = bulletMesh();
+  const wake = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.5, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xdfefff, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  wake.geometry.rotateX(Math.PI / 2); wake.geometry.translate(0, 0, 0.25);
+  W.scene.add(b, wake);
+  G.bc.bullet = b; G.bc.wake = wake; G.bc.rings = []; G.bc.flash = flash;
   G.ts = 0.02;
   SFX.whoosh(G.bc.dur);
   UI.bulletCam(true);
 }
 function updateBulletCam(dt) {
   const bc = G.bc, cam = W.cine;
+  const PF = POST.on && POST.mats.final ? POST.mats.final.uniforms : null;
+  if (bc.flash) { bc.flash.intensity *= Math.exp(-dt * 18); if (bc.flash.intensity < 0.05) { W.scene.remove(bc.flash); bc.flash = null; } }
   if (bc.phase === 'fly') {
     bc.t += dt;
     const tau = Math.min(1, bc.t / bc.dur);
-    const u = tau * 0.35 + (1 - (1 - tau) * (1 - tau)) * 0.65;
+    // recorrido: rápido al salir, lento al acercarse (pero sin detenerse)
+    // al principio sale despacio del cañón (para verla salir), después vuela y frena al llegar
+    const t1 = clamp((tau - 0.1) / 0.9, 0, 1);
+    const u0 = Math.min(0.6 / Math.max(1, bc.dist), 0.01);
+    const u = tau < 0.1 ? u0 * tau / 0.1 : u0 + (1 - u0) * (t1 * 0.3 + (1 - Math.pow(1 - t1, 2.4)) * 0.7);
     bc.end.copy(bc.mesh.localToWorld(bc.local.clone()));
     const d = bc.end.clone().sub(bc.start); const len = d.length(); d.normalize();
     const pos = bc.start.clone().addScaledVector(d, len * u);
     bc.bullet.position.copy(pos);
     bc.bullet.lookAt(pos.clone().sub(d));
-    bc.bullet.rotateZ(bc.t * 30);
-    // estela de aire detrás de la bala
-    const tl = Math.min(len * u, 14);
-    bc.trail.position.copy(pos).addScaledVector(d, -tl / 2);
-    bc.trail.scale.set(1, tl, 1);
-    bc.trail.quaternion.setFromUnitVectors(V(0, 1, 0), d);
-    bc.ringT -= dt;
-    if (bc.ringT <= 0) {
-      bc.ringT = 0.09;
-      const r = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.004, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false, fog: false }));
-      r.position.copy(pos).addScaledVector(d, -0.05); r.quaternion.setFromUnitVectors(V(0, 0, 1), d);
-      W.scene.add(r); bc.rings.push({ r, t: 0 });
-    }
-    // cámara: atrás y al costado, girando alrededor de la bala; al final se abre para ver el impacto
+    bc.bullet.rotateZ(bc.t * 40);
+    bc.wake.position.copy(pos); bc.wake.quaternion.copy(bc.bullet.quaternion);
     const up = V(0, 1, 0), side = V().crossVectors(d, up).normalize();
     if (!bc.side) bc.side = side.clone();
-    const ang = tau * 1.4;
-    const off = bc.side.clone().applyAxisAngle(d, ang).multiplyScalar(0.13).addScaledVector(up, 0.035).addScaledVector(d, -0.34);
-    const chase = pos.clone().add(off);
-    const k = clamp((tau - 0.82) / 0.18, 0, 1), e = k * k * (3 - 2 * k);
-    const wide = bc.end.clone().addScaledVector(bc.side, 2.6).addScaledVector(up, 0.5).addScaledVector(d, -1.6);
-    cam.position.lerpVectors(chase, wide, e);
-    const look = pos.clone().addScaledVector(d, 0.9).lerp(bc.end, e);
+    // estela de aire en espiral (partículas) y ondas de choque
+    bc.puffT -= dt;
+    if (bc.puffT <= 0) {
+      bc.puffT = 0.012;
+      const a = bc.t * 26;
+      for (const ph of [0, Math.PI]) {
+        const off = bc.side.clone().applyAxisAngle(d, a + ph).multiplyScalar(0.012);
+        FX.spawn(pos.clone().add(off).addScaledVector(d, -0.03), 0xeaf4ff, 1, 0.02, 1.1, 0.012, true, 0);
+      }
+    }
+    bc.ringT -= dt;
+    if (bc.ringT <= 0) {
+      bc.ringT = 0.07;
+      const r = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0025, 6, 28), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false, fog: false }));
+      r.position.copy(pos).addScaledVector(d, -0.04); r.quaternion.setFromUnitVectors(V(0, 0, 1), d);
+      W.scene.add(r); bc.rings.push({ r, t: 0 });
+    }
+    // cámara: sale al lado del cañón, persigue la bala girando a su alrededor y al final se abre
+    const k0 = clamp((tau - 0.08) / 0.12, 0, 1), e0 = k0 * k0 * (3 - 2 * k0);
+    const ang = Math.PI * 0.15 + tau * Math.PI * 1.1;
+    const chase = pos.clone().add(bc.side.clone().applyAxisAngle(d, ang).multiplyScalar(0.085)).addScaledVector(up, 0.012).addScaledVector(d, -0.09);
+    const muzzle = bc.start.clone().addScaledVector(bc.side, 0.42).addScaledVector(up, 0.1).addScaledVector(d, -0.75);
+    const k = clamp((tau - 0.8) / 0.2, 0, 1), e = k * k * (3 - 2 * k);
+    const wide = bc.end.clone().addScaledVector(bc.side, 2.2).addScaledVector(up, 0.35).addScaledVector(d, -1.4);
+    const p0 = muzzle.lerp(chase, e0);
+    cam.position.lerpVectors(p0, wide, e);
+    const look = pos.clone().addScaledVector(d, 0.6 * (1 - e0) + 0.02).lerp(bc.end, e);
     cam.lookAt(look);
-    cam.fov = lerp(40, 34, e); cam.updateProjectionMatrix();
+    cam.fov = lerp(lerp(30, 42, e0), 32, e); cam.updateProjectionMatrix();
+    if (PF) { PF.speed.value = 0.03 * e0 * (1 - e); PF.ca.value = 0.0011 * (1 - e * 0.7); }
     if (tau >= 1) hitEnemy();
   } else {
+    // pausa de impacto: todo se congela un instante
+    if (bc.stop > 0) { bc.stop -= dt; dt = 0; }
     bc.after += dt;
-    // orbita lenta alrededor del secuestrador mientras cae
+    bc.shake = Math.max(0, bc.shake - dt * 2.2);
+    if (PF) { PF.speed.value = 0; PF.ca.value = 0.0025 * bc.shake; }
+    // órbita lenta alrededor del secuestrador mientras cae
     const c = G.enemy.chestWorld(V());
     c.y = Math.max(0.4, c.y);
-    const a0 = Math.atan2(bc.camStart.x - c.x, bc.camStart.z - c.z) + bc.after * 0.22;
-    const r = lerp(bc.camStart.distanceTo(c), 4.2, Math.min(1, bc.after / 2));
-    cam.position.set(c.x + Math.sin(a0) * r, lerp(bc.camStart.y, 1.7, Math.min(1, bc.after / 2)), c.z + Math.cos(a0) * r);
+    const a0 = Math.atan2(bc.camStart.x - c.x, bc.camStart.z - c.z) + bc.after * 0.2;
+    const r = lerp(bc.camStart.distanceTo(c), 4.0, Math.min(1, bc.after / 2.2));
+    const sh = bc.shake * bc.shake * 0.05;
+    cam.position.set(c.x + Math.sin(a0) * r + (Math.random() - 0.5) * sh, lerp(bc.camStart.y, 1.6, Math.min(1, bc.after / 2.2)) + (Math.random() - 0.5) * sh, c.z + Math.cos(a0) * r);
     cam.lookAt(c);
-    G.ts = bc.after < 0.9 ? 0.3 : lerp(G.ts, 1, 1 - Math.exp(-dt * 2));
-    if (bc.after > 3.4 && G.mode === 'bulletcam') { G.mode = 'result'; UI.bulletCam(false); }
+    cam.fov = lerp(cam.fov, 38, 1 - Math.exp(-dt * 2)); cam.updateProjectionMatrix();
+    G.ts = bc.stop > 0 ? 0 : bc.after < 1.0 ? 0.28 : lerp(G.ts, 1, 1 - Math.exp(-dt * 2));
+    if (bc.after > 3.6 && G.mode === 'bulletcam') { G.mode = 'result'; UI.bulletCam(false); }
   }
   for (let i = bc.rings.length - 1; i >= 0; i--) {
-    const o = bc.rings[i]; o.t += dt; o.r.scale.setScalar(1 + o.t * 6); o.r.material.opacity = 0.35 * (1 - o.t / 0.6);
-    if (o.t > 0.6) { W.scene.remove(o.r); o.r.geometry.dispose(); o.r.material.dispose(); bc.rings.splice(i, 1); }
+    const o = bc.rings[i]; o.t += dt; o.r.scale.setScalar(1 + o.t * 7); o.r.material.opacity = 0.3 * (1 - o.t / 0.5);
+    if (o.t > 0.5) { W.scene.remove(o.r); o.r.geometry.dispose(); o.r.material.dispose(); bc.rings.splice(i, 1); }
   }
 }
 function hitEnemy() {
   const bc = G.bc, e = G.enemy, h = G.hostage;
-  bc.phase = 'after'; bc.after = 0; bc.camStart = W.cine.position.clone();
-  W.scene.remove(bc.bullet, bc.trail);
+  bc.phase = 'after'; bc.after = 0; bc.camStart = W.cine.position.clone(); bc.stop = 0.12; bc.shake = 1;
+  W.scene.remove(bc.bullet, bc.wake);
   SFX.impact();
-  impactFx(bc.end, false);
-  e.state = 'fall'; e.fallT = 0; e.dead = true;
-  if (bc.head && e.hat) Loose.add(e.hat, V((Math.random() - 0.5) * 1.5, 2.4, -2.2).applyAxisAngle(V(0, 1, 0), e.heading), V(6, 0, 4));
-  if (e.gun) Loose.add(e.gun, V(0.6, 1, 0.8).applyAxisAngle(V(0, 1, 0), e.heading), V(5, 0, 7));
-  // el rehén se suelta y corre a salvo
-  h.state = 'run'; h.panic = false;
+  // impacto sin sangre: destello, polvo y pedacitos de tela oscura
+  FX.spawn(bc.end, 0xfff1c0, 4, 1.5, 0.25, 0.22, true, 1);
+  FX.spawn(bc.end, 0xcfcfcf, 10, 2.2, 1.4, 0.18, false, 1.2);
+  FX.spawn(bc.end, 0x2a2a2e, 14, 3.2, 1.6, 0.035, false, 1.4);
+  e.hit(bc.dir, bc.head); e.dead = true;
+  if (bc.head && e.hat) Loose.add(e.hat, V((Math.random() - 0.5) * 1.2, 2.6, 0).addScaledVector(bc.dir, 3), V(7, 0, 5));
+  if (e.gun) Loose.add(e.gun, V(0.6, 1.4, 0.8).applyAxisAngle(V(0, 1, 0), e.heading), V(6, 0, 8));
+  // el rehén se agacha del susto, después corre a salvo y festeja
+  h.state = 'cower'; h.cowerT = 0.8; h.panic = false;
   const away = V(G.ai.x >= 0 ? -1 : 1, 0, 0.9).normalize();
-  h.vel.copy(away).multiplyScalar(3.2); h.heading = Math.atan2(away.x, away.z);
-  h.cheerIn = 2.2;
+  h.runDir = away;
+  h.cheerIn = 2.4;
   panicCivs(bc.end);
   const head = bc.head;
   const timeOk = G.timeLeft >= G.timeTotal * 0.5;
@@ -528,6 +606,7 @@ function updatePeople(dt) {
     if (G.enemy.state === 'hold') placePair(wdt);
     G.enemy.update(wdt);
     const h = G.hostage;
+    if (h.state === 'cower' && h.cowerT !== undefined) { h.cowerT -= wdt; if (h.cowerT <= 0) { h.cowerT = undefined; h.state = 'run'; h.vel.copy(h.runDir).multiplyScalar(3.2); h.heading = Math.atan2(h.runDir.x, h.runDir.z); } }
     if (h.state === 'run' && h.cheerIn !== undefined) { h.cheerIn -= wdt; if (h.cheerIn <= 0) { h.state = 'cheer'; h.heading = Math.atan2(-h.pos.x, -h.pos.z); h.vel.set(0, 0, 0); } }
     h.update(wdt);
   }
@@ -553,7 +632,7 @@ function menuCamera(dt) {
 let lastT = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - (lastT || now)) / 1000); lastT = now;
+  const dt = G.freeze ? 0 : Math.min(0.05, (now - (lastT || now)) / 1000); lastT = now;
   if (G.mode === 'armory') {
     const A = G.arm, w = window.innerWidth, h = window.innerHeight;
     if (A.w !== w || A.h !== h) {
@@ -566,17 +645,24 @@ function frame(now) {
     if (!A.drag) A.rot += dt * 0.35;
     A.holder.rotation.y = A.rot;
     A.holder.position.y = Math.sin(now / 900) * 0.015;
-    W.renderer.render(A.scene, A.cam);
+    renderFrame(A.scene, A.cam);
     return;
   }
-  if (G.mode === 'paused') { W.renderer.render(W.scene, W.camera); return; }
+  if (G.mode === 'paused') { renderFrame(W.scene, W.camera); return; }
   if (G.mode === 'menu' || G.mode === 'brief') {
     updatePeople(dt);
     if (G.mode === 'menu') menuCamera(dt);
     else { G.t += dt; cameraAim(dt); }
-    W.renderer.render(W.scene, W.camera);
+    renderFrame(W.scene, W.camera);
     return;
   }
+  const cine = step(dt);
+  renderFrame(W.scene, cine ? W.cine : W.camera);
+  if (G.mode === 'play' || G.mode === 'ending') UI.hud(dt);
+}
+
+// Avanza la partida dt segundos (sin dibujar). Devuelve true si se ve por la cámara de cine.
+function step(dt) {
   if (G.mode === 'play') updatePlay(dt);
   if (G.mode === 'ending') {
     G.endT -= dt;
@@ -587,19 +673,18 @@ function frame(now) {
     if (G.mode === 'bulletcam') updateBulletCam(dt);
     else { G.bc.after += dt; const c = G.enemy.chestWorld(V()); c.y = Math.max(0.4, c.y); const a0 = Math.atan2(W.cine.position.x - c.x, W.cine.position.z - c.z) + dt * 0.12; const r = Math.hypot(W.cine.position.x - c.x, W.cine.position.z - c.z); W.cine.position.set(c.x + Math.sin(a0) * r, W.cine.position.y, c.z + Math.cos(a0) * r); W.cine.lookAt(c); }
     if (G.mode === 'result' && !UI.resultShown) UI.result(G.result);
-    W.renderer.render(W.scene, W.cine);
-  } else {
-    cameraAim(dt);
-    W.renderer.render(W.scene, W.camera);
+    return true;
   }
-  if (G.mode === 'play' || G.mode === 'ending') UI.hud(dt);
+  cameraAim(dt);
+  return false;
 }
 
 function skipBulletCam() {
   if (G.mode !== 'bulletcam' || !G.bc) return;
   if (G.bc.phase === 'fly') { G.bc.t = G.bc.dur; updateBulletCam(0); }
-  G.bc.after = Math.max(G.bc.after, 3.4);
-  G.enemy.fallT = 1; G.enemy.update(0.01);
+  G.bc.after = Math.max(G.bc.after, 3.4); G.bc.stop = 0; G.bc.shake = 0;
+  for (let i = 0; i < 60; i++) G.enemy.update(0.05);
+  if (POST.on && POST.mats.final) { POST.mats.final.uniforms.speed.value = 0; POST.mats.final.uniforms.ca.value = 0; }
   G.mode = 'result'; UI.bulletCam(false);
 }
 

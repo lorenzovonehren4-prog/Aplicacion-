@@ -447,6 +447,8 @@ window.UD = {
   G, W, LEVELS, save, UI,
   aim(part = 'head') {
     const p = part === 'head' ? G.enemy.headWorld(V()) : G.enemy.chestWorld(V());
-    aimAtPoint(p); G.stats.sway = 0;
+    aimAtPoint(p); G.stats.sway = 0; cameraAim(0);
   },
+  // avanza la partida a pasos fijos (para pruebas: no depende de lo rápido que dibuje)
+  step(sec, until) { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) { if (until && until()) break; step(1 / 60); } },
 };
