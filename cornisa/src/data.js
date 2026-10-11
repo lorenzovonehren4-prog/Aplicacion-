@@ -50,44 +50,44 @@ const THEMES = {
 // grip: agarre del piso (nieve, lluvia). guard: probabilidad de baranda en un tramo con abismo.
 // rocks: rocas caídas en la pista por km. obj: objetivos (estrellas). unlock: qué pide para abrirse.
 const LEVELS = [
-  { id: 1, name: 'Cañón del Sol', theme: 'canon', len: 1300, hw: 4.3, rMin: 70, rMax: 160, ang: 55, grade: [0.01, 0.04],
+  { id: 1, name: 'Cañón del Sol', theme: 'canon', len: 1900, hw: 4.3, rMin: 38, rMax: 150, ang: 85, hair: 0.05, grade: [0.01, 0.04],
     mix: { C: 0.5, L: 0.25, R: 0.25 }, guard: 0.75, rocks: 0, grip: 1, seed: 101, y0: 120, depth: 140,
     desc: 'Un cañón de roca roja con curvas suaves. Casi todo el abismo tiene baranda.',
-    obj: [{ t: 'finish' }, { t: 'time', v: 62 }, { t: 'coins', v: 20 }] },
-  { id: 2, name: 'Bosque de Pinos', theme: 'bosque', len: 1500, hw: 4.1, rMin: 55, rMax: 140, ang: 70, grade: [0.02, 0.06],
+    obj: [{ t: 'finish' }, { t: 'time', v: 80 }, { t: 'coins', v: 30 }] },
+  { id: 2, name: 'Bosque de Pinos', theme: 'bosque', len: 2100, hw: 4.1, rMin: 28, rMax: 130, ang: 100, hair: 0.2, grade: [0.02, 0.06],
     mix: { C: 0.3, L: 0.35, R: 0.35 }, guard: 0.6, rocks: 0, grip: 1, seed: 202, y0: 220, depth: 180,
     desc: 'Pinos, más curvas y el abismo aparece más seguido.',
-    obj: [{ t: 'finish' }, { t: 'time', v: 76 }, { t: 'clean', v: 3 }],
+    obj: [{ t: 'finish' }, { t: 'time', v: 97 }, { t: 'clean', v: 3 }],
     unlock: { stars: 1 } },
-  { id: 3, name: 'Paso Nevado', theme: 'nieve', len: 1700, hw: 3.9, rMin: 48, rMax: 130, ang: 80, grade: [0.03, 0.07],
+  { id: 3, name: 'Paso Nevado', theme: 'nieve', len: 2200, hw: 3.9, rMin: 24, rMax: 115, ang: 110, hair: 0.25, grade: [0.03, 0.07],
     mix: { C: 0.2, L: 0.4, R: 0.4 }, guard: 0.5, rocks: 0, grip: 0.8, seed: 303, y0: 900, depth: 260,
     desc: 'La nieve resbala: frena antes de las curvas y no gires de golpe.',
-    obj: [{ t: 'finish' }, { t: 'coins', v: 30 }, { t: 'time', v: 92 }],
+    obj: [{ t: 'finish' }, { t: 'coins', v: 35 }, { t: 'time', v: 112 }],
     unlock: { stars: 2 } },
-  { id: 4, name: 'Valle de Niebla', theme: 'niebla', len: 1800, hw: 3.8, rMin: 45, rMax: 120, ang: 85, grade: [0.0, 0.06],
+  { id: 4, name: 'Valle de Niebla', theme: 'niebla', len: 2300, hw: 3.8, rMin: 22, rMax: 105, ang: 115, hair: 0.3, grade: [0.0, 0.06],
     mix: { C: 0.2, L: 0.4, R: 0.4 }, guard: 0.45, rocks: 0, grip: 0.95, seed: 404, y0: 400, depth: 220,
     desc: 'No se ve casi nada. Las flechas amarillas avisan las curvas.',
-    obj: [{ t: 'finish' }, { t: 'clean', v: 2 }, { t: 'time', v: 96 }],
+    obj: [{ t: 'finish' }, { t: 'clean', v: 2 }, { t: 'time', v: 107 }],
     unlock: { stars: 2, upg: { motor: 1 } } },
-  { id: 5, name: 'Volcán Despierto', theme: 'volcan', len: 2000, hw: 3.7, rMin: 40, rMax: 115, ang: 95, grade: [0.02, 0.08],
+  { id: 5, name: 'Volcán Despierto', theme: 'volcan', len: 2400, hw: 3.7, rMin: 20, rMax: 100, ang: 120, hair: 0.3, grade: [0.02, 0.08],
     mix: { C: 0.15, L: 0.4, R: 0.4, B: 0.05 }, guard: 0.35, rocks: 7, grip: 1, seed: 505, y0: 300, depth: 240,
     desc: 'Lava abajo y rocas caídas en la pista. Esquívalas o te rompes el carro.',
-    obj: [{ t: 'finish' }, { t: 'coins', v: 36 }, { t: 'clean', v: 2 }],
+    obj: [{ t: 'finish' }, { t: 'coins', v: 42 }, { t: 'clean', v: 2 }],
     unlock: { stars: 2, upg: { llantas: 1 } } },
-  { id: 6, name: 'Cumbre de Noche', theme: 'noche', len: 2100, hw: 3.6, rMin: 38, rMax: 110, ang: 100, grade: [0.02, 0.08],
+  { id: 6, name: 'Cumbre de Noche', theme: 'noche', len: 2500, hw: 3.6, rMin: 18, rMax: 95, ang: 125, hair: 0.35, grade: [0.02, 0.08],
     mix: { C: 0.1, L: 0.42, R: 0.42, B: 0.06 }, guard: 0.3, rocks: 5, grip: 1, seed: 606, y0: 650, depth: 300,
     desc: 'De noche, sólo con tus faros. Las barandas brillan con la luz.',
-    obj: [{ t: 'finish' }, { t: 'time', v: 120 }, { t: 'coins', v: 40 }],
+    obj: [{ t: 'finish' }, { t: 'time', v: 130 }, { t: 'coins', v: 42 }],
     unlock: { stars: 2, upg: { frenos: 2 } } },
-  { id: 7, name: 'Tormenta', theme: 'tormenta', len: 2300, hw: 3.5, rMin: 36, rMax: 100, ang: 110, grade: [0.01, 0.08],
+  { id: 7, name: 'Tormenta', theme: 'tormenta', len: 2600, hw: 3.5, rMin: 17, rMax: 90, ang: 130, hair: 0.38, grade: [0.01, 0.08],
     mix: { C: 0.1, L: 0.4, R: 0.4, B: 0.1 }, guard: 0.25, rocks: 7, grip: 0.82, seed: 707, y0: 500, depth: 280,
     desc: 'Lluvia, rayos y la pista mojada. El abismo casi no tiene baranda.',
-    obj: [{ t: 'finish' }, { t: 'clean', v: 3 }, { t: 'time', v: 145 }],
+    obj: [{ t: 'finish' }, { t: 'clean', v: 3 }, { t: 'time', v: 143 }],
     unlock: { stars: 2, total: 11 } },
-  { id: 8, name: 'Cima del Cóndor', theme: 'cima', len: 2700, hw: 3.4, rMin: 34, rMax: 95, ang: 115, grade: [0.03, 0.09],
+  { id: 8, name: 'Cima del Cóndor', theme: 'cima', len: 3000, hw: 3.4, rMin: 15, rMax: 85, ang: 140, hair: 0.42, grade: [0.03, 0.09],
     mix: { C: 0.05, L: 0.3, R: 0.3, B: 0.35 }, guard: 0.15, rocks: 6, grip: 0.92, seed: 808, y0: 1500, depth: 420,
     desc: 'La montaña final: una cresta angosta con abismo a los dos lados hasta la cima.',
-    obj: [{ t: 'finish' }, { t: 'time', v: 150 }, { t: 'coins', v: 50 }],
+    obj: [{ t: 'finish' }, { t: 'time', v: 170 }, { t: 'coins', v: 55 }],
     unlock: { stars: 2, total: 14, upg: { motor: 3, chasis: 2 } } },
 ];
 
@@ -96,7 +96,7 @@ function freeLevel(seed) {
   const themes = Object.keys(THEMES);
   const r = rng(seed);
   const th = themes[Math.floor(r() * themes.length)];
-  return { id: 0, free: true, name: 'Ruta libre', theme: th, len: 2400, hw: 3.6, rMin: 38, rMax: 120, ang: 100, grade: [0.0, 0.08],
+  return { id: 0, free: true, name: 'Ruta libre', theme: th, len: 2600, hw: 3.6, rMin: 18, rMax: 110, ang: 120, hair: 0.2, grade: [0.0, 0.08],
     mix: { C: 0.15, L: 0.35, R: 0.35, B: 0.15 }, guard: 0.3, rocks: 5, grip: th === 'nieve' || th === 'tormenta' ? 0.84 : 1,
     seed, y0: 400, depth: 300, desc: 'Una montaña nueva cada vez.', obj: [{ t: 'finish' }, { t: 'coins', v: 25 }, { t: 'clean', v: 3 }] };
 }
@@ -123,12 +123,13 @@ const PAINTS = [
 // Valores del carro según las mejoras.
 function carStats(u) {
   return {
-    acc: 5.4 + u.motor * 0.7,          // m/s² a baja velocidad
-    top: 35 + u.motor * 2.6,            // m/s (126 → 173 km/h)
-    brake: 9.5 + u.frenos * 1.3,        // m/s²
-    grip: 0.95 + u.llantas * 0.065,     // en g
+    acc: 7.2 + u.motor * 0.8,           // m/s² a baja velocidad
+    top: 46 + u.motor * 3,              // m/s (166 → 220 km/h)
+    brake: 12 + u.frenos * 1.2,         // m/s²
+    grip: 1.0 + u.llantas * 0.06,       // en g
     hp: 100 + u.chasis * 24,            // vida de la carrocería
     armor: 1 - u.chasis * 0.07,         // multiplica el daño
+    crash: 7 + u.chasis * 0.8,          // golpe de costado (m/s) que destroza el carro
   };
 }
 
@@ -138,7 +139,7 @@ const ACHS = [
   { id: 'tres', name: 'Perfecto', desc: 'Saca 3 estrellas en una montaña', icon: '⭐' },
   { id: 'mecanico', name: 'Mecánico', desc: 'Compra tu primera mejora', icon: '🔧' },
   { id: 'tope', name: 'Al máximo', desc: 'Sube una mejora al nivel 5', icon: '🏁' },
-  { id: 'veloz', name: 'Más de 150', desc: 'Llega a 150 km/h', icon: '💨' },
+  { id: 'veloz', name: 'Más de 180', desc: 'Llega a 180 km/h', icon: '💨' },
   { id: 'monedero', name: 'Monedero', desc: 'Junta 500 monedas en total', icon: '🪙' },
   { id: 'hielo', name: 'Pies en la nieve', desc: 'Pasa el Paso Nevado', icon: '❄️' },
   { id: 'lava', name: 'Piel de lava', desc: 'Pasa el Volcán Despierto', icon: '🌋' },
@@ -159,7 +160,7 @@ function newSave() {
     lv: {},            // id → { stars: [b, b, b], best: segundos, done }
     ach: {}, beat: false,
     stats: { runs: 0, falls: 0, wins: 0, coins: 0, top: 0, km: 0, free: 0 },
-    opt: { sound: true, vol: 0.8, cam: 'cabina', quality: 'alta', sens: 1 },
+    opt: { sound: true, vol: 0.8, cam: 'cabina', quality: 'alta', sens: 1, line: true, copi: true },
   };
 }
 let save = (() => {

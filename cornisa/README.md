@@ -2,7 +2,7 @@
 
 (Carpeta `cornisa/` y guardado `cornisa_v1`: nombres internos de cuando se llamaba Cornisa.)
 
-Juego de manejo en 3D por carreteras de montaña, visto desde la cabina de un 4x4 (volante, manos, velocímetro y tacómetro que se mueven). Si te sales por el abismo, pierdes. Todo el texto en español.
+Rally en 3D por carreteras de montaña, visto desde la cabina de un 4x4 (volante, manos, velocímetro y tacómetro que se mueven). Rectas a fondo, curvas cerradas y horquillas. Guía: línea sobre la pista (verde a fondo, amarillo suelta, rojo frena; `lineMesh`, `speedProfile`), notas del copiloto con voz (`paceNotes`, `paceNote`) y mapa estilo GPS (`drawNav`). Si te sales por el abismo, atraviesas una baranda o chocas fuerte contra la roca (golpe de costado mayor a `st.crash`), pierdes: caída por el barranco o choque con el carro destrozado (`startCrash`, `wreckCar`, efectos `FX` en `world.js`). Todo el texto en español.
 
 - **8 montañas** que se abren en orden: cada una pide estrellas en la anterior (y algunas, estrellas en total o mejoras en el taller). Cañón del Sol, Bosque de Pinos, Paso Nevado (resbala), Valle de Niebla, Volcán Despierto (rocas en la pista), Cumbre de Noche (sólo faros), Tormenta (lluvia, rayos, piso mojado) y Cima del Cóndor (cresta con abismo a los dos lados).
 - **3 estrellas** por montaña: llegar a la meta y dos objetivos (tiempo, monedas o pocos choques).

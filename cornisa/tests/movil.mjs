@@ -43,7 +43,7 @@ await page.evaluate(() => { G.mode = 'drive'; });
 const gas = await page.locator('[data-k=gas]').boundingBox();
 await page.mouse.move(gas.x + gas.width / 2, gas.y + gas.height / 2);
 await page.dispatchEvent('[data-k=gas]', 'pointerdown');
-const v = await page.evaluate(() => { for (let i = 0; i < 240; i++) simulate(1 / 120); return G.C.f; });
+const v = await page.evaluate(() => { for (let i = 0; i < 240; i++) simulate(1 / 120); const s = G.T.notes[0].s - 60; const p = roadPoint(G.T, s, 0); Object.assign(G.C, { x: p.x, z: p.z, h: p.h, s, i: s }); return G.C.f; });
 await page.dispatchEvent('[data-k=gas]', 'pointerup');
 check(v > 5, `el botón de acelerar mueve el carro (${v.toFixed(1)} m/s)`);
 await page.waitForTimeout(1500);

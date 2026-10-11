@@ -30,16 +30,25 @@ function buildRoad(L) {
   const n = L.len + 1;
   const k = new Float32Array(n);
   const curves = [];
-  const HM = 1.3;              // el rumbo no se aleja más de ~75° de la dirección general: la ruta nunca se cruza
+  const HM = 1.35;             // el rumbo no se aleja más de ~77° de la dirección general: la ruta nunca se cruza
   const end = n - 80;
-  let i = 60, h = 0;
+  let i = 70, h = 0;
   while (i < end) {
-    i += Math.round(18 + r() * 75);
-    let A = (0.3 + r() * 0.7) * L.ang * DEG;
-    let sg = r() < 0.5 ? -1 : 1;
-    if (Math.abs(h + sg * A) > HM) sg = -sg;
-    if (Math.abs(h + sg * A) > HM) A = Math.max(0.25, HM - sg * h - 0.05);
-    const R = L.rMin + r() * (L.rMax - L.rMin) * (A > 1.3 ? 0.35 : A > 0.9 ? 0.7 : 1);
+    // rectas largas para ir a fondo (estilo rally)
+    i += Math.round(25 + Math.pow(r(), 0.8) * 170);
+    let A, sg, R;
+    if (r() < (L.hair || 0) && Math.abs(h) > 0.4) {
+      // horquilla: de un lado al otro, cerradísima
+      sg = h > 0 ? -1 : 1;
+      A = Math.min(2.6, HM + Math.abs(h) - 0.05);
+      R = L.rMin + r() * 6;
+    } else {
+      A = (0.3 + r() * 0.7) * L.ang * DEG;
+      sg = r() < 0.5 ? -1 : 1;
+      if (Math.abs(h + sg * A) > HM) sg = -sg;
+      if (Math.abs(h + sg * A) > HM) A = Math.max(0.25, HM - sg * h - 0.05);
+      R = L.rMin + r() * (L.rMax - L.rMin) * (A > 1.6 ? 0.25 : A > 1.0 ? 0.6 : 1);
+    }
     const T = Math.min(22, Math.max(8, R * 0.35));
     const P = Math.max(0, Math.round(A * R - T));
     const len = Math.round(2 * T + P);
@@ -119,8 +128,64 @@ function buildRoad(L) {
   const T = { L, n, x, z, y, h: hd, k, g, nx, nz, wL, wR, gL, gR, kAbs, curves, runs, hw: L.hw,
     valleyY: ymin - L.depth, ymax };
   buildProfile(T);
+  racingLine(T);
+  paceNotes(T);
   placeItems(T, r);
   return T;
+}
+
+// Línea de carrera: una banda elástica que se tensa dentro de la pista (afuera-adentro-afuera).
+// Deja por metro el desplazamiento lo[s], la posición lx/lz y la curvatura lk[s] de la línea.
+function racingLine(T) {
+  const st = 2, m = Math.floor((T.n - 1) / st) + 1, lim = T.hw - 1.15;
+  const o = new Float32Array(m), cx = new Float32Array(m), cz = new Float32Array(m), nx = new Float32Array(m), nz = new Float32Array(m);
+  for (let j = 0; j < m; j++) { const q = Math.min(T.n - 1, j * st); cx[j] = T.x[q]; cz[j] = T.z[q]; nx[j] = T.nx[q]; nz[j] = T.nz[q]; }
+  for (let it = 0; it < 260; it++) {
+    for (let j = 1; j < m - 1; j++) {
+      const ax = cx[j - 1] + nx[j - 1] * o[j - 1], az = cz[j - 1] + nz[j - 1] * o[j - 1];
+      const bx = cx[j + 1] + nx[j + 1] * o[j + 1], bz = cz[j + 1] + nz[j + 1] * o[j + 1];
+      const tx = (ax + bx) / 2 - cx[j], tz = (az + bz) / 2 - cz[j];
+      const want = tx * nx[j] + tz * nz[j];
+      o[j] = Math.max(-lim, Math.min(lim, o[j] + (want - o[j]) * 0.9));
+    }
+  }
+  const n = T.n;
+  T.lo = new Float32Array(n); T.lx = new Float32Array(n); T.lz = new Float32Array(n); T.lk = new Float32Array(n);
+  for (let q = 0; q < n; q++) {
+    const j = q / st, a = Math.min(m - 1, Math.floor(j)), b = Math.min(m - 1, a + 1), f = j - a;
+    const off = o[a] + (o[b] - o[a]) * f;
+    T.lo[q] = off; T.lx[q] = T.x[q] + T.nx[q] * off; T.lz[q] = T.z[q] + T.nz[q] * off;
+  }
+  for (let q = 0; q < n; q++) {
+    const a = Math.max(0, q - 4), b = Math.min(n - 1, q + 4), c = Math.max(a + 1, Math.min(b - 1, q));
+    const h1 = Math.atan2(T.lx[c] - T.lx[a], T.lz[c] - T.lz[a]), h2 = Math.atan2(T.lx[b] - T.lx[c], T.lz[b] - T.lz[c]);
+    let dh = h2 - h1; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
+    T.lk[q] = dh / Math.max(1, Math.hypot(T.lx[b] - T.lx[a], T.lz[b] - T.lz[a]) / 2);
+  }
+}
+
+// Velocidad máxima recomendada en cada metro para un carro con valores st.
+function speedProfile(T, st) {
+  const n = T.n, v = new Float32Array(n), g = st.grip * T.L.grip * 9.8 * 0.88;
+  for (let q = 0; q < n; q++) {
+    let k = 0;
+    for (let j = Math.max(0, q - 3); j <= Math.min(n - 1, q + 3); j++) k = Math.max(k, Math.abs(T.lk[j]));
+    v[q] = Math.min(st.top * 0.99, k > 1e-4 ? Math.sqrt(g / k) : st.top);
+  }
+  const b = st.brake * 0.72;
+  for (let q = n - 2; q >= 0; q--) v[q] = Math.min(v[q], Math.sqrt(v[q + 1] * v[q + 1] + 2 * b));
+  return v;
+}
+
+// Notas del copiloto: una por curva (con "luego" si viene otra pegada).
+function paceNotes(T) {
+  T.notes = T.curves.map((c, i) => {
+    const kind = c.A > 2.0 ? 'Horquilla' : c.R < 30 ? 'Muy cerrada' : c.R < 55 ? 'Cerrada' : c.R < 95 ? 'Media' : 'Abierta';
+    const lvl = c.A > 2.0 ? 6 : c.R < 30 ? 5 : c.R < 55 ? 4 : c.R < 95 ? 3 : 2;
+    const nx = T.curves[i + 1];
+    const then = nx && nx.s0 - (c.s0 + c.len) < 35 ? (nx.sg > 0 ? 'izquierda' : 'derecha') : null;
+    return { s: c.s0, end: c.s0 + c.len, dir: c.sg > 0 ? 'izquierda' : 'derecha', sg: c.sg, kind, lvl, then, A: c.A };
+  });
 }
 
 // Perfil del cerro a cada lado (cada 2 m): posiciones del mundo y alturas.

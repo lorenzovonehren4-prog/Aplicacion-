@@ -37,6 +37,7 @@ function initWorld(canvas) {
   W.sunDir = new THREE.Vector3(0.45, 0.62, 0.35).normalize();
   W.scene.fog = new THREE.Fog(0xffffff, 100, 1000);
   W.asphalt = asphaltTexture();
+  fxInit();
   applyQuality();
 }
 
@@ -128,6 +129,8 @@ function mergeGeos(parts) {
 }
 
 function disposeLevel() {
+  fxClear();
+  W.rails = null;
   if (!W.level) return;
   W.scene.remove(W.level);
   W.level.traverse(o => {
@@ -158,6 +161,7 @@ function buildLevel(L) {
   W.renderer.toneMappingExposure = th.night ? 1.25 : 1.0;
 
   G.add(roadMesh(T));
+  G.add(lineMesh(T));
   G.add(terrainMesh(T, 0, th), terrainMesh(T, 1, th));
   G.add(valleyMesh(T, th));
   G.add(farMountains(T, th));
@@ -357,6 +361,7 @@ function guardRails(T, th) {
       if (!arr[s]) { prev = null; continue; }
       const off = (T.hw + SHOULDER - 0.18) * sgn;
       const p = new THREE.Vector3(T.x[s] + T.nx[s] * off, T.y[s], T.z[s] + T.nz[s] * off);
+      p.s = s; p.side = sgn < 0 ? 0 : 1;
       posts.push(p);
       if (prev) rails.push([prev, p]);
       prev = p;
@@ -376,6 +381,7 @@ function guardRails(T, th) {
     rm.setMatrixAt(i, mtx);
   });
   pm.count = posts.length; rm.count = rails.length;
+  W.rails = { pm, rm, posts: posts.map(p => ({ p, s: p.s, side: p.side })), rails: rails.map(([a, b]) => ({ s: a.s, side: a.side })) };
   rm.castShadow = true;
   G.add(pm, rm);
   return G;
@@ -513,6 +519,7 @@ function weather(th) {
 }
 
 function updateWorld(t, dt) {
+  fxUpdate(dt);
   for (const f of W.anim) f(t, dt);
   if (W.weather) W.weather.update(t, dt);
   // rayos en la tormenta
@@ -523,4 +530,158 @@ function updateWorld(t, dt) {
     W.skyMat.uniforms.flash.value = f * 0.6;
     W.hemi.intensity = W.theme.hemiI + f * 3;
   }
+}
+
+// ---------- efectos: chispas, humo, polvo y piezas que salen volando ----------
+const FX = { sparks: null, smoke: [], debris: [], emit: [] };
+function fxInit() {
+  const n = 500, pos = new Float32Array(n * 3);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setDrawRange(0, 0);
+  FX.sparks = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffc860, size: 0.12, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  FX.sparks.frustumCulled = false;
+  FX.sp = [];
+  W.scene.add(FX.sparks);
+  FX.smokeTex = canvasTex(64, 64, (g, w) => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 31); r.addColorStop(0, 'rgba(255,255,255,0.9)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, w); });
+}
+function fxClear() {
+  for (const p of FX.smoke) W.scene.remove(p.m);
+  for (const d of FX.debris) W.scene.remove(d.m);
+  FX.smoke = []; FX.debris = []; FX.sp = []; FX.emit = [];
+}
+function fxSparks(x, y, z, n, spd = 6) {
+  for (let i = 0; i < n && FX.sp.length < 500; i++) FX.sp.push({ x, y, z, vx: (Math.random() - 0.5) * spd, vy: Math.random() * spd * 0.7, vz: (Math.random() - 0.5) * spd, life: 0.3 + Math.random() * 0.5 });
+}
+function fxSmoke(x, y, z, n, col = 0x555555, size = 1.6, life = 2.5) {
+  for (let i = 0; i < n; i++) {
+    if (FX.smoke.length > 90) { const o = FX.smoke.shift(); W.scene.remove(o.m); o.m.material.dispose(); }
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.smokeTex, color: col, transparent: true, opacity: 0.7, depthWrite: false }));
+    m.position.set(x + (Math.random() - 0.5), y + Math.random() * 0.5, z + (Math.random() - 0.5));
+    m.scale.setScalar(size * (0.6 + Math.random() * 0.6));
+    W.scene.add(m);
+    FX.smoke.push({ m, life, t: 0, vy: 0.6 + Math.random() * 1.2, vx: (Math.random() - 0.5) * 1.5, vz: (Math.random() - 0.5) * 1.5, grow: size * 0.9 });
+  }
+}
+// Pieza suelta con física simple. mesh puede ser una caja nueva o una pieza clonada del carro.
+function fxDebris(mesh, x, y, z, vx, vy, vz) {
+  mesh.position.set(x, y, z);
+  W.scene.add(mesh);
+  FX.debris.push({ m: mesh, vx, vy, vz, ax: (Math.random() - 0.5) * 14, ay: (Math.random() - 0.5) * 14, az: (Math.random() - 0.5) * 14, t: 0, hint: G.C ? G.C.i : 0 });
+}
+function fxBits(x, y, z, n, mats, spd) {
+  for (let i = 0; i < n; i++) {
+    const s = 0.12 + Math.random() * 0.35;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(s, s * 0.3, s * (0.6 + Math.random())), mats[i % mats.length]);
+    m.castShadow = true;
+    fxDebris(m, x + (Math.random() - 0.5), y + Math.random(), z + (Math.random() - 0.5), (Math.random() - 0.5) * spd, 2 + Math.random() * spd * 0.6, (Math.random() - 0.5) * spd);
+  }
+}
+// Altura del piso en (x, z): la pista o el cerro.
+function groundAt(x, z, hint) {
+  const T = W.T;
+  if (!T) return -1e9;
+  const l = locate(T, x, z, hint);
+  const ad = Math.abs(l.d);
+  return { y: ad <= T.hw + SHOULDER ? roadY(T, l.s) : profileHeight(T, l.s, l.d < 0 ? 0 : 1, ad), i: l.i };
+}
+function fxUpdate(dt) {
+  if (!FX.sparks) return;
+  const pos = FX.sparks.geometry.attributes.position.array;
+  FX.sp = FX.sp.filter(p => (p.life -= dt) > 0);
+  FX.sp.forEach((p, i) => { p.vy -= 9.8 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z; });
+  FX.sparks.geometry.setDrawRange(0, FX.sp.length);
+  FX.sparks.geometry.attributes.position.needsUpdate = true;
+  for (const p of FX.smoke) {
+    p.t += dt;
+    p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt;
+    p.m.scale.addScalar(p.grow * dt);
+    p.m.material.opacity = Math.max(0, 0.7 * (1 - p.t / p.life));
+  }
+  FX.smoke = FX.smoke.filter(p => { if (p.t < p.life) return true; W.scene.remove(p.m); p.m.material.dispose(); return false; });
+  for (const d of FX.debris) {
+    d.t += dt;
+    if (d.rest) continue;
+    d.vy -= 9.8 * dt;
+    d.m.position.x += d.vx * dt; d.m.position.y += d.vy * dt; d.m.position.z += d.vz * dt;
+    d.m.rotation.x += d.ax * dt; d.m.rotation.y += d.ay * dt; d.m.rotation.z += d.az * dt;
+    const g = groundAt(d.m.position.x, d.m.position.z, d.hint);
+    d.hint = g.i;
+    if (d.m.position.y < g.y + 0.1) {
+      d.m.position.y = g.y + 0.1;
+      d.vy = Math.abs(d.vy) * 0.35; d.vx *= 0.6; d.vz *= 0.6; d.ax *= 0.6; d.ay *= 0.6; d.az *= 0.6;
+      if (Math.abs(d.vy) < 0.6 && Math.hypot(d.vx, d.vz) < 0.5) d.rest = true;
+    }
+  }
+  // humo que sigue saliendo de algo (el carro destrozado)
+  for (const e of FX.emit) { e.acc = (e.acc || 0) + dt; if (e.acc > e.every) { e.acc = 0; const p = e.at(); fxSmoke(p.x, p.y, p.z, 1, e.col, e.size, 3); } }
+}
+
+// La baranda se rompe donde pasó el carro: se esconde ese tramo y salen pedazos volando.
+function breakGuard(T, s, side, vx, vz) {
+  const R = W.rails;
+  if (!R) return;
+  const zero = new THREE.Matrix4().makeScale(0, 0, 0);
+  const mat = R.rm.material;
+  R.rails.forEach((r, i) => {
+    if (r.side !== side || Math.abs(r.s - s) > 6) return;
+    R.rm.setMatrixAt(i, zero);
+    const q = Math.min(T.n - 1, r.s + 1), sg = side ? 1 : -1, off = (T.hw + SHOULDER - 0.18) * sg;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.32, 3), mat);
+    m.rotation.y = T.h[q];
+    fxDebris(m, T.x[q] + T.nx[q] * off, T.y[q] + 0.65, T.z[q] + T.nz[q] * off, vx * 0.6 + (Math.random() - 0.5) * 3, 3 + Math.random() * 3, vz * 0.6 + (Math.random() - 0.5) * 3);
+  });
+  R.posts.forEach((p, i) => { if (p.side === side && Math.abs(p.s - s) < 5) R.pm.setMatrixAt(i, zero); });
+  R.rm.instanceMatrix.needsUpdate = true; R.pm.instanceMatrix.needsUpdate = true;
+  for (let q = Math.max(0, Math.floor(s - 6)); q < Math.min(T.n, s + 6); q++) (side ? T.gR : T.gL)[q] = 0;
+}
+
+// Línea de guía sobre la pista (como en los juegos de rally): flechas que se pintan de verde
+// (a fondo), amarillo (suelta) o rojo (frena) según tu velocidad y la recomendada.
+function lineMesh(T) {
+  const step = 1, m = Math.floor((T.n - 1) / step), half = 0.32;
+  const pos = new Float32Array(m * 2 * 3), uv = new Float32Array(m * 2 * 2), ss = new Float32Array(m * 2), vs = new Float32Array(m * 2), idx = [];
+  for (let j = 0; j < m; j++) {
+    const s = j * step;
+    for (let q = 0; q < 2; q++) {
+      const o = j * 2 + q, sg = q ? 1 : -1;
+      pos[o * 3] = T.lx[s] + T.nx[s] * half * sg; pos[o * 3 + 1] = T.y[s] + 0.045; pos[o * 3 + 2] = T.lz[s] + T.nz[s] * half * sg;
+      uv[o * 2] = q; uv[o * 2 + 1] = s;
+      ss[o] = s;
+    }
+    if (j < m - 1) { const a = j * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.setAttribute('ss', new THREE.BufferAttribute(ss, 1));
+  g.setAttribute('vs', new THREE.BufferAttribute(vs, 1));
+  g.setIndex(idx);
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    uniforms: { uS: { value: 0 }, uV: { value: 0 }, uOn: { value: 1 } },
+    vertexShader: 'attribute float ss; attribute float vs; varying float vS; varying float vV; varying vec2 vUv;' +
+      'void main(){ vS = ss; vV = vs; vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: 'uniform float uS; uniform float uV; uniform float uOn; varying float vS; varying float vV; varying vec2 vUv;' +
+      'void main(){ float ahead = vS - uS;' +
+      'float a = smoothstep(4.0, 9.0, ahead) * (1.0 - smoothstep(120.0, 170.0, ahead)) * uOn;' +
+      'float t = fract(vS / 2.2 - abs(vUv.x - 0.5) * 1.1);' +
+      'a *= smoothstep(0.0, 0.08, t) * (1.0 - smoothstep(0.42, 0.5, t));' +
+      'float over = uV - vV;' +
+      'vec3 c = mix(vec3(0.15, 0.95, 0.35), vec3(1.0, 0.85, 0.1), smoothstep(-2.0, 1.0, over));' +
+      'c = mix(c, vec3(1.0, 0.15, 0.1), smoothstep(1.5, 5.0, over));' +
+      'if (a < 0.01) discard; gl_FragColor = vec4(c, a * 0.85); }',
+  });
+  const mesh = new THREE.Mesh(g, mat);
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 2;
+  W.line = mesh;
+  return mesh;
+}
+// Pone en la línea la velocidad recomendada (depende de las mejoras del carro).
+function setLineSpeeds(v) {
+  if (!W.line) return;
+  const a = W.line.geometry.attributes.vs, ss = W.line.geometry.attributes.ss;
+  for (let i = 0; i < a.count; i++) a.array[i] = v[Math.min(v.length - 1, ss.array[i])];
+  a.needsUpdate = true;
 }

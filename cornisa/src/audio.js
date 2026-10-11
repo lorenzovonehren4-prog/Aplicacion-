@@ -79,6 +79,16 @@ const SFX = {
   beep(hi) { this.tone(hi ? 880 : 440, hi ? 0.5 : 0.22, 'square', 0.12); },
   fall() { this.tone(900, 1.6, 'sine', 0.12, 0, -760); this.burst(0.8, 900, 0.2, 'bandpass'); },
   thud(v) { this.burst(0.5, 300, Math.min(0.9, 0.3 + v * 0.03)); this.tone(60, 0.4, 'sine', 0.4, 0, -30); },
+  crash(v) { this.burst(1.2, 1200, 0.9); this.burst(0.6, 300, 0.9); this.tone(70, 0.6, 'sine', 0.6, 0, -40); [0.15, 0.3, 0.5].forEach(d => this.burst(0.15, 3000, 0.25, 'highpass', d)); },
+  say(txt) {
+    if (!save.opt.copi || !save.opt.sound || !window.speechSynthesis) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(txt);
+      u.lang = 'es-ES'; u.rate = 1.2; u.volume = save.opt.vol;
+      speechSynthesis.speak(u);
+    } catch (e) { /* sin voz */ }
+  },
   thunder() { this.burst(2.6, 180, 0.7); this.burst(1.2, 90, 0.5, 'lowpass', 0.2); },
   buy() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.12, i * 0.06)); },
   win() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => this.tone(f, i === 5 ? 0.6 : 0.16, 'square', 0.09, i * 0.13)); },

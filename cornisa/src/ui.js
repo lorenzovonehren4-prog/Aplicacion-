@@ -143,6 +143,8 @@ function renderOptions() {
     <div class="opt"><span>Sonido</span>${seg('sound', [[true, 'Sí'], [false, 'No']])}</div>
     <div class="opt"><span>Volumen</span><input type="range" min="0" max="1" step="0.05" value="${o.vol}" id="vol"></div>
     <div class="opt"><span>Cámara</span>${seg('cam', [['cabina', 'Cabina'], ['afuera', 'Afuera']])}</div>
+    <div class="opt"><span>Línea de guía</span>${seg('line', [[true, 'Sí'], [false, 'No']])}</div>
+    <div class="opt"><span>Voz del copiloto</span>${seg('copi', [[true, 'Sí'], [false, 'No']])}</div>
     <div class="opt"><span>Dirección</span>${seg('sens', [[0.75, 'Suave'], [1, 'Normal'], [1.35, 'Rápida']])}</div>
     <div class="opt"><span>Gráficos</span>${seg('quality', [['alta', 'Altos'], ['baja', 'Bajos']])}</div>
     <p class="hint">Teclas: ↑ acelerar · ↓ frenar y reversa · ← → girar · C cámara · P o Esc pausa. También W A S D.</p>
@@ -162,7 +164,7 @@ function renderOptions() {
 function showResult(res) {
   const L = G.L, C = G.C, el = $('#result');
   el.classList.toggle('win', res.win); el.classList.toggle('lose', !res.win);
-  $('#rTitle').textContent = res.win ? (L.id === 8 ? '¡Llegaste a la cima!' : '¡Llegaste a la meta!') : res.why.includes('caíste') ? '¡Te caíste!' : '¡Se acabó!';
+  $('#rTitle').textContent = res.win ? (L.id === 8 ? '¡Llegaste a la cima!' : '¡Llegaste a la meta!') : res.why.includes('caíste') ? '¡Te caíste!' : res.why.includes('Chocaste') ? '¡Chocaste!' : '¡Se acabó!';
   $('#rSub').textContent = res.win ? `Tiempo ${fmtTime(Math.round(G.time * 10) / 10)} · ${G.coins} monedas · ${C.hits} choques` : res.why;
   const stars = $$('#rStars span');
   stars.forEach(s => s.classList.remove('on'));
@@ -284,7 +286,7 @@ function navMove(dx, dy) {
 const DRIVE_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
 window.addEventListener('keydown', e => {
   if (screen === 'intro') { e.preventDefault(); leaveIntro(); return; }
-  const driving = G.mode === 'drive' || G.mode === 'count' || G.mode === 'fall' || G.mode === 'finish';
+  const driving = G.mode === 'drive' || G.mode === 'count' || G.mode === 'fall' || G.mode === 'crash' || G.mode === 'finish';
   if (driving) {
     if (DRIVE_KEYS.includes(e.code)) { KEYS[e.code] = true; e.preventDefault(); }
     if (e.code === 'KeyC') toggleCam();
@@ -334,11 +336,12 @@ function step(dt) {
     poseCar(G.car, G.C, G.mode === 'pause' ? 0 : dt);
     if (G.cam === 'cabina' || G.mode === 'menu') poseCockpit(G.car, G.C);
     updateCamera(dt);
+    if (W.line) { W.line.material.uniforms.uS.value = G.C.s; W.line.material.uniforms.uV.value = G.C.f; }
     // la sombra sigue al carro
     W.sun.position.set(G.C.x + W.sunDir.x * 120, G.C.y + W.sunDir.y * 120, G.C.z + W.sunDir.z * 120);
     W.sun.target.position.set(G.C.x, G.C.y, G.C.z);
     W.sky.position.copy(W.camera.getWorldPosition(_cv));
-    const driving = G.mode === 'drive' || G.mode === 'count' || G.mode === 'fall' || G.mode === 'finish';
+    const driving = G.mode === 'drive' || G.mode === 'count' || G.mode === 'fall' || G.mode === 'crash' || G.mode === 'finish';
     SFX.drive(G.C, driving, W.theme && W.theme.rain && G.mode !== 'menu');
     if (driving) hud();
   }

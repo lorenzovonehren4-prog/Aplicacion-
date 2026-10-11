@@ -59,22 +59,18 @@ await page.evaluate(() => {
       if (G.mode === 'count') { G.mode = 'drive'; }
       if (G.mode !== 'drive' && G.mode !== 'fall' && G.mode !== 'finish') break;
       if (G.mode === 'drive') {
-        const a = auto(G.C, G.T, G.st);
-        inp.steer += Math.max(-dt * 4, Math.min(dt * 4, a.steer - inp.steer));
-        KEYS.ArrowUp = !!a.thr; KEYS.ArrowDown = !!a.brk;
-        KEYS.ArrowLeft = inp.steer < -0.05 && a.steer < inp.steer; KEYS.ArrowRight = false;
-        // dirección directa (sin el filtro del teclado)
+        const a = aiInput(G.C, G.T, G.prof);
+        inp.steer += Math.max(-dt * 5, Math.min(dt * 5, a.steer - inp.steer));
         const C = G.C;
         G.time += dt;
         stepCar(C, { thr: a.thr, brk: a.brk, steer: inp.steer }, G.T, G.st, dt, onCarEvent);
         C.steer = inp.steer;
         if (G.mode === 'drive') { pickCoins(); hitRocks(); }
-        if (C.hp <= 0) { endRun(false, 'Tu carro quedó destrozado'); break; }
         if (C.s >= G.T.n - 45) { G.mode = 'finish'; G.endT = 0; onFinish(); }
       } else simulate(dt);
     }
     KEYS.ArrowUp = KEYS.ArrowDown = KEYS.ArrowLeft = false;
-    return { mode: G.mode, s: Math.round(G.C.s), n: G.T.n, t: +G.time.toFixed(1), coins: G.coins, total: G.T.coins.length, hits: G.C.hits, hp: Math.round(G.C.hp), kmh: Math.round(G.C.f * 3.6) };
+    return { why: G.mode, s: Math.round(G.C.s), n: G.T.n, t: +G.time.toFixed(1), coins: G.coins, total: G.T.coins.length, hits: G.C.hits, hp: Math.round(G.C.hp), kmh: Math.round(G.C.f * 3.6) };
   };
 });
 
@@ -86,7 +82,7 @@ for (const id of levels) {
   await page.evaluate(() => runAuto(18));
   await page.waitForTimeout(600);
   await shot(`2-nivel${id}-cabina`);
-  if (id === 1 || id === 8) {
+  if (id === 1 || id === 8 || id === 5) {
     await page.evaluate(() => { G.cam = 'afuera'; setCam(); });
     await page.waitForTimeout(600);
     await shot(`3-nivel${id}-afuera`);
@@ -117,6 +113,34 @@ await page.evaluate(() => { for (let i = 0; i < 400; i++) simulate(1 / 120); });
 await page.waitForTimeout(800);
 await shot('6-perdiste');
 console.log('caída:', fell, await page.evaluate(() => G.mode));
+// choque fuerte contra la pared de roca: el carro se destroza y pierdes
+await page.evaluate(() => { startRun(LEVELS[0]); G.mode = 'drive'; G.cam = 'afuera'; setCam(); });
+const crash = await page.evaluate(() => {
+  const T = G.T; const run = T.runs.find(r => r.ty === 'C' && r.s > 50) || T.runs[0];
+  const s = run.s + 30, p = roadPoint(T, s, 0), h = p.h + 0.45;
+  Object.assign(G.C, { x: p.x, z: p.z, h, vx: Math.sin(h) * 40, vz: Math.cos(h) * 40, s, i: s });
+  for (let i = 0; i < 240 && G.mode === 'drive'; i++) stepCar(G.C, { thr: 1, brk: 0, steer: 0 }, T, G.st, 1 / 120, onCarEvent);
+  for (let i = 0; i < 200; i++) simulate(1 / 60);
+  return { mode: G.mode, wrecked: G.car.wrecked, debris: FX.debris.length };
+});
+await page.waitForTimeout(1500);
+await shot('9-choque');
+await page.evaluate(() => { for (let i = 0; i < 400 && G.mode === 'crash'; i++) simulate(1 / 30); });
+console.log('choque:', JSON.stringify(crash), await page.evaluate(() => G.mode + ' · ' + document.getElementById('rTitle').textContent));
+// atravesar la baranda: se rompe y te caes
+await page.evaluate(() => { startRun(LEVELS[0]); G.mode = 'drive'; });
+const guard = await page.evaluate(() => {
+  const T = G.T; let s = 0, side = 1;
+  for (let q = 200; q < T.n - 100; q++) { if (T.gR[q] && T.wR[q] > 0.9) { s = q; side = 1; break; } if (T.gL[q] && T.wL[q] > 0.9) { s = q; side = -1; break; } }
+  if (!s) return 'sin baranda';
+  const p = roadPoint(T, s - 10, 0), h = p.h - side * 0.5;
+  Object.assign(G.C, { x: p.x, z: p.z, h, vx: Math.sin(h) * 38, vz: Math.cos(h) * 38, s: s - 10, i: s - 10 });
+  for (let i = 0; i < 360 && G.mode === 'drive'; i++) stepCar(G.C, { thr: 1, brk: 0, steer: 0 }, T, G.st, 1 / 120, onCarEvent);
+  return G.mode + (G.T.broken ? ' (baranda rota)' : '');
+});
+await page.waitForTimeout(1200);
+await shot('10-baranda');
+console.log('baranda:', guard);
 await page.evaluate(() => { act('menu'); act('garage'); });
 await page.waitForTimeout(1200);
 await shot('7-taller');

@@ -198,6 +198,18 @@ body.touch.driving #touch{ display:flex; }
 .confetti i{ position:absolute; top:-20px; width:10px; height:16px; animation:conf linear forwards; }
 @keyframes conf{ to{ transform:translateY(110vh) rotate(720deg); } }
 
+.note{ position:fixed; left:50%; top:120px; transform:translate(-50%,-10px); display:flex; align-items:center; gap:12px; padding:8px 18px 8px 10px; border-radius:16px; background:rgba(10,12,18,.72); border:2px solid rgba(255,255,255,.15); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; z-index:6; color:#fff; }
+.note.on{ opacity:1; transform:translate(-50%,0); }
+.note svg{ width:54px; height:54px; color:#1ec8ff; flex:none; }
+.note b{ display:block; font-family:Fredoka; font-size:clamp(18px,3vw,26px); white-space:nowrap; }
+.note small{ display:block; font-weight:800; font-size:15px; color:#9fe8ff; }
+.note.brake{ border-color:#ff4d4d; background:rgba(60,8,8,.8); }
+.note.brake svg{ color:#ff5a4a; } .note.brake small{ color:#ffb0a0; animation:blink .4s infinite; }
+#nav{ position:fixed; left:14px; bottom:14px; width:200px; height:200px; z-index:5; display:none; pointer-events:none; filter:drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
+body.driving #nav{ display:block; }
+body.touch #nav{ width:120px; height:120px; left:auto; right:12px; bottom:auto; top:150px; }
+#crack{ position:fixed; inset:0; pointer-events:none; z-index:6; opacity:0; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='white' stroke-width='0.35' stroke-opacity='0.85'%3E%3Cpath d='M38 22 L20 4 M38 22 L2 18 M38 22 L8 40 M38 22 L30 58 M38 22 L55 60 M38 22 L80 50 M38 22 L98 30 M38 22 L72 8 M38 22 L50 0'/%3E%3Cpath d='M31 15 L36 13 L42 16 L45 22 L43 28 L37 31 L31 28 L29 21Z M25 9 L35 7 L47 11 L52 20 L50 31 L41 37 L29 35 L22 27 L21 16Z M14 3 L38 0 L60 8 L66 24 L61 42 L40 50 L18 45 L8 30 L9 12Z'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat, radial-gradient(circle at 38% 37%, rgba(255,255,255,.25), transparent 30%); }
+#crack.on{ opacity:1; }
 #toast{ position:fixed; left:50%; bottom:28px; transform:translate(-50%,30px); background:var(--panel2); border:1px solid var(--line); padding:12px 18px; border-radius:14px; font-weight:700; opacity:0; transition:all .3s; z-index:30; pointer-events:none; max-width:calc(100% - 32px); text-align:center; }
 #toast.on{ opacity:1; transform:translate(-50%,0); }
 #fade{ position:fixed; inset:0; background:#000; opacity:0; pointer-events:none; transition:opacity .4s; z-index:15; }
@@ -210,6 +222,11 @@ body.ready #loading{ opacity:0; pointer-events:none; }
   .levels{ grid-template-columns:1fr; }
   .hp{ width:100px; }
   .prog{ width:92%; margin-top:14px; }
+  .note{ left:12px; top:184px; transform:none; padding:6px 12px 6px 6px; gap:8px; max-width:calc(100% - 156px); }
+  .note.on{ transform:none; }
+  .note svg{ width:38px; height:38px; }
+  .note b{ font-size:15px; white-space:normal; }
+  .note small{ font-size:13px; }
   .hud-l .time{ font-size:22px; }
   #touch button{ width:66px; height:66px; }
 }
@@ -298,6 +315,9 @@ body.ready #loading{ opacity:0; pointer-events:none; }
   <div class="speed-big"><b id="hSpd">0</b><small>km/h</small></div>
 </section>
 <div class="warn" id="warn">¡ABISMO!</div>
+<div class="note" id="note"><svg id="noteIco" viewBox="0 0 100 100" aria-hidden="true"></svg><div><b id="noteTxt"></b><small id="noteDist"></small></div></div>
+<canvas id="nav" width="200" height="200" aria-hidden="true"></canvas>
+<div id="crack" aria-hidden="true"></div>
 <div id="count"></div>
 
 <div id="touch">

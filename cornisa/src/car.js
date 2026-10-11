@@ -50,7 +50,7 @@ function makeCar(paint) {
   const add = (m, cast = true) => { body.add(m); if (cast) shadowy.push(m); return m; };
   // --- por fuera ---
   add(box(1.86, 0.62, 3.9, P, 0, 0.82, 0.05));                 // carrocería baja
-  add(box(1.78, 0.3, 1.45, P, 0, 1.2, 1.25));                  // capó
+  const hood = add(box(1.78, 0.3, 1.45, P, 0, 1.2, 1.25));     // capó
   add(box(1.9, 0.12, 4.0, black, 0, 0.5, 0.05));               // estribos
   add(box(1.96, 0.22, 0.25, black, 0, 0.62, 2.05));            // parachoques
   add(box(1.96, 0.22, 0.25, black, 0, 0.62, -1.98));
@@ -176,7 +176,34 @@ function makeCar(paint) {
   dashLight.position.set(0.3, 1.5, 0.1);
   cockpit.add(dashLight);
   for (const m of shadowy) m.castShadow = true;
-  return { dashLight, root, body, cockpit, wheels, steer, needleV, needleR, digi, digiCanvas, digiTex, arms, hands, lamp, paint: P, lastDigi: -1 };
+  body.children.forEach(o => { o.userData.p0 = o.position.clone(); o.userData.r0 = o.rotation.clone(); });
+  return { hood, dashLight, root, body, cockpit, wheels, steer, needleV, needleR, digi, digiCanvas, digiTex, arms, hands, lamp, paint: P, lastDigi: -1 };
+}
+
+// Destroza el carro: capó levantado, piezas torcidas, una rueda suelta y pintura quemada.
+function wreckCar(car, hard) {
+  if (car.wrecked) return;
+  car.wrecked = true;
+  car.paint.color.multiplyScalar(0.55);
+  car.hood.rotation.x = -0.55; car.hood.position.y += 0.25; car.hood.position.z -= 0.1;
+  for (const o of car.body.children) {
+    if (o === car.cockpit || !o.isMesh || Math.random() > 0.45) continue;
+    o.rotation.x += (Math.random() - 0.5) * 0.5 * hard; o.rotation.z += (Math.random() - 0.5) * 0.5 * hard;
+    o.position.x += (Math.random() - 0.5) * 0.12 * hard;
+  }
+  const w = car.wheels[Math.random() < 0.5 ? 0 : 1];
+  w.updateWorldMatrix(true, false);
+  const pos = new THREE.Vector3().setFromMatrixPosition(w.matrixWorld);
+  w.visible = false;
+  const clone = w.clone(); clone.visible = true;
+  return { wheel: clone, pos };
+}
+function resetCarLook(car) {
+  if (!car.wrecked) return;
+  car.wrecked = false;
+  for (const o of car.body.children) if (o.userData.p0) { o.position.copy(o.userData.p0); o.rotation.copy(o.userData.r0); }
+  car.wheels.forEach(w => { w.visible = true; });
+  setCarPaint(car, save.paint);
 }
 
 function setCarPaint(car, id) {
@@ -230,6 +257,7 @@ function newCarState(T, st) {
 // ev(nombre, valor) avisa choques y caídas.
 function stepCar(C, inp, T, st, dt, ev) {
   if (C.state === 'fall') return stepFall(C, T, dt, ev);
+  if (C.state === 'crash') return stepCrash(C, T, dt, ev);
   const fx = Math.sin(C.h), fz = Math.cos(C.h), rx = -fz, rz = fx;
   let f = C.vx * fx + C.vz * fz, l = C.vx * rx + C.vz * rz;
   const grip = st.grip * T.L.grip * (C.shoulder ? 0.75 : 1);
@@ -274,10 +302,21 @@ function stepCar(C, inp, T, st, dt, ev) {
   const wallLim = T.hw + SHOULDER - 0.95;
   if (w < 0.5 || guard) {
     if (ad > wallLim) {
-      // choque contra la pared de roca o la baranda
+      const vn = C.vx * nxo + C.vz * nzo;
+      const onGuard = guard && w >= 0.5;
+      if (vn > st.crash * (onGuard ? 0.85 : 1)) {
+        if (onGuard) {
+          // rompe la baranda y se va al abismo
+          ev('baranda', { s: C.s, side, vn });
+          startFall(C, side, sg, nxo, nzo, ev);
+          return;
+        }
+        startCrash(C, sg, nxo, nzo, vn, ev);
+        return;
+      }
+      // roce o golpe contra la pared de roca o la baranda
       const back = ad - wallLim;
       C.x -= nxo * back; C.z -= nzo * back; C.d = sg * wallLim;
-      const vn = C.vx * nxo + C.vz * nzo;
       if (vn > 0) {
         C.vx -= nxo * vn * 1.3; C.vz -= nzo * vn * 1.3;
         const sp = Math.hypot(C.vx, C.vz), keep = 1 - Math.min(0.55, 0.03 + vn * 0.035);
@@ -286,20 +325,17 @@ function stepCar(C, inp, T, st, dt, ev) {
         let dh = T.h[si] - C.h; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
         if (Math.abs(dh) < 1.4) C.h += dh * Math.min(0.5, 0.15 + vn * 0.05);
         if (vn > 1.2) {
-          const dmg = vn * 5.5 * st.armor * (guard && w >= 0.5 ? 0.8 : 1);
+          const dmg = vn * 5.5 * st.armor * (onGuard ? 0.8 : 1);
           C.hp -= dmg; C.impact = Math.min(1, vn / 10);
-          ev('choque', { vn, guard: guard && w >= 0.5, sp });
+          ev('choque', { vn, guard: onGuard, sp, side });
           if (vn > 2.4 && C.hitCool <= 0) { C.hits++; C.hitCool = 0.8; }
+          if (C.hp <= 0) { startCrash(C, sg, nxo, nzo, Math.max(vn, 5), ev); return; }
         }
       }
     }
   } else if (ad > T.hw + SHOULDER + 0.15) {
     // se salió por el abismo
-    C.state = 'fall'; C.fallT = 0; C.fallSide = side; C.vy = 0.5;
-    const push = 2.5;
-    C.vx += nxo * push; C.vz += nzo * push;
-    C.rollV = sg * 1.4; C.pitchV = 0.5;
-    ev('caida', {});
+    startFall(C, side, sg, nxo, nzo, ev);
     return;
   }
   if (C.hitCool > 0) C.hitCool -= dt;
@@ -319,6 +355,63 @@ function stepCar(C, inp, T, st, dt, ev) {
   const targetRpm = 1000 + 5600 * Math.min(1.08, (Math.abs(f) - lo * 0.55) / (hi - lo * 0.55)) * (inp.thr > 0 ? 1 : 0.85);
   C.rpm += (Math.max(850, targetRpm) - C.rpm) * Math.min(1, dt * 7);
   C.topSpeed = Math.max(C.topSpeed, f);
+}
+
+function startFall(C, side, sg, nxo, nzo, ev) {
+  C.state = 'fall'; C.fallT = 0; C.fallSide = side; C.vy = 0.8;
+  C.vx += nxo * 2.5; C.vz += nzo * 2.5;
+  C.rollV = sg * 1.6; C.pitchV = 0.6;
+  ev('caida', {});
+}
+
+// Choque fuerte: el carro rebota, gira y puede volcarse. Se queda destrozado.
+function startCrash(C, sg, nxo, nzo, vn, ev) {
+  C.state = 'crash'; C.crashT = 0;
+  C.vx -= nxo * vn * 1.4; C.vz -= nzo * vn * 1.4;
+  C.spin = -sg * (1.5 + vn * 0.25) * (Math.random() < 0.5 ? 1 : 0.6);
+  C.rollV = -sg * Math.min(9, vn * 0.75);
+  C.pitchV = (Math.random() - 0.5) * vn * 0.3;
+  C.vy = Math.min(6, vn * 0.35);
+  C.hp = Math.min(C.hp, 0);
+  ev('crash', { vn });
+}
+
+function stepCrash(C, T, dt, ev) {
+  C.crashT += dt;
+  const sp = Math.hypot(C.vx, C.vz);
+  if (sp > 0.01) { const k = Math.max(0, sp - 7 * dt) / sp; C.vx *= k; C.vz *= k; }
+  C.x += C.vx * dt; C.z += C.vz * dt;
+  C.h += C.spin * dt; C.spin *= 1 - 1.6 * dt;
+  C.roll += C.rollV * dt; C.pitch += C.pitchV * dt;
+  C.vy -= 9.8 * dt;
+  const loc = locate(T, C.x, C.z, C.i);
+  C.i = loc.i; C.s = loc.s; C.d = loc.d;
+  const lim = T.hw + SHOULDER - 0.95;
+  if (Math.abs(C.d) > lim) {
+    const si = Math.min(T.n - 1, Math.round(C.s)), sg = C.d < 0 ? -1 : 1;
+    const back = Math.abs(C.d) - lim, nxo = T.nx[si] * sg, nzo = T.nz[si] * sg;
+    C.x -= nxo * back; C.z -= nzo * back;
+    const vn = C.vx * nxo + C.vz * nzo;
+    if (vn > 0) { C.vx -= nxo * vn * 1.5; C.vz -= nzo * vn * 1.5; if (vn > 2) ev('golpe', { v: vn }); }
+  }
+  // al volcarse el carro se levanta del piso
+  const lift = Math.abs(Math.sin(C.roll)) * 0.85 + Math.abs(Math.sin(C.pitch)) * 1.2;
+  const floor = roadY(T, C.s) + lift;
+  C.y += C.vy * dt;
+  if (C.y < floor) {
+    C.y = floor;
+    if (C.vy < -2.5) ev('golpe', { v: -C.vy });
+    C.vy = Math.abs(C.vy) * 0.3;
+    C.rollV *= 0.6; C.pitchV *= 0.5;
+  }
+  // termina apoyado sobre las ruedas, de costado o patas arriba
+  if (Math.abs(C.rollV) < 1.2 && C.y <= floor + 0.05) {
+    const tgt = Math.round(C.roll / (Math.PI / 2)) * (Math.PI / 2);
+    C.roll += (tgt - C.roll) * Math.min(1, dt * 4); C.rollV *= 1 - 3 * dt;
+  }
+  if (Math.abs(C.pitchV) < 1.2) { C.pitch += (0 - C.pitch) * Math.min(1, dt * 3); C.pitchV *= 1 - 3 * dt; }
+  C.f = sp;
+  C.rpm += (900 - C.rpm) * dt;
 }
 
 function stepFall(C, T, dt, ev) {
@@ -348,6 +441,7 @@ function poseCar(car, C, dt) {
   car.root.rotation.set(0, C.h, 0, 'YXZ');
   car.body.rotation.set(C.pitch + C.bump, 0, C.roll, 'YXZ');
   if (C.state === 'fall') { car.root.rotation.set(C.pitch, C.h + C.fallT * 0.3, C.roll, 'YXZ'); car.body.rotation.set(0, 0, 0); }
+  if (C.state === 'crash') { car.root.rotation.set(C.pitch, C.h, C.roll, 'YXZ'); car.body.rotation.set(0, 0, 0); }
   const spin = C.f / 0.43 * dt;
   car.wheels.forEach((w, i) => { w.children[0].rotation.x += spin; w.children[1].rotation.x += spin; if (i < 2) w.rotation.y = -C.steer * 0.45; });
 }

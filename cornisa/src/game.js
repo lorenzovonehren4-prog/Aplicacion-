@@ -45,7 +45,10 @@ function loadLevel(L) {
 }
 
 function startRun(L) {
-  if (!G.T || G.L !== L || L.free) loadLevel(L);
+  fxClear();
+  if (G.car) resetCarLook(G.car);
+  document.getElementById('crack').classList.remove('on');
+  if (!G.T || G.L !== L || L.free || G.T.broken) loadLevel(L);
   else {
     // reiniciar la misma montaña sin volver a armarla
     G.st = curStats();
@@ -56,6 +59,10 @@ function startRun(L) {
   for (const c of G.T.coins) { c.got = false; c.pop = 0; }
   for (const rk of G.T.rocks) rk.cool = 0;
   inp.steer = 0;
+  G.prof = speedProfile(G.T, G.st);
+  setLineSpeeds(G.prof);
+  W.line.material.uniforms.uOn.value = save.opt.line === false ? 0 : 1;
+  G.noteIdx = 0; G.noteSaid = -1; G.slow = 1; G.crashCam = null;
   G.mode = 'count'; G.countT = 0;
   G.cam = save.opt.cam || 'cabina';
   setCam();
@@ -100,8 +107,10 @@ function simulate(dt) {
     if (G.countT >= 3 * 0.85 + 0.3) G.mode = 'drive';
     return;
   }
-  if (G.mode === 'drive' || G.mode === 'fall') {
+  if (G.mode === 'drive' || G.mode === 'fall' || G.mode === 'crash') {
     G.time += G.mode === 'drive' ? dt : 0;
+    // cámara lenta al principio del choque o la caída
+    if (G.mode !== 'drive') { G.slowT = (G.slowT || 0) + dt; dt *= G.slowT < 1.3 ? 0.35 : 1; } else G.slowT = 0;
     G.acc += dt;
     while (G.acc >= STEP) {
       G.acc -= STEP;
@@ -111,12 +120,12 @@ function simulate(dt) {
       if (G.mode === 'drive') { pickCoins(); hitRocks(); }
     }
     if (G.mode === 'drive') {
-      if (C.hp <= 0) return endRun(false, 'Tu carro quedó destrozado');
       if (C.s >= T.n - 45) { G.mode = 'finish'; G.endT = 0; onFinish(); }
       save.stats.top = Math.max(save.stats.top, C.f * 3.6);
-      if (C.f * 3.6 >= 150) unlockAch('veloz');
+      if (C.f * 3.6 >= 180) unlockAch('veloz');
     }
-    if (G.mode === 'fall' && C.fallT > 3) endRun(false, 'Te caíste al abismo');
+    if (G.mode === 'fall' && C.fallT > 3.2) endRun(false, 'Te caíste al abismo');
+    if (G.mode === 'crash' && C.crashT > 3.6) endRun(false, 'Chocaste y el carro quedó destrozado');
     return;
   }
   if (G.mode === 'finish') {
@@ -128,10 +137,38 @@ function simulate(dt) {
 }
 
 function onCarEvent(name, v) {
+  const C = G.C;
   if (name === 'choque') {
     SFX.hit(v.vn);
     flashHit();
     if (v.vn > 2.4) shake(Math.min(1, v.vn / 8));
+    const si = Math.min(G.T.n - 1, Math.round(C.s)), sg = v.side ? 1 : -1;
+    fxSparks(C.x + G.T.nx[si] * sg * 0.9, C.y + 0.5, C.z + G.T.nz[si] * sg * 0.9, 10 + v.vn * 6, 5);
+  } else if (name === 'crash') {
+    G.mode = 'crash';
+    save.stats.crashes = (save.stats.crashes || 0) + 1; persist();
+    SFX.crash(v.vn);
+    shake(1); flashHit();
+    document.getElementById('warn').classList.remove('on');
+    const w = wreckCar(G.car, Math.min(1.5, v.vn / 8));
+    fxSparks(C.x, C.y + 0.6, C.z, 120, 9);
+    fxSmoke(C.x, C.y + 0.8, C.z, 8, 0x8a7a6a, 2.2, 2.5);
+    const paint = G.car.paint, glass = new THREE.MeshStandardMaterial({ color: 0xbfe3ff, transparent: true, opacity: 0.7, roughness: 0.1 });
+    const blk = new THREE.MeshStandardMaterial({ color: 0x1b1b1d });
+    fxBits(C.x, C.y + 0.8, C.z, 16, [paint, glass, blk, glass], 7 + v.vn * 0.4);
+    if (w) fxDebris(w.wheel, w.pos.x, w.pos.y, w.pos.z, C.vx * 0.8 + (Math.random() - 0.5) * 6, 4 + Math.random() * 3, C.vz * 0.8 + (Math.random() - 0.5) * 6);
+    FX.emit.push({ every: 0.12, col: 0x2a2a2a, size: 1.8, at: () => ({ x: G.C.x, y: G.C.y + 1.1, z: G.C.z }) });
+    // en la cabina primero se raja el parabrisas, luego la cámara sale afuera
+    if (G.cam === 'cabina') {
+      document.getElementById('crack').classList.add('on');
+      setTimeout(() => { if (G.mode === 'crash') { document.getElementById('crack').classList.remove('on'); crashCamera(); } }, 650);
+    } else crashCamera();
+  } else if (name === 'baranda') {
+    breakGuard(G.T, v.s, v.side, C.vx, C.vz);
+    G.T.broken = true;
+    SFX.crash(v.vn * 0.7);
+    fxSparks(C.x, C.y + 0.6, C.z, 80, 8);
+    shake(1);
   } else if (name === 'caida') {
     G.mode = 'fall';
     SFX.fall();
@@ -148,7 +185,19 @@ function onCarEvent(name, v) {
     document.getElementById('warn').classList.remove('on');
   } else if (name === 'golpe') {
     SFX.thud(v.v);
+    fxSmoke(C.x, C.y, C.z, 3, G.T.L.theme === 'nieve' ? 0xffffff : 0xb9a58a, 2.4, 2);
+    if (v.v > 5) fxBits(C.x, C.y + 0.5, C.z, 3, [G.car.paint], 5);
+    if (G.mode === 'fall') shake(0.6);
   }
+}
+
+function crashCamera() {
+  const C = G.C;
+  W.scene.attach(W.camera);
+  W.camera.rotation.order = 'XYZ';
+  G.snap = true;
+  const p = roadPoint(G.T, C.s - 9, 0);
+  G.crashCam = new THREE.Vector3(p.x, C.y + 3.2, p.z);
 }
 
 function pickCoins() {
@@ -173,6 +222,8 @@ function hitRocks() {
     if (Math.abs(ds) < rk.rad + 2 && Math.abs(dd) < rk.rad + 0.85 && !(rk.cool > G.time)) {
       rk.cool = G.time + 1.2;
       const v = Math.abs(C.f);
+      const si0 = Math.min(G.T.n - 1, Math.round(C.s));
+      if (v > 22) { startCrash(C, dd > 0 ? 1 : -1, G.T.nx[si0] * (dd > 0 ? 1 : -1), G.T.nz[si0] * (dd > 0 ? 1 : -1), v * 0.35, onCarEvent); return; }
       C.hp -= (8 + v * 0.65) * G.st.armor;
       C.hits++;
       const keep = 0.4;
@@ -181,6 +232,8 @@ function hitRocks() {
       const si = Math.min(G.T.n - 1, Math.round(C.s)), sg = dd > 0 ? -1 : 1;
       C.vx += G.T.nx[si] * sg * 2.5; C.vz += G.T.nz[si] * sg * 2.5;
       SFX.hit(v * 0.6 + 3); flashHit(); shake(0.8);
+      fxSparks(rk.x, C.y + 0.5, rk.z, 30, 6); fxBits(rk.x, C.y + 0.4, rk.z, 4, [W.rockMeshes[0].material], 5);
+      if (C.hp <= 0) { startCrash(C, 1, G.T.nx[si0], G.T.nz[si0], 6, onCarEvent); return; }
     }
   }
 }
@@ -215,6 +268,22 @@ function updateCamera(dt) {
   if (!C) return;
   shakeAmt = Math.max(0, shakeAmt - dt * 2.5);
   const sh = shakeAmt * 0.04;
+  if (G.mode === 'crash' && G.crashCam) {
+    // cámara que da vueltas despacio alrededor del carro destrozado
+    const a = (G.slowT || 0) * 0.4;
+    const p = roadPoint(G.T, C.s - Math.cos(a) * 7, Math.sin(a) * Math.min(G.T.hw - 0.5, 3));
+    _cv.set(p.x, roadY(G.T, C.s) + 2.6, p.z);
+    if (G.snap) { cam.position.copy(_cv); G.snap = false; }
+    cam.position.lerp(_cv, Math.min(1, dt * 2));
+    cam.position.x += (Math.random() - 0.5) * sh * 3; cam.position.y += (Math.random() - 0.5) * sh * 3;
+    cam.lookAt(C.x, C.y + 0.6, C.z);
+    return;
+  }
+  if (G.mode === 'crash') {
+    // primeros instantes del choque desde la cabina: sacudón fuerte
+    cam.position.set(EYE.x + (Math.random() - 0.5) * 0.12, EYE.y + (Math.random() - 0.5) * 0.12, EYE.z);
+    return;
+  }
   if (G.mode === 'fall' && G.fallCam) {
     if (G.snap) { cam.position.copy(G.fallCam); G.snap = false; }
     cam.position.lerp(G.fallCam, Math.min(1, dt * 3));
@@ -302,6 +371,104 @@ function hud() {
     warn = w > 0.5 && !gd && Math.abs(C.d) > T.hw - 0.4;
   }
   document.getElementById('warn').classList.toggle('on', warn);
+  paceNote();
+  drawNav();
+}
+
+// ---------- copiloto: la próxima curva ----------
+function noteIcon(n) {
+  // flecha que sube y dobla según lo cerrada que es la curva
+  const ang = [0, 0, 30, 55, 85, 120, 175][n.lvl] * DEG * (n.sg > 0 ? -1 : 1);
+  const pts = [[50, 94], [50, 62]];
+  const r = n.lvl >= 6 ? 16 : 24;
+  let x = 50, y = 62, h = 0;
+  for (let i = 1; i <= 12; i++) {
+    const nh = ang * i / 12, mid = (h + nh) / 2, step = Math.abs(ang) * r / 12;
+    x += Math.sin(mid) * step; y -= Math.cos(mid) * step; h = nh; pts.push([x, y]);
+  }
+  const ex = x + Math.sin(h) * 8, ey = y - Math.cos(h) * 8;
+  const lx = ex - Math.sin(h) * 16 + Math.cos(h) * 12, ly = ey + Math.cos(h) * 16 + Math.sin(h) * 12;
+  const rx = ex - Math.sin(h) * 16 - Math.cos(h) * 12, ry = ey + Math.cos(h) * 16 - Math.sin(h) * 12;
+  return `<path d="M${pts.map(p => p.map(v => v.toFixed(1)).join(' ')).join(' L')}" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<path d="M${lx.toFixed(1)} ${ly.toFixed(1)} L${ex.toFixed(1)} ${ey.toFixed(1)} L${rx.toFixed(1)} ${ry.toFixed(1)}Z" fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>`;
+}
+function paceNote() {
+  const C = G.C, T = G.T, el = document.getElementById('note');
+  const notes = T.notes;
+  while (G.noteIdx < notes.length && notes[G.noteIdx].end < C.s) G.noteIdx++;
+  const n = notes[G.noteIdx];
+  const dist = n ? n.s - C.s : 1e9;
+  const show = G.mode === 'drive' && n && dist < Math.max(90, C.f * 4.5);
+  el.classList.toggle('on', !!show);
+  if (!show) return;
+  const brake = G.prof[Math.min(T.n - 1, n.s + 4)] < C.f - 4;
+  el.classList.toggle('brake', brake && dist > -5);
+  const key = G.noteIdx + (brake ? 'b' : '');
+  if (el.dataset.k !== key) {
+    el.dataset.k = key;
+    document.getElementById('noteIco').innerHTML = noteIcon(n);
+    document.getElementById('noteTxt').textContent = `${n.kind} ${n.dir}${n.then ? ' · luego ' + n.then : ''}`;
+  }
+  document.getElementById('noteDist').textContent = brake && dist > 0 ? `¡FRENA! · ${Math.max(0, Math.round(dist / 10) * 10)} m` : dist > 0 ? `${Math.round(dist / 10) * 10} m` : 'ahora';
+  if (G.noteSaid !== G.noteIdx) {
+    G.noteSaid = G.noteIdx;
+    SFX.say(`${n.kind} ${n.dir}${brake ? ', frena' : ''}${n.then ? ', luego ' + n.then : ''}`);
+  }
+}
+
+// ---------- mapa estilo GPS: la ruta que viene, girando con el carro ----------
+function drawNav() {
+  const cv = document.getElementById('nav');
+  if (!cv || !document.body.classList.contains('driving')) return;
+  const g = cv.getContext('2d'), W2 = cv.width, C = G.C, T = G.T;
+  const k = W2 / 380, cx = W2 / 2, cy = W2 * 0.7;
+  const sh = Math.sin(C.h), ch = Math.cos(C.h);
+  const P = s => { const i = Math.max(0, Math.min(T.n - 1, Math.round(s))), dx = T.x[i] - C.x, dz = T.z[i] - C.z; return [cx + (dx * -ch + dz * sh) * k, cy - (dx * sh + dz * ch) * k]; };
+  const Po = (s, d) => { const i = Math.max(0, Math.min(T.n - 1, Math.round(s))), x = T.x[i] + T.nx[i] * d - C.x, z = T.z[i] + T.nz[i] * d - C.z; return [cx + (x * -ch + z * sh) * k, cy - (x * sh + z * ch) * k]; };
+  g.clearRect(0, 0, W2, W2);
+  g.save();
+  g.beginPath(); g.arc(W2 / 2, W2 / 2, W2 / 2 - 2, 0, 7); g.clip();
+  g.fillStyle = 'rgba(18,22,30,0.82)'; g.fillRect(0, 0, W2, W2);
+  const s0 = Math.max(0, C.s - 70), s1 = Math.min(T.n - 1, C.s + 330);
+  const path = (from, to, step = 4) => { g.beginPath(); for (let s = from; s <= to; s += step) { const p = P(s); s === from ? g.moveTo(p[0], p[1]) : g.lineTo(p[0], p[1]); } };
+  g.lineCap = g.lineJoin = 'round';
+  path(s0, s1); g.strokeStyle = '#59606e'; g.lineWidth = (T.hw * 2 + 3) * k + 4; g.stroke();
+  // bordes con abismo sin baranda en rojo
+  g.strokeStyle = '#ff4d4d'; g.lineWidth = 2.2;
+  for (const [w, gd, sg] of [[T.wL, T.gL, -1], [T.wR, T.gR, 1]]) {
+    let on = false;
+    g.beginPath();
+    for (let s = Math.round(s0); s <= s1; s += 4) {
+      const danger = w[s] > 0.5 && !gd[s];
+      const p = Po(s, sg * (T.hw + 2));
+      if (danger) { on ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); on = true; } else on = false;
+    }
+    g.stroke();
+  }
+  path(Math.max(s0, C.s), s1); g.strokeStyle = '#1ec8ff'; g.lineWidth = 6; g.stroke();
+  path(s0, C.s); g.strokeStyle = '#8a93a3'; g.lineWidth = 4; g.stroke();
+  // horquillas y meta
+  for (const n of T.notes) if (n.lvl >= 5 && n.s > C.s && n.s < s1) { const p = P(n.s + (n.end - n.s) / 2); g.fillStyle = n.lvl >= 6 ? '#ff4d4d' : '#ffb020'; g.beginPath(); g.arc(p[0], p[1], 6, 0, 7); g.fill(); g.fillStyle = '#111'; g.font = 'bold 9px Rubik,sans-serif'; g.textAlign = 'center'; g.fillText('!', p[0], p[1] + 3); }
+  if (T.n - 45 < s1) { const p = P(T.n - 45); g.font = '18px sans-serif'; g.textAlign = 'center'; g.fillText('🏁', p[0], p[1] + 6); }
+  // el carro
+  g.translate(cx, cy);
+  g.fillStyle = '#fff'; g.strokeStyle = '#1ec8ff'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(0, -11); g.lineTo(8, 8); g.lineTo(0, 4); g.lineTo(-8, 8); g.closePath(); g.stroke(); g.fill();
+  g.restore();
+  g.strokeStyle = 'rgba(255,255,255,0.25)'; g.lineWidth = 2; g.beginPath(); g.arc(W2 / 2, W2 / 2, W2 / 2 - 2, 0, 7); g.stroke();
+}
+
+// Piloto automático (lo usan las pruebas): sigue la línea de guía a la velocidad recomendada.
+function aiInput(C, T, prof) {
+  const v = Math.max(1, C.f), look = Math.max(6, v * 0.5);
+  const i = Math.min(T.n - 1, Math.round(C.s + look));
+  let tx = T.lx[i], tz = T.lz[i];
+  const rk = T.rocks.find(r => r.s > C.s - 2 && r.s < C.s + 70);
+  if (rk) { let d = rk.d > 0 ? rk.d - rk.rad - 1.7 : rk.d + rk.rad + 1.7; d = Math.max(-T.hw + 1, Math.min(T.hw - 1, d)); tx = T.x[i] + T.nx[i] * d; tz = T.z[i] + T.nz[i] * d; }
+  let ang = Math.atan2(tx - C.x, tz - C.z) - C.h;
+  while (ang > Math.PI) ang -= 2 * Math.PI; while (ang < -Math.PI) ang += 2 * Math.PI;
+  const need = prof[Math.min(T.n - 1, Math.round(C.s + 2))];
+  return { thr: v < need - 0.5 ? 1 : 0, brk: v > need + 1 ? 1 : 0, steer: Math.max(-1, Math.min(1, -ang * 3)) };
 }
 
 // ---------- fin de la partida ----------
