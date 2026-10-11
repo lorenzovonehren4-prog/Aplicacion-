@@ -62,7 +62,7 @@ function startRun(L) {
   G.prof = speedProfile(G.T, G.st);
   setLineSpeeds(G.prof);
   W.line.material.uniforms.uOn.value = save.opt.line === false ? 0 : 1;
-  G.noteIdx = 0; G.noteSaid = -1; G.slow = 1; G.crashCam = null;
+  G.noteIdx = 0; G.noteSaid = -1; G.said = {}; G.urgentSaid = -1; G.slow = 1; G.crashCam = null;
   G.mode = 'count'; G.countT = 0;
   G.cam = save.opt.cam || 'cabina';
   setCam();
@@ -140,6 +140,7 @@ function onCarEvent(name, v) {
   const C = G.C;
   if (name === 'choque') {
     SFX.hit(v.vn);
+    if (v.vn > 3 && G.time - ((G.said && G.said.golpe) || -9) > 5) { G.said = G.said || {}; G.said.golpe = G.time; SFX.say(['¡Cuidado!', '¡Tranquilo, sigue!', '¡Uy! Endereza'][Math.floor(Math.random() * 3)], true); }
     flashHit();
     if (v.vn > 2.4) shake(Math.min(1, v.vn / 8));
     const si = Math.min(G.T.n - 1, Math.round(C.s)), sg = v.side ? 1 : -1;
@@ -148,6 +149,7 @@ function onCarEvent(name, v) {
     G.mode = 'crash';
     save.stats.crashes = (save.stats.crashes || 0) + 1; persist();
     SFX.crash(v.vn);
+    SFX.say('¡Nooo! ¡Chocamos!', true);
     shake(1); flashHit();
     document.getElementById('warn').classList.remove('on');
     const w = wreckCar(G.car, Math.min(1.5, v.vn / 8));
@@ -166,12 +168,13 @@ function onCarEvent(name, v) {
   } else if (name === 'baranda') {
     breakGuard(G.T, v.s, v.side, C.vx, C.vz);
     G.T.broken = true;
-    SFX.crash(v.vn * 0.7);
+    SFX.guard();
     fxSparks(C.x, C.y + 0.6, C.z, 80, 8);
     shake(1);
   } else if (name === 'caida') {
     G.mode = 'fall';
     SFX.fall();
+    SFX.say('¡Nos caemos!', true);
     save.stats.falls++; persist();
     if (save.stats.falls >= 10) unlockAch('caidas');
     // cámara quieta en el borde que mira cómo cae
@@ -250,11 +253,13 @@ function showCount(k) {
   const el = document.getElementById('count');
   el.innerHTML = `<b>${k < 3 ? 3 - k : '¡YA!'}</b>`;
   SFX.beep(k === 3);
+  if (k === 3) SFX.say('¡Vamos, a fondo!', true);
   if (k === 3) setTimeout(() => { if (el.textContent === '¡YA!') el.innerHTML = ''; }, 800);
 }
 
 function onFinish() {
   SFX.win();
+  SFX.say(G.C.hits === 0 ? '¡Perfecto, sin un rasguño!' : '¡Llegamos! ¡Buenísimo!', true);
   G.snap = true;
   W.scene.attach(W.camera);
   W.camera.rotation.order = 'XYZ';
@@ -372,6 +377,7 @@ function hud() {
   }
   document.getElementById('warn').classList.toggle('on', warn);
   paceNote();
+  if (G.mode === 'drive') copilot();
   drawNav();
 }
 
@@ -407,13 +413,52 @@ function paceNote() {
   if (el.dataset.k !== key) {
     el.dataset.k = key;
     document.getElementById('noteIco').innerHTML = noteIcon(n);
-    document.getElementById('noteTxt').textContent = `${n.kind} ${n.dir}${n.then ? ' · luego ' + n.then : ''}`;
+    document.getElementById('noteTxt').textContent = noteLabel(n) + (n.then ? ' · luego ' + n.then : '');
   }
-  document.getElementById('noteDist').textContent = brake && dist > 0 ? `¡FRENA! · ${Math.max(0, Math.round(dist / 10) * 10)} m` : dist > 0 ? `${Math.round(dist / 10) * 10} m` : 'ahora';
+  const hard = G.prof[Math.min(T.n - 1, n.s + 4)] < C.f - 15;
+  document.getElementById('noteDist').textContent = brake && dist > 0 ? `${hard ? '¡FRENA FUERTE!' : '¡FRENA!'} · ${Math.max(0, Math.round(dist / 10) * 10)} m` : dist > 0 ? `${Math.round(dist / 10) * 10} m` : 'ahora';
   if (G.noteSaid !== G.noteIdx) {
     G.noteSaid = G.noteIdx;
-    SFX.say(`${n.kind} ${n.dir}${brake ? ', frena' : ''}${n.then ? ', luego ' + n.then : ''}`);
+    G.urgentSaid = -1;
+    SFX.say(noteSpeech(n, hard ? 2 : brake ? 1 : 0));
   }
+}
+
+const cap = t => t[0].toUpperCase() + t.slice(1);
+function noteLabel(n) {
+  return { 2: `${cap(n.dir)} abierta`, 3: `${cap(n.dir)} media`, 4: `Cerrada a la ${n.dir}`, 5: `Muy cerrada a la ${n.dir}`, 6: `Horquilla a la ${n.dir}` }[n.lvl];
+}
+// Lo que dice el copiloto, como en el rally: "Curva cerrada a la derecha, fuerte, frena".
+function noteSpeech(n, brk) {
+  const T = G.T, mid = Math.min(T.n - 1, Math.round((n.s + n.end) / 2));
+  const outside = n.sg > 0 ? 1 : 0;                       // curva a la izquierda: el abismo de afuera queda a la derecha
+  const drop = (outside ? T.wR[mid] : T.wL[mid]) > 0.5 && !(outside ? T.gR[mid] : T.gL[mid]);
+  const parts = [{ 2: `${cap(n.dir)} abierta, a fondo`, 3: `${cap(n.dir)} media`, 4: `Curva cerrada a la ${n.dir}`, 5: `Curva muy cerrada a la ${n.dir}, fuerte`, 6: `Horquilla a la ${n.dir}` }[n.lvl]];
+  if (brk === 2) parts.push('¡frena fuerte!'); else if (brk === 1) parts.push('frena');
+  if (drop && n.lvl >= 3) parts.push('cuidado, abismo afuera');
+  if (n.then) parts.push(`luego ${n.then}`);
+  return parts.join(', ');
+}
+
+// Avisos extra del copiloto: frenar ya, rocas, rectas largas, borde, golpes y la meta.
+function copilot() {
+  const C = G.C, T = G.T, n = T.notes[G.noteIdx], now = G.time;
+  G.said = G.said || {};
+  if (n) {
+    const dist = n.s - C.s, need = G.prof[Math.min(T.n - 1, n.s + 4)];
+    if (dist > 0 && dist < 45 && C.f > need + 7 && !inp.brk && G.urgentSaid !== G.noteIdx) { G.urgentSaid = G.noteIdx; SFX.say('¡Frena, frena!', true); }
+  }
+  // recta larga a fondo
+  const prev = T.notes[G.noteIdx - 1];
+  if (prev && C.s > prev.end + 5 && n && n.s - C.s > 260 && G.said.recta !== G.noteIdx) { G.said.recta = G.noteIdx; SFX.say('Recta larga, ¡a fondo!'); }
+  // roca en la pista
+  const rk = T.rocks.find(r => r.s > C.s + 30 && r.s < C.s + 110);
+  if (rk && G.said.roca !== rk.s) { G.said.roca = rk.s; SFX.say(`¡Roca en la pista, ${rk.d < 0 ? 'por la izquierda' : 'por la derecha'}!`, true); }
+  // meta cerca
+  if (T.n - 45 - C.s < 220 && !G.said.meta) { G.said.meta = 1; SFX.say('Meta a doscientos, ¡aprieta!'); }
+  // muy pegado al abismo
+  const si = Math.min(T.n - 1, Math.round(C.s)), side = C.d < 0 ? 0 : 1;
+  if ((side ? T.wR[si] : T.wL[si]) > 0.5 && !(side ? T.gR[si] : T.gL[si]) && Math.abs(C.d) > T.hw - 0.3 && now - (G.said.borde || -9) > 6) { G.said.borde = now; SFX.say('¡Ojo el borde!', true); }
 }
 
 // ---------- mapa estilo GPS: la ruta que viene, girando con el carro ----------

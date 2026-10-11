@@ -216,7 +216,7 @@ function setCarPaint(car, id) {
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3();
 // Mueve volante, manos, agujas y el número del velocímetro.
 function poseCockpit(car, C) {
-  car.steer.rotation.z = -C.steer * 2.3;
+  car.steer.rotation.z = C.steer * 2.3;   // a la derecha gira en sentido horario visto desde el asiento
   for (let i = 0; i < 2; i++) {
     const a = car.arms[i], hand = car.hands[i];
     hand.getWorldPosition(_v1);

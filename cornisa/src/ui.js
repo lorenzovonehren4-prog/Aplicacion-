@@ -342,7 +342,7 @@ function step(dt) {
     W.sun.target.position.set(G.C.x, G.C.y, G.C.z);
     W.sky.position.copy(W.camera.getWorldPosition(_cv));
     const driving = G.mode === 'drive' || G.mode === 'count' || G.mode === 'fall' || G.mode === 'crash' || G.mode === 'finish';
-    SFX.drive(G.C, driving, W.theme && W.theme.rain && G.mode !== 'menu');
+    SFX.drive(G.C, driving, W.theme && W.theme.rain && G.mode !== 'menu', G.mode === 'drive' || G.mode === 'count' ? inp.thr : 0);
     if (driving) hud();
   }
   if (G.mode !== 'pause') updateWorld(G.t, dt);
