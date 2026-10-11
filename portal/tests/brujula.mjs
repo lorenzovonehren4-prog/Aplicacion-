@@ -22,14 +22,14 @@ for (const [tag, vp] of [['pc', { width: 1280, height: 860 }], ['cel', { width: 
   await page.fill('#name', 'Javier');
   await page.click('#go');
   await page.waitForSelector('#s-quiz.on');
-  for (let i = 0; i < 25; i++) { await page.keyboard.press(String(1 + (i % 5))); await page.waitForTimeout(200); }
+  for (let i = 0; i < 30; i++) { await page.keyboard.press(String(1 + (i % 5))); await page.waitForTimeout(200); }
   if (tag === 'cel') await page.screenshot({ path: path.join(out, `brujula-${tag}-pregunta.png`) });
-  check(await page.textContent('#qn') === '26/50', `${tag}: va en la pregunta 26`);
+  check(await page.textContent('#qn') === '31/60', `${tag}: va en la pregunta 31`);
   await page.click('#exit');
   check(await page.isVisible('#resume'), `${tag}: se puede seguir donde se quedó`);
   await page.click('#resume');
-  check(await page.textContent('#qn') === '26/50', `${tag}: retoma en la 26`);
-  for (let i = 0; i < 25; i++) { await page.locator('#ans button').nth(i % 2 ? 0 : 3).click(); await page.waitForTimeout(200); }
+  check(await page.textContent('#qn') === '31/60', `${tag}: retoma en la 31`);
+  for (let i = 0; i < 30; i++) { await page.locator('#ans button').nth(i % 2 ? 0 : 3).click(); await page.waitForTimeout(200); }
   await page.waitForSelector('#s-res.on');
   await page.waitForTimeout(900);
   check(await page.locator('.ax__row').count() === 6, `${tag}: tarjeta con los 6 ejes`);

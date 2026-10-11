@@ -166,8 +166,8 @@
         <path d="M50 14l9 36-9 36-9-36z" fill="#fff"/><path d="M50 14l9 36H41z" fill="#ef4444"/><circle cx="50" cy="50" r="5" fill="#0d1117"/>
       </svg>
       <h1>Brújula Política</h1>
-      <p>Responde 50 frases sobre economía, libertad, sociedad, el mundo, el planeta y la guerra. Al final verás tu ideología, tu lado político y con qué pensadores coincides más.</p>
-      <div class="facts"><span>50 preguntas</span><span>6 ejes</span><span>16 ideologías</span><span>Unos 8 minutos</span></div>
+      <p>Responde 60 frases sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra. Al final verás tu ideología, tu lado político y con qué pensadores coincides más.</p>
+      <div class="facts"><span>60 preguntas</span><span>6 ejes</span><span>16 ideologías</span><span>Unos 10 minutos</span></div>
     </div>
     <div class="start">
       <label for="name">Tu nombre (sale en la tarjeta)</label>
@@ -185,7 +185,7 @@
     <div class="qtop">
       <button class="btn" id="exit" aria-label="Salir al inicio">Salir</button>
       <div class="qbar"><i id="qbar"></i></div>
-      <span class="qn" id="qn">1/50</span>
+      <span class="qn" id="qn">1/60</span>
     </div>
     <div class="qcard">
       <small id="qk">Pregunta 1</small>
@@ -253,7 +253,7 @@ const AXES = [
   { k: 'm', name: 'La guerra', neg: { n: 'Pacifismo', ic: 'paz', c: '#2fa3b5' }, pos: { n: 'Militarismo', ic: 'mil', c: '#6f8a2f' } },
 ];
 
-/* ---------- 50 preguntas: estar de acuerdo suma el peso en cada eje ---------- */
+/* ---------- 60 preguntas: estar de acuerdo suma el peso en cada eje ---------- */
 const Q = [
   // economía (- igualdad, + mercado)
   ['El Estado debería garantizar salud y educación gratis para todos, aunque haya que subir impuestos.', { e: -1 }],
@@ -268,6 +268,10 @@ const Q = [
   ['Si tuviera 10 casas, regalaría algunas a familias que no tienen dónde vivir.', { e: -1 }],
   ['Si gané mi plata trabajando duro, es justo quedarme con casi toda, aunque otros tengan mucho menos.', { e: 1 }],
   ['El Estado debería fijar el precio de los productos básicos como el arroz o el pan.', { e: -1, a: .3 }],
+  ['Si al Estado le falta plata, puede imprimir más billetes aunque eso haga subir los precios (inflación).', { e: -.7, a: .3 }],
+  ['Lo más importante del Banco Central es cuidar que la moneda no pierda valor y los precios no suban.', { e: .7 }],
+  ['El Estado debería controlar el precio del dólar.', { e: -1, a: .3 }],
+  ['Cualquiera debería poder abrir un negocio sin pedirle tantos permisos al Estado.', { e: 1, a: -.5 }],
   // gobierno (- libertad, + autoridad)
   ['Un gobierno de mano dura es lo que hace falta para poner orden en el país.', { a: 1 }],
   ['Cualquiera debería poder decir lo que piensa, aunque a otros les ofenda.', { a: -1 }],
@@ -279,6 +283,12 @@ const Q = [
   ['La prensa debe ser libre aunque critique duramente al gobierno.', { a: -1 }],
   ['Si un vecino pone música a todo volumen de madrugada, la policía debería poder entrar a su casa sin orden de un juez.', { a: 1 }],
   ['El Estado no debería meterse en lo que cada adulto hace con su propia vida.', { a: -1 }],
+  ['Cada adulto debería poder hacer lo que quiera con su cuerpo, aunque se haga daño a sí mismo.', { a: -1 }],
+  // delitos y castigos (también es gobierno: más castigo, más autoridad)
+  ['Quien roba un celular debería pasar varios años en la cárcel.', { a: 1 }],
+  ['Quien mata a alguien a propósito debería quedarse en la cárcel el resto de su vida.', { a: 1, s: .3 }],
+  ['Quien tortura o mata con crueldad merece el castigo más duro que exista.', { a: 1, s: .3 }],
+  ['A los presos hay que darles estudio y trabajo para que cambien, no sólo castigarlos.', { a: -1 }],
   // sociedad (- progreso, + tradición)
   ['Las parejas del mismo sexo deberían poder casarse.', { s: -1 }],
   ['Las tradiciones y costumbres de nuestros abuelos deben protegerse.', { s: 1 }],
@@ -297,6 +307,7 @@ const Q = [
   ['Los tratados de libre comercio con otros países son buenos.', { n: -1, e: .5 }],
   ['Dejaría que las personas entren a mi país de forma ilegal, sin papeles, si vienen a buscar una vida mejor.', { n: -1, a: -.3 }],
   ['Las fronteras deberían vigilarse con mucha más dureza.', { n: 1, a: .3 }],
+  ['A los extranjeros que están aquí de forma ilegal habría que expulsarlos del país.', { n: 1, a: .3 }],
   // el planeta (- ecología, + desarrollo)
   ['Cuidar el medio ambiente es más importante que el crecimiento económico.', { v: -1 }],
   ['La minería es necesaria para el desarrollo del país aunque contamine.', { v: 1 }],
