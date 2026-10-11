@@ -1,5 +1,5 @@
 'use strict';
-// Cornisa: genera la carretera de cada montaña (línea central cada 1 m), los bordes
+// Drive In The Serrín: genera la carretera de cada montaña (línea central cada 1 m), los bordes
 // (pared o abismo), el perfil del cerro a cada lado, monedas, rocas y letreros.
 //
 // Convenciones: rumbo h, el frente apunta a (sin h, cos h) en (x, z); la normal derecha

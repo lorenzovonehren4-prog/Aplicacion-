@@ -1,4 +1,6 @@
-# Cornisa
+# Drive In The Serrín
+
+(Carpeta `cornisa/` y guardado `cornisa_v1`: nombres internos de cuando se llamaba Cornisa.)
 
 Juego de manejo en 3D por carreteras de montaña, visto desde la cabina de un 4x4 (volante, manos, velocímetro y tacómetro que se mueven). Si te sales por el abismo, pierdes. Todo el texto en español.
 
@@ -6,7 +8,7 @@ Juego de manejo en 3D por carreteras de montaña, visto desde la cabina de un 4x
 - **3 estrellas** por montaña: llegar a la meta y dos objetivos (tiempo, monedas o pocos choques).
 - **Taller**: motor, frenos, llantas y carrocería (5 niveles cada una) y 8 pinturas.
 - **Al pasarte la Cima del Cóndor**: pantalla final, todas las pinturas (también la Dorada), la Ruta libre (montaña al azar) y la insignia Cóndor. Se sigue jugando todo.
-- 14 insignias propias. El portal da la insignia "Rey de la cornisa" al pasarte el juego.
+- 14 insignias propias. El portal da la insignia "Rey del Serrín" al pasarte el juego.
 
 ## Cómo correrlo
 

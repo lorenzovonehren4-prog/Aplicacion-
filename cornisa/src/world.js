@@ -1,5 +1,5 @@
 'use strict';
-// Cornisa: escena 3D. Renderizador, cielo, luces, la montaña (carretera, cerro, valle,
+// Drive In The Serrín: escena 3D. Renderizador, cielo, luces, la montaña (carretera, cerro, valle,
 // montañas lejanas, árboles, barandas, letreros, monedas, rocas, arcos) y el clima.
 
 const W = { anim: [], level: null, T: null, theme: null, coinMesh: null, rockMeshes: [], weather: null, flash: 0 };

@@ -7,7 +7,7 @@ repositorio en un solo lugar. HTML, CSS y JavaScript sin compilación.
 | --- | --- | --- |
 | **Ápice GP** | `formula-3d/` | Monoplazas estilo F1 en 3D |
 | **Kartódromo** | `karting/` | Carreras de karts 3D, 2 jugadores |
-| **Cornisa** | `cornisa/` | Manejar por montañas desde la cabina (3D) |
+| **Drive In The Serrín** | `cornisa/` | Manejar por montañas desde la cabina (3D) |
 | **Combi Rush** | `combi-rush/` | Manejar una combi por Lima (3D) |
 | **Fuga Urbana** | `fuga-urbana/` | Escapar de la policía |
 | **Sazón Tycoon** | `sazon-tycoon/` | Tycoon de restaurantes 3D |

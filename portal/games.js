@@ -117,8 +117,8 @@ const GAMES = [
   },
   {
     id: 'cornisa',
-    title: 'Cornisa',
-    tagline: 'Maneja por la cornisa de la montaña. Si te caes, pierdes',
+    title: 'Drive In The Serrín',
+    tagline: 'Maneja por las montañas desde la cabina. Si te caes, pierdes',
     desc: 'Vas desde la cabina de un 4x4 por carreteras de montaña: cañón, bosque, nieve, niebla, volcán, noche y tormenta. Si te sales por el abismo, pierdes. Junta monedas, mejora motor, frenos, llantas y carrocería, y abre cada montaña cumpliendo lo que pide la anterior hasta la Cima del Cóndor.',
     url: 'cornisa/index.html',
     cover: 'portal/img/cornisa-cover.webp',
@@ -396,7 +396,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
-  { game: 'cornisa', date: '11 oct', title: 'Juego nuevo: Cornisa', items: ['Maneja un 4x4 desde la cabina por 8 montañas', 'Si te caes al abismo, pierdes', 'Taller de mejoras, pinturas, insignias y Ruta libre al pasarte el juego'] },
+  { game: 'cornisa', date: '11 oct', title: 'Juego nuevo: Drive In The Serrín', items: ['Maneja un 4x4 desde la cabina por 8 montañas', 'Si te caes al abismo, pierdes', 'Taller de mejoras, pinturas, insignias y Ruta libre al pasarte el juego'] },
   { game: 'tower-defense', date: '10 oct', title: 'Reino en Guardia: Glaciar Maldito', items: ['Cuarto mapa entre pinos y hielo, con nieve cayendo', 'Ventiscas que congelan torres', 'Jefe nuevo: Yeti Zombi, y el desafío Deshielo'] },
   { game: 'sazon', date: '10 oct', title: 'Sazón Tycoon: carta criolla', items: ['5 platos nuevos: emoliente, suspiro, arroz con pato, rocoto relleno y parihuela', 'Evento Día de la Canción Criolla: más propina y antojo de anticuchos'] },
   { game: 'combi-rush', date: '10 oct', title: 'Combi Rush, versión 4', items: ['4 viajes nuevos: La Punta, Túpac Amaru, Noche en Miraflores y la ruta más larga', 'Combi Sprinter y Micro chosicano de 40 pasajeros', 'Radio con Cumbia Total, Chicha Andina y Salsa Brava (tecla R)'] },

@@ -1,5 +1,5 @@
 'use strict';
-// Cornisa: montañas, mejoras, pinturas, insignias y guardado.
+// Drive In The Serrín: montañas, mejoras, pinturas, insignias y guardado.
 
 // Ambientes. Colores en hex; rock = estratos de la roca (de abajo hacia arriba).
 const THEMES = {
@@ -145,7 +145,7 @@ const ACHS = [
   { id: 'buho', name: 'Búho', desc: 'Pasa la Cumbre de Noche', icon: '🦉' },
   { id: 'caidas', name: 'Gravedad', desc: 'Cáete 10 veces (pasa)', icon: '🪂' },
   { id: 'condor', name: 'Cóndor', desc: 'Pásate el juego: llega a la Cima del Cóndor', icon: '🦅' },
-  { id: 'leyenda', name: 'Leyenda de la cornisa', desc: 'Junta las 24 estrellas', icon: '👑' },
+  { id: 'leyenda', name: 'Leyenda del Serrín', desc: 'Junta las 24 estrellas', icon: '👑' },
   { id: 'libre', name: 'Explorador', desc: 'Termina una ruta libre', icon: '🧭' },
 ];
 

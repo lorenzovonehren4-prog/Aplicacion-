@@ -1,5 +1,5 @@
 'use strict';
-// Cornisa: pantallas (intro, menú, mapa de montañas, taller, insignias, opciones, pausa,
+// Drive In The Serrín: pantallas (intro, menú, mapa de montañas, taller, insignias, opciones, pausa,
 // resultado y final), navegación con flechas, controles táctiles y bucle principal.
 
 const $ = (s, r = document) => r.querySelector(s);

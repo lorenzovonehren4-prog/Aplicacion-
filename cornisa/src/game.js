@@ -1,5 +1,5 @@
 'use strict';
-// Cornisa: partida. Entrada, bucle principal, cámaras, monedas, rocas, meta, caída y resultado.
+// Drive In The Serrín: partida. Entrada, bucle principal, cámaras, monedas, rocas, meta, caída y resultado.
 
 const G = {
   mode: 'boot',          // boot | menu | count | drive | fall | finish | pause | result

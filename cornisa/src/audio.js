@@ -1,5 +1,5 @@
 'use strict';
-// Cornisa: sonido sintetizado con Web Audio (sin archivos). Motor, viento, chirrido,
+// Drive In The Serrín: sonido sintetizado con Web Audio (sin archivos). Motor, viento, chirrido,
 // choques, monedas, cuenta regresiva, caída, truenos, lluvia y fanfarria.
 
 const SFX = {

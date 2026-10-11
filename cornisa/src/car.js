@@ -1,5 +1,5 @@
 'use strict';
-// Cornisa: el carro (un 4x4 tipo jeep). Modelo por fuera, cabina por dentro (volante,
+// Drive In The Serrín: el carro (un 4x4 tipo jeep). Modelo por fuera, cabina por dentro (volante,
 // manos, velocímetro y tacómetro que se mueven) y física.
 //
 // Ejes locales del carro: +z adelante, +y arriba, +x a la IZQUIERDA (la derecha es -x).
