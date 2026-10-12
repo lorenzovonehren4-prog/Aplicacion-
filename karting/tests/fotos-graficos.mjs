@@ -1,5 +1,6 @@
 // Fotos para comparar los gráficos (antes / después) y medición de rendimiento de la escena.
-// Uso: node tests/fotos-graficos.mjs <carpeta> [prefijo] [--baja] [--solo=menu,t1,...]
+// Uso: node tests/fotos-graficos.mjs <carpeta> [prefijo] [--baja] [--solo=menu,garaje,pistas,t1,...,t8,efectos,resultados]
+// (con WebGL por software cada foto tarda minutos: usar --solo y un navegador a la vez)
 //   → <carpeta>/<prefijo>-<vista>.png y <carpeta>/<prefijo>-medidas.json
 // Mide con renderer.info (triángulos, llamadas de dibujo) sumando todas las pasadas del cuadro.
 import { chromium } from 'playwright';
@@ -24,15 +25,19 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+// con WebGL por software (y otras pruebas en paralelo) un cuadro puede tardar decenas de segundos
+page.setDefaultTimeout(300000);
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 if (baja) await page.addInitScript(() => { try { const s = JSON.parse(localStorage.getItem('kartodromo-save-v1') || '{}'); s.opt = Object.assign({}, s.opt, { quality: 'baja' }); localStorage.setItem('kartodromo-save-v1', JSON.stringify(s)); } catch (e) {} });
 await page.goto(`http://localhost:${server.address().port}/index.html`);
 await page.waitForFunction(() => document.body.classList.contains('ready'));
+// cuenta los cuadros dibujados (frame es global: se envuelve para contarlos)
+await page.evaluate(() => { window.__frames = 0; const f0 = window.frame; window.frame = now => { window.__frames++; f0(now); }; });
 await page.waitForTimeout(1200);
 const medidas = {};
-const snap = async name => { await page.screenshot({ path: path.join(out, `${pre}-${name}.png`) }); console.log('foto', name); };
+const snap = async name => { await page.screenshot({ path: path.join(out, `${pre}-${name}.png`), timeout: 300000, animations: 'disabled' }); console.log('foto', name); };
 
 // mide un cuadro: suma de todas las pasadas (escena + posprocesado) y cuenta objetos
 async function medir(name) {
@@ -86,7 +91,10 @@ async function correr(id, time, segs) {
     go();
   }, [id, time]);
   await page.waitForFunction(() => R.on && UI.screen === 'hud' && document.body.classList.contains('ready'));
-  await page.waitForTimeout(600);
+  // espera unos cuadros de verdad: launch recompila los materiales de la pista después del segundo
+  // cuadro (si no, en el parque el asfalto puede salir con la textura del pasto)
+  const f0 = await page.evaluate(() => window.__frames || 0);
+  await page.waitForFunction(n => (window.__frames || 0) >= n + 4, f0);
   // simula con piloto automático hasta el tiempo pedido de carrera (después del semáforo)
   await page.evaluate(segs => {
     const quieto = () => ({ throttle: 0, brake: 0, steer: 0, handbrake: false, kSteer: 0 });
@@ -94,11 +102,12 @@ async function correr(id, time, segs) {
     let g = 0; while (R.state === 'countdown' && g++ < 2000) step(1);
     step(Math.round(segs * 120));
     R.events.length = 0;
+    updateLights();
     CAMS.forEach(c => c.snap = true);
   }, segs);
 }
 // congela la simulación (para que las fotos salgan igual) y deja correr solo el dibujo
-const congelar = () => page.evaluate(() => { UI.paused = true; });
+const congelar = () => page.evaluate(() => { UI.paused = true; document.getElementById('lights').classList.remove('show'); });
 
 const pistas = [
   ['t1', null, 'galpon-azul'], ['t2', null, 'fabrica'], ['t3', 'mediodia', 'parque'], ['t4', null, 'noche-ciudad'],
@@ -146,15 +155,29 @@ for (const [id, time, nom] of pistas) {
     // la misma pista de noche
     await page.evaluate(() => { applyTime('noche'); });
     await page.waitForTimeout(1500); await snap('t3-parque-noche');
-    // humo y chispas: kart derrapando contra la barrera
-    await page.evaluate(() => {
-      UI.paused = false;
-      const k = R.player; for (let n = 0; n < 30; n++) { FX.sparks(k.p.x + 0.6, k.p.z, 6, k.p.y); FX.skid(k, 4); }
-      UI.paused = true;
-    });
     await page.evaluate(() => { applyTime('mediodia'); });
-    await page.waitForTimeout(1200); await snap('t3-efectos');
   }
+  await page.evaluate(() => { UI.paused = false; });
+}
+// efectos: chispas contra la barrera, humo y marcas de un derrape (se avanzan a mano con la carrera en pausa)
+if (want('efectos')) {
+  await correr('t1', null, 3);
+  await congelar();
+  await page.evaluate(() => {
+    show('hud');
+    const k = R.player, p = k.p;
+    for (let n = 0; n < 40; n++) { k.p.slip = 4; FX.skid(k, 4); p.x += Math.sin(p.h) * 0.25; p.z += Math.cos(p.h) * 0.25; }
+    poseKart(k.mesh, p, 0);
+    const T = R.T, i = k.idx;
+    for (let n = 0; n < 6; n++) FX.sparks(p.x + T.nx[i] * 0.7, p.z + T.nz[i] * 0.7, 8, p.y);
+    for (let n = 0; n < 8; n++) FX.update(0.012);
+    CAMS.forEach(c => c.snap = true);
+  });
+  const p = await page.evaluate(() => { const k = R.player; return [k.p.x, k.p.y, k.p.z, k.p.h]; });
+  const [x, y, z, h] = p, fx = Math.sin(h), fz = Math.cos(h), rx = -Math.cos(h), rz = Math.sin(h);
+  await camAt([x - fx * 3.5 + rx * 2.2, y + 1.6, z - fz * 3.5 + rz * 2.2], [x - fx * 1.5, y + 0.4, z - fz * 1.5], 50);
+  await page.waitForTimeout(1500); await snap('efectos');
+  await camOff();
   await page.evaluate(() => { UI.paused = false; });
 }
 // resultados
@@ -162,7 +185,9 @@ if (want('resultados')) {
   await correr('t1', null, 1);
   await page.evaluate(() => {
     const t0 = performance.now();
-    while (R.state !== 'results' && performance.now() - t0 < 60000) for (let i = 0; i < 600 && R.state !== 'results'; i++) updateRace(1 / 120, [R.state === 'countdown' ? { throttle: 0, brake: 0, steer: 0 } : botInput(R.player, 1 / 120), { throttle: 0, brake: 0, steer: 0 }]);
+    while (R.state !== 'results' && performance.now() - t0 < 300000) for (let i = 0; i < 600 && R.state !== 'results'; i++) updateRace(1 / 120, [R.state === 'countdown' ? { throttle: 0, brake: 0, steer: 0 } : botInput(R.player, 1 / 120), { throttle: 0, brake: 0, steer: 0 }]);
+    // con el dibujo por software el aviso de 'results' puede perderse entre cuadros: se muestra a mano
+    if (R.state === 'results' && UI.screen !== 'results') { R.events.length = 0; clearTags(); showResults(); }
   });
   await page.waitForTimeout(2500); await snap('resultados');
 }
