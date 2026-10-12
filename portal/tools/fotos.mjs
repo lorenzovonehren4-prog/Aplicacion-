@@ -127,13 +127,16 @@ const SHOTS = {
     await page.waitForFunction(() => document.body.classList.contains('ready'));
     await page.evaluate(n => { UD.UI.brief(n); UD.UI.go(); }, +(process.env.NIVEL || 8));
     await page.waitForTimeout(1500);
-    await page.evaluate(() => { setScope(true); UD.aim('head'); });
-    await page.waitForTimeout(300);
-    await page.evaluate(() => { UD.aim('head'); fire(); });
-    await page.waitForFunction(k => UD.G.bc && UD.G.bc.t > UD.G.bc.dur * k, +(process.env.K || 0.9));
+    await page.evaluate(() => { UD.G.ai.half = 0.01; setScope(true); UD.aim('head'); UD.aim('head'); fire(); });
+    await page.evaluate(k => { UD.G.freeze = true; UD.step(12, () => UD.G.bc.t > UD.G.bc.dur * k); }, +(process.env.K || 0.9));
     await page.evaluate(() => {
-      W.camera.position.copy(W.cine.position); W.camera.quaternion.copy(W.cine.quaternion);
-      W.camera.fov = W.cine.fov; W.camera.updateProjectionMatrix();
+      // cámara de portada: al costado y un poco adelante del secuestrador, con la bala entrando
+      const bc = UD.G.bc, d = bc.dir.clone().setY(0).normalize(), side = new THREE.Vector3(-d.z, 0, d.x);
+      const head = UD.G.enemy.headWorld(new THREE.Vector3());
+      W.camera.position.copy(head).addScaledVector(side, 2.4).addScaledVector(d, -1.6).add(new THREE.Vector3(0, -0.25, 0));
+      W.camera.lookAt(head.clone().addScaledVector(d, -0.9).add(new THREE.Vector3(0, -0.1, 0)));
+      W.camera.fov = 40; W.camera.updateProjectionMatrix();
+      if (POST.on) { POST.mats.final.uniforms.speed.value = 0; POST.mats.final.uniforms.ca.value = 0; }
       UD.G.rifleHolder.visible = false; UD.G.mode = 'paused';
     });
     await onlyCanvas(page, 'canvas');
