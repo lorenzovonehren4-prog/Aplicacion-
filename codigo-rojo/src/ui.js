@@ -132,7 +132,8 @@ function renderOptions() {
     <div class="opt"><span>Voz de la central</span>${seg('voz', [[true, 'Sí'], [false, 'No']])}</div>
     <div class="opt"><span>Cámara</span>${seg('cam', [['afuera', 'Atrás'], ['cabina', 'Cabina']])}</div>
     <div class="opt"><span>Dirección</span>${seg('sens', [[0.75, 'Suave'], [1, 'Normal'], [1.35, 'Rápida']])}</div>
-    <div class="opt"><span>Gráficos</span>${seg('quality', [['alta', 'Altos'], ['baja', 'Bajos']])}</div>
+    <div class="opt"><span>Gráficos</span>${seg('graficos', [['auto', 'Auto'], ['alta', 'Altos'], ['media', 'Medios'], ['baja', 'Bajos']])}</div>
+    <p class="hint">${o.graficos === 'auto' ? `Auto: ahora en ${GFX[gfxLevel()].name}. Si el juego va lento, baja solo.` : 'Altos: sombras grandes y efectos. Medios: más liviano. Bajos: para computadoras lentas.'}</p>
     <p class="hint">↑ acelerar · ↓ frenar y reversa · ← → girar · Espacio freno de mano · Shift nitro · C cámara · H bocina · R volver a la calle · P o Esc pausa. También W A S D.</p>
     <button class="btn" id="reset">Borrar progreso</button>`;
   if (o.voz === undefined) o.voz = true;
@@ -217,7 +218,11 @@ document.addEventListener('click', e => {
     const k = o.dataset.opt, raw = o.dataset.val;
     save.opt[k] = raw === 'true' ? true : raw === 'false' ? false : isNaN(+raw) ? raw : +raw;
     persist(); SFX.setVol(); SFX.click();
-    if (k === 'quality') applyQuality();
+    if (k === 'graficos') {
+      // se sigue guardando quality ('alta' o 'baja') como antes
+      save.opt.quality = save.opt.graficos === 'baja' || (save.opt.graficos === 'auto' && save.opt.autoNivel === 'baja') ? 'baja' : 'alta';
+      W.autoScale = 1; AUTO.dropped = false; persist(); applyQuality();
+    }
     if (k === 'cam') G.cam = save.opt.cam;
     renderOptions(); $(`[data-opt=${k}][data-val="${raw}"]`)?.focus();
   }
@@ -284,13 +289,46 @@ for (const b of $$('#touch button')) {
 function leaveIntro() { if (screen !== 'intro') return; SFX.init(); SFX.ok(); goMenu('menu'); }
 $('#intro').addEventListener('pointerdown', leaveIntro);
 
+// ---------- gráficos automáticos ----------
+// Con Gráficos en Auto se miden los cuadros por segundo mientras se ve el barrio (5 s al empezar,
+// después cada 10 s). Si va a menos de 45, baja un nivel (Altos → Medios → Bajos y, al final, menos
+// resolución) y avisa. Si va sobrado (58 o más) dos veces seguidas y no bajó en esta sesión, prueba
+// un nivel más arriba una sola vez. El nivel queda guardado en save.opt.autoNivel. Los cuadros de
+// más de medio segundo (pestaña escondida, una pausa larga) no cuentan.
+const AUTO = { t: 0, n: 0, wait: 3, win: 5, good: 0, raised: false, dropped: false };
+function setAutoLevel(lv) {
+  save.opt.autoNivel = lv; save.opt.quality = lv === 'baja' ? 'baja' : 'alta';
+  persist(); applyQuality();
+}
+function autoGfx(raw) {
+  if (save.opt.graficos !== 'auto' || document.hidden) return;
+  const busy = G.mode === 'play' || (G.mode === 'menu' && !G.garage && G.thief);
+  if (!busy || raw > 0.5) { AUTO.t = AUTO.n = 0; AUTO.wait = Math.max(AUTO.wait, 1); return; }
+  if (AUTO.wait > 0) { AUTO.wait -= raw; return; }               // al empezar se compilan cosas: no cuenta
+  AUTO.t += raw; AUTO.n++;
+  if (AUTO.t < AUTO.win) return;
+  const fps = AUTO.n / AUTO.t, lv = gfxLevel(), i = GFX_ORDER.indexOf(lv);
+  AUTO.t = AUTO.n = 0; AUTO.win = 10;
+  if (fps < 45) {
+    if (lv !== 'baja') setAutoLevel(GFX_ORDER[i + 1]);
+    else if ((W.autoScale || 1) > 0.75) { W.autoScale = 0.75; applyQuality(); }
+    else return;
+    AUTO.dropped = true; AUTO.wait = 2;
+    toast('Gráficos ajustados para que vaya fluido');
+  } else if ((AUTO.good = fps >= 58 ? AUTO.good + 1 : 0) >= 2 && !AUTO.dropped && !AUTO.raised && i > 0) {
+    AUTO.raised = true; AUTO.wait = 2;
+    setAutoLevel(GFX_ORDER[i - 1]);
+  }
+}
+
 // ---------- bucle ----------
 const _cam = new THREE.Vector3();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - (G.last || now)) / 1000);
+  const raw = (now - (G.last || now)) / 1000, dt = Math.min(0.05, raw);
   G.last = now; G.t += dt;
   step(dt);
+  autoGfx(raw);
 }
 function step(dt) {
   if (G.mode === 'menu') { if (!G.garage && G.thief) attractStep(dt); }
@@ -352,6 +390,11 @@ function boot2() {
   G.mode = 'menu';
   startAttract();
   showScreen('intro');
+  // en una computadora sin tarjeta de video (dibujo por software) Auto empieza en Bajos
+  // (salvo en las pruebas automáticas, que también dibujan por software y miden Altos)
+  const dbg = W.renderer.getContext().getExtension('WEBGL_debug_renderer_info');
+  const gpu = dbg ? String(W.renderer.getContext().getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
+  if (save.opt.graficos === 'auto' && /swiftshader|llvmpipe|software/i.test(gpu) && !navigator.webdriver) setAutoLevel('baja');
   document.body.classList.add('ready');
   requestAnimationFrame(frame);
 }

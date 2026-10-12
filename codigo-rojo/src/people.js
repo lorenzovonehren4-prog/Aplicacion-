@@ -141,7 +141,7 @@ class Person {
       const m = new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: r, metalness: 0, map }, extra));
       this.mats.push(m); return m;
     };
-    const skinC = o.skin || pick(SKINS);
+    const skinC = this.skinColor = o.skin || pick(SKINS);
     const skin = M(skinC, 0.62);
     const enemy = kind === 'enemy';
     // ropa
@@ -278,26 +278,42 @@ class Person {
     this.fall = null;
     this.blend = null; // pose anterior para suavizar los cambios de estado
   }
-  // Junta las piezas de cada articulación en una malla con color por vértice (de ~45 a ~16
-  // llamadas de dibujo por persona). La cabeza con la cara queda aparte por su textura.
+  // Junta todas las piezas en una sola malla con huesos (SkinnedMesh) y color por vértice: cada
+  // pieza queda pegada a su articulación como un hueso rígido, así que se anima igual que antes
+  // pero la persona es 2 llamadas de dibujo (cuerpo y cabeza con la cara) en vez de ~17. Adentro
+  // va una copia lisa de la cabeza, un poco más chica: de lejos (setLod) se esconde la cabeza con
+  // la cara y queda 1 llamada. Las piezas nuevas que se peguen a una articulación (this.j.*) antes
+  // de liteMerge entran solas.
   liteMerge() {
-    const groups = new Set(this.meshes.map(m => m.parent));
     PERSON_LITE_MAT = PERSON_LITE_MAT || new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
-    const keep = [];
-    for (const gp of groups) {
-      const ms = gp.children.filter(c => c.isMesh && c !== this.headMesh && this.meshes.includes(c));
-      if (ms.length < 2) { keep.push(...ms); continue; }
-      const parts = ms.map(m => { m.updateMatrix(); return { geo: m.geometry, m: m.matrix.clone(), c: m.material.color.getHex() }; });
-      const merged = new THREE.Mesh(mergeGeos(parts), PERSON_LITE_MAT);
-      merged.castShadow = true; merged.userData.person = this; merged.userData.part = ms[0].userData.part;
-      for (const m of ms) gp.remove(m);
-      gp.add(merged); keep.push(merged);
-      if (ms.includes(this.torso)) this.torso = merged;
-    }
-    keep.push(this.headMesh);
-    this.meshes = keep;
+    const ms = this.meshes.filter(m => m !== this.headMesh), bones = [], parts = [], bone = [];
+    const cnt = g => (g.index ? g.index.count : g.attributes.position.count);
+    const put = (m, geo, mtx, color) => {
+      let b = bones.indexOf(m.parent);
+      if (b < 0) { b = bones.length; bones.push(m.parent); }
+      parts.push({ geo, m: mtx, c: color }); bone.push([b, cnt(geo)]);
+    };
+    for (const m of ms) { m.updateMatrix(); put(m, m.geometry, m.matrix.clone(), m.material.color.getHex()); }
+    const h = this.headMesh; h.updateMatrix(); h.castShadow = false;   // la sombra la da la copia
+    put(h, h.geometry, h.matrix.clone().multiply(new THREE.Matrix4().makeScale(0.96, 0.96, 0.96)), this.skinColor);
+    const geo = mergeGeos(parts), n = geo.attributes.position.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+    let o = 0;
+    for (const [b, c] of bone) for (let k = 0; k < c; k++, o++) { si[o * 4] = b; sw[o * 4] = 1; }
+    geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+    geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+    for (const m of ms) m.parent.remove(m);
+    const skin = new THREE.SkinnedMesh(geo, PERSON_LITE_MAT);
+    skin.bind(new THREE.Skeleton(bones, bones.map(() => new THREE.Matrix4())), new THREE.Matrix4());
+    skin.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.9, 0), 1.2);
+    skin.castShadow = true; skin.userData.person = this; skin.userData.part = 'body';
+    this.root.add(skin);
+    this.skin = skin;
+    this.torso = this.j.spine;
+    this.meshes = [skin, this.headMesh];
     this.hat = null;
   }
+  // De lejos sin la cabeza con la cara (queda la copia lisa de adentro).
+  setLod(far) { this.headMesh.visible = !far; }
   get pos() { return this.root.position; }
   set heading(h) { this.root.rotation.y = h; }
   get heading() { return this.root.rotation.y; }

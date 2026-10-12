@@ -3,7 +3,7 @@
 // casas, tiendas, parque, grifo, colegio, canal con puentes, cerro con túnel, rampas,
 // semáforos, postes, árboles, paredes rojas del borde, bolsas, guarida y efectos.
 
-const W = { anim: [], t: 0 };
+const W = { anim: [], t: 0, lodHooks: [] };
 
 function canvasTex(w, h, draw, repeat) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -53,6 +53,137 @@ function mergeGeos(parts) {
 const M4 = () => new THREE.Matrix4();
 const boxAt = (w, h, d, x, y, z, ry = 0) => ({ geo: new THREE.BoxGeometry(w, h, d), m: M4().makeRotationY(ry).setPosition(x, y, z) });
 
+// ---------- sólo para la sombra ----------
+// Copias livianas que sólo se dibujan en el pase de sombras: están ocultas y se muestran
+// mientras el renderer arma el mapa de sombras (hookShadowPass). userData.shadowOn = false las
+// deja fuera también de ese pase.
+const SHADOW_ONLY = new Set();
+function shadowOnly(o) { o.visible = false; o.castShadow = true; o.receiveShadow = false; SHADOW_ONLY.add(o); return o; }
+function hookShadowPass(r) {
+  const sm = r.shadowMap, render = sm.render;
+  sm.render = function (lights, scene, camera) {
+    for (const o of SHADOW_ONLY) o.visible = o.userData.shadowOn !== false;
+    try { render.call(this, lights, scene, camera); } finally { for (const o of SHADOW_ONLY) o.visible = false; }
+  };
+}
+
+// ---------- sombras por sector ----------
+// Lo fijo del barrio se dibuja con pocas mallas grandes (pocas llamadas de dibujo), pero esas
+// mallas no proyectan sombra: para el mapa de sombras hay una copia partida en sectores de 90 m
+// (una manzana), sólo con posiciones (shadowOnly). Así el pase de sombras sólo dibuja los
+// sectores cerca del jugador, con una llamada por sector.
+// Para que algo nuevo y fijo proyecte sombra: shadowCast(geo[, matriz]).
+const SECTOR = 90;
+const SHADOW = { tris: new Map(), meshes: [] };
+const sectorKey = (x, z) => Math.floor((x + 270) / SECTOR) * 100 + Math.floor((z + 270) / SECTOR);
+function shadowCast(geo, mtx) {
+  const g = geo.index ? geo.toNonIndexed() : geo, p = g.attributes.position, v = new THREE.Vector3(), t = new Array(9);
+  for (let i = 0; i + 2 < p.count; i += 3) {
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (let k = 0; k < 3; k++) {
+      v.fromBufferAttribute(p, i + k); if (mtx) v.applyMatrix4(mtx);
+      t[k * 3] = v.x; t[k * 3 + 1] = v.y; t[k * 3 + 2] = v.z;
+      x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); z0 = Math.min(z0, v.z); z1 = Math.max(z1, v.z);
+    }
+    // los triángulos enormes (muros del canal) van aparte para no agrandar un sector
+    const key = x1 - x0 > SECTOR || z1 - z0 > SECTOR ? 'grande' : sectorKey((x0 + x1) / 2, (z0 + z1) / 2);
+    let arr = SHADOW.tris.get(key);
+    if (!arr) SHADOW.tris.set(key, arr = []);
+    for (let k = 0; k < 9; k++) arr.push(t[k]);
+  }
+}
+function buildShadowSectors(G) {
+  const mat = new THREE.MeshBasicMaterial();
+  for (const [key, arr] of SHADOW.tris) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+    const m = shadowOnly(new THREE.Mesh(geo, mat));
+    m.matrixAutoUpdate = false; m.userData.sector = key;
+    G.add(m); SHADOW.meshes.push(m);
+  }
+  SHADOW.tris.clear();
+}
+
+// ---------- objetos repetidos con nivel de detalle ----------
+// Carros estacionados, árboles, arbustos y buzones. Cada nivel de detalle es un InstancedMesh y en
+// cada cuadro (updateLods) las instancias se reparten según la distancia a la cámara: cerca el
+// modelo completo, más lejos uno liviano y, pasado el último nivel, nada. Las que quedan fuera de
+// la vista se descartan una por una. La sombra va aparte: un InstancedMesh sólo para la sombra
+// (shadowOnly) con un modelo liviano y sólo las instancias que caen en el recorte de la sombra.
+// items: [{ x, y, z, m: Matrix4, c?: Color, s?: escala del radio }]
+// levels: [{ geo, mat, far }]; opts: { shadow: geo para la sombra }
+const LODS = [];
+function lodSet(G, items, levels, opts = {}) {
+  const n = items.length;
+  if (!n) return null;
+  const set = { items, n, mats: new Float32Array(n * 16), cols: items[0].c ? new Float32Array(n * 3) : null, levels: [] };
+  items.forEach((it, i) => { it.m.toArray(set.mats, i * 16); if (set.cols) it.c.toArray(set.cols, i * 3); it.s = it.s || 1; });
+  const mk = (geo, mat, far) => {
+    const mesh = new THREE.InstancedMesh(geo, mat, n);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    if (set.cols) { mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3); mesh.instanceColor.setUsage(THREE.DynamicDrawUsage); }
+    mesh.frustumCulled = false; mesh.receiveShadow = true;
+    mesh.count = 0; mesh.visible = false;
+    G.add(mesh);
+    geo.computeBoundingSphere();
+    const bs = geo.boundingSphere;
+    return { mesh, far2: far * far, r: bs.radius + bs.center.length(), cy: bs.center.y, idx: new Int32Array(n), cnt: 0 };
+  };
+  for (const L of levels) set.levels.push(mk(L.geo, L.mat, L.far));
+  if (opts.shadow) {
+    set.shadow = mk(opts.shadow, levels[0].mat, Infinity);
+    shadowOnly(set.shadow.mesh).userData.shadowOn = false; set.shadow.only = true;
+  }
+  LODS.push(set);
+  return set;
+}
+const _frus = new THREE.Frustum(), _pv = new THREE.Matrix4(), _sph = new THREE.Sphere(), _lc = new THREE.Vector3();
+function lodFill(set, L) {
+  if (!L.changed && L.cnt === L.prev) return;
+  const mesh = L.mesh, ma = mesh.instanceMatrix.array, ca = mesh.instanceColor && mesh.instanceColor.array;
+  for (let j = 0; j < L.cnt; j++) {
+    const i = L.idx[j];
+    for (let e = 0; e < 16; e++) ma[j * 16 + e] = set.mats[i * 16 + e];
+    if (ca) { ca[j * 3] = set.cols[i * 3]; ca[j * 3 + 1] = set.cols[i * 3 + 1]; ca[j * 3 + 2] = set.cols[i * 3 + 2]; }
+  }
+  mesh.count = L.cnt;
+  if (L.only) mesh.userData.shadowOn = L.cnt > 0; else mesh.visible = L.cnt > 0;
+  mesh.instanceMatrix.needsUpdate = true;
+  if (ca) mesh.instanceColor.needsUpdate = true;
+}
+function updateLods(cam) {
+  cam.updateWorldMatrix(true, false);
+  _pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); _frus.setFromProjectionMatrix(_pv);
+  _lc.setFromMatrixPosition(cam.matrixWorld);
+  const cx = _lc.x, cz = _lc.z, sun = W.sun, sh = W.renderer.shadowMap.enabled && sun.castShadow;
+  let sf = null;
+  if (sh) { sun.updateMatrixWorld(); sun.target.updateMatrixWorld(); sun.shadow.updateMatrices(sun); sf = sun.shadow.getFrustum(); }
+  for (const f of W.lodHooks) f(_lc);
+  for (const set of LODS) {
+    const lv = set.levels, nl = lv.length, S = set.shadow;
+    for (const L of lv) { L.prev = L.cnt; L.cnt = 0; L.changed = false; }
+    if (S) { S.prev = S.cnt; S.cnt = 0; S.changed = false; }
+    for (let i = 0; i < set.n; i++) {
+      const it = set.items[i];
+      if (sf && S) {
+        _sph.center.set(it.x, it.y + S.cy * it.s, it.z); _sph.radius = S.r * it.s;
+        if (sf.intersectsSphere(_sph)) { if (S.idx[S.cnt] !== i) S.changed = true; S.idx[S.cnt++] = i; }
+      }
+      const dx = it.x - cx, dz = it.z - cz, d2 = dx * dx + dz * dz;
+      let k = 0;
+      while (k < nl && d2 > lv[k].far2) k++;
+      if (k === nl) continue;
+      const L = lv[k];
+      _sph.center.set(it.x, it.y + L.cy * it.s, it.z); _sph.radius = L.r * it.s;
+      if (!_frus.intersectsSphere(_sph)) continue;
+      if (L.idx[L.cnt] !== i) L.changed = true;
+      L.idx[L.cnt++] = i;
+    }
+    for (const L of lv) lodFill(set, L);
+    if (S) lodFill(set, S);
+  }
+}
+
 // ---------- hora del día ----------
 const TIMES = {
   dia: { name: 'Día', skyTop: 0x4a8fd9, skyBot: 0xd3e7f4, sun: 0xfff2dc, sunI: 2.6, sunDir: [0.5, 0.75, 0.3], hemiSky: 0xd8ecff, hemiGround: 0x6a6450, hemiI: 1.1, fog: 0xc6d6e3, near: 220, far: 1700, exp: 1.0, win: 0.0, lamps: 0 },
@@ -66,6 +197,7 @@ function initWorld(canvas) {
   r.toneMapping = THREE.ACESFilmicToneMapping;
   r.localClippingEnabled = true;
   W.renderer = r;
+  hookShadowPass(r);
   W.pmrem = new THREE.PMREMGenerator(r);
   W.envs = {};
   W.scene = new THREE.Scene();
@@ -91,21 +223,47 @@ function initWorld(canvas) {
   W.sunDir = new THREE.Vector3(0.5, 0.75, 0.3).normalize();
   W.scene.fog = new THREE.Fog(0xffffff, 100, 900);
   W.stars = makeStars(); W.scene.add(W.stars);
-  applyQuality();
-  initPost();
   buildCityData();
   buildCityMeshes();
   fxInit();
+  applyQuality();
 }
 
+// Niveles de gráficos (Opciones → Gráficos: Auto, Altos, Medios o Bajos). En save.opt.graficos va
+// lo que eligió el jugador y en save.opt.quality se sigue guardando 'alta' o 'baja' como antes.
+// Con Auto, save.opt.autoNivel es el nivel al que llegó (ver autoGfx en ui.js).
+// pr: tope de resolución (pixelRatio), peds: personas en la calle, smoke/fire: partículas.
+const GFX = {
+  alta: { name: 'Altos', pr: 1.5, shadows: true, shadowSize: 2048, post: true, msaa: 4, bloom: [2, 4, 8], fxaa: false, peds: 14, smoke: 120, fire: 90 },
+  media: { name: 'Medios', pr: 1, shadows: true, shadowSize: 1024, post: true, msaa: 0, bloom: [4, 8], fxaa: true, peds: 10, smoke: 80, fire: 60 },
+  baja: { name: 'Bajos', pr: 1, shadows: false, post: false, peds: 6, smoke: 50, fire: 40 },
+};
+const GFX_ORDER = ['alta', 'media', 'baja'];
+function gfxLevel() {
+  if (save.opt.quality === 'baja') return 'baja';
+  const g = save.opt.graficos;
+  return g === 'media' || (g === 'auto' && save.opt.autoNivel === 'media') ? 'media' : 'alta';
+}
 function applyQuality() {
-  const hi = save.opt.quality !== 'baja';
-  if (W.pmrem && hi !== POST.on) { POST.on = false; if (hi) { initPost(); if (W.time) setPostLook(POST_LOOK[W.time]); } }
-  W.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hi ? 1.5 : 1));
-  W.renderer.shadowMap.enabled = hi;
-  W.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  W.sun.castShadow = hi;
+  const id = gfxLevel(), Q = GFX[id], r = W.renderer, sh = W.sun.shadow;
+  W.gfx = id;
+  r.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.pr) * (W.autoScale || 1));
+  r.shadowMap.enabled = Q.shadows;
+  r.shadowMap.type = THREE.PCFSoftShadowMap;
+  W.sun.castShadow = Q.shadows;
+  if (Q.shadows && sh.mapSize.x !== Q.shadowSize) { sh.mapSize.set(Q.shadowSize, Q.shadowSize); if (sh.map) { sh.map.dispose(); sh.map = null; } }
+  setPostLevel(Q);
+  if (POST.on && W.time) setPostLook(POST_LOOK[W.time]);
+  PEDS.max = Q.peds; FX.max.smoke = Q.smoke; FX.max.fire = Q.fire;
   W.scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); });
+}
+// Compila de antemano los materiales de todo lo que hay en la escena (también lo escondido:
+// carros de lejos, humo, piezas), para que no haya tirones cuando algo aparece por primera vez.
+function warmUp() {
+  const r = W.renderer;
+  r.setRenderTarget(POST.on ? POST.rt : null);
+  r.compile(W.scene, W.camera);
+  r.setRenderTarget(null);
 }
 function resizeWorld() {
   const w = window.innerWidth, h = window.innerHeight;
@@ -165,6 +323,8 @@ function setTimeOfDay(id) {
   W.scene.environment = makeEnv(id);
   setPostLook(POST_LOOK[id]);
   W.tunnelLights.emissiveIntensity = 2.2;
+  if (FX.mat) FX.mat.uniforms.uLight.value = clamp(T.hemiI * 0.9, 0.3, 1);   // el humo no brilla de noche
+  CAR_LOD.glow.value = id === 'noche' ? 2.2 : id === 'tarde' ? 1.4 : 1;      // faros de los carros lejanos
 }
 
 function makeStars() {
@@ -304,6 +464,7 @@ function buildCityMeshes() {
   buildRamps(G);
   buildBorder(G);
   buildOutside(G);
+  buildShadowSectors(G);
 }
 
 function buildCanal(G) {
@@ -336,7 +497,7 @@ function buildCanal(G) {
     for (const sz of [-12, 12]) parts.push({ ...boxAt(1.4, 5, 1.4, gx, -2, sz), c: 0x9a9486 });
   }
   const m = new THREE.Mesh(mergeGeos(parts), new THREE.MeshLambertMaterial({ vertexColors: true }));
-  m.castShadow = true; m.receiveShadow = true; G.add(m);
+  m.receiveShadow = true; G.add(m); shadowCast(m.geometry);
 }
 
 function buildHill(G) {
@@ -508,7 +669,7 @@ function buildHouses(G) {
   const mg = new THREE.Mesh(worldUV(mergeGeos(gar), 1.2), new THREE.MeshLambertMaterial({ vertexColors: true, map: garageTex() }));
   const mc = new THREE.Mesh(mergeGeos(conc), new THREE.MeshLambertMaterial({ vertexColors: true }));
   const mh = new THREE.Mesh(mergeGeos(hedge), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
-  for (const m of [mw, mr, mt, mwh, mg, mh]) { m.castShadow = true; m.receiveShadow = true; }
+  for (const m of [mw, mr, mt, mwh, mg, mh]) { m.receiveShadow = true; shadowCast(m.geometry); }
   mc.receiveShadow = true;
   G.add(mw, mr, mwin, mt, mwh, mg, mc, mh);
   // piscinas
@@ -547,7 +708,7 @@ function buildSpecial(G) {
     }
   }
   const m = new THREE.Mesh(mergeGeos(parts), new THREE.MeshLambertMaterial({ vertexColors: true }));
-  m.castShadow = true; m.receiveShadow = true; G.add(m);
+  m.receiveShadow = true; G.add(m); shadowCast(m.geometry);
 }
 
 // Cancha con franjas de pasto y líneas pintadas.
@@ -563,14 +724,15 @@ function pitchTex() {
 }
 
 // Árboles: 3 tipos (frondoso, alto y pino), cada uno con tronco, ramas y copa de varias bolas
-// en tonos de verde; se dibujan con instancias (una llamada por tipo).
-function treeGeo(kind) {
+// en tonos de verde; se dibujan con instancias. lv: 0 completo, 1 liviano (de 80 m en adelante y
+// para la sombra), 2 muy liviano (de lejos).
+function treeGeo(kind, lv = 0) {
   const parts = [], bark = 0x5b4330;
   const R = (() => { let a = kind.length * 977; return () => { a = (a * 16807) % 2147483647; return a / 2147483647; }; })();
   const P = (geo, x, y, z, c, sx = 1, sy = 1, sz = 1, rx = 0, rz = 0) => parts.push({ geo, m: M4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, 0, rz)), new THREE.Vector3(sx, sy, sz)), c });
-  const leaf = new THREE.IcosahedronGeometry(1, 2), lp = leaf.attributes.position;
+  const leaf = new THREE.IcosahedronGeometry(1, 2 - lv), lp = leaf.attributes.position;
   for (let k = 0; k < lp.count; k++) { const f = 1 + (Math.sin(lp.getX(k) * 7.1) + Math.cos(lp.getZ(k) * 6.3) + Math.sin(lp.getY(k) * 5.7)) * 0.06; lp.setXYZ(k, lp.getX(k) * f, lp.getY(k) * f, lp.getZ(k) * f); }
-  const trunk = new THREE.CylinderGeometry(0.6, 1, 1, 8), cone = new THREE.ConeGeometry(1, 1, 10);
+  const trunk = new THREE.CylinderGeometry(0.6, 1, 1, [8, 6, 5][lv], 1, lv > 0), cone = new THREE.ConeGeometry(1, 1, [10, 8, 6][lv]);
   const greens = kind === 'pine' ? [0x2f5a2c, 0x35663a, 0x284f2a] : [0x3f7a2e, 0x4b8a34, 0x356b28, 0x5a9a3c, 0x447f30];
   if (kind === 'pine') {
     P(trunk, 0, 1, 0, bark, 0.2, 2, 0.2);
@@ -578,7 +740,7 @@ function treeGeo(kind) {
   } else {
     const th = kind === 'tall' ? 4 : 2.5;
     P(trunk, 0, th / 2, 0, bark, 0.17, th, 0.17);
-    for (let k = 0; k < 3; k++) { const a = k * 2.1 + R(); P(trunk, Math.cos(a) * 0.35, th - 0.2, Math.sin(a) * 0.35, bark, 0.06, 1.1, 0.06, Math.sin(a) * 0.7, -Math.cos(a) * 0.7); }
+    for (let k = 0; k < 3; k++) { const a = k * 2.1 + R(); if (lv < 2) P(trunk, Math.cos(a) * 0.35, th - 0.2, Math.sin(a) * 0.35, bark, 0.06, 1.1, 0.06, Math.sin(a) * 0.7, -Math.cos(a) * 0.7); }
     const n = kind === 'tall' ? 5 : 7;
     for (let k = 0; k < n; k++) {
       const a = k / n * Math.PI * 2 + R(), r = k === 0 ? 0 : 0.7 + R() * 0.5, sz = (k === 0 ? 1.6 : 1.05 + R() * 0.4) * (kind === 'tall' ? 0.8 : 1);
@@ -590,14 +752,12 @@ function treeGeo(kind) {
 function buildTrees(G) {
   const kinds = ['round', 'tall', 'pine'], mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true });
   const by = kinds.map(() => []);
-  CITY.trees.forEach((t, i) => by[Math.floor(Math.abs(Math.sin(t.x * 3.1 + t.z * 1.7)) * 2.999)].push(t));
-  const mtx = M4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3(), e = new THREE.Euler();
+  CITY.trees.forEach(t => by[Math.floor(Math.abs(Math.sin(t.x * 3.1 + t.z * 1.7)) * 2.999)].push(t));
+  const q = new THREE.Quaternion(), sc = new THREE.Vector3(), e = new THREE.Euler();
   kinds.forEach((k, ki) => {
-    if (!by[ki].length) return;
-    const mesh = new THREE.InstancedMesh(treeGeo(k), mat, by[ki].length);
-    by[ki].forEach((t, i) => { e.set(0, t.x * 13 % 6, 0); q.setFromEuler(e); mtx.compose(v.set(t.x, 0, t.z), q, sc.setScalar(t.s * 0.95)); mesh.setMatrixAt(i, mtx); });
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    G.add(mesh);
+    const items = by[ki].map(t => { e.set(0, t.x * 13 % 6, 0); q.setFromEuler(e); return { x: t.x, y: 0, z: t.z, s: t.s * 0.95, m: M4().compose(new THREE.Vector3(t.x, 0, t.z), q, sc.setScalar(t.s * 0.95)) }; });
+    const g1 = treeGeo(k, 1);
+    lodSet(G, items, [{ geo: treeGeo(k, 0), mat, far: 80 }, { geo: g1, mat, far: 230 }, { geo: treeGeo(k, 2), mat, far: 900 }], { shadow: g1 });
   });
 }
 
@@ -635,11 +795,11 @@ function buildStreetStuff(G) {
       const hx = px + (axis === 'x' ? 0 : 0), hz = pz;
       const fz = axis === 'z' ? cz : 0, fx = axis === 'x' ? cx : 0;   // hacia dónde mira
       poles.push({ ...boxAt(axis === 'x' ? 0.3 : 0.5, 1.5, axis === 'x' ? 0.5 : 0.3, hx, 3.6, hz), c: 0x15171a });
-      ['rojo', 'ambar', 'verde'].forEach((col, k) => CITY.lightHeads.push({ node: n, axis, col, x: hx + fx * 0.2, y: 4.1 - k * 0.45, z: hz + fz * 0.2 }));
+      ['rojo', 'ambar', 'verde'].forEach((col, k) => CITY.lightHeads.push({ node: n, axis, col, x: hx + fx * 0.15, y: 4.1 - k * 0.45, z: hz + fz * 0.15, ry: axis === 'z' ? (fz > 0 ? 0 : Math.PI) : (fx > 0 ? Math.PI / 2 : -Math.PI / 2) }));
     }
   }
   const pm = new THREE.Mesh(mergeGeos(poles), new THREE.MeshLambertMaterial({ vertexColors: true }));
-  pm.castShadow = true; G.add(pm);
+  G.add(pm); shadowCast(pm.geometry);
   W.lampMat = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffd890, emissiveIntensity: 0 });
   G.add(new THREE.Mesh(mergeGeos(heads), W.lampMat));
   // halo de luz bajo cada poste (de noche)
@@ -647,16 +807,20 @@ function buildStreetStuff(G) {
   const glowGeo = mergeGeos(lampPts.map(p => ({ geo: new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2), m: M4().setPosition(p.hx, 0.08, p.hz), c: 0xffffff })));
   W.lampGlow = new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }));
   G.add(W.lampGlow);
-  // focos de semáforo: una esfera por luz, el color cambia con el ciclo
-  const lg = new THREE.SphereGeometry(0.17, 10, 8);
+  // focos de semáforo: una lente abombada (8 lados) por luz; el color cambia con el ciclo
+  const lg = new THREE.LatheGeometry([new THREE.Vector2(0.17, 0), new THREE.Vector2(0.13, 0.06), new THREE.Vector2(0, 0.085)], 8).rotateX(Math.PI / 2);
   W.tl = new THREE.InstancedMesh(lg, new THREE.MeshBasicMaterial({ color: 0xffffff }), CITY.lightHeads.length);
-  const mtx = M4();
-  CITY.lightHeads.forEach((h, i) => { mtx.makeTranslation(h.x, h.y, h.z); W.tl.setMatrixAt(i, mtx); W.tl.setColorAt(i, new THREE.Color(0x111111)); });
+  const mtx = M4(), off = new THREE.Color(0x111111);
+  CITY.lightHeads.forEach((h, i) => { mtx.makeRotationY(h.ry).setPosition(h.x, h.y, h.z); W.tl.setMatrixAt(i, mtx); W.tl.setColorAt(i, off); });
   G.add(W.tl);
   W.tlColors = { rojo: new THREE.Color(0xff2a1a).multiplyScalar(2), ambar: new THREE.Color(0xffb020).multiplyScalar(2), verde: new THREE.Color(0x30ff6a).multiplyScalar(1.6), off: new THREE.Color(0x1a1a1a) };
 }
+// Los semáforos cambian en segundos enteros: basta con revisarlos 4 veces por segundo.
 function updateLights(t) {
   if (!W.tl) return;
+  const k = Math.floor(t * 4);
+  if (k === W.tlK) return;
+  W.tlK = k;
   CITY.lightHeads.forEach((h, i) => W.tl.setColorAt(i, lightState(h.node, h.axis, t) === h.col ? W.tlColors[h.col] : W.tlColors.off));
   W.tl.instanceColor.needsUpdate = true;
 }
@@ -670,8 +834,8 @@ function buildRamps(G) {
     // el eje x de la forma apunta a lo largo de la rampa
     const ang = r.ax === 'x' ? (r.sg > 0 ? 0 : Math.PI) : (r.sg > 0 ? -Math.PI / 2 : Math.PI / 2);
     m.rotation.y = ang; m.position.set(r.x, 0, r.z);
-    m.castShadow = true; m.receiveShadow = true;
-    G.add(m);
+    m.receiveShadow = true; m.updateMatrix();
+    G.add(m); shadowCast(geo, m.matrix);
   }
 }
 
@@ -790,8 +954,31 @@ function makeBag() {
   return g;
 }
 
-// ---------- efectos (chispas, humo, piezas) ----------
-const FX = { sp: [], smoke: [], debris: [], fire: [] };
+// ---------- efectos (chispas, humo, fuego, piezas) ----------
+// El humo y el fuego son cuadrados que miran a la cámara, todos en una sola malla instanciada
+// (1 llamada de dibujo, sin crear materiales). Cada partícula se mueve en la CPU y se copia a
+// atributos por instancia. Se mezclan con alfa premultiplicado: el humo tapa y el fuego suma luz,
+// en la misma pasada. Las piezas que saltan en los choques también van en un InstancedMesh.
+const FX = { sp: [], smoke: [], debris: [], fire: [], max: { smoke: 120, fire: 90 } };
+const FX_N = 240, DEBRIS_N = 80;
+function fxTex() {
+  // atlas de 2 cuadros: bocanada de humo (con volutas) y brillo redondo (fuego)
+  return canvasTex(256, 128, g => {
+    const r2 = rng(41);
+    for (let i = 0; i < 9; i++) {
+      const a = i / 9 * Math.PI * 2, d = i ? 18 + r2() * 14 : 0, x = 64 + Math.cos(a) * d, y = 64 + Math.sin(a) * d, r = i ? 22 + r2() * 12 : 34;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, 'rgba(255,255,255,0.55)'); gr.addColorStop(0.6, 'rgba(255,255,255,0.25)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    }
+    g.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(0,0,0,${r2() * 0.18})`; g.beginPath(); g.arc(20 + r2() * 88, 20 + r2() * 88, 2 + r2() * 6, 0, 7); g.fill(); }
+    g.globalCompositeOperation = 'source-over';
+    const gr = g.createRadialGradient(192, 64, 2, 192, 64, 62);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(128, 0, 128, 128);
+  });
+}
 function fxInit() {
   const n = 600, pos = new Float32Array(n * 3);
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setDrawRange(0, 0);
@@ -805,22 +992,68 @@ function fxInit() {
   FX.skid = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: 0x000000, vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, blending: THREE.MultiplyBlending, premultipliedAlpha: true }));
   FX.skid.frustumCulled = false; FX.skid.renderOrder = 2; FX.skidN = SK; FX.skidI = 0; FX.skidUsed = 0;
   W.scene.add(FX.skid);
-  FX.tex = canvasTex(64, 64, (g, w) => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 31); r.addColorStop(0, 'rgba(255,255,255,0.9)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, w); });
+  // humo y fuego
+  const pg = new THREE.InstancedBufferGeometry();
+  const q = new THREE.PlaneGeometry(1, 1);
+  pg.index = q.index; pg.setAttribute('position', q.attributes.position); pg.setAttribute('uv', q.attributes.uv);
+  FX.iPos = new THREE.InstancedBufferAttribute(new Float32Array(FX_N * 3), 3).setUsage(THREE.DynamicDrawUsage);
+  FX.iCol = new THREE.InstancedBufferAttribute(new Float32Array(FX_N * 4), 4).setUsage(THREE.DynamicDrawUsage);
+  FX.iMisc = new THREE.InstancedBufferAttribute(new Float32Array(FX_N * 3), 3).setUsage(THREE.DynamicDrawUsage);
+  pg.setAttribute('iPos', FX.iPos); pg.setAttribute('iCol', FX.iCol); pg.setAttribute('iMisc', FX.iMisc);
+  pg.instanceCount = 0;
+  FX.mat = new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null }, uLight: { value: 1 } }]),
+    vertexShader: `attribute vec3 iPos; attribute vec4 iCol; attribute vec3 iMisc;
+      varying vec2 vUv; varying vec4 vCol; varying float vAdd;
+      #include <fog_pars_vertex>
+      void main() {
+        vUv = vec2((uv.x + iMisc.z) * 0.5, uv.y); vCol = iCol; vAdd = iMisc.z;
+        vec4 mvPosition = modelViewMatrix * vec4(iPos, 1.0);
+        float c = cos(iMisc.y), s = sin(iMisc.y);
+        vec2 q = position.xy * iMisc.x;
+        mvPosition.xy += vec2(c * q.x - s * q.y, s * q.x + c * q.y);
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }`,
+    fragmentShader: `uniform sampler2D map; uniform float uLight;
+      varying vec2 vUv; varying vec4 vCol; varying float vAdd;
+      #include <fog_pars_fragment>
+      void main() {
+        float a = texture2D(map, vUv).a * vCol.a;
+        vec3 c = vCol.rgb * mix(uLight, 1.0, vAdd);
+        #ifdef USE_FOG
+          float f = smoothstep(fogNear, fogFar, vFogDepth);
+          c = mix(mix(c, fogColor, f), c * (1.0 - f), vAdd);
+        #endif
+        gl_FragColor = vec4(c * a, a * (1.0 - vAdd));
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+    fog: true, transparent: true, depthWrite: false,
+    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendEquation: THREE.AddEquation,
+  });
+  FX.mat.uniforms.map.value = FX.tex = fxTex();
+  FX.mesh = new THREE.Mesh(pg, FX.mat);
+  FX.mesh.frustumCulled = false; FX.mesh.renderOrder = 3;
+  W.scene.add(FX.mesh);
+  FX.list = [];
+  // piezas sueltas de los choques
+  FX.bits = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.3, 1.4), new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.35 }), DEBRIS_N);
+  FX.bits.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  FX.bits.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(DEBRIS_N * 3), 3);
+  FX.bits.frustumCulled = false; FX.bits.count = 0;
+  W.scene.add(FX.bits);
 }
 function fxClear() {
-  for (const p of FX.smoke.concat(FX.fire)) { W.scene.remove(p.m); p.m.material.dispose(); }
-  FX.fire = []; FX.skidUsed = 0; FX.skidI = 0; FX.skid.geometry.setDrawRange(0, 0);
-  for (const d of FX.debris) W.scene.remove(d.m);
-  FX.smoke = []; FX.debris = []; FX.sp = [];
+  FX.fire = []; FX.smoke = []; FX.debris = []; FX.sp = [];
+  FX.skidUsed = 0; FX.skidI = 0; FX.skid.geometry.setDrawRange(0, 0);
+  FX.mesh.geometry.instanceCount = 0; FX.bits.count = 0;
 }
 function fxSparks(x, y, z, n, spd = 6) { for (let i = 0; i < n && FX.sp.length < 600; i++) FX.sp.push({ x, y, z, vx: (Math.random() - 0.5) * spd, vy: Math.random() * spd * 0.6, vz: (Math.random() - 0.5) * spd, life: 0.25 + Math.random() * 0.45 }); }
 function fxSmoke(x, y, z, n, col = 0x666666, size = 1.4, life = 2) {
   for (let i = 0; i < n; i++) {
-    if (FX.smoke.length > 120) { const o = FX.smoke.shift(); W.scene.remove(o.m); o.m.material.dispose(); }
-    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.tex, color: col, transparent: true, opacity: 0.6, depthWrite: false }));
-    m.position.set(x + (Math.random() - 0.5) * 0.6, y, z + (Math.random() - 0.5) * 0.6); m.scale.setScalar(size * (0.6 + Math.random() * 0.5));
-    W.scene.add(m);
-    FX.smoke.push({ m, life, t: 0, vy: 0.5 + Math.random(), vx: (Math.random() - 0.5), vz: (Math.random() - 0.5), grow: size * 0.8 });
+    if (FX.smoke.length >= FX.max.smoke) FX.smoke.shift();
+    FX.smoke.push({ x: x + (Math.random() - 0.5) * 0.6, y, z: z + (Math.random() - 0.5) * 0.6, size: size * (0.6 + Math.random() * 0.5), life, t: 0, vy: 0.5 + Math.random(), vx: (Math.random() - 0.5), vz: (Math.random() - 0.5), grow: size * 0.8, rot: Math.random() * 6.28, spin: (Math.random() - 0.5) * 0.8, col: new THREE.Color(col) });
   }
 }
 // Un tramo de marca de llanta de a hasta b (ancho w), oscuridad k (0..1).
@@ -838,41 +1071,75 @@ function fxSkid(ax, az, bx, bz, w, k) {
   P.needsUpdate = true; C.needsUpdate = true;
 }
 // Fuego: llamas cortas y brillantes que suben (motor destrozado, nitro).
+const FIRE_HOT = new THREE.Color(0xffb040), FIRE_END = new THREE.Color(0xff4a10);
 function fxFire(x, y, z, n, size = 0.9, col = 0xff7a20) {
   for (let i = 0; i < n; i++) {
-    if (FX.fire.length > 90) { const o = FX.fire.shift(); W.scene.remove(o.m); o.m.material.dispose(); }
-    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.tex, color: col, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
-    m.position.set(x + (Math.random() - 0.5) * 0.4, y, z + (Math.random() - 0.5) * 0.4); m.scale.setScalar(size * (0.6 + Math.random() * 0.6));
-    W.scene.add(m);
-    FX.fire.push({ m, life: 0.35 + Math.random() * 0.3, t: 0, vy: 1.5 + Math.random() * 1.5, size });
+    if (FX.fire.length >= FX.max.fire) FX.fire.shift();
+    FX.fire.push({ x: x + (Math.random() - 0.5) * 0.4, y, z: z + (Math.random() - 0.5) * 0.4, s0: size * (0.6 + Math.random() * 0.6), life: 0.35 + Math.random() * 0.3, t: 0, vy: 1.5 + Math.random() * 1.5, rot: Math.random() * 6.28, blue: col !== 0xff7a20 ? new THREE.Color(col) : null });
   }
 }
+const GLASS_C = new THREE.Color(0xbfe3ff);
 function fxBits(x, y, z, n, color, spd = 6) {
-  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+  const c = new THREE.Color(color);
   for (let i = 0; i < n; i++) {
     const s = 0.1 + Math.random() * 0.25;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(s, s * 0.3, s * 1.4), i % 3 ? mat : new THREE.MeshStandardMaterial({ color: 0xbfe3ff, transparent: true, opacity: 0.7 }));
-    m.position.set(x, y, z); W.scene.add(m);
-    FX.debris.push({ m, vx: (Math.random() - 0.5) * spd, vy: 2 + Math.random() * spd * 0.5, vz: (Math.random() - 0.5) * spd, ax: Math.random() * 10, t: 0 });
+    FX.debris.push({ x, y, z, s, col: i % 3 ? c : GLASS_C, vx: (Math.random() - 0.5) * spd, vy: 2 + Math.random() * spd * 0.5, vz: (Math.random() - 0.5) * spd, ax: Math.random() * 10, rx: 0, ry: 0, t: 0 });
   }
-  while (FX.debris.length > 80) W.scene.remove(FX.debris.shift().m);
+  while (FX.debris.length > DEBRIS_N) FX.debris.shift();
 }
+const _fxM = new THREE.Matrix4(), _fxQ = new THREE.Quaternion(), _fxE = new THREE.Euler(), _fxV = new THREE.Vector3(), _fxS = new THREE.Vector3(), _fxC = new THREE.Color();
 function fxUpdate(dt) {
   const pos = FX.sparks.geometry.attributes.position.array;
   FX.sp = FX.sp.filter(p => (p.life -= dt) > 0);
   FX.sp.forEach((p, i) => { p.vy -= 9.8 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z; });
   FX.sparks.geometry.setDrawRange(0, FX.sp.length); FX.sparks.geometry.attributes.position.needsUpdate = true;
-  for (const p of FX.smoke) { p.t += dt; p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt; p.m.scale.addScalar(p.grow * dt); p.m.material.opacity = Math.max(0, 0.6 * (1 - p.t / p.life)); }
-  FX.smoke = FX.smoke.filter(p => { if (p.t < p.life) return true; W.scene.remove(p.m); p.m.material.dispose(); return false; });
-  for (const p of FX.fire) { p.t += dt; p.m.position.y += p.vy * dt; const k = p.t / p.life; p.m.scale.setScalar(p.size * (1 - k * 0.6)); p.m.material.opacity = 0.9 * (1 - k); p.m.material.color.setHex(k < 0.4 ? 0xffb040 : 0xff4a10); }
-  FX.fire = FX.fire.filter(p => { if (p.t < p.life) return true; W.scene.remove(p.m); p.m.material.dispose(); return false; });
+  for (const p of FX.smoke) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.size += p.grow * dt; p.rot += p.spin * dt; }
+  FX.smoke = FX.smoke.filter(p => p.t < p.life);
+  for (const p of FX.fire) { p.t += dt; p.y += p.vy * dt; }
+  FX.fire = FX.fire.filter(p => p.t < p.life);
   for (const d of FX.debris) {
     d.t += dt;
     if (d.rest) continue;
-    d.vy -= 9.8 * dt; d.m.position.x += d.vx * dt; d.m.position.y += d.vy * dt; d.m.position.z += d.vz * dt; d.m.rotation.x += d.ax * dt; d.m.rotation.y += d.ax * 0.7 * dt;
-    const gy = groundH(d.m.position.x, d.m.position.z) + 0.05;
-    if (d.m.position.y < gy) { d.m.position.y = gy; d.vy = Math.abs(d.vy) * 0.3; d.vx *= 0.5; d.vz *= 0.5; d.ax *= 0.5; if (Math.abs(d.vy) < 0.5) d.rest = true; }
+    d.vy -= 9.8 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.z += d.vz * dt; d.rx += d.ax * dt; d.ry += d.ax * 0.7 * dt;
+    const gy = groundH(d.x, d.z) + 0.05;
+    if (d.y < gy) { d.y = gy; d.vy = Math.abs(d.vy) * 0.3; d.vx *= 0.5; d.vz *= 0.5; d.ax *= 0.5; if (Math.abs(d.vy) < 0.5) d.rest = true; }
   }
+  fxWrite();
+}
+// Copia las partículas vivas a los atributos (del fondo hacia la cámara, para que el humo tape bien).
+function fxWrite() {
+  const L = FX.list; L.length = 0;
+  for (const p of FX.smoke) L.push(p);
+  for (const p of FX.fire) L.push(p);
+  const cam = W.camera.matrixWorld.elements, cx = cam[12], cy = cam[13], cz = cam[14];
+  for (const p of L) p.d = (p.x - cx) ** 2 + (p.y - cy) ** 2 + (p.z - cz) ** 2;
+  L.sort((a, b) => b.d - a.d);
+  const P = FX.iPos.array, C = FX.iCol.array, M = FX.iMisc.array, n = Math.min(L.length, FX_N);
+  for (let i = 0; i < n; i++) {
+    const p = L[i];
+    P[i * 3] = p.x; P[i * 3 + 1] = p.y; P[i * 3 + 2] = p.z;
+    if (p.s0 !== undefined) {
+      // fuego: amarillo al nacer, naranja al apagarse; se achica
+      const k = p.t / p.life;
+      _fxC.copy(p.blue || (k < 0.4 ? FIRE_HOT : FIRE_END)).multiplyScalar(2.2);
+      C[i * 4] = _fxC.r; C[i * 4 + 1] = _fxC.g; C[i * 4 + 2] = _fxC.b; C[i * 4 + 3] = 0.9 * (1 - k);
+      M[i * 3] = p.s0 * (1 - k * 0.6); M[i * 3 + 1] = p.rot; M[i * 3 + 2] = 1;
+    } else {
+      C[i * 4] = p.col.r; C[i * 4 + 1] = p.col.g; C[i * 4 + 2] = p.col.b; C[i * 4 + 3] = Math.max(0, 0.6 * (1 - p.t / p.life)) * Math.min(1, p.t * 8);
+      M[i * 3] = p.size * 1.25; M[i * 3 + 1] = p.rot; M[i * 3 + 2] = 0;
+    }
+  }
+  FX.mesh.geometry.instanceCount = n;
+  FX.iPos.needsUpdate = FX.iCol.needsUpdate = FX.iMisc.needsUpdate = true;
+  // piezas
+  const B = FX.bits;
+  FX.debris.forEach((d, i) => {
+    _fxE.set(d.rx, d.ry, 0); _fxQ.setFromEuler(_fxE);
+    B.setMatrixAt(i, _fxM.compose(_fxV.set(d.x, d.y, d.z), _fxQ, _fxS.setScalar(d.s)));
+    B.setColorAt(i, d.col);
+  });
+  B.count = FX.debris.length;
+  if (B.count) { B.instanceMatrix.needsUpdate = true; B.instanceColor.needsUpdate = true; }
 }
 
 function updateWorld(t, dt) {
@@ -909,30 +1176,28 @@ function buildProps(G) {
   const colors = [0xd8d8d8, 0x2a2a2e, 0xb83228, 0x2f5fb0, 0xe2c23a, 0x3c7a4a, 0x8a8f96, 0xf4f4f4, 0x6a3a8a, 0x8a2a20, 0x1f3f6a];
   const byType = {};
   for (const sp of spots) { const t = types[Math.floor(r() * types.length)]; (byType[t] = byType[t] || []).push(sp); }
-  const mtx = M4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
+  // cada tipo con dos niveles (liviano cerca, muy liviano lejos) y la sombra con el muy liviano
+  const q = new THREE.Quaternion(), e = new THREE.Euler(), one = new THREE.Vector3(1, 1, 1), mat = carLodMat();
   for (const t in byType) {
-    const B = BODY[t], cg = carGeo(t, true), parts = [{ geo: cg.lower, c: 0xffffff }, { geo: cg.cabin, c: 0xffffff }, { geo: cg.glass, c: 0x0d151d }, { geo: cg.trim, c: null }, { geo: cg.head, c: 0xf0f0e8 }, { geo: cg.tail, c: 0x8a1010 }];
-    for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) parts.push({ geo: cg.wheel, m: M4().makeRotationY(sx < 0 ? Math.PI : 0).setPosition(sx * (B.W / 2 - 0.14), B.r, sz * B.wb / 2), c: null });
-    const mesh = new THREE.InstancedMesh(mergeGeos(parts), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.45 }), byType[t].length);
-    byType[t].forEach((sp, i) => {
-      e.set(0, sp.h, 0); q.setFromEuler(e); mtx.compose(v.set(sp.x, 0, sp.z), q, one); mesh.setMatrixAt(i, mtx);
-      mesh.setColorAt(i, col.set(colors[Math.floor(r() * colors.length)]));
+    const B = BODY[t], xlo = carLodGeo(t, 2);
+    const items = byType[t].map(sp => {
+      e.set(0, sp.h, 0); q.setFromEuler(e);
+      const it = { x: sp.x, y: 0, z: sp.z, m: M4().compose(new THREE.Vector3(sp.x, 0, sp.z), q, one), c: new THREE.Color(colors[Math.floor(r() * colors.length)]) };
       const hl = B.L / 2, hw = B.W / 2 - 0.15;
       if (sp.ax === 'z') addSolid(sp.x - hw, sp.z - hl, sp.x + hw, sp.z + hl, 1.6, 'estacionado'); else addSolid(sp.x - hl, sp.z - hw, sp.x + hl, sp.z + hw, 1.6, 'estacionado');
+      return it;
     });
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    G.add(mesh);
+    lodSet(G, items, [{ geo: carLodGeo(t, 1), mat, far: 60 }, { geo: xlo, mat, far: 270 }], { shadow: xlo });
   }
   // buzones
   const mb = mergeGeos([{ ...boxAt(0.08, 1.1, 0.08, 0, 0.55, 0), c: 0x3a3f46 }, { geo: new THREE.CylinderGeometry(0.2, 0.2, 0.5, 12, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).translate(0, 1.15, 0), c: 0x2f5fb0 }, { ...boxAt(0.4, 0.2, 0.5, 0, 1.05, 0), c: 0x2f5fb0 }]);
-  const mbm = new THREE.InstancedMesh(mb, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.4 }), CITY.mailboxes.length);
-  CITY.mailboxes.forEach((p, i) => { e.set(0, p.r, 0); q.setFromEuler(e); mtx.compose(v.set(p.x, 0, p.z), q, one); mbm.setMatrixAt(i, mtx); });
-  G.add(mbm);
-  // arbustos
-  const bg = mergeGeos([{ geo: new THREE.IcosahedronGeometry(0.7, 1), c: 0x3f7a34 }, { geo: new THREE.IcosahedronGeometry(0.5, 1).translate(0.45, 0.1, 0.2), c: 0x4c8a3c }, { geo: new THREE.IcosahedronGeometry(0.45, 1).translate(-0.4, 0.05, -0.2), c: 0x568f3a }]);
-  const bm = new THREE.InstancedMesh(bg, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }), CITY.bushes.length);
-  CITY.bushes.forEach((b, i) => { mtx.compose(v.set(b.x, b.s * 0.45, b.z), q.identity(), new THREE.Vector3(b.s, b.s * 0.8, b.s)); bm.setMatrixAt(i, mtx); });
-  bm.castShadow = true; G.add(bm);
+  lodSet(G, CITY.mailboxes.map(p => { e.set(0, p.r, 0); q.setFromEuler(e); return { x: p.x, y: 0, z: p.z, m: M4().compose(new THREE.Vector3(p.x, 0, p.z), q, one) }; }),
+    [{ geo: mb, mat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.4 }), far: 150 }]);
+  // arbustos: bolas facetadas; de lejos y para la sombra, más simples
+  const bush = d => mergeGeos([{ geo: new THREE.IcosahedronGeometry(0.7, d), c: 0x3f7a34 }, { geo: new THREE.IcosahedronGeometry(0.5, d).translate(0.45, 0.1, 0.2), c: 0x4c8a3c }, { geo: new THREE.IcosahedronGeometry(0.45, d).translate(-0.4, 0.05, -0.2), c: 0x568f3a }]);
+  const bmat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }), b0 = bush(0);
+  lodSet(G, CITY.bushes.map(b => ({ x: b.x, y: b.s * 0.45, z: b.z, s: b.s, m: M4().compose(new THREE.Vector3(b.x, b.s * 0.45, b.z), q.identity(), new THREE.Vector3(b.s, b.s * 0.8, b.s)) })),
+    [{ geo: bush(1), mat: bmat, far: 55 }, { geo: b0, mat: bmat, far: 220 }], { shadow: b0 });
   // tachos de basura y grifos contra incendios en las esquinas
   const small = [];
   for (const n of CITY.nodes) {
@@ -963,7 +1228,7 @@ function buildProps(G) {
     }
   }
   const pm = new THREE.Mesh(mergeGeos(poles), new THREE.MeshLambertMaterial({ vertexColors: true }));
-  pm.castShadow = true; G.add(pm);
+  G.add(pm); shadowCast(pm.geometry);
   const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(wires, 3));
   G.add(new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0x1a1a1a })));
 }
@@ -977,14 +1242,16 @@ function buildClouds(G) {
       g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
     }
   });
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false, opacity: 0.9 });
+  // todas en una sola malla (1 llamada de dibujo): cuadros que miran al centro del barrio; están
+  // tan lejos que desde cualquier calle se ven casi de frente
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false, opacity: 0.9 });
   W.cloudMat = mat;
-  const grp = new THREE.Group(), r = rng(31);
+  const grp = new THREE.Group(), r = rng(31), parts = [];
   for (let i = 0; i < 26; i++) {
-    const a = r() * Math.PI * 2, d = 500 + r() * 1100, s = new THREE.Sprite(mat);
-    s.position.set(Math.cos(a) * d, 160 + r() * 160, Math.sin(a) * d); s.scale.set(380 + r() * 300, 140 + r() * 80, 1);
-    grp.add(s);
+    const a = r() * Math.PI * 2, d = 500 + r() * 1100, x = Math.cos(a) * d, z = Math.sin(a) * d, y = 160 + r() * 160;
+    parts.push({ geo: new THREE.PlaneGeometry(380 + r() * 300, 140 + r() * 80), m: M4().makeRotationY(Math.atan2(-x, -z)).setPosition(x, y, z), c: 0xffffff });
   }
+  grp.add(new THREE.Mesh(mergeGeos(parts), mat));
   W.clouds = grp; W.scene.add(grp);
   W.anim.push(t => { grp.rotation.y = t * 0.004; });
 }

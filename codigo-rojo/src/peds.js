@@ -3,7 +3,8 @@
 // de la cámara y se reciclan cuando quedan lejos. Si viene un carro hacia ellos, saltan a un
 // lado (nadie sale herido) y después vuelven a la vereda.
 
-const PEDS = { list: [], on: false, t: 0 };
+const PEDS = { list: [], on: false, t: 0, max: 14 };
+const PED_FACE = 35, PED_FAR = 95;     // más lejos que PED_FACE sin cara; más lejos que PED_FAR no se dibuja
 
 // rectángulo por el que se camina en una manzana (al medio de la vereda)
 function pedRect(ci, cj) {
@@ -21,10 +22,10 @@ function rectAt(r, s) {
 }
 const SIDE_DIR = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
+// Se arman 14 y se usan según los gráficos (PEDS.max: 14 en altos, 10 en medios y 6 en bajos).
 function initPeds() {
   PEDS.on = true;
-  const n = save.opt.quality === 'baja' ? 6 : 14;
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < 14; i++) {
     const p = new Person('civil', { lite: true });
     p.root.visible = false;
     W.scene.add(p.root);
@@ -54,8 +55,9 @@ function placePed(k, cx, cz) {
 function updatePeds(dt, cam) {
   if (!PEDS.on) return;
   const cars = G.all.map(a => a.body);
-  for (const k of PEDS.list) {
-    const p = k.p;
+  for (let i = 0; i < PEDS.list.length; i++) {
+    const k = PEDS.list[i], p = k.p;
+    if (i >= PEDS.max) { if (k.rect) { k.rect = null; p.root.visible = false; } continue; }
     if (!k.rect) { if (Math.random() < dt * 2) placePed(k, cam.x, cam.z); continue; }
     if (Math.hypot(p.pos.x - cam.x, p.pos.z - cam.z) > 140) { placePed(k, cam.x, cam.z); continue; }
     // ¿viene un carro?
@@ -99,3 +101,15 @@ function updatePeds(dt, cam) {
     p.update(dt);
   }
 }
+
+// Nivel de detalle según la distancia a la cámara (también con la partida en pausa).
+function updatePedLods(cp) {
+  if (!PEDS.on) return;
+  for (const k of PEDS.list) {
+    if (!k.rect) continue;
+    const d = Math.hypot(k.p.pos.x - cp.x, k.p.pos.z - cp.z);
+    k.p.root.visible = d < PED_FAR;
+    k.p.setLod(d > PED_FACE);
+  }
+}
+W.lodHooks.push(updatePedLods);

@@ -2,14 +2,26 @@
 // Código Rojo (copiado del Kartódromo): posprocesado propio (sin EffectComposer): la escena se dibuja en HDR a una textura,
 // se extraen las luces fuertes, se desenfocan en tres tamaños (bloom) y se juntan con
 // tone mapping ACES, un leve ajuste de color y viñeta.
+// Gráficos altos: MSAA 4x y bloom en 3 tamaños (1/2, 1/4 y 1/8). Medios: sin MSAA, con FXAA en la
+// pasada final y bloom en 2 tamaños más chicos (1/4 y 1/8). Bajos: sin posprocesado.
 
-const POST = { on: false, rt: null, levels: [], quad: null, qscene: null, qcam: null, mats: {}, bloom: 0.55, threshold: 0.9 };
+const POST = { on: false, rt: null, levels: [], quad: null, qscene: null, qcam: null, mats: {}, bloom: 0.55, threshold: 0.9, msaa: 4, divs: [2, 4, 8] };
 
 const POST_VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
 
-function initPost() {
-  POST.on = save.opt.quality === 'alta' && W.renderer.capabilities.isWebGL2;
+// Prende, apaga o ajusta el posprocesado según el nivel de gráficos (ver GFX en world.js).
+function setPostLevel(Q) {
+  POST.on = !!Q.post && W.renderer.capabilities.isWebGL2;
   if (!POST.on) return;
+  initPost();
+  POST.msaa = Q.msaa; POST.divs = Q.bloom;
+  const f = POST.mats.final, fx = Q.fxaa ? 1 : 0;
+  if ((f.defines.FXAA || 0) !== fx) { if (fx) f.defines.FXAA = 1; else delete f.defines.FXAA; f.needsUpdate = true; }
+  f.uniforms.bloomW.value.set(...(Q.bloom.length > 2 ? [0.6, 0.8, 1.0] : [1.0, 1.4, 0.0]));
+  resizePost();
+}
+function initPost() {
+  if (POST.mats.final) return;
   POST.qscene = new THREE.Scene();
   POST.qcam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   POST.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
@@ -38,7 +50,26 @@ function initPost() {
   POST.mats.final = sm(`
     uniform sampler2D tScene; uniform sampler2D tB1; uniform sampler2D tB2; uniform sampler2D tB3;
     uniform float bloom; uniform float exposure; uniform float vignette; uniform float sat; uniform vec3 tint; uniform float speed;
+    uniform vec3 bloomW; uniform vec2 px;
     varying vec2 vUv;
+    #ifdef FXAA
+    // FXAA (versión corta de Timothy Lottes): suaviza los bordes cuando no hay MSAA
+    float lumaOf(vec3 c) { float l = dot(c, vec3(0.299, 0.587, 0.114)); return l / (1.0 + l); }
+    vec3 fxaa(vec2 uv) {
+      vec3 nw = texture2D(tScene, uv + vec2(-1.0, -1.0) * px).rgb, ne = texture2D(tScene, uv + vec2(1.0, -1.0) * px).rgb;
+      vec3 sw = texture2D(tScene, uv + vec2(-1.0, 1.0) * px).rgb, se = texture2D(tScene, uv + vec2(1.0, 1.0) * px).rgb;
+      vec3 m = texture2D(tScene, uv).rgb;
+      float lNW = lumaOf(nw), lNE = lumaOf(ne), lSW = lumaOf(sw), lSE = lumaOf(se), lM = lumaOf(m);
+      float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE))), lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+      vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), (lNW + lSW) - (lNE + lSE));
+      float red = max((lNW + lNE + lSW + lSE) * 0.03125, 1.0 / 128.0);
+      dir = clamp(dir / (min(abs(dir.x), abs(dir.y)) + red), -8.0, 8.0) * px;
+      vec3 a = 0.5 * (texture2D(tScene, uv + dir * (1.0 / 3.0 - 0.5)).rgb + texture2D(tScene, uv + dir * (2.0 / 3.0 - 0.5)).rgb);
+      vec3 b = a * 0.5 + 0.25 * (texture2D(tScene, uv - dir * 0.5).rgb + texture2D(tScene, uv + dir * 0.5).rgb);
+      float lB = lumaOf(b);
+      return (lB < lMin || lB > lMax) ? a : b;
+    }
+    #endif
     vec3 RRTAndODTFit(vec3 v){ vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
     vec3 aces(vec3 color){
       const mat3 IN = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777));
@@ -55,8 +86,14 @@ function initPost() {
         float w = smoothstep(0.12, 0.5, length(dc));
         for (int i = 0; i < 8; i++) { float k = float(i) / 7.0; c += texture2D(tScene, vUv - dc * k * speed * w).rgb; }
         c /= 8.0;
-      } else c = texture2D(tScene, vUv).rgb;
-      vec3 b = texture2D(tB1, vUv).rgb * 0.6 + texture2D(tB2, vUv).rgb * 0.8 + texture2D(tB3, vUv).rgb * 1.0;
+      } else {
+        #ifdef FXAA
+        c = fxaa(vUv);
+        #else
+        c = texture2D(tScene, vUv).rgb;
+        #endif
+      }
+      vec3 b = texture2D(tB1, vUv).rgb * bloomW.x + texture2D(tB2, vUv).rgb * bloomW.y + texture2D(tB3, vUv).rgb * bloomW.z;
       c += b * bloom;
       c = aces(c * tint);
       float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -66,8 +103,8 @@ function initPost() {
     }`, {
     tScene: { value: null }, tB1: { value: null }, tB2: { value: null }, tB3: { value: null },
     bloom: { value: POST.bloom }, exposure: { value: 1 }, vignette: { value: 0.28 }, sat: { value: 1.08 }, tint: { value: new THREE.Vector3(1, 1, 1) }, speed: { value: 0 },
+    bloomW: { value: new THREE.Vector3(0.6, 0.8, 1.0) }, px: { value: new THREE.Vector2(1 / 1280, 1 / 720) },
   });
-  resizePost();
 }
 
 function resizePost() {
@@ -75,8 +112,9 @@ function resizePost() {
   const r = W.renderer, pr = r.getPixelRatio();
   const w = Math.max(2, Math.floor(window.innerWidth * pr)), h = Math.max(2, Math.floor(window.innerHeight * pr));
   if (POST.rt) { POST.rt.dispose(); POST.levels.forEach(l => { l.a.dispose(); l.b.dispose(); }); }
-  POST.rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4 });
-  POST.levels = [2, 4, 8].map(div => {
+  POST.rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: POST.msaa });
+  POST.mats.final.uniforms.px.value.set(1 / w, 1 / h);
+  POST.levels = POST.divs.map(div => {
     const lw = Math.max(1, Math.floor(w / div)), lh = Math.max(1, Math.floor(h / div));
     const o = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false };
     return { a: new THREE.WebGLRenderTarget(lw, lh, o), b: new THREE.WebGLRenderTarget(lw, lh, o), w: lw, h: lh };
@@ -99,6 +137,7 @@ function setPostLook(look) {
 
 function renderFrame(scene, camera) {
   const r = W.renderer;
+  if (scene === W.scene) updateLods(camera);         // nivel de detalle según esta cámara
   if (!POST.on) { r.render(scene, camera); return; }
   r.setRenderTarget(POST.rt);
   r.render(scene, camera);
@@ -112,7 +151,8 @@ function renderFrame(scene, camera) {
     bl.tSrc.value = L.b.texture; bl.dir.value.set(0, 1 / L.h); postPass(POST.mats.blur, L.a);
   });
   const f = POST.mats.final.uniforms;
-  f.tScene.value = POST.rt.texture; f.tB1.value = POST.levels[0].a.texture; f.tB2.value = POST.levels[1].a.texture; f.tB3.value = POST.levels[2].a.texture;
+  const lv = POST.levels;
+  f.tScene.value = POST.rt.texture; f.tB1.value = lv[0].a.texture; f.tB2.value = lv[1].a.texture; f.tB3.value = (lv[2] || lv[1]).a.texture;
   f.exposure.value = r.toneMappingExposure;
   postPass(POST.mats.final, null);
 }

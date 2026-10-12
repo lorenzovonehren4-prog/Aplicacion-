@@ -78,13 +78,18 @@ function newSave() {
   return {
     v: 1, coins: 0, car: 'compacto', cars: ['compacto'], done: {}, best: {}, stars: {}, ach: {},
     stats: { runs: 0, wins: 0, thiefWins: 0, copWins: 0, arrests: 0, busted: 0, coins: 0, top: 0, reds: 0, wrecked: 0 },
-    opt: { sound: true, vol: 0.8, cam: 'afuera', quality: 'alta', sens: 1 },
+    opt: { sound: true, vol: 0.8, cam: 'afuera', quality: 'alta', sens: 1, graficos: 'auto', autoNivel: 'alta' },
   };
 }
 let save = (() => {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && s.v === 1) { const d = newSave(); return Object.assign(d, s, { stats: Object.assign(d.stats, s.stats), opt: Object.assign(d.opt, s.opt) }); }
+    if (s && s.v === 1) {
+      const d = newSave();
+      // guardados de antes de los gráficos automáticos: quien eligió Bajos se queda en Bajos
+      if (s.opt && s.opt.graficos === undefined && s.opt.quality === 'baja') s.opt.graficos = 'baja';
+      return Object.assign(d, s, { stats: Object.assign(d.stats, s.stats), opt: Object.assign(d.opt, s.opt) });
+    }
   } catch (e) { /* sin guardado */ }
   return newSave();
 })();

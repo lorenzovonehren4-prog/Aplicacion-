@@ -1,6 +1,6 @@
 // Fotos de revisión y medición de rendimiento de Código Rojo (para comparar antes y después
 // de cambios gráficos): menú, partida de día, de tarde y de noche, cabina, carros y personas de
-// cerca, carro dañado, vista aérea, calidad baja, garaje y resultado.
+// cerca, carro dañado, vista aérea, gráficos medios y bajos, garaje y resultado.
 // Uso: CHROMIUM_PATH=... node tests/fotos.mjs [carpeta] [prefijo] [solo=a,b,c]
 //   → <carpeta>/<prefijo>-<vista>.png y <carpeta>/<prefijo>-rendimiento.json
 import { chromium } from 'playwright';
@@ -28,6 +28,8 @@ await page.waitForFunction(() => document.body.classList.contains('ready'));
 await page.waitForTimeout(800);
 
 // ayudas dentro de la página: piloto automático, avanzar la simulación sin dibujar, congelar y medir
+// gráficos fijos en Altos (Auto podría cambiarlos en medio de la medición)
+await page.evaluate(() => { save.opt.graficos = 'alta'; save.opt.quality = 'alta'; applyQuality(); });
 await page.evaluate(() => {
   const F = window.__F = { sim0: simulate, read0: readInput, rf0: renderFrame, uc0: updateCamera };
   const st = document.createElement('style'); st.textContent = '.screen,#toast,#count,#big{display:none!important}'; document.head.appendChild(st); st.disabled = true;
@@ -80,7 +82,7 @@ await page.evaluate(() => {
     info.reset(); renderFrame(W.scene, W.camera);
     const frame = { calls: info.render.calls, triangles: info.render.triangles };
     // sólo el barrio (sin carros, personas ni efectos): siempre igual, sirve para comparar
-    const hide = [...G.all.map(a => a.car.root), ...PEDS.list.map(k => k.p.root), ...FX.smoke.map(p => p.m), ...FX.fire.map(p => p.m), ...FX.debris.map(d => d.m)].filter(o => o.visible);
+    const hide = [...G.all.map(a => a.car.root), ...PEDS.list.map(k => k.p.root), FX.mesh, FX.bits].filter(o => o && o.visible);
     hide.forEach(o => { o.visible = false; });
     info.reset(); r.setRenderTarget(POST.on ? POST.rt : null); r.render(W.scene, W.camera);
     const city = { calls: info.render.calls, triangles: info.render.triangles };
@@ -95,7 +97,7 @@ await page.evaluate(() => {
     const t1 = performance.now(); for (let i = 0; i < 30; i++) step(1 / 60); const logic = (performance.now() - t1) / 30;
     window.renderFrame = F.rf0; window.simulate = sim; window.readInput = F.read0; G.mode = mode;
     return {
-      quality: save.opt.quality, post: POST.on, shadows: r.shadowMap.enabled, pixelRatio: r.getPixelRatio(), size: [r.domElement.width, r.domElement.height],
+      quality: save.opt.quality, gfx: W.gfx, post: POST.on, shadows: r.shadowMap.enabled, pixelRatio: r.getPixelRatio(), size: [r.domElement.width, r.domElement.height],
       scene: withShadow, sceneNoShadowPass: noShadow, shadowPassCalls: withShadow.calls - noShadow.calls, frame, cityOnly: city,
       objects: { meshes, instancedMeshes: inst, instances, sprites, points, lines, lights, shadowCasters },
       cars: G.all.length, peds: PEDS.list.filter(k => k.p.root.visible).length,
@@ -217,6 +219,15 @@ if (want('baja')) {
   perf.baja = await ev(() => __F.measure());
   console.log(JSON.stringify(perf.baja));
   await ev(() => { save.opt.quality = 'alta'; applyQuality(); });
+}
+
+// 8b) gráficos medios (sin MSAA, con FXAA, sombra de 1024) en la misma partida + medición
+if (want('media')) {
+  await ev(() => { save.opt.graficos = 'media'; applyQuality(); __F.play({ role: 'ladron', diff: 'normal', goal: 'survive', t: 180, time: 'dia', name: 'Media' }); __F.run(22); __F.freeze(); });
+  await shot('media');
+  perf.media = await ev(() => __F.measure());
+  console.log(JSON.stringify(perf.media));
+  await ev(() => { save.opt.graficos = 'alta'; applyQuality(); });
 }
 
 // 9) garaje y resultado

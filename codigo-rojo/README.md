@@ -16,6 +16,12 @@ Persecuciones en un barrio 3D (siempre el mismo, semilla fija), cerrado por pare
 - **IA**: frenar parado con `stop` no mete reversa (antes los patrulleros esperando y el tráfico en rojo iban para atrás); da la vuelta en tres movimientos cuando el objetivo quedó atrás y retrocede si no avanza en 3 s.
 - **Interfaz**: menú tipo consola (rango, misión destacada, atajos), velocímetro circular con marcha y vida, anillo del tiempo, porcentaje de arresto y pantalla de carga con consejos.
 - **Vida en la calle** (`src/peds.js`, personas de `src/people.js` copiadas de Último Disparo en versión liviana): peatones que dan la vuelta a la manzana por la vereda cerca de la cámara y saltan a un lado cuando viene un carro (nadie sale herido). Árboles de 3 tipos con copa de varias bolas, cancha con franjas y líneas, manos con guantes y brazos en el volante de la cabina, y desenfoque de velocidad a fondo y con nitro.
+- **Rendimiento** (para las compus del colegio): Opciones → Gráficos: Auto, Altos, Medios o Bajos (`GFX` y `applyQuality` en `src/world.js`). Se guarda en `save.opt.graficos` (y se sigue escribiendo `save.opt.quality`, `'alta'` o `'baja'`). Auto mide los cuadros por segundo y, si va a menos de 45, baja un nivel y avisa (`autoGfx` en `src/ui.js`, nivel en `save.opt.autoNivel`). Medios: sin MSAA, con FXAA, sombra de 1024 y bloom en 2 tamaños. Bajos: sin sombras ni posprocesado.
+  - Lo fijo del barrio se dibuja en pocas mallas grandes; su sombra sale de copias por sector de 90 m que sólo se dibujan en el pase de sombras (`shadowCast`, `shadowOnly`, `hookShadowPass`): para que algo nuevo proyecte sombra, `shadowCast(geo)`.
+  - Lo repetido (carros estacionados, árboles, arbustos, buzones) va con niveles de detalle por instancia: cerca el modelo completo, lejos uno liviano, y lo que no se ve se descarta (`lodSet` y `updateLods`, que corre en cada cuadro desde `renderFrame`). Para cosas repetidas nuevas, usar `lodSet`.
+  - Carros: de cerca 8 llamadas de dibujo (11 el patrullero; las 4 ruedas son una malla con huesos); de 45 m en adelante una sola malla, y de 140 m una más liviana (`carLodGeo`, `carLodMat`, `setCarLod`, `updateCarLods`). La sombra la da una copia liviana.
+  - Personas: todo el cuerpo en una malla con huesos más la cabeza con la cara (`liteMerge`); sin cara a más de 35 m y ocultas a más de 95 m. 14 en Altos, 10 en Medios y 6 en Bajos.
+  - Humo y fuego en una sola malla instanciada que mira a la cámara (`FX.mesh`); las piezas de los choques también (`FX.bits`). Al empezar una partida se compilan los materiales (`warmUp`) para que no haya tirones.
 - Guardado en `localStorage` (`codigorojo_v1`). El portal lee misiones, fugas y arrestos.
 
 ## Cómo correrlo
@@ -34,5 +40,6 @@ CHROMIUM_PATH=... node tests/pantallas.mjs         # cabina de 3 carros, garaje 
 CHROMIUM_PATH=... node tests/menu.mjs              # fotos del menú (PC, pantalla baja, celular)
 CHROMIUM_PATH=... node tests/carros.mjs            # fotos de los carros
 CHROMIUM_PATH=... node tests/vistas.mjs            # fotos del barrio a distintas horas
+CHROMIUM_PATH=... node tests/fotos.mjs [carpeta] [prefijo] [solo=fija-dia,media]   # fotos y rendimiento (triángulos y llamadas)
 CHROMIUM_PATH=... node tools/portadas.mjs           # imágenes para el portal (luego a webp en portal/img/)
 ```

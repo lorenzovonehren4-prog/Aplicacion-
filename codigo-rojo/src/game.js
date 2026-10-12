@@ -30,6 +30,7 @@ function spawnActor(spec, x, z, h, opts = {}) {
   if (opts.player) body.nitro = 1;
   const car = makeCar(spec, { police: opts.police, cockpit: opts.player });
   car.sirenOn = !!opts.police;
+  if (!opts.player) prepareCarLod(car);
   W.scene.add(car.root);
   const a = { body, car, ai: null, role: opts.role || 'trafico', player: !!opts.player };
   body.actor = a;
@@ -37,9 +38,23 @@ function spawnActor(spec, x, z, h, opts = {}) {
   return a;
 }
 function removeActor(a) {
-  // (las geometrías son compartidas entre carros del mismo tipo: no se liberan)
+  // (las geometrías son compartidas entre carros del mismo tipo: sólo se liberan los materiales)
   W.scene.remove(a.car.root);
+  disposeCar(a.car);
 }
+// Nivel de detalle de cada carro según la distancia a la cámara (el jugador siempre completo).
+// Con 5 m de margen en cada corte para que no titile.
+const CAR_LOD_D = [45, 140];
+function updateCarLods(cp) {
+  for (const a of G.all) {
+    if (a.player) { setCarLod(a.car, 0); continue; }
+    const d = Math.hypot(a.body.x - cp.x, a.body.z - cp.z), k = a.car.lod;
+    let nk = d < CAR_LOD_D[0] ? 0 : d < CAR_LOD_D[1] ? 1 : 2;
+    if (nk !== k && Math.abs(d - CAR_LOD_D[Math.min(k, nk)]) < 5) nk = k;
+    setCarLod(a.car, nk);
+  }
+}
+W.lodHooks.push(updateCarLods);
 function clearGame() {
   for (const a of G.all) removeActor(a);
   G.all = []; G.cops = []; G.traffic = []; G.thief = null; G.player = null;
@@ -155,14 +170,15 @@ function startGame(cfg) {
   save.stats.runs++; persist();
   SFX.init();
   hudStatic();
+  warmUp();
 }
 
 function setCam() {
   const car = G.player && G.player.car;
   if (!car) return;
   const inside = G.cam === 'cabina' && (G.mode === 'count' || G.mode === 'play' || G.mode === 'pause');
-  car.cockpit.visible = inside; car.cab.visible = !inside; car.roof.visible = !inside;
-  car.bar.forEach(b => { b.visible = !inside; }); if (car.ant) car.ant.visible = !inside;
+  car.cockpit.visible = inside; car.cab.visible = !inside;
+  car.bar.forEach(b => { b.visible = !inside; });
   setCockpitClip(car, inside);
   if (inside) { car.body.add(W.camera); W.camera.position.copy(car.eye); W.camera.rotation.set(-0.15, Math.PI, 0, 'YXZ'); }
   else { W.scene.attach(W.camera); W.camera.rotation.order = 'XYZ'; G.snap = true; }
@@ -414,6 +430,7 @@ function startAttract() {
   G.player = null;
   spawnTraffic(20, [G.thief.body]);
   G.attractT = 0; G.shot = -1; G.acc = 0;
+  warmUp();
 }
 function attractStep(dt) {
   G.attractT += dt;

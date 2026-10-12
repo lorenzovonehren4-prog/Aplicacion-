@@ -56,7 +56,7 @@ function initShowroom() {
 }
 function showroomCar(spec) {
   initShowroom();
-  if (SHOW.car) SHOW.table.remove(SHOW.car.root);
+  if (SHOW.car) { SHOW.table.remove(SHOW.car.root); disposeCar(SHOW.car); }
   SHOW.car = makeCar(spec, {});
   SHOW.car.root.position.y = 0.2;
   SHOW.car.headMat.emissiveIntensity = 0.35; SHOW.car.tailMat.emissiveIntensity = 0.6;
