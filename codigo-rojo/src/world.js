@@ -911,7 +911,7 @@ function buildProps(G) {
   for (const sp of spots) { const t = types[Math.floor(r() * types.length)]; (byType[t] = byType[t] || []).push(sp); }
   const mtx = M4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
   for (const t in byType) {
-    const B = BODY[t], cg = carGeo(t), parts = [{ geo: cg.lower, c: 0xffffff }, { geo: cg.cabin, c: 0xffffff }, { geo: cg.glass, c: 0x0d151d }, { geo: cg.trim, c: null }, { geo: cg.head, c: 0xf0f0e8 }, { geo: cg.tail, c: 0x8a1010 }];
+    const B = BODY[t], cg = carGeo(t, true), parts = [{ geo: cg.lower, c: 0xffffff }, { geo: cg.cabin, c: 0xffffff }, { geo: cg.glass, c: 0x0d151d }, { geo: cg.trim, c: null }, { geo: cg.head, c: 0xf0f0e8 }, { geo: cg.tail, c: 0x8a1010 }];
     for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) parts.push({ geo: cg.wheel, m: M4().makeRotationY(sx < 0 ? Math.PI : 0).setPosition(sx * (B.W / 2 - 0.14), B.r, sz * B.wb / 2), c: null });
     const mesh = new THREE.InstancedMesh(mergeGeos(parts), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.45 }), byType[t].length);
     byType[t].forEach((sp, i) => {
