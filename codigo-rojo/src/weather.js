@@ -15,8 +15,8 @@
 //  - Agua que levantan las llantas (wetSpray → fxSpray), limpiaparabrisas y gotas en el vidrio de
 //    la cabina (makeWipers / updateWipers), y menos agarre (W.gripMul en stepBody y cornerSpeed).
 //  - Tormenta: destellos del cielo y de la luz, a veces un rayo visible, y el trueno después.
-// Uso: setWeather(id) después de setTimeOfDay (startGame lo hace con cfg.weather); updateWeather(dt)
-// corre en cada cuadro desde updateWorld.
+// Uso: setWeather(id, hora) (startGame lo hace con cfg.weather y cfg.time; setTimeOfDay(hora) sola
+// conserva el clima que haya); updateWeather(dt) corre en cada cuadro desde updateWorld.
 
 // cover: nubes (0-1); gray: cuánto se agrisa la luz; sun: cuánto sol pasa; fog: multiplica la
 // distancia de la niebla; wet: calle mojada; rain: lluvia; dark: cuánto oscurece (prende postes,
@@ -76,10 +76,10 @@ function weatherLook(time, wid) {
   return L;
 }
 
-// Cambia el clima (vuelve a poner la hora para mezclar los colores).
-function setWeather(id) {
+// Cambia el clima y, si se da, también la hora (setTimeOfDay mezcla los colores de los dos).
+function setWeather(id, time) {
   W.weather = WEATHER[id] ? id : 'despejado';
-  setTimeOfDay(W.time || 'dia');
+  setTimeOfDay(time || W.time || 'dia');
 }
 
 const WX = {
@@ -160,7 +160,7 @@ function initWeather() {
         v.xyz += side * position.y * w;
         gl_Position = projectionMatrix * v;
         vUv = position.xy;
-        vA = uAlpha * uIn * (uWidth / w) * smoothstep(uNear, uNear + 2.5, d) * (1.0 - smoothstep(17.0, 27.0, d)) * (0.55 + 0.45 * aSeed.w);
+        vA = uAlpha * uIn * (uWidth / w) * smoothstep(uNear, uNear + 4.0, d) * (1.0 - smoothstep(17.0, 27.0, d)) * (0.55 + 0.45 * aSeed.w);
         vec3 hp = p - uHead; float hd = length(hp);
         vLit = uHeadOn * smoothstep(0.8, 0.95, dot(hp / max(hd, 0.001), uHeadDir)) * (1.0 - smoothstep(3.0, 26.0, hd));
       }`,
@@ -198,12 +198,13 @@ function initWeather() {
         // calle (las calles van cada 90 m) o vereda (16 cm más alta); en el pasto no se ven
         vec2 gd = abs(mod(xz + 270.0, 90.0) - 45.0);
         float m = min(gd.x, gd.y), y = uCenter.y + (m < 6.0 ? 0.045 : 0.2), vis = m < 9.0 ? 1.0 : 0.0;
-        float s = 0.07 + 0.09 * aSeed.w;
+        float s = 0.05 + 0.08 * aSeed.w;
         vec3 wp;
         if (position.z < 0.5) {
-          float rad = s * (0.3 + k * 1.3);
+          // la onda se abre rápido al principio y se va apagando
+          float rad = s * (0.25 + 1.5 * sqrt(k));
           wp = vec3(xz.x + position.x * rad, y, xz.y + position.y * rad);
-          vA = uAlpha * (1.0 - k) * vis;
+          vA = uAlpha * (1.0 - k) * (1.0 - k) * vis;
         } else {
           vec2 tc = normalize(cameraPosition.xz - xz + 0.001);
           float hgt = s * 1.3 * sin(min(k * 2.8, 1.0) * 3.14159);
@@ -216,7 +217,7 @@ function initWeather() {
     fragmentShader: `uniform vec3 uCol; varying vec2 vUv; varying float vKind; varying float vA;
       void main() {
         float a;
-        if (vKind < 0.5) { float r = length(vUv); a = smoothstep(0.62, 0.86, r) * (1.0 - smoothstep(0.86, 1.0, r)) + 0.5 * smoothstep(0.25, 0.4, r) * (1.0 - smoothstep(0.4, 0.52, r)); }
+        if (vKind < 0.5) { float r = length(vUv); a = smoothstep(0.74, 0.88, r) * (1.0 - smoothstep(0.88, 0.98, r)) + 0.4 * smoothstep(0.38, 0.48, r) * (1.0 - smoothstep(0.48, 0.58, r)); }
         else { float y = vUv.y * 0.5 + 0.5; a = pow(abs(sin(vUv.x * 4.7)), 5.0) * (1.0 - y) * (1.0 - smoothstep(0.6, 1.0, abs(vUv.x))); }
         a *= vA;
         gl_FragColor = vec4(uCol * a, a);
@@ -403,7 +404,7 @@ function applyWeather() {
   WX.splash.visible = w.rain > 0 && Q.splash > 0;
   WX.splash.geometry.instanceCount = Math.round(Q.splash * (w.drizzle ? 0.45 : w.rain));
   WX.su.uCrown.value = w.drizzle ? 0 : 1; WX.su.uRate.value = w.drizzle ? 1.5 : 2.8;
-  WX.su.uAlpha.value = (w.drizzle ? 0.3 : 0.42) * (time === 'noche' ? 0.45 : 1);
+  WX.su.uAlpha.value = (w.drizzle ? 0.26 : 0.4) * (time === 'noche' ? 0.5 : 1);
   WX.su.uCol.value.set(RAIN_COL[time] || RAIN_COL.dia).multiplyScalar(1.25);
   // calle mojada
   const wetRoad = w.wet > 0 && Q.wetRoad;

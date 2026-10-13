@@ -118,8 +118,7 @@ function startGame(cfg) {
   document.getElementById('big').className = '';
   G.cfg = cfg;
   const D = DIFFS[cfg.diff];
-  setTimeOfDay(cfg.time);
-  setWeather(cfg.weather || 'despejado');            // (antes de armar los carros: faros según el clima)
+  setWeather(cfg.weather || 'despejado', cfg.time);   // hora y clima (antes de armar los carros: faros según el clima)
   G.time = 0; G.bar = 0; G.acc = 0; G.got = 0; G.reds = 0; G.bridges = 0; G.wrecked = 0; G.tunnel = false; G.lastNode = null; G.onBridge = false;
   G.stats = { maxJump: 0, top: 0, maxBar: 0 };
   const spec = carById(save.car);
@@ -423,9 +422,9 @@ function camClip(p, x, y, z) {
 function startAttract() {
   clearGame();
   document.getElementById('big').className = '';
-  setTimeOfDay(['tarde', 'noche', 'dia'][Math.floor(Math.random() * 3)]);
-  // la mitad de las veces con algún clima (garúa, lluvia, tormenta, neblina o nublado)
-  setWeather(Math.random() < 0.5 ? 'despejado' : WX_LIST[1 + Math.floor(Math.random() * (WX_LIST.length - 1))]);
+  // hora al azar y, la mitad de las veces, algún clima (nublado, garúa, lluvia, tormenta o neblina)
+  const time = ['tarde', 'noche', 'dia'][Math.floor(Math.random() * 3)];
+  setWeather(Math.random() < 0.5 ? 'despejado' : WX_LIST[1 + Math.floor(Math.random() * (WX_LIST.length - 1))], time);
   G.cfg = { role: 'demo', diff: 'normal' };
   const seg = randomSegment(Math.random, null, 0);
   G.thief = spawnActor(Object.assign({}, carById('muscle'), { color: 0x101010 }), seg.s.x, seg.s.z, seg.s.h, { role: 'ladron' });

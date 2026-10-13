@@ -112,6 +112,8 @@ const want = n => !only || only.includes(n);
 const shot = async (n, wait = 2500) => { await page.waitForTimeout(wait); await page.screenshot({ path: path.join(outDir, `${prefix}-${n}.png`) }); console.log('foto', n); };
 const ev = (fn, arg) => page.evaluate(fn, arg);
 
+// (sin la vista del menú, igual se pasa la pantalla de inicio para que no tape las fotos)
+if (!want('menu')) await page.keyboard.press('Enter');
 // 1) menú con la demostración detrás
 if (want('menu')) {
   await page.keyboard.press('Enter');
@@ -256,11 +258,13 @@ if (want('lluvia-cabina')) {
   await shot('lluvia-cabina', 4000);
   await ev(() => { G.cam = 'afuera'; setCam(); });
 }
-if (want('lluvia-baja')) {
-  await ev(() => { save.opt.quality = 'baja'; applyQuality(); __F.seed(7); __F.play({ role: 'ladron', diff: 'normal', goal: 'survive', t: 180, time: 'noche', weather: 'lluvia', name: 'Baja' }); __F.freeze(); __F.stage(-138, -200, 0); __F.cam([-138, 3.1, -207.8], [-138, 1.1, -195]); G.mode = 'play'; });
-  await shot('lluvia-baja');
-  perf['lluvia-baja'] = await ev(() => __F.measure());
-  console.log(JSON.stringify(perf['lluvia-baja']));
+// en Bajos, la toma fija de noche sin lluvia y con lluvia (para ver cuánto cuesta la lluvia ahí)
+for (const [name, weather] of [['fija-noche-baja', 'despejado'], ['lluvia-baja', 'lluvia']]) {
+  if (!want(name)) continue;
+  await ev(weather => { save.opt.quality = 'baja'; applyQuality(); __F.seed(7); __F.play({ role: 'ladron', diff: 'normal', goal: 'survive', t: 180, time: 'noche', weather, name: 'Baja' }); __F.freeze(); __F.stage(-138, -200, 0); __F.cam([-138, 3.1, -207.8], [-138, 1.1, -195]); G.mode = 'play'; }, weather);
+  await shot(name);
+  perf[name] = await ev(() => __F.measure());
+  console.log(JSON.stringify(perf[name]));
   await ev(() => { save.opt.quality = 'alta'; applyQuality(); });
 }
 

@@ -312,10 +312,11 @@ function resizeWorld() {
 }
 
 // Mapa de entorno para los reflejos (pintura, vidrios, agua, calle mojada): cielo, sol y siluetas
-// de casas, con los colores de la hora y el clima (atmos en weather.js). Se arma una vez por par.
+// de casas, con los colores de la hora y el clima (atmos en weather.js). Se arma una vez por par y se
+// guardan los últimos 4 (cada uno ocupa unos MB de memoria de video).
 function makeEnv(id, wid = 'despejado') {
   const key = id + '|' + wid;
-  if (W.envs[key]) return W.envs[key];
+  if (W.envs[key]) return W.envs[key].texture;
   const A = atmos(id, wid), T = TIMES[id], s = new THREE.Scene();
   const geo = new THREE.SphereGeometry(50, 32, 16), col = [], top = A.skyTop, bot = A.skyBot, gr = A.hemiGround.clone().multiplyScalar(0.6), c = new THREE.Color();
   const p = geo.attributes.position;
@@ -331,9 +332,12 @@ function makeEnv(id, wid = 'despejado') {
     b.position.set(Math.cos(a) * 38, h / 2 - 2, Math.sin(a) * 38); b.lookAt(0, h / 2 - 2, 0); s.add(b);
     if (lit > 0.2) { const l = new THREE.Mesh(new THREE.PlaneGeometry(2, 1.2), lm); l.position.copy(b.position).multiplyScalar(0.94); l.position.y = 1 + (k % 3); l.lookAt(0, l.position.y, 0); s.add(l); }
   }
-  const env = W.pmrem.fromScene(s, 0.03).texture;
-  W.envs[key] = env;
-  return env;
+  const rt = W.pmrem.fromScene(s, 0.03);
+  s.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+  const keys = Object.keys(W.envs);
+  for (const k of keys.slice(0, Math.max(0, keys.length - 3))) if (W.envs[k].texture !== W.scene.environment) { W.envs[k].dispose(); delete W.envs[k]; }
+  W.envs[key] = rt;
+  return rt.texture;
 }
 const POST_LOOK = {
   dia: { bloom: 0.32, threshold: 1.0, vignette: 0.24, sat: 1.12, tint: [1.0, 1.0, 1.0] },

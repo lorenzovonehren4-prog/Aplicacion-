@@ -11,7 +11,7 @@ p.setDefaultTimeout(400000);
 const errs = []; p.on('pageerror', e => errs.push(e.message + ' ' + (e.stack || '').split('\n')[1])); p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.text()); });
 await p.goto(`http://localhost:${server.address().port}/index.html`);
 await p.waitForFunction(() => document.body.classList.contains('ready'));
-await p.addStyleTag({ content: '.screen,#toast,#count,#big{display:none!important}' });
+if (!process.env.NOHIDE) await p.addStyleTag({ content: '.screen,#toast,#count,#big{display:none!important}' });
 await p.evaluate(() => { save.opt.graficos = 'alta'; save.opt.quality = 'alta'; applyQuality(); });
 if (code) console.log('->', JSON.stringify(await p.evaluate(code)));
 await p.waitForTimeout(+wait);

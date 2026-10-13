@@ -22,7 +22,7 @@ await page.waitForFunction(() => document.body.classList.contains('ready'));
 await page.addStyleTag({ content: '.screen,#toast,#count,#big{display:none!important}' });
 // arma la escena a mano: el ladrón adelante y dos patrulleros pegados atrás
 const pose = (time, view) => page.evaluate(([time, view]) => {
-  startAttract(); setTimeOfDay(time);
+  startAttract(); setWeather('despejado', time);
   for (let i = 0; i < 60 * 3; i++) attractStep(1 / 60);
   G.mode = 'pause';
   const place = (a, x, z, h, steer) => { Object.assign(a.body, { x, z, h, y: groundH(x, z), steer, f: 30, roll: steer * 0.05 }); };
