@@ -102,6 +102,7 @@ la página con esos archivos como `files`.
 ```bash
 npm install
 npm run test:portal          # el portal (agregar --shots para capturas)
+npm run test:botones         # toca todos los botones del portal, uno por uno
 npm test                     # las 17 suites de Mind Escape
 ```
 

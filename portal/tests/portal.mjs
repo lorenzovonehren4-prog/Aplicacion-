@@ -32,7 +32,7 @@ const base = `http://localhost:${port}/index.html`;
 
 await page.goto(base);
 check(await page.isVisible('#intro'), 'la intro aparece la primera vez');
-await page.waitForSelector('#intro', { state: 'detached', timeout: 6000 });
+await page.waitForSelector('#intro', { state: 'hidden', timeout: 6000 });
 await page.waitForTimeout(600);
 await shot(page, 'portal-1-inicio.png');
 check(await page.locator('.shelf .gcard[data-sel]').count() === 9, 'los 9 juegos en el estante del menú');
@@ -168,7 +168,7 @@ const mob = await browser.newContext({ viewport: { width: 375, height: 760 }, is
 const mp = await mob.newPage();
 mp.on('pageerror', e => errors.push('móvil: ' + e.message));
 await mp.goto(base);
-await mp.waitForSelector('#intro', { state: 'detached', timeout: 6000 });
+await mp.waitForSelector('#intro', { state: 'hidden', timeout: 6000 });
 await mp.waitForTimeout(500);
 const sw = await mp.evaluate(() => document.documentElement.scrollWidth);
 check(sw <= 375, 'sin scroll horizontal en celular (' + sw + ' px)');

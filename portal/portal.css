@@ -68,6 +68,12 @@ code { font-family: ui-monospace, Consolas, monospace; background: rgba(255,255,
 }
 @keyframes drift { to { transform: translate(8vw, 6vh) scale(1.15); } }
 
+/* Mientras se juega, el portal no anima nada de fondo: toda la máquina para el juego */
+body.playing .bg { display: none; }
+body.playing .top { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(7,6,13,.97); }
+body.playing .player__exit { animation: none; }
+body.playing .me.has-news::after { animation: none; }
+
 /* ---------- intro ---------- */
 .intro { display: none; position: fixed; inset: 0; z-index: 100; background: #030207; place-items: center; cursor: pointer; }
 .intro.is-on { display: grid; }

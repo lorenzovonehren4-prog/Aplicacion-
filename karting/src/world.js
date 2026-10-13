@@ -30,6 +30,24 @@ function initRenderer(canvas) {
   W.scene.add(W.sun, W.sun.target);
 }
 
+// Resolución dinámica: si el juego va a menos de ~45 FPS se dibuja con menos píxeles
+// (hasta la mitad) y, cuando sobra, se vuelve a subir. Así va fluido en compus modestas.
+const PERF = { ema: 1 / 60, t: 0, scale: 1, last: 0 };
+const basePixelRatio = () => Math.min(window.devicePixelRatio || 1, save.opt.quality === 'alta' ? 2 : 1);
+function adaptResolution() {
+  // mide el tiempo real entre cuadros (el bucle del juego lo recorta a 0,1 s)
+  const now = performance.now(); let dt = PERF.last ? (now - PERF.last) / 1000 : 0; PERF.last = now;
+  if (!(dt > 0) || document.hidden) return; // pestaña oculta: no cuenta
+  dt = Math.min(dt, 0.5); // un tirón suelto (cargar una pista) no pesa de más
+  PERF.ema += (dt - PERF.ema) * 0.05; PERF.t += dt;
+  if (PERF.t < 2) return;
+  PERF.t = 0;
+  const prev = PERF.scale;
+  if (PERF.ema > 1 / 45 && PERF.scale > 0.5) PERF.scale = Math.max(0.5, PERF.scale - 0.1);
+  else if (PERF.ema < 1 / 57 && PERF.scale < 1) PERF.scale = Math.min(1, PERF.scale + 0.05);
+  if (PERF.scale !== prev) { W.renderer.setPixelRatio(basePixelRatio() * PERF.scale); resizeRenderer(); if (typeof resizePost === 'function') resizePost(); }
+}
+
 function resizeRenderer() {
   const w = window.innerWidth, h = window.innerHeight;
   W.renderer.setSize(w, h, false);

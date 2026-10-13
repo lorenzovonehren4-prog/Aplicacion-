@@ -13,4 +13,7 @@ Portal que junta los juegos del repositorio. Todo el texto en español. Sin comp
 
 Se publica como Artifact de Claude (no GitHub Pages): `node portal/tools/artifact.mjs <carpeta>` arma la página y el mapa de archivos.
 
-Pruebas: `CHROMIUM_PATH=... node portal/tests/portal.mjs --shots` (capturas en `portal/tests/capturas/`, ignoradas por git).
+- Mientras se juega, `body.playing` apaga el fondo animado y el desenfoque de la cabecera para dejarle la máquina al juego.
+- Kartódromo, Combi Rush y Modo Carrera Fútbol tienen resolución dinámica (`adaptResolution`): bajan píxeles si van a menos de ~45 FPS.
+
+Pruebas: `CHROMIUM_PATH=... node portal/tests/portal.mjs --shots` y `node portal/tests/botones.mjs` (todos los botones) (capturas en `portal/tests/capturas/`, ignoradas por git).

@@ -2,7 +2,20 @@
 const $ = s => document.querySelector(s);
 const scr = id => { document.querySelectorAll('.screen').forEach(e => { e.hidden = e.id !== id; }); };
 let plan = 'normal', busy = false;
-function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setPixelRatio(Math.min(QUAL.pr, window.devicePixelRatio || 1)); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+// Resolución dinámica: si va a menos de ~45 FPS se dibuja con menos píxeles (hasta la mitad)
+const PERF = { ema: 1 / 60, t: 0, scale: 1 };
+function adaptResolution(rawDt) {
+  if (!(rawDt > 0) || document.hidden) return;
+  rawDt = Math.min(rawDt, 0.5); // un tirón suelto no pesa de más
+  PERF.ema += (rawDt - PERF.ema) * 0.05; PERF.t += rawDt;
+  if (PERF.t < 2) return;
+  PERF.t = 0;
+  const prev = PERF.scale;
+  if (PERF.ema > 1 / 45 && PERF.scale > 0.5) PERF.scale = Math.max(0.5, PERF.scale - 0.1);
+  else if (PERF.ema < 1 / 57 && PERF.scale < 1) PERF.scale = Math.min(1, PERF.scale + 0.05);
+  if (PERF.scale !== prev) resize();
+}
+function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setPixelRatio(Math.min(QUAL.pr, window.devicePixelRatio || 1) * PERF.scale); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
 window.addEventListener('resize', resize);
 function modal(html, wide) { const m = $('#modal'); m.innerHTML = '<div class="mcard' + (wide ? ' wide' : '') + '">' + html + '</div>'; m.hidden = false; if (typeof sfxPop === 'function') sfxPop(); return m; }
 function closeModal() { $('#modal').hidden = true; }
@@ -637,7 +650,7 @@ function updateOverlays() {
 
 /* ---------- bucle ---------- */
 let last = performance.now();
-function frame(t) { const dt = Math.min(0.05, (t - last) / 1000); last = t; render3d(dt); updateOverlays(); requestAnimationFrame(frame); }
+function frame(t) { const raw = (t - last) / 1000, dt = Math.min(0.05, raw); last = t; adaptResolution(raw); render3d(dt); updateOverlays(); requestAnimationFrame(frame); }
 function boot() { init3d(); setQuality(OPTS.quality); resize(); showTitle(); document.body.classList.add('ready'); requestAnimationFrame(frame); }
 const fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('40px Bungee'), document.fonts.load('800 16px Rubik')]) : Promise.resolve();
 Promise.race([fontsReady, new Promise(r => setTimeout(r, 1800))]).then(boot, boot);

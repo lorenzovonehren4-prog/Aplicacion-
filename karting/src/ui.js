@@ -741,6 +741,7 @@ function frame(now) {
     UI.slowT = Math.max(0, UI.slowT);
     if (UI.slowT > 4 && !navigator.webdriver) { POST.on = false; toast('Bajamos efectos para que el juego vaya fluido'); }
   }
+  adaptResolution();
   if (UI.split && R.on && camera2 && UI.screen !== 'replay') {
     // pantalla dividida: J1 arriba, J2 abajo (sin posprocesado)
     const r = W.renderer, w = window.innerWidth, h = window.innerHeight;

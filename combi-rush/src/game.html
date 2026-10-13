@@ -1872,10 +1872,24 @@ function initEnv() {
   scene.environment = pm.fromScene(es, 0.02).texture;
   pm.dispose();
 }
+// Resolución dinámica: si va a menos de ~45 FPS se dibuja con menos píxeles (hasta la
+// mitad) y, cuando sobra, se vuelve a subir. No toca materiales: no hay tirones.
+const PERF = { ema: 1 / 60, t: 0, scale: 1 };
+function basePR() { const q = save.quality || (isTouch ? 'media' : 'alta'), dpr = window.devicePixelRatio || 1; return q === 'alta' ? Math.min(dpr, 2) : q === 'media' ? Math.min(dpr, 1.3) : 1; }
+function adaptResolution(rawDt) {
+  if (!(rawDt > 0) || document.hidden) return;
+  rawDt = Math.min(rawDt, 0.5); // un tirón suelto no pesa de más
+  PERF.ema += (rawDt - PERF.ema) * 0.05; PERF.t += rawDt;
+  if (PERF.t < 2) return;
+  PERF.t = 0;
+  const prev = PERF.scale;
+  if (PERF.ema > 1 / 45 && PERF.scale > 0.5) PERF.scale = Math.max(0.5, PERF.scale - 0.1);
+  else if (PERF.ema < 1 / 57 && PERF.scale < 1) PERF.scale = Math.min(1, PERF.scale + 0.05);
+  if (PERF.scale !== prev) { const wrap = stage.parentElement; renderer.setPixelRatio(basePR() * PERF.scale); renderer.setSize(wrap.clientWidth || window.innerWidth, wrap.clientHeight || window.innerHeight, false); }
+}
 function applyQuality() {
   const q = save.quality || (isTouch ? 'media' : 'alta');
-  const dpr = window.devicePixelRatio || 1;
-  renderer.setPixelRatio(q === 'alta' ? Math.min(dpr, 2) : q === 'media' ? Math.min(dpr, 1.3) : 1);
+  renderer.setPixelRatio(basePR() * PERF.scale);
   const sh = q !== 'baja';
   renderer.shadowMap.enabled = sh; sun.castShadow = sh;
   const size = q === 'alta' ? 2048 : 1024;
@@ -4461,6 +4475,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 let last = performance.now();
 function frame(t) {
   let dt = (t - last) / 1000; last = t;
+  adaptResolution(dt);
   if (!(dt > 0)) dt = 0; if (dt > 0.05) dt = 0.05;
   if (G) {
     if (pressed.has('pausa') || pressed.has('mapa')) { if (screen === 'play') pause(); else if (screen === 'pausa') resume(); }

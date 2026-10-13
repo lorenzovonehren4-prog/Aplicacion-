@@ -8,7 +8,8 @@
     "start": "python3 -m http.server 8000",
     "build": "node mind-escape/tools/build-single-file.mjs",
     "test": "node mind-escape/tests/run.mjs",
-    "test:portal": "node portal/tests/portal.mjs"
+    "test:portal": "node portal/tests/portal.mjs",
+    "test:botones": "node portal/tests/botones.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

@@ -523,6 +523,7 @@ function startGame(g) {
   player.append(f);
   showPlayer();
   UI.frame = f; UI.playing = true;
+  document.body.classList.add('playing');
   const st = gstat(g.id);
   const first = !st.plays;
   st.plays++; st.last = Date.now();
@@ -542,6 +543,7 @@ function stopGame() {
   if (UI.frame) { UI.frame.src = 'about:blank'; UI.frame.remove(); UI.frame = null; }
   if (wasApice) loadApice(refreshAfterLoad);
   UI.playing = false;
+  document.body.classList.remove('playing');
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   document.body.classList.remove('pseudo-fs');
 }
@@ -653,6 +655,7 @@ function openBlank() {
   d.close();
   P.cloaked = true; persist(); checkAch();
   stopGame();
+  closeDrawer();
 }
 
 /* ---------- intro ---------- */
@@ -660,12 +663,13 @@ function playIntro(force) {
   const el = $('#intro');
   let seen = false;
   try { seen = sessionStorage.getItem('ag_intro') === '1'; sessionStorage.setItem('ag_intro', '1'); } catch (e) { /* nada */ }
-  if ((seen || REDUCED) && !force) { el.remove(); return; }
+  if (!el) return;
+  if ((seen || REDUCED) && !force) return; // queda oculta (sin .is-on) para poder verla otra vez
   el.classList.remove('is-out');
   el.classList.add('is-on');
   if (force) SFX.intro();
   let done = false;
-  const end = () => { if (done) return; done = true; el.classList.add('is-out'); setTimeout(() => { el.classList.remove('is-on', 'is-out'); if (!force) el.remove(); }, 600); };
+  const end = () => { if (done) return; done = true; el.classList.add('is-out'); setTimeout(() => { el.classList.remove('is-on', 'is-out'); }, 600); };
   el.addEventListener('click', end, { once: true });
   setTimeout(end, 2300);
 }
@@ -673,10 +677,10 @@ function playIntro(force) {
 /* ---------- enrutado ---------- */
 // Anclas simples (#inicio, #biblioteca, #logros, #juego-<id>): son las únicas que
 // el visor de Claude deja pasar.
-function route() {
+function route(keepDrawer) {
   const h = location.hash.replace(/^#\/?/, '');
   const g = h.startsWith('juego-') && gameById(h.slice(6));
-  closeDrawer();
+  if (keepDrawer !== true) closeDrawer();
   if (g) renderGame(g);
   else if (h === 'biblioteca') renderLibrary();
   else if (h === 'logros') renderAch();
@@ -736,7 +740,7 @@ setInterval(paintClock, 15000);
 
 /* ---------- eventos globales ---------- */
 document.addEventListener('pointerdown', () => SFX.unlock(), { once: true, capture: true });
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => route());
 
 view.addEventListener('click', e => {
   const t = e.target.closest('[data-cat],[data-fav],[data-sel],[data-play],[data-act]');
@@ -766,7 +770,7 @@ view.addEventListener('click', e => {
 $('#drawerBody').addEventListener('click', e => {
   const t = e.target.closest('[data-av],[data-act]');
   if (!t) return;
-  if (t.dataset.av) { P.avatar = +t.dataset.av; P.customized = true; persist(); SFX.click(); paintMe(); renderDrawer(); checkAch(); if (!UI.game) route(); return; }
+  if (t.dataset.av) { P.avatar = +t.dataset.av; P.customized = true; persist(); SFX.click(); paintMe(); renderDrawer(); checkAch(); if (!UI.game) route(true); return; }
   const act = t.dataset.act;
   if (act === 'sound') { P.sound = !P.sound; persist(); paintMe(); renderDrawer(); SFX.click(); }
   else if (act === 'blank') openBlank();
@@ -777,7 +781,7 @@ $('#drawerBody').addEventListener('click', e => {
       try { localStorage.removeItem(KEY); } catch (e) { /* nada */ }
       P = freshProfile(); persist(); checkAch(true); paintMe(); renderDrawer();
       toast('Perfil borrado', 'Empiezas de cero como un nuevo anónimo', 'mask');
-      if (!UI.game) route();
+      if (!UI.game) route(true);
     } else {
       t.classList.add('armed'); $('#wipeTxt').textContent = 'Toca otra vez para borrar';
       setTimeout(() => { if (t.isConnected) { t.classList.remove('armed'); $('#wipeTxt').textContent = 'Borrar mi perfil del portal'; } }, 3000);
@@ -798,6 +802,8 @@ q.addEventListener('input', () => {
   if (UI.tab !== 'biblioteca') { UI.cat = 'todos'; location.hash = '#biblioteca'; return; }
   renderLibrary();
 });
+// En celular el buscador tapa la cabecera: si quedó vacío, se cierra al tocar fuera
+q.addEventListener('blur', () => setTimeout(() => { if (!q.value.trim()) $('#top').classList.remove('searching'); }, 150));
 q.addEventListener('keydown', e => {
   if (e.key === 'Enter') { const g = filtered()[0]; if (g) { location.hash = gameHref(g); q.blur(); $('#top').classList.remove('searching'); } }
   if (e.key === 'Escape') { q.value = ''; UI.q = ''; q.blur(); $('#top').classList.remove('searching'); if (UI.tab === 'biblioteca') renderLibrary(); }
@@ -837,5 +843,5 @@ paintClock();
 playIntro(false);
 route();
 // Las insignias ganadas jugando (o en otra visita) aparecen después de la intro.
-setTimeout(() => checkAch(), $('#intro') ? 2600 : 700);
+setTimeout(() => checkAch(), $('#intro.is-on') ? 2600 : 700);
 loadApice(() => { if (apiceCache) refreshAfterLoad(); });
