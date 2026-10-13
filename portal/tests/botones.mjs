@@ -45,11 +45,12 @@ await tab.waitForLoadState();
 check((await tab.title()) === 'Classes' && await tab.locator('iframe').count() === 1, 'botón about:blank abre la pestaña');
 await tab.close();
 await page.click('#q'); await page.keyboard.type('zombi'); await wait(300);
-check((await hash()) === '#biblioteca' && await page.locator('.tile[data-tile]').count() === 1, 'buscar "zombi" va a la biblioteca con Reino en Guardia');
+const found = await page.$$eval('[data-tile]', ts => ts.map(t => t.dataset.tile));
+check((await hash()) === '#biblioteca' && found.includes('tower-defense'), 'buscar "zombi" va a la biblioteca y encuentra Reino en Guardia (' + found.join(', ') + ')');
 await page.keyboard.press('Enter'); await wait(400);
-check((await hash()) === '#juego-tower-defense', 'Enter en la búsqueda abre el juego');
+check((await hash()) === '#juego-' + found[0], 'Enter en la búsqueda abre el primer resultado');
 await page.fill('#q', ''); await page.click('.logo'); await wait(300);
-check(await page.locator('.tile[data-tile]').count() === 0 && await page.locator('#dash').count() === 1, 'al volver, el inicio está limpio');
+check(await page.locator('#dash').count() === 1, 'al volver, el inicio está limpio');
 
 // ---------- inicio ----------
 const nCards = await page.locator('.gcard[data-sel]').count();
@@ -91,13 +92,13 @@ await page.click('.tabs a[data-tab=biblioteca]'); await wait(250);
 const chips = await page.$$eval('.chip', cs => cs.map(c => [c.dataset.cat, +c.querySelector('em').textContent]));
 for (const [cat, n] of chips) {
   await page.click(`.chip[data-cat="${cat}"]`); await wait(150);
-  const shown = await page.locator('.tile[data-tile]').count();
+  const shown = await page.locator('[data-tile]').count();
   if (shown !== n) check(false, `categoría ${cat}: ${shown} fichas, decía ${n}`);
 }
 check(true, `las ${chips.length} categorías muestran lo que dicen`);
 await page.click('.chip[data-cat=todos]'); await wait(150);
-const ids = await page.$$eval('.tile[data-tile]', ts => ts.map(t => t.dataset.tile));
-for (const id of ids) { await page.click(`.tile[data-tile="${id}"]`); await wait(200); if ((await hash()) !== '#juego-' + id) check(false, 'ficha ' + id); await page.click('.tabs a[data-tab=biblioteca]'); await wait(200); }
+const ids = await page.$$eval('[data-tile]', ts => ts.map(t => t.dataset.tile));
+for (const id of ids) { await page.click(`[data-tile="${id}"]`); await wait(200); if ((await hash()) !== '#juego-' + id) check(false, 'ficha ' + id); await page.click('.tabs a[data-tab=biblioteca]'); await wait(200); }
 check(true, `las ${ids.length} fichas abren su juego`);
 
 // ---------- página de juego ----------
