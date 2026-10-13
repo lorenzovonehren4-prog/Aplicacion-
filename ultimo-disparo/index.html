@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Último Disparo</title>
+<meta name="description" content="Eres un francotirador: haz zoom, contén la respiración y neutraliza al secuestrador sin herir al rehén. 30 misiones en la ciudad, el puerto, la noche y el desierto.">
+<meta name="theme-color" content="#0b0e10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0e10'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23ff3b30' stroke-width='4'/%3E%3Cpath d='M32 6v18M32 40v18M6 32h18M40 32h18' stroke='%23fff' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='3' fill='%23ff3b30'/%3E%3C/svg%3E">
+<style>
+@font-face{ font-family:'Fredoka'; src:url(vendor/fonts/fredoka.woff2) format('woff2'); font-weight:300 700; font-display:swap; }
+@font-face{ font-family:'Rubik'; src:url(vendor/fonts/rubik.woff2) format('woff2'); font-weight:300 900; font-display:swap; }
+:root{
+  --bg:#0b0e10; --panel:rgba(12,15,18,.86); --panel2:rgba(26,31,36,.94); --line:rgba(255,255,255,.12);
+  --acc:#ff3b30; --acc2:#ffb020; --ok:#34d27b; --bad:#ff4d4d; --ink:#f4f6f8; --muted:#9aa6b2; --steel:#5d6b78;
+  --r:200px;
+  color-scheme:dark;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; margin:0; background:var(--bg); color:var(--ink); font-family:Rubik,system-ui,sans-serif; overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:none; }
+canvas#gl{ position:fixed; inset:0; width:100%; height:100%; display:block; transition:filter .2s; }
+canvas#gl.thermal{ filter:grayscale(1) brightness(.42) contrast(1.9); }
+button{ font:inherit; color:inherit; cursor:pointer; }
+h1,h2,h3{ font-family:Fredoka,Rubik,sans-serif; margin:0; }
+.screen{ position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px; opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:5; }
+.screen.on{ opacity:1; pointer-events:auto; }
+.screen.on .pop{ animation:pop .4s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes pop{ from{ transform:translateY(16px) scale(.97); opacity:0; } }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:50px; padding:12px 24px; border-radius:14px; border:2px solid var(--line); background:var(--panel2); font-weight:700; font-size:17px; letter-spacing:.3px; transition:transform .15s, background .15s, border-color .15s, box-shadow .15s; outline:none; }
+.btn:hover,.btn:focus-visible{ transform:translateY(-2px); border-color:var(--acc2); }
+.btn.main{ background:linear-gradient(180deg,#ff5a4f,#e2261b); border-color:#ff8a80; color:#fff; box-shadow:0 7px 0 #8e130b, 0 12px 28px rgba(255,59,48,.35); }
+.btn.main:active{ transform:translateY(4px); box-shadow:0 3px 0 #8e130b; }
+.btn.small{ min-height:40px; padding:8px 16px; font-size:15px; border-radius:12px; }
+.btn[disabled]{ opacity:.45; cursor:not-allowed; transform:none; }
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:20px; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.hint{ color:var(--muted); font-size:14px; }
+.coins{ display:inline-flex; align-items:center; gap:8px; font-weight:800; font-size:17px; padding:7px 14px; border-radius:999px; background:var(--panel); border:1px solid var(--line); }
+.coin{ width:18px; height:18px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#fff3a8,#ffc83a 45%,#c98a0a); box-shadow:inset 0 -2px 0 rgba(0,0,0,.25); flex:none; display:inline-block; vertical-align:-3px; }
+.topbar{ position:fixed; top:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px; z-index:6; }
+.topbar h2{ font-size:24px; flex:1; }
+.stars{ color:var(--acc2); letter-spacing:2px; }
+.stars i{ font-style:normal; color:rgba(255,255,255,.18); }
+
+/* ---------- intro ---------- */
+#intro{ background:radial-gradient(90% 70% at 50% 50%,#1b2128 0%,#07090b 75%); z-index:20; cursor:pointer; }
+.logo{ position:relative; text-align:center; }
+.logo h1{ font-family:Rubik,system-ui,sans-serif; font-weight:900; font-size:clamp(46px,11vw,128px); letter-spacing:.04em; line-height:.92; text-transform:uppercase; color:#fff; text-shadow:0 6px 0 #5e0d07, 0 16px 40px rgba(0,0,0,.7); }
+.logo h1 span{ color:var(--acc); }
+.logo p{ margin:12px 0 0; font-size:clamp(12px,2vw,17px); letter-spacing:.42em; text-transform:uppercase; color:#c9d3dc; }
+.ring{ position:absolute; left:50%; top:50%; width:min(70vmin,560px); aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; border:2px solid rgba(255,59,48,.35); animation:ringin 1.4s cubic-bezier(.2,.8,.2,1) both; pointer-events:none; }
+.ring::before,.ring::after{ content:''; position:absolute; background:rgba(255,255,255,.25); }
+.ring::before{ left:50%; top:-8%; bottom:-8%; width:1px; }
+.ring::after{ top:50%; left:-8%; right:-8%; height:1px; }
+@keyframes ringin{ from{ transform:translate(-50%,-50%) scale(1.8); opacity:0; } }
+#intro .logo{ animation:drop .9s .4s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes drop{ from{ transform:scale(1.4); opacity:0; filter:blur(8px); } }
+.press{ margin-top:44px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; font-size:14px; animation:blink 1.4s 1.6s infinite both; }
+@keyframes blink{ 50%{ opacity:.3; } }
+
+/* ---------- menú ---------- */
+#menu{ flex-direction:row; align-items:stretch; justify-content:flex-start; padding:0; background:linear-gradient(90deg,rgba(7,9,11,.94) 0%,rgba(7,9,11,.72) 32%,rgba(7,9,11,0) 60%); }
+.mm-side{ width:min(420px,100%); padding:clamp(18px,5vh,44px) 26px 22px; display:flex; flex-direction:column; gap:16px; overflow:auto; }
+#menu .logo{ text-align:left; }
+#menu .logo h1{ font-size:clamp(40px,5.6vw,70px); }
+#menu .logo p{ letter-spacing:.3em; font-size:13px; }
+.mm{ display:flex; flex-direction:column; gap:8px; margin-top:auto; }
+.mm-b{ position:relative; display:flex; align-items:center; gap:14px; width:100%; padding:11px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); text-align:left; outline:none; transition:background .18s, transform .18s, border-color .18s; }
+.mm-b:hover,.mm-b:focus-visible{ background:rgba(255,59,48,.14); border-color:rgba(255,120,110,.45); transform:translateX(6px); }
+.mm-b .ico{ width:40px; height:40px; flex:none; display:grid; place-items:center; border-radius:11px; background:rgba(255,255,255,.07); font-size:19px; }
+.mm-b .tx{ flex:1; min-width:0; }
+.mm-b b{ display:block; font-family:Fredoka; font-size:20px; }
+.mm-b small{ display:block; color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mm-b.main{ background:linear-gradient(90deg,#ff5a4f,#d8231a); border-color:#ff8a80; box-shadow:0 10px 30px rgba(255,59,48,.3); }
+.mm-b.main small{ color:#ffe0dd; } .mm-b.main .ico{ background:rgba(0,0,0,.18); }
+.mm-foot{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+#menu .mm-top{ position:fixed; top:14px; right:16px; display:flex; gap:8px; }
+
+/* ---------- misiones ---------- */
+#missions,#armory,#settings,#help{ justify-content:flex-start; padding:72px 16px 16px; background:rgba(7,9,11,.82); }
+.tabs{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:14px; }
+.tab{ padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:var(--panel2); font-weight:700; font-size:15px; }
+.tab.on{ border-color:var(--c,var(--acc2)); background:color-mix(in srgb,var(--c,var(--acc2)) 22%,var(--panel2)); }
+.grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; width:min(900px,100%); overflow:auto; padding:4px; }
+.lvl{ position:relative; text-align:left; padding:12px; border-radius:14px; border:1px solid var(--line); background:var(--panel2); min-height:96px; display:flex; flex-direction:column; gap:4px; transition:transform .15s, border-color .15s; }
+.lvl:hover,.lvl:focus-visible{ transform:translateY(-2px); border-color:var(--acc2); outline:none; }
+.lvl .n{ font:700 26px Fredoka,Rubik,sans-serif; color:var(--c,#fff); }
+.lvl .nm{ font-weight:700; font-size:14px; line-height:1.2; }
+.lvl .md{ font-size:12px; color:var(--muted); }
+.lvl .stars{ margin-top:auto; font-size:15px; }
+.lvl.lock{ opacity:.45; cursor:not-allowed; }
+.lvl.lock .n::after{ content:' 🔒'; font-size:16px; }
+.lvl.next{ border-color:var(--acc); box-shadow:0 0 0 2px rgba(255,59,48,.25); }
+
+/* ---------- armería ---------- */
+#armory{ background:linear-gradient(90deg,rgba(7,9,11,0) 0%,rgba(7,9,11,0) 40%,rgba(7,9,11,.85) 58%); align-items:flex-end; }
+.arm-panel{ width:min(520px,100%); max-height:100%; overflow:auto; display:flex; flex-direction:column; gap:12px; padding:2px; }
+.arm-panel h3{ font-size:18px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:6px 0 0; }
+.wcard{ padding:14px; border-radius:16px; border:1px solid var(--line); background:var(--panel2); display:grid; grid-template-columns:1fr auto; gap:6px 12px; cursor:pointer; transition:border-color .15s; }
+.wcard.view{ border-color:rgba(255,255,255,.4); }
+.wcard.sel{ border-color:var(--ok); }
+.wcard b{ font:700 20px Fredoka,Rubik,sans-serif; }
+.wcard p{ margin:0; grid-column:1/-1; font-size:13px; color:var(--muted); }
+.bars{ grid-column:1/-1; display:grid; grid-template-columns:auto 1fr; gap:4px 10px; font-size:12px; color:var(--muted); align-items:center; }
+.bar{ height:6px; border-radius:6px; background:rgba(255,255,255,.1); overflow:hidden; }
+.bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--acc2),#ffd36b); }
+.chip{ display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; background:rgba(255,176,32,.16); color:#ffd36b; }
+.uprow{ display:grid; grid-template-columns:auto 1fr auto; gap:4px 12px; align-items:center; padding:12px 14px; border-radius:16px; border:1px solid var(--line); background:var(--panel2); }
+.uprow .ic{ font-size:24px; grid-row:span 2; }
+.uprow b{ font:700 17px Fredoka,Rubik,sans-serif; }
+.uprow small{ color:var(--muted); font-size:12px; grid-column:2; }
+.uprow .btn{ grid-row:span 2; grid-column:3; grid-row-start:1; }
+.pips{ display:flex; gap:4px; margin-top:4px; }
+.pips i{ width:18px; height:6px; border-radius:3px; background:rgba(255,255,255,.12); }
+.pips i.on{ background:var(--acc2); }
+.arm-hint{ position:fixed; left:16px; bottom:16px; color:var(--muted); font-size:13px; }
+
+/* ---------- ajustes y ayuda ---------- */
+.card{ width:min(560px,100%); padding:20px; display:flex; flex-direction:column; gap:14px; overflow:auto; max-height:100%; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.row label{ font-weight:700; }
+input[type=range]{ width:min(240px,50vw); accent-color:var(--acc); }
+.seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.seg button{ padding:8px 14px; border:0; background:transparent; font-weight:700; }
+.seg button.on{ background:var(--acc); }
+.keys{ display:grid; grid-template-columns:auto 1fr; gap:8px 14px; align-items:center; font-size:15px; }
+kbd{ display:inline-block; min-width:30px; text-align:center; padding:3px 8px; border-radius:8px; background:#222a31; border:1px solid #3a4550; border-bottom-width:3px; font:700 13px Rubik,system-ui,sans-serif; margin-right:4px; }
+
+/* ---------- informe de misión ---------- */
+#brief{ background:radial-gradient(70% 70% at 50% 50%,rgba(7,9,11,.55),rgba(7,9,11,.9)); }
+.brief{ width:min(520px,100%); padding:22px; display:flex; flex-direction:column; gap:12px; }
+.brief .kick{ display:flex; gap:8px; align-items:center; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+.brief h2{ font-size:34px; line-height:1; }
+.brief p{ margin:0; color:#d7dee5; line-height:1.45; }
+.facts{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.fact{ padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); font-size:14px; }
+.fact b{ display:block; font:700 20px Fredoka,Rubik,sans-serif; }
+.brief .acts{ display:flex; gap:10px; flex-wrap:wrap; }
+.brief .acts .main{ flex:1; }
+
+/* ---------- HUD ---------- */
+#hud{ padding:0; justify-content:flex-start; align-items:stretch; pointer-events:none; }
+#hud.on{ pointer-events:none; }
+#hud .tl,#hud .tr,#hud .tc,#hud .bl,#hud .bc{ position:absolute; }
+#hud .tl{ top:12px; left:14px; display:flex; flex-direction:column; gap:4px; text-shadow:0 2px 6px rgba(0,0,0,.8); }
+#hud .tl b{ font:700 18px Fredoka,Rubik,sans-serif; }
+#hud .tl small{ color:#d0d8df; font-size:12px; letter-spacing:.1em; text-transform:uppercase; }
+#hud .tc{ top:10px; left:50%; transform:translateX(-50%); text-align:center; }
+.timer{ font:900 34px Rubik,system-ui,sans-serif; font-variant-numeric:tabular-nums; padding:4px 16px; border-radius:12px; background:rgba(0,0,0,.45); border:1px solid var(--line); }
+.timer.low{ color:var(--bad); animation:blink .6s infinite; }
+#hud .tr{ top:12px; right:12px; display:flex; gap:8px; align-items:center; pointer-events:auto; }
+.shots{ display:flex; gap:4px; padding:8px 10px; border-radius:12px; background:rgba(0,0,0,.45); border:1px solid var(--line); }
+.shots i{ width:7px; height:22px; border-radius:3px 3px 1px 1px; background:linear-gradient(180deg,#e7b04f,#a8701c); }
+.shots i.used{ opacity:.2; }
+.ibtn{ width:46px; height:46px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.5); display:grid; place-items:center; font-size:18px; font-weight:900; }
+#hud .bl{ left:14px; bottom:14px; display:flex; flex-direction:column; gap:6px; width:min(240px,46vw); }
+.meter{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; text-shadow:0 1px 4px #000; }
+.meter .bar{ flex:1; height:8px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.15); }
+.meter .bar i{ background:linear-gradient(90deg,#4fc3ff,#b3e7ff); transition:width .1s; }
+.meter.gasp .bar i{ background:var(--bad); }
+#hud .bc{ bottom:16px; left:50%; transform:translateX(-50%); text-align:center; font-size:14px; color:#e8edf1; text-shadow:0 1px 4px #000; max-width:92vw; }
+.hintbar{ padding:8px 14px; border-radius:12px; background:rgba(0,0,0,.55); border:1px solid var(--line); line-height:1.5; }
+.marker{ position:absolute; left:0; top:0; transform:translate(-50%,-100%); display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--acc); font:800 11px Rubik,system-ui,sans-serif; letter-spacing:.14em; text-shadow:0 1px 3px #000; transition:opacity .2s; }
+.marker::after{ content:''; width:14px; height:14px; border:3px solid var(--acc); transform:rotate(45deg); border-top:0; border-left:0; animation:bob 1s infinite ease-in-out; }
+@keyframes bob{ 50%{ translate:0 4px; } }
+.marker.edge::after{ animation:none; }
+.cross{ position:absolute; left:50%; top:50%; width:22px; height:22px; transform:translate(-50%,-50%); }
+.cross::before,.cross::after{ content:''; position:absolute; background:rgba(255,255,255,.85); box-shadow:0 0 2px #000; }
+.cross::before{ left:50%; top:0; bottom:0; width:2px; transform:translateX(-50%); }
+.cross::after{ top:50%; left:0; right:0; height:2px; transform:translateY(-50%); }
+#scope{ position:absolute; inset:0; opacity:0; transition:opacity .12s; pointer-events:none; background:radial-gradient(circle at 50% 50%,transparent calc(var(--r) - 1px),#020303 var(--r)); }
+#scope.on{ opacity:1; }
+#scope.kick{ animation:kick .45s cubic-bezier(.2,.9,.3,1); }
+@keyframes kick{ 0%{ transform:scale(1); filter:brightness(1); } 8%{ transform:scale(1.06) translateY(-3%); filter:brightness(2.2); } 100%{ transform:none; filter:none; } }
+#scope .lens{ position:absolute; left:50%; top:50%; width:calc(var(--r) * 2); height:calc(var(--r) * 2); transform:translate(-50%,-50%); border-radius:50%; box-shadow:inset 0 0 calc(var(--r) * .35) rgba(0,0,0,.85), inset 0 0 0 3px #000; background:radial-gradient(circle at 38% 32%,rgba(255,255,255,.06),transparent 40%); }
+#scope svg{ position:absolute; left:50%; top:50%; width:calc(var(--r) * 2); height:calc(var(--r) * 2); transform:translate(-50%,-50%); }
+.sread{ position:absolute; left:50%; top:calc(50% + var(--r) * .62); transform:translateX(-50%); display:flex; gap:14px; font:700 13px Rubik,system-ui,sans-serif; color:#c7f0c7; text-shadow:0 0 4px #000; letter-spacing:.08em; font-variant-numeric:tabular-nums; }
+.sread span{ padding:2px 8px; background:rgba(0,0,0,.45); border-radius:6px; }
+#scope.thermal .sread{ color:#fff; }
+.bigmsg{ position:absolute; left:50%; top:34%; transform:translate(-50%,-50%); font:900 clamp(30px,6vw,60px) Rubik,system-ui,sans-serif; letter-spacing:.05em; text-transform:uppercase; text-shadow:0 4px 20px rgba(0,0,0,.8); white-space:nowrap; opacity:0; transition:opacity .2s; }
+.bigmsg.on{ opacity:1; animation:pop .4s both; }
+
+/* controles táctiles */
+#touch{ display:none; }
+body.touch #touch{ display:block; }
+#touch button{ position:absolute; pointer-events:auto; border-radius:50%; border:2px solid rgba(255,255,255,.3); background:rgba(0,0,0,.42); font-weight:800; font-size:13px; letter-spacing:.05em; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); touch-action:none; }
+#touch button:active,#touch button.on{ background:rgba(255,59,48,.55); border-color:#ff8a80; }
+#tFire{ right:22px; bottom:28px; width:96px; height:96px; font-size:15px; background:rgba(255,59,48,.38)!important; border-color:#ff8a80!important; }
+#tScope{ right:130px; bottom:40px; width:70px; height:70px; }
+#tBreath{ right:30px; bottom:142px; width:76px; height:76px; font-size:12px; }
+#tZin,#tZout{ width:52px; height:52px; font-size:24px!important; }
+#tZin{ left:16px; bottom:150px; } #tZout{ left:16px; bottom:90px; }
+#tTherm{ right:126px; bottom:126px; width:56px; height:56px; font-size:11px; display:none; }
+body.touch #hud .bl{ bottom:auto; top:64px; width:min(200px,40vw); }
+body.touch #hud .bc{ bottom:auto; top:96px; }
+body.touch .arm-hint{ display:none; }
+
+/* cámara de bala */
+#bcam{ padding:0; pointer-events:none; }
+#bcam::before,#bcam::after{ content:''; position:absolute; left:0; right:0; height:11vh; background:#000; transition:transform .4s; }
+#bcam::before{ top:0; transform:translateY(-100%); } #bcam::after{ bottom:0; transform:translateY(100%); }
+#bcam.on::before,#bcam.on::after{ transform:none; }
+#bcam .skip{ position:absolute; right:16px; bottom:calc(11vh + 10px); font-size:13px; color:#d6dde3; letter-spacing:.1em; text-transform:uppercase; }
+#bcam .tag{ position:absolute; left:16px; top:calc(11vh + 10px); font:800 14px Rubik,system-ui,sans-serif; letter-spacing:.3em; color:var(--acc2); text-transform:uppercase; }
+
+/* pausa y resultado */
+#pause,#result{ background:rgba(4,6,8,.62); z-index:9; }
+.res{ width:min(500px,100%); padding:24px; display:flex; flex-direction:column; gap:12px; text-align:center; }
+.res h2{ font-family:Rubik,system-ui,sans-serif; font-weight:900; font-size:clamp(30px,7vw,46px); letter-spacing:.04em; text-transform:uppercase; }
+.res.ok h2{ color:var(--ok); } .res.bad h2{ color:var(--bad); }
+.res p{ margin:0; color:#d7dee5; line-height:1.45; }
+.bigstars{ display:flex; justify-content:center; gap:10px; font-size:52px; line-height:1; }
+.bigstars span{ color:rgba(255,255,255,.12); transform:scale(.4); transition:transform .35s cubic-bezier(.2,1.6,.4,1), color .2s; }
+.bigstars span.on{ color:var(--acc2); transform:scale(1); text-shadow:0 0 24px rgba(255,176,32,.6); }
+.bigstars span.off{ transform:scale(.85); }
+.checks{ display:flex; flex-direction:column; gap:6px; text-align:left; font-size:15px; padding:10px 14px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid var(--line); }
+.checks div{ display:flex; justify-content:space-between; gap:10px; }
+.checks .y{ color:var(--ok); font-weight:800; } .checks .n{ color:var(--muted); }
+.res .acts{ display:flex; flex-direction:column; gap:8px; }
+.res .acts .two{ display:flex; gap:8px; } .res .acts .two .btn{ flex:1; }
+.earn{ font:800 22px Rubik,system-ui,sans-serif; color:#ffd36b; }
+.tipbox{ font-size:14px; color:var(--muted); }
+
+#toast{ position:fixed; left:50%; top:76px; transform:translate(-50%,-10px); padding:10px 18px; border-radius:12px; background:rgba(10,12,14,.92); border:1px solid var(--line); font-weight:700; opacity:0; transition:opacity .2s, transform .2s; z-index:30; pointer-events:none; text-align:center; max-width:90vw; }
+#toast.on{ opacity:1; transform:translate(-50%,0); }
+
+@media (max-width:640px){
+  #menu{ background:linear-gradient(0deg,rgba(7,9,11,.95) 0%,rgba(7,9,11,.7) 55%,rgba(7,9,11,.2) 100%); }
+  .mm-side{ width:100%; padding:20px 16px 16px; }
+  #armory{ background:rgba(7,9,11,.55); align-items:stretch; padding-top:64px; }
+  .arm-panel{ width:100%; margin-top:34vh; }
+  .facts{ grid-template-columns:1fr 1fr; }
+  .timer{ font-size:26px; }
+  #hud .tl b{ font-size:15px; }
+}
+@media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<section id="intro" class="screen on">
+  <div class="ring"></div>
+  <div class="logo"><h1>Último<br><span>Disparo</span></h1><p>Una bala · Un rehén</p></div>
+  <div class="press">Toca para empezar</div>
+</section>
+
+<section id="menu" class="screen">
+  <div class="mm-side">
+    <div class="logo"><h1>Último <span>Disparo</span></h1><p>Francotirador de rescate</p></div>
+    <div class="mm">
+      <button class="mm-b main" data-go="play"><span class="ico">🎯</span><span class="tx"><b>Jugar</b><small id="mmNext">Misión 1</small></span></button>
+      <button class="mm-b" data-go="missions"><span class="ico">🗺️</span><span class="tx"><b>Misiones</b><small id="mmStars">0 / 90 estrellas</small></span></button>
+      <button class="mm-b" data-go="armory"><span class="ico">🔫</span><span class="tx"><b>Armería</b><small id="mmGun">Armas y mejoras</small></span></button>
+      <button class="mm-b" data-go="settings"><span class="ico">⚙️</span><span class="tx"><b>Ajustes</b><small>Sonido, sensibilidad y calidad</small></span></button>
+      <button class="mm-b" data-go="help"><span class="ico">❔</span><span class="tx"><b>Cómo jugar</b><small>Controles y consejos</small></span></button>
+    </div>
+  </div>
+  <div class="mm-top"><span class="coins"><span class="coin"></span><span class="cv">0</span></span></div>
+</section>
+
+<section id="missions" class="screen">
+  <div class="topbar"><button class="btn small" data-go="menu">← Volver</button><h2>Misiones</h2><span class="coins"><span class="coin"></span><span class="cv">0</span></span></div>
+  <div class="tabs" id="mapTabs"></div>
+  <div class="grid" id="lvlGrid"></div>
+</section>
+
+<section id="armory" class="screen">
+  <div class="topbar"><button class="btn small" data-go="back">← Volver</button><h2>Armería</h2><span class="coins"><span class="coin"></span><span class="cv">0</span></span></div>
+  <div class="arm-panel">
+    <h3>Armas</h3>
+    <div id="wlist" style="display:flex;flex-direction:column;gap:10px"></div>
+    <h3>Mejoras <span class="hint" style="text-transform:none;letter-spacing:0">(sirven para todas las armas)</span></h3>
+    <div id="ulist" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+  <div class="arm-hint">Arrastra para girar el rifle</div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="topbar"><button class="btn small" data-go="back">← Volver</button><h2>Ajustes</h2></div>
+  <div class="card panel">
+    <div class="row"><label>Sonido</label><div class="seg" id="optSound"><button data-v="1">Sí</button><button data-v="0">No</button></div></div>
+    <div class="row"><label for="optVol">Volumen</label><input id="optVol" type="range" min="0" max="1" step="0.05"></div>
+    <div class="row"><label for="optSens">Sensibilidad de la mira</label><input id="optSens" type="range" min="0.3" max="2.2" step="0.05"></div>
+    <div class="row"><label>Calidad</label><div class="seg" id="optQ"><button data-v="alta">Alta</button><button data-v="baja">Baja</button></div></div>
+    <div class="row"><label>Progreso</label><button class="btn small" id="optReset">Borrar todo</button></div>
+  </div>
+</section>
+
+<section id="help" class="screen">
+  <div class="topbar"><button class="btn small" data-go="back">← Volver</button><h2>Cómo jugar</h2></div>
+  <div class="card panel">
+    <p style="margin:0;line-height:1.5">Un secuestrador tiene a una persona inocente. Busca la <b style="color:var(--acc)">marca roja</b>, entra a la mira, haz zoom y dispárale <b>sólo a él</b>. Si fallas, si le das a un inocente o se acaba el tiempo, la misión falla. Tiro a la cabeza y rapidez dan estrellas extra.</p>
+    <h3>En computadora</h3>
+    <div class="keys">
+      <span><kbd>Mouse</kbd></span><span>Apuntar (o arrastra con clic)</span>
+      <span><kbd>Clic der.</kbd><kbd>Shift</kbd></span><span>Entrar o salir de la mira</span>
+      <span><kbd>Rueda</kbd><kbd>+</kbd><kbd>−</kbd></span><span>Zoom</span>
+      <span><kbd>Espacio</kbd></span><span>Mantener: contener la respiración (cámara lenta, la mira no tiembla)</span>
+      <span><kbd>Clic</kbd><kbd>F</kbd></span><span>Disparar</span>
+      <span><kbd>T</kbd></span><span>Mira térmica (Búho T-9)</span>
+      <span><kbd>Esc</kbd><kbd>P</kbd></span><span>Pausa</span>
+    </div>
+    <h3>En celular</h3>
+    <div class="keys">
+      <span><kbd>Arrastrar</kbd></span><span>Apuntar</span>
+      <span><kbd>MIRA</kbd></span><span>Entrar o salir de la mira; <kbd>+</kbd><kbd>−</kbd> para el zoom</span>
+      <span><kbd>AIRE</kbd></span><span>Mantener para contener la respiración</span>
+      <span><kbd>FUEGO</kbd></span><span>Disparar</span>
+    </div>
+    <p class="hint" style="margin:0">Consejo: espera a que el secuestrador asome la cabeza y que no pase nadie por detrás antes de disparar.</p>
+  </div>
+</section>
+
+<section id="brief" class="screen">
+  <div class="brief panel pop">
+    <div class="kick"><span id="bMap">☀️ Ciudad de día</span> · <span id="bNum">Misión 1</span></div>
+    <h2 id="bName">Primer encargo</h2>
+    <p id="bText"></p>
+    <div class="facts">
+      <div class="fact">Distancia<b id="bDist">55 m</b></div>
+      <div class="fact">Tiempo<b id="bTime">45 s</b></div>
+      <div class="fact">Secuestrador<b id="bMode">De pie</b></div>
+      <div class="fact">Civiles<b id="bCiv">0</b></div>
+    </div>
+    <div class="hint" id="bGun"></div>
+    <div class="acts"><button class="btn" data-go="missions">Volver</button><button class="btn" data-go="armory">🔫 Armería</button><button class="btn main" id="bGo">¡A la mira!</button></div>
+  </div>
+</section>
+
+<section id="hud" class="screen">
+  <div class="marker" id="marker">OBJETIVO</div>
+  <div class="cross" id="cross"></div>
+  <div id="scope">
+    <div class="lens"></div>
+    <svg viewBox="-100 -100 200 200" aria-hidden="true">
+      <g stroke="#0b0b0b" fill="none">
+        <path d="M-100 0H-14M14 0H100M0 -100V-14M0 14V100" stroke-width=".55"/>
+        <path d="M-100 0H-46M46 0H100M0 100V46" stroke-width="2.6"/>
+        <path d="M0 -100V-46" stroke-width="2.6"/>
+        <g stroke-width=".5"><path d="M-40 -2V2M-30 -2V2M-20 -2V2M-10 -1.4V1.4M10 -1.4V1.4M20 -2V2M30 -2V2M40 -2V2"/><path d="M-2 10H2M-2 20H2M-2 30H2M-2 40H2M-1.4 -10H1.4M-2 -20H2M-2 -30H2M-2 -40H2"/></g>
+      </g>
+      <circle r="1.1" fill="#ff2a1a"/>
+      <circle r="99" fill="none" stroke="#000" stroke-width="2"/>
+    </svg>
+    <div class="sread"><span id="sZoom">4.0×</span><span id="sDist">— m</span></div>
+  </div>
+  <div class="tl"><b id="hName">Misión 1</b><small id="hMode">De pie</small></div>
+  <div class="tc"><div class="timer" id="hTime">0:45</div></div>
+  <div class="tr"><div class="shots" id="hShots"></div><button class="ibtn" id="hPause" aria-label="Pausa">II</button></div>
+  <div class="bl">
+    <div class="meter" id="mBreath">🫁<div class="bar"><i id="hBreath" style="width:100%"></i></div></div>
+  </div>
+  <div class="bc"><div class="hintbar" id="hHint"></div></div>
+  <div class="bigmsg" id="hBig"></div>
+  <div id="touch">
+    <button id="tZin" aria-label="Más zoom">+</button>
+    <button id="tZout" aria-label="Menos zoom">−</button>
+    <button id="tScope">MIRA</button>
+    <button id="tTherm">TÉRM.</button>
+    <button id="tBreath">AIRE</button>
+    <button id="tFire">FUEGO</button>
+  </div>
+</section>
+
+<section id="bcam" class="screen"><div class="tag">Cámara de bala</div><div class="skip">Toca para saltar</div></section>
+
+<section id="pause" class="screen">
+  <div class="res panel pop">
+    <h2>Pausa</h2>
+    <div class="acts"><button class="btn main" id="pResume">Continuar</button><button class="btn" id="pRetry">Reiniciar misión</button><button class="btn" id="pMenu">Salir al menú</button></div>
+  </div>
+</section>
+
+<section id="result" class="screen">
+  <div class="res panel pop" id="resBox"></div>
+</section>
+
+<div id="toast"></div>
+
+<script src="vendor/three.min.js"></script>
+<script src="src/data.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/world.js"></script>
+<script src="src/post.js"></script>
+<script src="src/cars.js"></script>
+<script src="src/people.js"></script>
+<script src="src/game.js"></script>
+<script src="src/ui.js"></script>
+</body>
+</html>

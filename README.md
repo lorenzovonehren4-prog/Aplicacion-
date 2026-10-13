@@ -7,6 +7,9 @@ repositorio en un solo lugar. HTML, CSS y JavaScript sin compilación.
 | --- | --- | --- |
 | **Ápice GP** | `formula-3d/` | Monoplazas estilo F1 en 3D |
 | **Kartódromo** | `karting/` | Carreras de karts 3D, 2 jugadores |
+| **Código Rojo** | `codigo-rojo/` | Persecuciones ladrón/policía en un barrio 3D |
+| **Drive In The Serrín** | `cornisa/` | Manejar por montañas desde la cabina (3D) |
+| **Último Disparo** | `ultimo-disparo/` | Francotirador de rescate: 30 misiones (3D) |
 | **Combi Rush** | `combi-rush/` | Manejar una combi por Lima (3D) |
 | **Fuga Urbana** | `fuga-urbana/` | Escapar de la policía |
 | **Sazón Tycoon** | `sazon-tycoon/` | Tycoon de restaurantes 3D |
@@ -14,6 +17,7 @@ repositorio en un solo lugar. HTML, CSS y JavaScript sin compilación.
 | **Reino en Guardia** | `tower-defense/` | Tower defense contra zombis |
 | **Don't Look Up** | `escalada/` | Escalada / plataformas, online |
 | **Mind Escape** | `mind-escape/` | Puzzles y acertijos |
+| **Brújula Política** | `brujula-politica/` | Test de ideología: 50 preguntas, 16 ideologías |
 
 Cada juego vino de su propia rama y está tal cual, en su carpeta.
 
@@ -35,13 +39,18 @@ Y entrar a <http://localhost:8000>. El portal también abre con doble clic en
   "Classes"), el sonido, la hora y **tu perfil**. En celular las pestañas van
   en una barra fija abajo.
 - **Inicio, menú de consola**: el juego elegido llena la pantalla (fondo,
-  título grande, etiquetas, tu progreso, Jugar / Detalles / Favorito) y abajo
-  está el estante con los 9 juegos. Se recorre con `←` `→`, el mouse o la
-  cruceta del mando; `Enter` o A juega, `I` abre los detalles, `F` o Y marca
-  favorito, B vuelve. Debajo, "Sigue jugando" y "Tu sala".
-- **Biblioteca**: cuadrícula con categorías (Carreras, Acción, Simulación,
-  Deportes, Estrategia, Plataformas, Puzzles, 3D, Multijugador, Favoritos) y
-  búsqueda. Las fichas leen el guardado de cada juego.
+  título grande, etiquetas, tu progreso, Jugar / Detalles / Favorito; en
+  pantallas anchas, a la derecha, dos imágenes, un anillo de avance con datos
+  y sus categorías) y abajo está el estante "Tus juegos" (con el número del
+  elegido). Se recorre con `←` `→`, el mouse o la cruceta del mando; `Enter`
+  o A juega, `I` abre los detalles, `F` o Y marca favorito, B vuelve. Debajo,
+  "Explora por categoría", "Novedades", "Sigue jugando" y "Tu sala".
+- **Biblioteca**: fichas estilo tienda (carátula con logo que cambia a otra
+  imagen al pasar el mouse; abajo nombre, progreso, categorías y tiempo
+  jugado), filtros por categoría (Carreras, Acción, Simulación, Deportes,
+  Estrategia, Plataformas, Puzzles, 3D, Multijugador, Favoritos) y búsqueda.
+  Las fichas leen el guardado de cada juego. Varias insignias seguidas se
+  juntan en un solo aviso.
 - **Logros**: las 18 insignias y tu nivel.
 - **Página de juego** con reproductor (el juego va en un `iframe`), favorito,
   reiniciar, pantalla completa (`F`), controles, tu progreso y más juegos.
@@ -66,7 +75,7 @@ portal/
   fonts/              Fredoka y Rubik (sin internet)
   tests/portal.mjs    prueba en navegador
   tools/              scripts para sacar capturas nuevas
-formula-3d/ karting/ combi-rush/ fuga-urbana/ sazon-tycoon/
+formula-3d/ karting/ cornisa/ ultimo-disparo/ codigo-rojo/ combi-rush/ fuga-urbana/ sazon-tycoon/
 modo-carrera-futbol/ tower-defense/ escalada/ mind-escape/   cada juego, sin cambios
 ```
 

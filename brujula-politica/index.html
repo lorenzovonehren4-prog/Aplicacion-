@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brújula Política</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2314b8a6'/%3E%3Cpath d='M16 5l4 11-4 11-4-11z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+  @font-face { font-family: 'Fred'; src: url(../portal/fonts/fredoka.woff2) format('woff2'); font-weight: 300 700; font-display: swap; }
+  @font-face { font-family: 'Rub'; src: url(../portal/fonts/rubik.woff2) format('woff2'); font-weight: 300 900; font-display: swap; }
+  :root {
+    --bg: #0d1117; --bg2: #161b26; --line: rgba(255,255,255,.1); --ink: #f3f5f9; --mut: #9aa3b5;
+    --acc: #14b8a6; --acc2: #6366f1; --r: 18px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { min-height: 100%; background: var(--bg); color: var(--ink); font-family: 'Rub', system-ui, sans-serif; }
+  body { background: radial-gradient(120% 70% at 50% -10%, #1b2440 0%, var(--bg) 60%) fixed; }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 22px 16px 40px; }
+  .scr { display: none; animation: in .35s ease both; }
+  .scr.on { display: block; }
+  @keyframes in { from { opacity: 0; transform: translateY(10px); } }
+  h1, h2, h3 { font-family: 'Fred', sans-serif; font-weight: 700; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 22px; border-radius: 14px; font-weight: 700; font-size: 16px; background: var(--bg2); border: 1px solid var(--line); transition: transform .12s, background .2s; }
+  .btn:hover { background: #1f2636; }
+  .btn:active { transform: scale(.97); }
+  .btn--main { background: linear-gradient(135deg, var(--acc), var(--acc2)); border: 0; color: #fff; box-shadow: 0 10px 30px rgba(20,184,166,.25); }
+  .btn--main:hover { filter: brightness(1.08); background: linear-gradient(135deg, var(--acc), var(--acc2)); }
+  .btn[disabled] { opacity: .4; pointer-events: none; }
+  .mut { color: var(--mut); }
+
+  /* ---------- inicio ---------- */
+  .hero { text-align: center; padding: 26px 0 10px; }
+  .hero__logo { width: 92px; height: 92px; margin: 0 auto 14px; }
+  .hero h1 { font-size: clamp(34px, 8vw, 58px); line-height: 1; letter-spacing: .5px; background: linear-gradient(180deg, #fff 40%, #9ff3e6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { max-width: 560px; margin: 12px auto 0; color: var(--mut); line-height: 1.5; }
+  .start { max-width: 460px; margin: 26px auto 0; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 12px; }
+  .start label { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--mut); font-weight: 600; }
+  .start input { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line); background: #0d1117; color: var(--ink); font: 600 17px 'Rub', sans-serif; }
+  .start .btn { width: 100%; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+  .facts span { font-size: 13px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1px solid var(--line); color: var(--mut); }
+  .sec { margin-top: 30px; }
+  .sec h2 { font-size: 22px; margin-bottom: 12px; }
+  .hist { display: grid; gap: 8px; }
+  .hist button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 14px; border-radius: 14px; background: var(--bg2); border: 1px solid var(--line); }
+  .hist button:hover { background: #1f2636; }
+  .hist i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .hist b { flex: 1; min-width: 0; }
+  .hist small { color: var(--mut); white-space: nowrap; }
+  .ideos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .ideo { padding: 14px; border-radius: 14px; background: var(--bg2); border: 1px solid var(--line); border-left: 5px solid var(--c); }
+  .ideo h3 { font-size: 18px; }
+  .ideo em { display: block; font-style: normal; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--c); font-weight: 700; margin: 2px 0 6px; }
+  .ideo p { font-size: 14px; color: var(--mut); line-height: 1.45; }
+  .ideo small { display: block; margin-top: 6px; font-size: 13px; color: #c7cede; }
+  .note { font-size: 13px; color: var(--mut); line-height: 1.5; margin-top: 14px; text-align: center; }
+
+  /* ---------- preguntas ---------- */
+  .qtop { display: flex; align-items: center; gap: 12px; }
+  .qtop .btn { padding: 9px 14px; font-size: 14px; }
+  .qbar { flex: 1; height: 10px; border-radius: 10px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .qbar i { display: block; height: 100%; width: 0; border-radius: 10px; background: linear-gradient(90deg, var(--acc), var(--acc2)); transition: width .3s; }
+  .qn { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 58px; text-align: right; }
+  .qcard { max-width: 720px; margin: 34px auto 0; text-align: center; }
+  .qcard small { letter-spacing: 3px; text-transform: uppercase; color: var(--acc); font-weight: 700; font-size: 13px; }
+  .qcard h2 { font-size: clamp(22px, 5vw, 32px); line-height: 1.25; margin: 14px 0 28px; min-height: 3.75em; display: flex; align-items: center; justify-content: center; }
+  .ans { display: grid; gap: 10px; max-width: 520px; margin: 0 auto; }
+  .ans button { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; font-weight: 600; font-size: 17px; text-align: left; background: var(--bg2); border: 2px solid transparent; transition: transform .1s, border-color .15s, background .15s; }
+  .ans button:hover { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--bg2)); }
+  .ans button:active { transform: scale(.98); }
+  .ans button.is-on { border-color: var(--c); background: color-mix(in srgb, var(--c) 22%, var(--bg2)); }
+  .ans i { width: 26px; height: 26px; border-radius: 50%; flex: none; background: var(--c); display: grid; place-items: center; font: 700 13px 'Rub'; font-style: normal; color: #0d1117; }
+  .keys { margin-top: 18px; font-size: 13px; color: var(--mut); }
+  .keys kbd { font: 600 12px 'Rub'; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255,255,255,.06); }
+
+  /* ---------- resultado (tarjeta estilo 12 axes) ---------- */
+  .card { --c: #14b8a6; position: relative; overflow: hidden; border-radius: 26px; padding: 26px 24px 20px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--c) 42%, #1a1f2b) 0%, color-mix(in srgb, var(--c) 20%, #12151d) 100%);
+    box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+  .card::before { content: ''; position: absolute; width: 520px; height: 520px; border-radius: 50%; right: -260px; top: -300px; background: rgba(255,255,255,.05); }
+  .card__top { position: relative; display: flex; align-items: center; gap: 14px; }
+  .card__brand { font: 700 24px 'Fred'; white-space: nowrap; }
+  .card__top hr { flex: 1; border: 0; height: 1px; background: rgba(255,255,255,.25); }
+  .card__top span:last-child { letter-spacing: 4px; font-weight: 700; font-size: 13px; color: rgba(255,255,255,.75); white-space: nowrap; }
+  .card__head { position: relative; margin-top: 26px; }
+  .card__lado { letter-spacing: 5px; font-weight: 700; font-size: 15px; text-transform: uppercase; color: rgba(255,255,255,.85); }
+  .card__ideo { font-size: clamp(32px, 7vw, 54px); line-height: 1.02; margin-top: 4px; }
+  .card__grid { position: relative; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 16px; margin-top: 14px; }
+  .box { background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; padding: 18px; }
+  .box h4 { letter-spacing: 3px; font-size: 13px; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; color: rgba(255,255,255,.88); }
+  .ax { display: grid; gap: 13px; }
+  .ax__row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+  .ax__ic { width: 30px; height: 30px; border-radius: 8px; background: var(--k); display: grid; place-items: center; color: #fff; }
+  .ax__ic svg { width: 19px; height: 19px; }
+  .ax__lbl { font-weight: 600; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; }
+  .ax__lbl span { color: rgba(255,255,255,.55); font-weight: 500; font-size: 13px; white-space: nowrap; }
+  .ax__bar { grid-column: 2 / 4; position: relative; height: 8px; border-radius: 8px; background: rgba(255,255,255,.12); margin-top: -6px; }
+  .ax__bar i { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: var(--k); }
+  .ax__bar u { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: rgba(255,255,255,.35); }
+  .ax__pct { font: 700 20px 'Fred'; color: var(--k); filter: brightness(1.35); }
+  .card__low { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .lst { display: grid; gap: 12px; }
+  .lst div { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .lst b { font-weight: 600; font-size: 15px; line-height: 1.2; }
+  .lst b small { display: block; color: rgba(255,255,255,.55); font-weight: 400; font-size: 12px; margin-top: 2px; }
+  .lst strong { font: 700 18px 'Fred'; }
+  .cpct { text-align: center; margin-top: 10px; font-size: 15px; color: rgba(255,255,255,.85); }
+  .cpct b { font: 700 24px 'Fred'; color: #fff; }
+  .lst--def div { grid-template-columns: 30px minmax(0, 1fr) auto; }
+  .lst--def b { font-weight: 500; font-size: 14px; line-height: 1.35; }
+  .chip { width: 42px; height: 28px; border-radius: 6px; background: var(--k); border: 1px solid rgba(255,255,255,.3); }
+  .card__foot { position: relative; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.2); letter-spacing: 4px; font-weight: 700; font-size: 12px; color: rgba(255,255,255,.75); }
+
+  .more { margin-top: 18px; }
+  .panel { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; }
+  .panel h3 { font-size: 19px; margin-bottom: 4px; }
+  .panel > p { font-size: 14px; color: var(--mut); margin-bottom: 12px; line-height: 1.45; }
+  .compass { width: 100%; max-width: 360px; display: block; margin: 0 auto; }
+  .spec { position: relative; height: 18px; border-radius: 18px; margin: 30px 0 10px;
+    background: linear-gradient(90deg, #b91c1c, #ef4444 20%, #f472b6 36%, #a3a3a3 50%, #60a5fa 64%, #2563eb 80%, #1e3a8a); }
+  .spec i { position: absolute; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: #fff; border: 4px solid #0d1117; box-shadow: 0 0 0 2px #fff, 0 4px 14px rgba(0,0,0,.5); transition: left .8s cubic-bezier(.2,.8,.2,1); }
+  .spec b { position: absolute; bottom: 30px; transform: translateX(-50%); white-space: nowrap; font: 700 14px 'Fred'; padding: 3px 10px; border-radius: 999px; background: #fff; color: #0d1117; }
+  .spec__lbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--mut); gap: 4px; }
+  .spec__lbl span { flex: 1; text-align: center; }
+  .spec__lbl span:first-child { text-align: left; } .spec__lbl span:last-child { text-align: right; }
+  .why { margin-top: 14px; font-size: 14px; line-height: 1.55; color: #c7cede; }
+  .acts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 30px); opacity: 0; pointer-events: none; padding: 12px 18px; border-radius: 12px; background: #fff; color: #0d1117; font-weight: 600; transition: .25s; z-index: 9; max-width: calc(100% - 32px); }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 720px) {
+    .card { padding: 20px 16px 16px; border-radius: 22px; }
+    .card__grid, .card__low { grid-template-columns: 1fr; }
+            @media (max-width: 420px) { .ax__lbl span { display: none; } }
+  @media (max-width: 380px) {
+    .wrap { padding: 16px 12px 32px; }
+    .ans button { font-size: 15px; padding: 12px; }
+    .card__top span:last-child { display: none; }
+    .card__lado { letter-spacing: 3px; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- inicio -->
+  <section class="scr" id="s-home">
+    <div class="hero">
+      <svg class="hero__logo" viewBox="0 0 100 100" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs>
+        <circle cx="50" cy="50" r="46" fill="url(#lg)"/><circle cx="50" cy="50" r="36" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+        <path d="M50 14l9 36-9 36-9-36z" fill="#fff"/><path d="M50 14l9 36H41z" fill="#ef4444"/><circle cx="50" cy="50" r="5" fill="#0d1117"/>
+      </svg>
+      <h1>Brújula Política</h1>
+      <p>Responde 60 frases sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra. Al final verás tu ideología, tu lado político, tu lugar en la brújula y lo que más te define.</p>
+      <div class="facts"><span>60 preguntas</span><span>6 ejes</span><span>16 ideologías</span><span>Unos 10 minutos</span></div>
+    </div>
+    <div class="start">
+      <button class="btn btn--main" id="go">Empezar el test</button>
+      <button class="btn" id="resume" hidden>Seguir donde me quedé</button>
+    </div>
+    <div class="sec" id="histSec" hidden><h2>Tus resultados</h2><div class="hist" id="hist"></div></div>
+    <div class="sec"><h2>Las 16 ideologías</h2><div class="ideos" id="ideos"></div></div>
+    <p class="note">No hay respuestas buenas ni malas. Es un juego para conocerte mejor y aprender sobre ideas políticas, no un estudio científico. Las descripciones resumen ideas en términos generales.</p>
+  </section>
+
+  <!-- preguntas -->
+  <section class="scr" id="s-quiz">
+    <div class="qtop">
+      <button class="btn" id="exit" aria-label="Salir al inicio">Salir</button>
+      <div class="qbar"><i id="qbar"></i></div>
+      <span class="qn" id="qn">1/60</span>
+    </div>
+    <div class="qcard">
+      <small id="qk">Pregunta 1</small>
+      <h2 id="qt"></h2>
+      <div class="ans" id="ans"></div>
+      <div class="acts"><button class="btn" id="back">← Anterior</button></div>
+      <p class="keys">Teclas <kbd>1</kbd>–<kbd>5</kbd> para responder y <kbd>←</kbd> para volver</p>
+    </div>
+  </section>
+
+  <!-- resultado -->
+  <section class="scr" id="s-res">
+    <div class="card" id="card"></div>
+    <div class="more">
+      <div class="panel">
+        <h3>Tu lado político</h3>
+        <p>De extrema izquierda a extrema derecha, según lo que respondiste.</p>
+        <div class="spec" id="spec"><b></b><i></i></div>
+        <div class="spec__lbl"><span>Extrema izq.</span><span>Izquierda</span><span>Centro</span><span>Derecha</span><span>Extrema der.</span></div>
+        <p class="why" id="why"></p>
+      </div>
+    </div>
+    <div class="acts">
+      <button class="btn btn--main" id="again">Hacer el test otra vez</button>
+      <button class="btn" id="copy">Copiar resultado</button>
+      <button class="btn" id="home">Inicio</button>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const KEY = 'brujula_politica_v1';
+
+/* ---------- ejes: cada uno va de -1 (polo izquierdo) a +1 (polo derecho) ---------- */
+const IC = {
+  igual: '<path d="M5 9h14M5 15h14"/>',
+  merc: '<circle cx="12" cy="12" r="8"/><path d="M14.5 9.5c-.5-1-1.4-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1.2 0-2.1-.5-2.6-1.5M12 6.5v11"/>',
+  lib: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/>',
+  aut: '<path d="M4 18l1.5-10 4.5 4 2-6 2 6 4.5-4L20 18z"/><path d="M4 21h16"/>',
+  prog: '<path d="M5 19 19 5M10 5h9v9"/>',
+  trad: '<path d="M4 9l8-5 8 5M6 10v8M10 10v8M14 10v8M18 10v8M3 20h18"/>',
+  glob: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z"/>',
+  nac: '<path d="M6 21V4M6 5h12l-2.5 4L18 13H6"/>',
+  eco: '<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 14z"/><path d="M5 19l9-9"/>',
+  des: '<path d="M3 20V11l5 3v-3l5 3V6h5v14zM3 20h18"/>',
+  paz: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M12 12l-6 6M12 12l6 6"/>',
+  mil: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z"/>',
+};
+const svg = (k, sw = 2.2) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
+const AXES = [
+  { k: 'e', name: 'Economía', neg: { n: 'Igualdad', ic: 'igual', c: '#e5484d' }, pos: { n: 'Mercado', ic: 'merc', c: '#d99a16' } },
+  { k: 'a', name: 'Gobierno', neg: { n: 'Libertad', ic: 'lib', c: '#c9a227' }, pos: { n: 'Autoridad', ic: 'aut', c: '#7c4dde' } },
+  { k: 's', name: 'Sociedad', neg: { n: 'Progreso', ic: 'prog', c: '#d9468f' }, pos: { n: 'Tradición', ic: 'trad', c: '#8a6a4a' } },
+  { k: 'n', name: 'El mundo', neg: { n: 'Globalismo', ic: 'glob', c: '#1f8fd1' }, pos: { n: 'Nacionalismo', ic: 'nac', c: '#d4602a' } },
+  { k: 'v', name: 'El planeta', neg: { n: 'Ecología', ic: 'eco', c: '#3a9d4a' }, pos: { n: 'Desarrollo', ic: 'des', c: '#6b7280' } },
+  { k: 'm', name: 'La guerra', neg: { n: 'Pacifismo', ic: 'paz', c: '#2fa3b5' }, pos: { n: 'Militarismo', ic: 'mil', c: '#6f8a2f' } },
+];
+
+/* ---------- 60 preguntas: estar de acuerdo suma el peso en cada eje ---------- */
+const Q = [
+  // economía (- igualdad, + mercado)
+  ['El Estado debería garantizar salud y educación gratis para todos, aunque haya que subir impuestos.', { e: -1 }],
+  ['Las empresas privadas administran mejor las cosas que el Estado.', { e: 1 }],
+  ['Los que más ganan deberían pagar un porcentaje de impuestos mucho mayor que el resto.', { e: -1 }],
+  ['El libre mercado es la mejor forma de sacar a la gente de la pobreza.', { e: 1 }],
+  ['El agua, la luz y el gas deberían ser sólo del Estado, sin ninguna empresa privada.', { e: -1 }],
+  ['Si tengo dos celulares y alguien no tiene ninguno, debería regalarle uno.', { e: -1 }],
+  ['Si tuviera una empresa, el Estado no debería decirme cuánto pagarles a mis trabajadores.', { e: 1, a: -.3 }],
+  ['Las minas, las grandes empresas y las tierras deberían pasar a manos del pueblo.', { e: -1, a: .3 }],
+  ['Lo mejor para la luz y el agua es que el Estado y empresas privadas las manejen juntos, con reglas claras.', { e: .5 }],
+  ['Si tuviera 10 casas, regalaría algunas a familias que no tienen dónde vivir.', { e: -1 }],
+  ['Si gané mi plata trabajando duro, es justo quedarme con casi toda, aunque otros tengan mucho menos.', { e: 1 }],
+  ['El Estado debería fijar el precio de los productos básicos como el arroz o el pan.', { e: -1, a: .3 }],
+  ['Si al Estado le falta plata, puede imprimir más billetes aunque eso haga subir los precios (inflación).', { e: -.7, a: .3 }],
+  ['Lo más importante del Banco Central es cuidar que la moneda no pierda valor y los precios no suban.', { e: .7 }],
+  ['El Estado debería controlar el precio del dólar.', { e: -1, a: .3 }],
+  ['Cualquiera debería poder abrir un negocio sin pedirle tantos permisos al Estado.', { e: 1, a: -.5 }],
+  // gobierno (- libertad, + autoridad)
+  ['Un gobierno de mano dura es lo que hace falta para poner orden en el país.', { a: 1 }],
+  ['Cualquiera debería poder decir lo que piensa, aunque a otros les ofenda.', { a: -1 }],
+  ['La policía debería poder revisar celulares y mensajes si así se evitan delitos.', { a: 1 }],
+  ['Las decisiones importantes del país deberían votarse en referéndum.', { a: -1 }],
+  ['La pena de muerte debería aplicarse a los peores delitos.', { a: 1, s: .5 }],
+  ['La marihuana debería ser legal para los adultos.', { a: -1, s: -.5 }],
+  ['En una crisis, el presidente debería poder gobernar sin el Congreso.', { a: 1 }],
+  ['La prensa debe ser libre aunque critique duramente al gobierno.', { a: -1 }],
+  ['Si un vecino pone música a todo volumen de madrugada, la policía debería poder entrar a su casa sin orden de un juez.', { a: 1 }],
+  ['El Estado no debería meterse en lo que cada adulto hace con su propia vida.', { a: -1 }],
+  ['Cada adulto debería poder hacer lo que quiera con su cuerpo, aunque se haga daño a sí mismo.', { a: -1 }],
+  // delitos y castigos (también es gobierno: más castigo, más autoridad)
+  ['Quien roba un celular debería pasar varios años en la cárcel.', { a: 1 }],
+  ['Quien mata a alguien a propósito debería quedarse en la cárcel el resto de su vida.', { a: 1, s: .3 }],
+  ['Quien tortura o mata con crueldad merece el castigo más duro que exista.', { a: 1, s: .3 }],
+  ['A los presos hay que darles estudio y trabajo para que cambien, no sólo castigarlos.', { a: -1 }],
+  // sociedad (- progreso, + tradición)
+  ['Las parejas del mismo sexo deberían poder casarse.', { s: -1 }],
+  ['Las tradiciones y costumbres de nuestros abuelos deben protegerse.', { s: 1 }],
+  ['La religión debería tener un papel importante en las leyes del país.', { s: 1 }],
+  ['El aborto debería ser legal si la mujer lo decide.', { s: -1 }],
+  ['La familia tradicional es la base de la sociedad.', { s: 1 }],
+  ['En los colegios debería enseñarse educación sexual integral.', { s: -1 }],
+  ['Los cambios rápidos en la sociedad suelen traer más problemas que soluciones.', { s: 1 }],
+  ['Los nuevos movimientos sociales, como el feminismo, son un avance para el país.', { s: -1 }],
+  ['Si mi hijo o mi hija me dijera que es gay, lo aceptaría sin problema.', { s: -1 }],
+  // el mundo (- globalismo, + nacionalismo)
+  ['Hay que proteger lo hecho en el país aunque lo importado salga más barato.', { n: 1, e: -.3 }],
+  ['Organismos como la ONU deberían tener más poder sobre los países.', { n: -1 }],
+  ['Dejaría entrar a mi país a los extranjeros que quieran vivir aquí, pero de forma legal y con reglas claras.', { n: -.5 }],
+  ['Lo de mi país es primero, aunque perjudique a otros países.', { n: 1 }],
+  ['Los tratados de libre comercio con otros países son buenos.', { n: -1, e: .5 }],
+  ['Dejaría que las personas entren a mi país de forma ilegal, sin papeles, si vienen a buscar una vida mejor.', { n: -1, a: -.3 }],
+  ['Las fronteras deberían vigilarse con mucha más dureza.', { n: 1, a: .3 }],
+  ['A los extranjeros que están aquí de forma ilegal habría que expulsarlos del país.', { n: 1, a: .3 }],
+  // el planeta (- ecología, + desarrollo)
+  ['Cuidar el medio ambiente es más importante que el crecimiento económico.', { v: -1 }],
+  ['La minería es necesaria para el desarrollo del país aunque contamine.', { v: 1 }],
+  ['Habría que prohibir los carros a gasolina dentro de unos años.', { v: -1, a: .3 }],
+  ['Se exagera mucho con el cambio climático.', { v: 1 }],
+  ['Las comunidades deberían poder frenar los proyectos que afecten sus tierras y ríos.', { v: -1 }],
+  ['Pagaría un poco más por un producto si así se contamina menos.', { v: -1 }],
+  ['Vale la pena construir carreteras, represas y puertos aunque se talen bosques.', { v: 1 }],
+  // la guerra (- pacifismo, + militarismo)
+  ['Un país fuerte necesita Fuerzas Armadas grandes y bien equipadas.', { m: 1 }],
+  ['La guerra nunca está justificada.', { m: -1 }],
+  ['El servicio militar debería ser obligatorio.', { m: 1, a: .3 }],
+  ['Es mejor gastar en educación que en armas.', { m: -1 }],
+  ['Si mi país entrara en guerra, me ofrecería como voluntario para pelear.', { m: 1 }],
+];
+// se mezclan los temas en un orden fijo (así se puede retomar el test)
+const ORDER = (() => {
+  const groups = AXES.map(ax => Q.map((q, i) => i).filter(i => Object.keys(Q[i][1])[0] === ax.k));
+  const out = [];
+  for (let r = 0; out.length < Q.length; r++) for (const g of groups) if (g[r] !== undefined) out.push(g[r]);
+  return out;
+})();
+// "De acuerdo" cuenta casi como "Muy de acuerdo"; "Neutral" queda justo en el medio (un poco de ambos)
+const OPTS = [
+  ['Muy de acuerdo', 2, '#22c55e'],
+  ['De acuerdo', 1.5, '#86efac'],
+  ['Neutral / un poco de ambos', 0, '#cbd5e1'],
+  ['En desacuerdo', -1.5, '#fca5a5'],
+  ['Muy en desacuerdo', -2, '#ef4444'],
+];
+
+/* ---------- ideologías: posición en los 6 ejes ---------- */
+const IDEOS = [
+  { id: 'comunismo', n: 'Comunismo', lado: 'Extrema izquierda', c: '#c81e1e', ic: 'aut', p: { e: -1, a: .75, s: 0, n: .2, v: .4, m: .5 },
+    d: 'Quiere abolir la propiedad privada de empresas y tierras: todo es del Estado o de la comunidad, y un partido único dirige la economía.' },
+  { id: 'anarquismo', n: 'Anarquismo', lado: 'Extrema izquierda', c: '#1f1f1f', ic: 'lib', p: { e: -.9, a: -1, s: -.7, n: -.8, v: -.4, m: -.8 },
+    d: 'Rechaza el Estado y toda autoridad: propone comunidades libres que se organizan solas y comparten lo que producen.' },
+  { id: 'socialismo', n: 'Socialismo democrático', lado: 'Izquierda', c: '#e0313a', ic: 'igual', p: { e: -.75, a: -.25, s: -.5, n: -.1, v: -.3, m: -.5 },
+    d: 'Busca que los trabajadores y el Estado controlen los sectores clave de la economía, pero mediante elecciones y con libertades.' },
+  { id: 'ecologismo', n: 'Ecologismo', lado: 'Izquierda', c: '#2f8f46', ic: 'eco', p: { e: -.5, a: -.2, s: -.6, n: -.5, v: -1, m: -.85 },
+    d: 'Pone al planeta primero: frenar el cambio climático, proteger bosques y ríos y repartir mejor la riqueza.' },
+  { id: 'nacpop', n: 'Nacionalismo de izquierda', lado: 'Izquierda', c: '#b4462a', ic: 'nac', p: { e: -.7, a: .45, s: .15, n: .8, v: .3, m: .35 },
+    d: 'Mezcla la defensa de lo nacional con un Estado fuerte que nacionaliza recursos y reparte la riqueza.' },
+  { id: 'socialdemocracia', n: 'Socialdemocracia', lado: 'Centro izquierda', c: '#e2557a', ic: 'igual', p: { e: -.45, a: -.15, s: -.4, n: -.3, v: -.3, m: -.3 },
+    d: 'Acepta el mercado, pero con un Estado de bienestar grande: salud, educación y pensiones para todos, pagadas con impuestos.' },
+  { id: 'progresismo', n: 'Liberalismo progresista', lado: 'Centro izquierda', c: '#d9468f', ic: 'prog', p: { e: -.1, a: -.55, s: -.8, n: -.6, v: -.35, m: -.35 },
+    d: 'Defiende las libertades personales, los derechos de las minorías y la apertura al mundo, con algo de ayuda del Estado.' },
+  { id: 'centro', n: 'Centrismo', lado: 'Centro', c: '#64748b', ic: 'igual', p: { e: 0, a: 0, s: 0, n: 0, v: 0, m: 0 },
+    d: 'Evita los extremos: toma ideas de la izquierda y de la derecha según cada problema y busca acuerdos.' },
+  { id: 'libcentro', n: 'Centrismo liberal', lado: 'Centro', c: '#475569', ic: 'glob', p: { e: .4, a: -.2, s: -.2, n: -.5, v: .2, m: .1 },
+    d: 'Economía de mercado abierta al mundo, instituciones fuertes y cambios graduales, sin ir a ningún extremo.' },
+  { id: 'dc', n: 'Democracia cristiana', lado: 'Centro derecha', c: '#d97706', ic: 'trad', p: { e: .1, a: .2, s: .65, n: 0, v: 0, m: .1 },
+    d: 'Une valores cristianos y familia con una economía de mercado que también ayuda a los más pobres.' },
+  { id: 'libclasico', n: 'Liberalismo clásico', lado: 'Centro derecha', c: '#ca8a04', ic: 'merc', p: { e: .7, a: -.6, s: .1, n: -.4, v: .4, m: -.1 },
+    d: 'Libertad individual, propiedad privada y libre comercio, con un Estado pequeño que asegure la ley y el orden.' },
+  { id: 'conservadurismo', n: 'Conservadurismo', lado: 'Derecha', c: '#1d4ed8', ic: 'trad', p: { e: .5, a: .45, s: .8, n: .45, v: .35, m: .55 },
+    d: 'Valora la tradición, la familia, la religión y el orden; prefiere cambios lentos y un mercado libre.' },
+  { id: 'libertarismo', n: 'Libertarismo', lado: 'Derecha', c: '#eab308', ic: 'lib', p: { e: .85, a: -.85, s: -.3, n: -.3, v: .4, m: -.3 },
+    d: 'El Estado debe ser mínimo: bajos impuestos, libre mercado total y que cada adulto decida sobre su vida.' },
+  { id: 'ancap', n: 'Anarcocapitalismo', lado: 'Extrema derecha', c: '#a16207', ic: 'merc', p: { e: 1, a: -1, s: 0, n: -.6, v: .6, m: -.6 },
+    d: 'Propone eliminar el Estado y que todo, hasta la seguridad y la justicia, lo den empresas privadas en un mercado libre.' },
+  { id: 'nacconserv', n: 'Nacionalismo conservador', lado: 'Derecha', c: '#1e3a8a', ic: 'nac', p: { e: .3, a: .7, s: .8, n: .9, v: .6, m: .8 },
+    d: 'La nación por encima de todo: fronteras firmes, tradición, ejército fuerte y un gobierno con mano firme.' },
+  { id: 'autoritarismo', n: 'Nacionalismo autoritario', lado: 'Extrema derecha', c: '#0b1a4a', ic: 'aut', p: { e: .2, a: 1, s: 1, n: 1, v: .6, m: 1 },
+    d: 'Un líder o partido con todo el poder, sin oposición, que impone el orden, la tradición y la grandeza de la nación.' },
+];
+const DEF = {
+  Igualdad: 'Quieres que la riqueza se reparta más y que el Estado ayude a los que menos tienen.',
+  Mercado: 'Confías en el libre mercado y en la empresa privada.',
+  Libertad: 'Defiendes la libertad de cada persona frente al Estado.',
+  Autoridad: 'Prefieres un Estado firme, con orden y castigos duros.',
+  Progreso: 'Apoyas los cambios en la sociedad y los nuevos derechos.',
+  'Tradición': 'Valoras la familia, la fe y las costumbres.',
+  Globalismo: 'Eres abierto al mundo, al comercio y a los extranjeros.',
+  Nacionalismo: 'Pones a tu país primero y quieres fronteras firmes.',
+  'Ecología': 'Para ti el planeta va antes que el crecimiento.',
+  Desarrollo: 'Para ti el crecimiento y las obras van primero.',
+  Pacifismo: 'Rechazas la guerra y prefieres gastar en educación.',
+  Militarismo: 'Quieres un ejército fuerte y listo para defender.',
+};
+const W = { e: 1.35, a: 1.2, s: 1.15, n: .9, v: .8, m: .8 };
+const LADOS = ['Extrema izquierda', 'Izquierda', 'Centro izquierda', 'Centro', 'Centro derecha', 'Derecha', 'Extrema derecha'];
+
+/* ---------- cálculo ---------- */
+function scores(answers) {
+  const sum = {}, max = {};
+  for (const ax of AXES) { sum[ax.k] = 0; max[ax.k] = 0; }
+  Q.forEach(([, w], i) => {
+    const v = answers[i] || 0;
+    for (const k in w) { sum[k] += v * w[k]; max[k] += 2 * Math.abs(w[k]); }
+  });
+  const out = {};
+  for (const ax of AXES) out[ax.k] = max[ax.k] ? sum[ax.k] / max[ax.k] : 0;
+  return out;
+}
+function compat(sc, p) {
+  let d = 0, wt = 0;
+  for (const ax of AXES) { d += W[ax.k] * (sc[ax.k] - p[ax.k]) ** 2; wt += W[ax.k]; }
+  return Math.max(0, Math.round(100 * (1 - Math.sqrt(d / wt) / 2)));
+}
+const ranking = sc => IDEOS.map(i => ({ i, pct: compat(sc, i.p) })).sort((a, b) => b.pct - a.pct);
+// lado político, de -1 (extrema izquierda) a +1 (extrema derecha): promedio del lado de las
+// ideologías más parecidas (pesan mucho más las más cercanas)
+function side(sc) {
+  let sum = 0, wt = 0;
+  for (const r of ranking(sc).slice(0, 4)) { const w = Math.max(0, r.pct - 50) ** 3 + 1e-6; sum += w * LADOS.indexOf(r.i.lado); wt += w; }
+  // el lado es el de tu ideología; el promedio sólo mueve el punto dentro de su tramo
+  const L = LADOS.indexOf(ranking(sc)[0].i.lado), idx = Math.max(L - .45, Math.min(L + .45, sum / wt));
+  return { x: idx / 3 - 1, lado: LADOS[L] };
+}
+
+/* ---------- guardado ---------- */
+let S = { name: '', answers: [], idx: 0, history: [] };
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === 'object') S = Object.assign(S, s); } catch (e) { /* sin guardado */ }
+if (!Array.isArray(S.answers)) S.answers = [];
+if (!Array.isArray(S.history)) S.history = [];
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sin espacio o bloqueado */ } };
+
+let toastT = 0;
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('on'), 2200); }
+function show(id) { document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === id)); window.scrollTo(0, 0); }
+
+/* ---------- inicio ---------- */
+function renderHome() {
+  const answered = S.answers.filter(v => v !== null && v !== undefined).length;
+  $('#resume').hidden = !(answered > 0 && answered < Q.length);
+  $('#resume').textContent = `Seguir donde me quedé (${answered}/${Q.length})`;
+  $('#histSec').hidden = !S.history.length;
+  $('#hist').innerHTML = S.history.slice().reverse().slice(0, 6).map((h, k) => {
+    const i = IDEOS.find(x => x.id === h.id) || IDEOS[7];
+    const d = new Date(h.t);
+    return `<button data-h="${S.history.length - 1 - k}"><i style="background:${i.c}"></i><b>${esc(i.n)} <span class="mut">· ${esc(h.lado)}</span></b><small>${h.pct}% · ${d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</small></button>`;
+  }).join('');
+  $('#ideos').innerHTML = IDEOS.map(i => `<div class="ideo" style="--c:${i.c === '#1f1f1f' || i.c === '#0b1a4a' ? '#94a3b8' : i.c}"><h3>${esc(i.n)}</h3><em>${esc(i.lado)}</em><p>${esc(i.d)}</p></div>`).join('');
+  show('s-home');
+}
+function start(fresh) {
+  if (fresh) { S.answers = Array(Q.length).fill(null); S.idx = 0; }
+  else S.idx = Math.max(0, ORDER.findIndex(i => S.answers[i] === null || S.answers[i] === undefined));
+  save(); renderQ(); show('s-quiz');
+}
+
+/* ---------- preguntas ---------- */
+function renderQ() {
+  const qi = ORDER[S.idx], cur = S.answers[qi];
+  $('#qn').textContent = `${S.idx + 1}/${Q.length}`;
+  $('#qbar').style.width = (S.idx / Q.length * 100) + '%';
+  $('#qk').textContent = `Pregunta ${S.idx + 1}`;
+  $('#qt').textContent = Q[qi][0];
+  $('#ans').innerHTML = OPTS.map(([t, v, c], k) => `<button data-v="${v}" style="--c:${c}" class="${cur === v ? 'is-on' : ''}"><i>${k + 1}</i>${t}</button>`).join('');
+  $('#back').disabled = S.idx === 0;
+}
+let busy = false;
+function answer(v) {
+  if (busy) return;
+  S.answers[ORDER[S.idx]] = v;
+  const b = $(`#ans button[data-v="${v}"]`); if (b) b.classList.add('is-on');
+  busy = true;
+  setTimeout(() => {
+    busy = false;
+    if (S.idx < Q.length - 1) { S.idx++; save(); renderQ(); }
+    else finish();
+  }, 160);
+}
+function finish() {
+  const sc = scores(S.answers), rk = ranking(sc);
+  S.history.push({ t: Date.now(), id: rk[0].i.id, pct: rk[0].pct, lado: side(sc).lado, sc });
+  if (S.history.length > 30) S.history = S.history.slice(-30);
+  S.answers = []; S.idx = 0; save();
+  renderRes(S.history[S.history.length - 1]);
+}
+
+/* ---------- resultado ---------- */
+let last = null;
+function renderRes(h) {
+  last = h;
+  const sc = h.sc, rk = ranking(sc), top = rk[0], ideo = top.i, { x, lado } = side(sc);
+  const card = $('#card');
+  card.style.setProperty('--c', ideo.c);
+  const axRows = AXES.map(ax => {
+    const v = sc[ax.k], side = v >= 0 ? ax.pos : ax.neg, pct = Math.round(50 + 50 * Math.abs(v));
+    const w = Math.abs(v) * 50, left = v >= 0 ? 50 : 50 - w;
+    return `<div class="ax__row" style="--k:${side.c}"><span class="ax__ic">${svg(side.ic)}</span><span class="ax__lbl">${side.n}<span>${v >= 0 ? ax.neg.n : ax.pos.n} ${100 - pct}%</span></span><span class="ax__pct">${pct}%</span><span class="ax__bar"><u></u><i style="left:${left}%;width:${Math.max(w, 1.5)}%"></i></span></div>`;
+  }).join('');
+  const near = rk.slice(1, 4).map(r => `<div style="--k:${r.i.c}"><span class="chip"></span><b>${esc(r.i.n)}<small>${esc(r.i.lado)}</small></b><strong>${r.pct}%</strong></div>`).join('');
+  const def = AXES.map(ax => ({ ax, v: sc[ax.k] })).sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 3).map(({ ax, v }) => {
+    const p = v >= 0 ? ax.pos : ax.neg;
+    return `<div style="--k:${p.c}"><span class="ax__ic">${svg(p.ic)}</span><b>${esc(DEF[p.n])}</b><strong>${Math.round(50 + 50 * Math.abs(v))}%</strong></div>`;
+  }).join('');
+  card.innerHTML = `
+    <div class="card__top"><span class="card__brand">Brújula Política</span><hr><span>MI RESULTADO</span></div>
+    <div class="card__head">
+      <div class="card__lado">${esc(lado)}</div>
+      <h2 class="card__ideo">${esc(ideo.n)}</h2>
+    </div>
+    <div class="card__grid">
+      <div class="box"><h4>Tu brújula</h4>
+        <svg class="compass" id="compass" viewBox="0 0 320 320" role="img" aria-label="Tu posición en la brújula política"></svg>
+        <p class="cpct"><b>${top.pct}%</b> compatible con ${esc(ideo.n)}</p>
+      </div>
+      <div class="box"><h4>Tus 6 ejes</h4><div class="ax">${axRows}</div></div>
+    </div>
+    <div class="card__low">
+      <div class="box"><h4>Lo que más te define</h4><div class="lst lst--def">${def}</div></div>
+      <div class="box"><h4>Ideologías cercanas</h4><div class="lst">${near}</div></div>
+    </div>
+    <div class="card__foot"><span>DESCUBRE TU IDEOLOGÍA</span><span>ANONYMOUS GAMES</span></div>`;
+
+  // espectro izquierda-derecha
+  const pos = 4 + (x + 1) / 2 * 92;
+  $('#spec i').style.left = '50%'; $('#spec b').style.left = pos + '%'; $('#spec b').textContent = lado;
+  requestAnimationFrame(() => requestAnimationFrame(() => { $('#spec i').style.left = pos + '%'; }));
+  const strong = AXES.map(ax => ({ ax, v: sc[ax.k] })).sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 2)
+    .map(({ ax, v }) => `<b>${(v >= 0 ? ax.pos : ax.neg).n}</b> (${Math.round(50 + 50 * Math.abs(v))}%)`);
+  $('#why').innerHTML = `${esc(ideo.d)} Lo que más te define: ${strong.join(' y ')}.`;
+  renderCompass(sc);
+  show('s-res');
+}
+function renderCompass(sc) {
+  const S2 = 320, m = 14, sz = S2 - m * 2, P = (vx, vy) => [m + (vx + 1) / 2 * sz, m + (1 - (vy + 1) / 2) * sz];
+  const q = (x, y, c) => `<rect x="${x}" y="${y}" width="${sz / 2}" height="${sz / 2}" fill="${c}" opacity=".55"/>`;
+  let g = q(m, m, '#ef4444') + q(m + sz / 2, m, '#3b82f6') + q(m, m + sz / 2, '#22c55e') + q(m + sz / 2, m + sz / 2, '#a855f7');
+  for (let k = 1; k < 10; k++) { const t = m + sz * k / 10; g += `<path d="M${t} ${m}V${m + sz}M${m} ${t}H${m + sz}" stroke="rgba(255,255,255,.12)"/>`; }
+  g += `<path d="M${S2 / 2} ${m}V${m + sz}M${m} ${S2 / 2}H${m + sz}" stroke="rgba(255,255,255,.6)" stroke-width="2"/>`;
+  for (const i of IDEOS) { const [cx, cy] = P(i.p.e, i.p.a); g += `<circle cx="${cx}" cy="${cy}" r="4" fill="#fff" opacity=".55"><title>${esc(i.n)}</title></circle>`; }
+  const [ux, uy] = P(sc.e, sc.a);
+  g += `<circle cx="${ux}" cy="${uy}" r="11" fill="#fff" stroke="#0d1117" stroke-width="4"/><circle cx="${ux}" cy="${uy}" r="4" fill="#0d1117"/>`;
+  const t = (x, y, s, a = 'middle') => `<text x="${x}" y="${y}" text-anchor="${a}" fill="#fff" font-family="Rub,sans-serif" font-weight="700" font-size="12">${s}</text>`;
+  g += t(S2 / 2, m + 16, 'AUTORIDAD') + t(S2 / 2, m + sz - 8, 'LIBERTAD') + t(m + 6, S2 / 2 - 8, 'IZQUIERDA', 'start') + t(m + sz - 6, S2 / 2 - 8, 'DERECHA', 'end');
+  $('#compass').innerHTML = `<rect x="${m}" y="${m}" width="${sz}" height="${sz}" rx="10" fill="#0d1117"/>${g}`;
+}
+function copyRes() {
+  if (!last) return;
+  const rk = ranking(last.sc), top = rk[0];
+  const ax = AXES.map(a => { const v = last.sc[a.k]; return `${(v >= 0 ? a.pos : a.neg).n} ${Math.round(50 + 50 * Math.abs(v))}%`; }).join(' · ');
+  const txt = `${top.i.n} (${top.pct}%) · ${side(last.sc).lado}\n${ax}\nBrújula Política · Anonymous Games`;
+  const ok = () => toast('Resultado copiado'), no = () => toast('No se pudo copiar');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, no);
+  else no();
+}
+
+/* ---------- eventos ---------- */
+$('#go').onclick = () => start(true);
+$('#resume').onclick = () => start(false);
+$('#ans').onclick = e => { const b = e.target.closest('button'); if (b) answer(+b.dataset.v); };
+$('#back').onclick = () => { if (S.idx > 0) { S.idx--; save(); renderQ(); } };
+$('#exit').onclick = () => { save(); renderHome(); };
+$('#again').onclick = () => start(true);
+$('#home').onclick = renderHome;
+$('#copy').onclick = copyRes;
+$('#hist').onclick = e => { const b = e.target.closest('[data-h]'); if (b) renderRes(S.history[+b.dataset.h]); };
+document.addEventListener('keydown', e => {
+  if (!$('#s-quiz').classList.contains('on') || e.target.tagName === 'INPUT') return;
+  if (e.key >= '1' && e.key <= '5') answer(OPTS[+e.key - 1][1]);
+  else if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); $('#back').click(); }
+});
+renderHome();
+</script>
+</body>
+</html>

@@ -35,7 +35,7 @@ check(await page.isVisible('#intro'), 'la intro aparece la primera vez');
 await page.waitForSelector('#intro', { state: 'hidden', timeout: 6000 });
 await page.waitForTimeout(600);
 await shot(page, 'portal-1-inicio.png');
-check(await page.locator('.shelf .gcard[data-sel]').count() === 9, 'los 9 juegos en el estante del menú');
+check(await page.locator('.shelf .gcard[data-sel]').count() === 13, 'los 13 juegos en el estante del menú');
 check(await page.locator('.gcard.is-sel').count() === 1, 'hay un juego elegido');
 check(await page.locator('.tile--soon, .soon__q').count() === 0, 'sin fichas de "Próximamente"');
 // teclado: flecha derecha cambia el juego elegido y el título grande
@@ -58,14 +58,14 @@ check(true, 'aviso de insignia "Sin rostro"');
 await page.keyboard.press('/');
 await page.keyboard.type('karts');
 await page.waitForTimeout(200);
-check(await page.locator('.tile[data-tile]').count() === 1, 'buscar "karts" abre la biblioteca con sólo el Kartódromo');
+check(await page.locator('.lcard[data-tile]').count() === 1, 'buscar "karts" abre la biblioteca con sólo el Kartódromo');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
-check(await page.locator('.tile[data-tile]').count() === 9, 'Esc limpia la búsqueda');
+check(await page.locator('.lcard[data-tile]').count() === 13, 'Esc limpia la búsqueda');
 
 // categorías
 await page.click('[data-cat=puzzles]');
-check(await page.locator('.tile[data-tile]').count() === 1, 'categoría Puzzles');
+check(await page.locator('.lcard[data-tile]').count() === 1, 'categoría Puzzles');
 await page.click('[data-cat=favs]');
 check(await page.isVisible('.empty'), 'favoritos vacío muestra aviso');
 await page.click('[data-cat=todos]');
@@ -87,12 +87,12 @@ check(/index\.html#biblioteca$/.test(await tab.locator('iframe').getAttribute('s
 await tab.close();
 
 // hover en ficha
-await page.hover('.tile[data-tile=karting]');
+await page.hover('.lcard[data-tile=karting]');
 await page.waitForTimeout(600);
 await shot(page, 'portal-2-hover.png');
 
 // página de juego
-await page.click('.tile[data-tile=mind-escape]');
+await page.click('.lcard[data-tile=mind-escape]');
 await page.waitForSelector('.game');
 check(await page.isVisible('#btnPlay'), 'página de juego con botón Jugar');
 await shot(page, 'portal-3-juego.png');
@@ -154,9 +154,9 @@ await page.evaluate(() => {
 await page.reload();
 await page.waitForTimeout(3500);
 await page.goto(base + '#biblioteca'); await page.waitForTimeout(500);
-const kart = await page.locator('.tile[data-tile=karting] small').textContent();
+const kart = await page.locator('.lcard[data-tile=karting] .lcard__cap small').textContent();
 check(/Piloto nivel 3/.test(kart), 'la ficha del Kartódromo lee el guardado: ' + kart);
-const apice = await page.locator('.tile[data-tile=apice-gp] small').textContent();
+const apice = await page.locator('.lcard[data-tile=apice-gp] .lcard__cap small').textContent();
 check(/Nivel 4 · 2 victorias/.test(apice), 'la ficha de Ápice GP lee IndexedDB: ' + apice);
 const ach2 = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('anonymousGames_v1')).ach));
 check(['podio', 'copa', 'chef', 'cadena', 'bandera'].every(a => ach2.includes(a)), 'insignias de los juegos: ' + ach2.join(', '));

@@ -1,0 +1,81 @@
+// Celular en vertical: menú, manejo con botones táctiles, final del juego y ruta libre.
+// Uso: node tests/movil.mjs [--shots]
+import { chromium } from 'playwright';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(new URL('..', import.meta.url).pathname);
+const out = path.join(root, 'tests', 'capturas');
+fs.mkdirSync(out, { recursive: true });
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.woff2': 'font/woff2' };
+const server = http.createServer((req, res) => {
+  const f = path.join(root, decodeURIComponent(req.url.split('?')[0]).replace(/\/$/, '/index.html'));
+  fs.readFile(f, (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream' }); res.end(d); });
+}).listen(0);
+const shots = process.argv.includes('--shots');
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+const page = await ctx.newPage();
+page.setDefaultTimeout(120000);
+const errors = [];
+page.on('pageerror', e => errors.push(e.message));
+page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+let fails = 0;
+const check = (ok, what) => { console.log((ok ? 'ok   ' : 'FALLA') + ' ' + what); if (!ok) fails++; };
+const shot = async n => { if (shots) await page.screenshot({ path: path.join(out, n + '.png') }); };
+await page.goto(`http://localhost:${server.address().port}/index.html`);
+await page.waitForFunction(() => document.body.classList.contains('ready'));
+await page.waitForTimeout(800);
+await page.tap('#intro');
+await page.waitForTimeout(1200);
+await shot('m1-menu');
+check(await page.isVisible('[data-act=play]'), 'menú visible en vertical');
+await page.tap('[data-act=play]');
+await page.waitForTimeout(500);
+await page.tap('[data-lv="1"]');
+await page.waitForTimeout(500);
+await page.tap('#dGo');
+await page.waitForFunction(() => G.mode === 'count');
+check(await page.isVisible('#touch'), 'botones táctiles al manejar');
+await page.evaluate(() => { G.mode = 'drive'; });
+// acelerar con el botón táctil
+const gas = await page.locator('[data-k=gas]').boundingBox();
+await page.mouse.move(gas.x + gas.width / 2, gas.y + gas.height / 2);
+await page.dispatchEvent('[data-k=gas]', 'pointerdown');
+const v = await page.evaluate(() => { for (let i = 0; i < 240; i++) simulate(1 / 120); const s = G.T.notes[0].s - 60; const p = roadPoint(G.T, s, 0); Object.assign(G.C, { x: p.x, z: p.z, h: p.h, s, i: s }); return G.C.f; });
+await page.dispatchEvent('[data-k=gas]', 'pointerup');
+check(v > 5, `el botón de acelerar mueve el carro (${v.toFixed(1)} m/s)`);
+await page.waitForTimeout(1500);
+await shot('m2-manejo');
+// pasarse el juego: termina la montaña 8 de una
+await page.evaluate(() => {
+  for (const L of LEVELS) save.lv[L.id] = { stars: [true, true, false], best: 99, done: true };
+  save.upg = { motor: 3, frenos: 3, llantas: 3, chasis: 3 };
+  startRun(LEVELS[7]); G.mode = 'drive'; G.time = 100; G.coins = 60;
+  endRun(true);
+});
+await page.waitForTimeout(1500);
+check(await page.isVisible('[data-act=ending]'), 'después de la cima aparece "Continuar"');
+await page.tap('[data-act=ending]');
+await page.waitForTimeout(1500);
+await shot('m3-final');
+const st = await page.evaluate(() => ({ beat: save.beat, paints: save.paints.length, condor: !!save.ach.condor }));
+check(st.beat && st.paints === 8 && st.condor, 'pasarte el juego desbloquea todo e insignia Cóndor');
+await page.tap('#ending [data-act=map]');
+await page.waitForTimeout(800);
+check(await page.isVisible('[data-lv=free]'), 'aparece la Ruta libre en el mapa');
+await shot('m4-mapa');
+await page.tap('[data-lv=free]');
+await page.waitForTimeout(400);
+await page.tap('#dGo');
+await page.waitForFunction(() => G.mode === 'count' && G.L.free);
+check(true, 'la Ruta libre arranca');
+await page.evaluate(() => { G.mode = 'drive'; G.time = 50; endRun(true); });
+await page.waitForTimeout(1000);
+check(!(await page.isVisible('[data-act=next]')), 'la Ruta libre no ofrece "Siguiente"');
+check(await page.evaluate(() => !!save.ach.libre), 'insignia Explorador');
+check(await page.evaluate(() => JSON.parse(localStorage.getItem('cornisa_v1')).beat === true), 'el guardado queda en localStorage');
+check(errors.length === 0, 'sin errores' + (errors.length ? ': ' + errors.join(' | ') : ''));
+await browser.close(); server.close();
+process.exit(fails ? 1 : 0);

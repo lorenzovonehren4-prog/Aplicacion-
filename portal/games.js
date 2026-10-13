@@ -1,6 +1,7 @@
 'use strict';
 // Catálogo de Anonymous Games. Para sumar un juego nuevo basta con agregarlo aquí
 // (carpeta propia con su index.html y una portada en portal/img/).
+// box: carátula con el logo (la arma portal/tools/caratulas.mjs a partir de la mejor imagen).
 //
 // progress(): lee el guardado que el propio juego deja en localStorage (mismo origen)
 // para mostrar en el portal cuánto llevas. Si el juego cambia el formato, sólo hay
@@ -44,6 +45,7 @@ const GAMES = [
     desc: 'Campeonato de monoplazas con equipos y pilotos ficticios: clasificación, carrera, paradas en boxes, DRS, radio del ingeniero, cámaras de cabina y repetición con helicóptero. Ayudas de frenado y dirección para empezar, y caja automática de 8 marchas.',
     url: 'formula-3d/apice-gp.html',
     cover: 'portal/img/apice-gp-cover.webp',
+    box: 'portal/img/apice-gp-box.webp',
     alt: 'portal/img/apice-gp-alt.webp',
     hero: 'portal/img/apice-gp-hero.webp',
     color: '#ff1e3c',
@@ -82,6 +84,7 @@ const GAMES = [
     desc: 'Carreras de karts bajo techo y al aire libre: rampas, segundos pisos y túneles. Corre contra 5 bots, gana el campeonato, pinta tu kart con acabados de oro o neón, mira la repetición con cámaras de TV y dibuja tus propias pistas.',
     url: 'karting/index.html',
     cover: 'portal/img/karting-cover.webp',
+    box: 'portal/img/karting-box.webp',
     alt: 'portal/img/karting-alt.webp',
     hero: 'portal/img/karting-hero.webp',
     color: '#ff4d3d',
@@ -114,13 +117,135 @@ const GAMES = [
         flags: { wins: st.wins || 0, cups: st.cups || 0, races: st.races || 0 },
       };
     },
-  },  {
+  },
+  {
+    id: 'ultimo-disparo',
+    title: 'Último Disparo',
+    tagline: 'Francotirador de rescate: una bala, un rehén',
+    desc: 'Desde una azotea, una torre o un cerro: busca al secuestrador, entra a la mira, haz zoom y contén la respiración para que no tiemble. Dale sólo a él, sin herir al rehén ni a la gente que pasa, antes de que se acabe el tiempo. Cámara de bala en cámara lenta, 30 misiones en la ciudad, el puerto, la noche y el desierto, 4 rifles (con silenciador, calibre .50 y mira térmica) y mejoras de zoom, estabilidad, aliento y tiempo.',
+    url: 'ultimo-disparo/index.html',
+    cover: 'portal/img/ultimo-disparo-cover.webp',
+    box: 'portal/img/ultimo-disparo-box.webp',
+    alt: 'portal/img/ultimo-disparo-alt.webp',
+    hero: 'portal/img/ultimo-disparo-hero.webp',
+    color: '#ff3b30',
+    color2: '#ffb020',
+    cats: ['accion', '3d'],
+    tags: ['Francotirador', 'Rescate', '3D'],
+    badge: 'NUEVO',
+    featured: true,
+    added: '2026-10-11',
+    controls: [
+      [['Mouse'], 'Apuntar'],
+      [['Clic der.', 'Shift'], 'Entrar a la mira'],
+      [['Rueda'], 'Zoom'],
+      [['Espacio'], 'Contener la respiración'],
+      [['Clic'], 'Disparar'],
+      [['T'], 'Mira térmica'],
+      [['Esc'], 'Pausa'],
+    ],
+    tip: 'Espera a que el secuestrador asome la cabeza y que no pase nadie por detrás. En celular: arrastra para apuntar y usa MIRA, AIRE y FUEGO.',
+    progress() {
+      const s = readJSON('ultimo_disparo_v1');
+      if (!s || !s.stats || !s.stats.shots) return null;
+      const lv = Object.values(s.lv || {});
+      const done = lv.filter(l => l.done).length;
+      const stars = lv.reduce((a, l) => a + (l.stars || 0), 0);
+      return {
+        label: s.beat ? `¡Juego pasado! · ${stars}/90 ★` : `Misión ${Math.min(30, done + 1)}/30 · ${stars} ★`,
+        pct: done / 30,
+        stats: [['Misiones', `${done}/30`], ['Estrellas', `${stars}/90`], ['A la cabeza', s.stats.heads || 0], ['Monedas', s.coins || 0]],
+        flags: { done, stars, heads: s.stats.heads || 0, beat: s.beat ? 1 : 0 },
+      };
+    },
+  },
+  {
+    id: 'codigo-rojo',
+    title: 'Código Rojo',
+    tagline: 'Sé el ladrón o la policía en un barrio 3D',
+    desc: 'Un barrio entero con casas, tiendas, un canal con 6 puentes, un túnel bajo el cerro, rampas, semáforos y tráfico, cerrado por paredes rojas. Escapa de 3 patrulleros o persigue al ladrón hasta llenar la barra de arresto. Cabina por dentro con relojes, nitro, derrapes que dejan marcas y 3 estrellas por misión. 14 misiones por dificultad, partida libre de día, tarde o noche, y un garaje con 6 carros.',
+    url: 'codigo-rojo/index.html',
+    cover: 'portal/img/codigo-rojo-cover.webp',
+    box: 'portal/img/codigo-rojo-box.webp',
+    alt: 'portal/img/codigo-rojo-alt.webp',
+    hero: 'portal/img/codigo-rojo-hero.webp',
+    color: '#ff2a3a',
+    color2: '#2a6bff',
+    cats: ['carreras', 'accion', '3d'],
+    tags: ['Persecución', 'Policías', '3D', 'Mundo abierto'],
+    badge: 'NUEVO',
+    featured: true,
+    added: '2026-10-11',
+    controls: [
+      [['↑', '↓'], 'Acelerar / frenar y reversa (W, S)'],
+      [['←', '→'], 'Girar (A, D)'],
+      [['Espacio'], 'Freno de mano (derrape)'],
+      [['Shift'], 'Nitro (también N)'],
+      [['C'], 'Cámara: atrás o cabina'],
+      [['H'], 'Bocina'],
+      [['R'], 'Volver a la calle'],
+      [['P', 'Esc'], 'Pausa'],
+    ],
+    tip: 'De ladrón: los puentes y el túnel ayudan a perderlos. De policía: chócalo hasta frenarlo y quédate pegado para llenar la barra.',
+    progress() {
+      const s = readJSON('codigorojo_v1');
+      if (!s || !s.stats || !s.stats.runs) return null;
+      const done = Object.keys(s.done || {}).length, cars = (s.cars || []).length;
+      return {
+        label: `${done}/14 misiones · ${s.stats.wins || 0} ganadas`,
+        pct: done / 14,
+        stats: [['Misiones', `${done}/14`], ['Fugas', s.stats.thiefWins || 0], ['Arrestos', s.stats.copWins || 0], ['Carros', cars], ['Monedas', s.coins || 0]],
+        flags: { done, thief: s.stats.thiefWins || 0, cop: s.stats.copWins || 0 },
+      };
+    },
+  },
+  {
+    id: 'cornisa',
+    title: 'Drive In The Serrín',
+    tagline: 'Rally de montaña desde la cabina. Si te sales, pierdes',
+    desc: 'Rally a fondo desde la cabina de un 4x4 por carreteras de montaña: cañón, bosque, nieve, niebla, volcán, noche y tormenta. Sigue la línea de guía (verde a fondo, roja frena), escucha al copiloto y mira el mapa GPS para las horquillas. Si te sales al abismo o chocas fuerte, pierdes. Junta monedas, mejora motor, frenos, llantas y carrocería, y abre cada montaña cumpliendo lo que pide la anterior hasta la Cima del Cóndor.',
+    url: 'cornisa/index.html',
+    cover: 'portal/img/cornisa-cover.webp',
+    box: 'portal/img/cornisa-box.webp',
+    alt: 'portal/img/cornisa-alt.webp',
+    hero: 'portal/img/cornisa-hero.webp',
+    color: '#ff7a2f',
+    color2: '#ffc53d',
+    cats: ['carreras', 'simulacion', '3d'],
+    tags: ['Rally', 'Montaña', '3D', 'Cabina'],
+    badge: 'NUEVO',
+    featured: true,
+    added: '2026-10-11',
+    controls: [
+      [['↑'], 'Acelerar (W)'],
+      [['↓'], 'Frenar y reversa (S)'],
+      [['←', '→'], 'Girar (A, D)'],
+      [['C'], 'Cámara: cabina o afuera'],
+      [['P', 'Esc'], 'Pausa'],
+    ],
+    tip: 'Frena antes de las curvas: las flechas amarillas avisan. Donde no hay baranda, el borde es el abismo.',
+    progress() {
+      const s = readJSON('cornisa_v1');
+      if (!s || !s.stats || !s.stats.runs) return null;
+      const lv = Object.values(s.lv || {});
+      const done = lv.filter(l => l.done).length;
+      const stars = lv.reduce((a, l) => a + (l.stars || []).filter(Boolean).length, 0);
+      return {
+        label: s.beat ? `¡Juego pasado! · ${stars}/24 ★` : `Montaña ${Math.min(8, done + 1)}/8 · ${stars} ★`,
+        pct: s.beat ? 1 : done / 8,
+        stats: [['Montañas', `${done}/8`], ['Estrellas', `${stars}/24`], ['Monedas', s.coins || 0], ['Caídas', s.stats.falls || 0]],
+        flags: { done, stars, beat: s.beat ? 1 : 0 },
+      };
+    },
+  },
+  {
     id: 'combi-rush',
     title: 'Combi Rush',
     tagline: 'Maneja una combi por Lima y llena tus asientos',
     desc: 'Recoge pasajeros en los paraderos, llévalos a tiempo, esquiva huecos y conos, respeta la roja y no los hagas enojar. 16 viajes por Lima (La Punta, Túpac Amaru, Miraflores de noche y más), una flota de 4 vehículos hasta el micro de 40 pasajeros y radio con cumbia, chicha y salsa.',
     url: 'combi-rush/combi-rush.html',
     cover: 'portal/img/combi-rush-cover.webp',
+    box: 'portal/img/combi-rush-box.webp',
     alt: 'portal/img/combi-rush-alt.webp',
     hero: 'portal/img/combi-rush-hero.webp',
     color: '#ff2d8a',
@@ -158,6 +283,7 @@ const GAMES = [
     desc: 'La policía te busca desde que arrancas: aguanta el mayor tiempo posible. Derrapa para cargar el turbo, agarra power-ups en la pista (nitro, plata, escudo y pintura que despista a la policía) y sobrevive a patrullas, bloqueos, clavos y helicópteros. 12 carros para ganar en el garaje.',
     url: 'fuga-urbana/index.html',
     cover: 'portal/img/fuga-urbana-cover.webp',
+    box: 'portal/img/fuga-urbana-box.webp',
     alt: 'portal/img/fuga-urbana-alt.webp',
     color: '#ffb800',
     color2: '#ff3d71',
@@ -191,6 +317,7 @@ const GAMES = [
     desc: 'Atiende mesas, contrata mozos y cocineros, arma tu carta criolla de 17 platos y haz crecer tu local hasta tener varios pisos, drive-thru y delivery. Abre locales en Miraflores, Barranco y Gamarra y sobrevive a apagones, críticos de incógnito y partidos de la selección.',
     url: 'sazon-tycoon/index.html',
     cover: 'portal/img/sazon-cover.webp',
+    box: 'portal/img/sazon-box.webp',
     alt: 'portal/img/sazon-alt.webp',
     hero: 'portal/img/sazon-hero.webp',
     color: '#ff7a1a',
@@ -225,6 +352,7 @@ const GAMES = [
     desc: 'Empiezas en un club peruano y cada semana decides cómo entrenar, descansar o salir de fiesta. Fichajes, contratos, selección, casa, carros y familia en escenas 3D. Al retirarte recibes un puntaje de carrera del 1 al 100.',
     url: 'modo-carrera-futbol/index.html',
     cover: 'portal/img/futbol-cover.webp',
+    box: 'portal/img/futbol-box.webp',
     alt: 'portal/img/futbol-alt.webp',
     color: '#22c55e',
     color2: '#facc15',
@@ -257,6 +385,7 @@ const GAMES = [
     desc: 'Construye torres, sube a tu héroe y aguanta 20 oleadas de zombis con minijefes y jefes en 4 mapas: pradera de noche, cañón con tormentas de arena, fragua volcánica y un glaciar con ventiscas que congelan torres. Misiones diarias, logros, rangos, modo infinito y desafíos.',
     url: 'tower-defense/index.html',
     cover: 'portal/img/tower-defense-cover.webp',
+    box: 'portal/img/tower-defense-box.webp',
     alt: 'portal/img/tower-defense-alt.webp',
     color: '#f59e0b',
     color2: '#ef4444',
@@ -294,6 +423,7 @@ const GAMES = [
     desc: 'Salta, rebota en trampolines y agárrate de apoyos que se mueven, se rompen o resbalan para subir 6 cumbres. Junta monedas para la tienda de colores, gorros y estelas, y juega con amigos por internet en salas compartidas.',
     url: 'escalada/index.html',
     cover: 'portal/img/escalada-cover.webp',
+    box: 'portal/img/escalada-box.webp',
     alt: 'portal/img/escalada-alt.webp',
     color: '#38bdf8',
     color2: '#ffd700',
@@ -325,6 +455,7 @@ const GAMES = [
     desc: 'Acertijos, códigos ocultos, interruptores, sudokus, cables y habitaciones a oscuras. Cada nivel es un puzzle distinto y sólo hay una forma de salir. Usa las pistas si te trabas, pero cuestan estrellas.',
     url: 'mind-escape/index.html',
     cover: 'portal/img/mind-escape.svg',
+    box: 'portal/img/mind-escape-box.webp',
     alt: 'portal/img/mind-escape-alt.webp',
     hero: 'portal/img/mind-escape.svg',
     color: '#00d4ff',
@@ -353,10 +484,52 @@ const GAMES = [
         flags: { done, stars },
       };
     },
+  },
+  {
+    id: 'brujula-politica',
+    title: 'Brújula Política',
+    tagline: '60 preguntas para descubrir tu ideología',
+    desc: 'Responde 60 frases sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra. Al final ves tu ideología entre 16 (de comunismo a anarcocapitalismo), tu lado político de extrema izquierda a extrema derecha, tus 6 ejes, tu lugar en la brújula y lo que más te define.',
+    url: 'brujula-politica/index.html',
+    cover: 'portal/img/brujula-cover.webp',
+    box: 'portal/img/brujula-politica-box.webp',
+    alt: 'portal/img/brujula-alt.webp',
+    hero: 'portal/img/brujula-hero.webp',
+    color: '#14b8a6',
+    color2: '#6366f1',
+    cats: ['tests'],
+    tags: ['Test', 'Política', 'Ideologías'],
+    badge: 'NUEVO',
+    added: '2026-10-11',
+    controls: [
+      [['Clic'], 'Elegir qué tan de acuerdo estás'],
+      [['1', '…', '5'], 'Responder con el teclado'],
+      [['←'], 'Volver a la pregunta anterior'],
+    ],
+    tip: 'No hay respuestas buenas ni malas. Si sales a la mitad, sigues donde te quedaste.',
+    progress() {
+      const s = readJSON('brujula_politica_v1');
+      const h = s && Array.isArray(s.history) ? s.history : [];
+      const done = s && Array.isArray(s.answers) ? s.answers.filter(v => v !== null && v !== undefined).length : 0;
+      if (!h.length && !done) return null;
+      const last = h[h.length - 1];
+      return {
+        label: last ? `${last.lado} · ${last.pct}%` : `Test a la mitad · ${done}/60`,
+        pct: last ? 1 : done / 60,
+        stats: [['Tests', h.length], ...(last ? [['Lado', last.lado], ['Compatibilidad', last.pct + '%']] : [['Respondidas', `${done}/60`]])],
+        flags: { tests: h.length },
+      };
+    },
   },];
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'ultimo-disparo', date: '11 oct', title: 'Juego nuevo: Último Disparo', items: ['Francotirador de rescate: mira con zoom, temblor y contener la respiración', 'Cámara de bala en cámara lenta, sin sangre', '30 misiones en la ciudad, el puerto, la noche y el desierto', '4 rifles y mejoras de zoom, estabilidad, aliento y tiempo'] },
+  { game: 'brujula-politica', date: '11 oct', title: 'Juego nuevo: Brújula Política', items: ['60 preguntas sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra', '16 ideologías y tu lado, de extrema izquierda a extrema derecha', 'Tarjeta de resultado con tu brújula, tus 6 ejes y lo que más te define'] },
+  { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo: cabina, nitro y estrellas', items: ['Cabina por dentro con relojes, volante y mapa', 'Nitro, marcas de llantas, humo y fuego', 'Garaje en vitrina, 3 estrellas por misión y patrulleros más listos'] },
+  { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo se ve como juego profesional', items: ['Carros nuevos con reflejos, faros y brillo', 'Barrio con más detalle: casas, carros estacionados, postes y nubes', 'Menú y velocímetro nuevos'] },
+  { game: 'codigo-rojo', date: '11 oct', title: 'Juego nuevo: Código Rojo', items: ['Barrio 3D con puentes, túnel, rampas, semáforos y tráfico', 'Sé el ladrón contra 3 patrulleros o la policía', '14 misiones, partida libre y garaje con 6 carros'] },
+  { game: 'cornisa', date: '11 oct', title: 'Juego nuevo: Drive In The Serrín', items: ['Rally desde la cabina por 8 montañas con horquillas', 'Línea de guía, copiloto y mapa GPS', 'Si te sales o chocas fuerte, pierdes (con caída o choque animado)', 'Taller de mejoras, pinturas, insignias y Ruta libre al pasarte el juego'] },
   { game: 'tower-defense', date: '10 oct', title: 'Reino en Guardia: Glaciar Maldito', items: ['Cuarto mapa entre pinos y hielo, con nieve cayendo', 'Ventiscas que congelan torres', 'Jefe nuevo: Yeti Zombi, y el desafío Deshielo'] },
   { game: 'sazon', date: '10 oct', title: 'Sazón Tycoon: carta criolla', items: ['5 platos nuevos: emoliente, suspiro, arroz con pato, rocoto relleno y parihuela', 'Evento Día de la Canción Criolla: más propina y antojo de anticuchos'] },
   { game: 'combi-rush', date: '10 oct', title: 'Combi Rush, versión 4', items: ['4 viajes nuevos: La Punta, Túpac Amaru, Noche en Miraflores y la ruta más larga', 'Combi Sprinter y Micro chosicano de 40 pasajeros', 'Radio con Cumbia Total, Chicha Andina y Salsa Brava (tecla R)'] },
@@ -373,6 +546,7 @@ const CATS = [
   { id: 'estrategia', name: 'Estrategia', icon: 'shield' },
   { id: 'plataformas', name: 'Plataformas', icon: 'up' },
   { id: 'puzzles', name: 'Puzzles', icon: 'puzzle' },
+  { id: 'tests', name: 'Tests', icon: 'compass' },
   { id: '3d', name: '3D', icon: 'cube' },
   { id: 'multi', name: 'Multijugador', icon: 'users' },
   { id: 'favs', name: 'Favoritos', icon: 'heart' },

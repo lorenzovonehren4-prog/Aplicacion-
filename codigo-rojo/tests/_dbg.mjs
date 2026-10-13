@@ -1,0 +1,21 @@
+// (temporal) evalúa código en el juego y saca una foto: node tests/_dbg.mjs salida.png "código que devuelve algo"
+import { chromium } from 'playwright';
+import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
+const root = path.resolve(new URL('..', import.meta.url).pathname);
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.woff2': 'font/woff2' };
+const server = http.createServer((q, r) => { const f = path.join(root, decodeURIComponent(q.url.split('?')[0]).replace(/\/$/, '/index.html')); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); return; } r.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream' }); r.end(d); }); }).listen(0);
+const [out, code = '', wait = '2500', code2 = ''] = process.argv.slice(2);
+const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const p = await b.newPage({ viewport: { width: +(process.env.W || 1280), height: +(process.env.H || 720) } });
+p.setDefaultTimeout(400000);
+const errs = []; p.on('pageerror', e => errs.push(e.message + ' ' + (e.stack || '').split('\n')[1])); p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.text()); });
+await p.goto(`http://localhost:${server.address().port}/index.html`);
+await p.waitForFunction(() => document.body.classList.contains('ready'));
+if (!process.env.NOHIDE) await p.addStyleTag({ content: '.screen,#toast,#count,#big{display:none!important}' });
+await p.evaluate(() => { save.opt.graficos = 'alta'; save.opt.quality = 'alta'; applyQuality(); });
+if (code) console.log('->', JSON.stringify(await p.evaluate(code)));
+await p.waitForTimeout(+wait);
+if (code2) console.log('->', JSON.stringify(await p.evaluate(code2)));
+if (out !== '-') await p.screenshot({ path: out });
+if (errs.length) console.log('errores:', errs.slice(0, 8).join(' | '));
+await b.close(); server.close();
