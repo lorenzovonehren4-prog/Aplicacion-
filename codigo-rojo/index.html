@@ -145,6 +145,7 @@ input[type=range]{ accent-color:var(--acc); width:150px; }
 .hbox b{ display:block; font-family:Fredoka; font-size:14px; color:#ffb0b0; }
 body.modo-poli .hbox b{ color:#a8c6ff; }
 #hTime{ font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; }
+.hwx{ display:inline-block; margin-left:6px; font-size:11px; font-weight:800; color:#cfe0ff; vertical-align:2px; } .hwx:empty{ display:none; }
 .hrole{ display:inline-block; font-size:11px; font-weight:900; letter-spacing:1.5px; padding:2px 8px; border-radius:6px; margin-bottom:4px; background:rgba(255,59,74,.85); }
 body.modo-poli .hrole{ background:rgba(42,107,255,.9); }
 .htime{ display:flex; align-items:center; gap:8px; } .htime svg{ width:30px; height:30px; transform:rotate(-90deg); }
@@ -319,7 +320,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
 
 <section class="screen" id="hud">
   <div class="hud-top">
-    <div class="hbox"><div class="hrole" id="hRole"></div><b id="hName"></b><div class="htime"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" class="bg"/><circle cx="20" cy="20" r="17" class="fg" id="hRing"/></svg><span id="hTime">0:00</span></div><div id="hGoal"></div><div id="hExtra"></div></div>
+    <div class="hbox"><div class="hrole" id="hRole"></div><span class="hwx" id="hWx"></span><b id="hName"></b><div class="htime"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" class="bg"/><circle cx="20" cy="20" r="17" class="fg" id="hRing"/></svg><span id="hTime">0:00</span></div><div id="hGoal"></div><div id="hExtra"></div></div>
     <button id="pauseBtn" aria-label="Pausa">II</button>
   </div>
   <div class="arrest"><small><span class="cuff">⛓</span> ARRESTO <em id="hPct"></em></small><div id="hBar"><i></i></div></div>
@@ -378,6 +379,7 @@ body.ready #loading{ opacity:0; pointer-events:none; }
 <script src="src/data.js"></script>
 <script src="src/city.js"></script>
 <script src="src/world.js"></script>
+<script src="src/weather.js"></script>
 <script src="src/post.js"></script>
 <script src="src/car.js"></script>
 <script src="src/people.js"></script>

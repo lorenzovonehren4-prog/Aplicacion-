@@ -1,6 +1,7 @@
 // Fotos de revisión y medición de rendimiento de Código Rojo (para comparar antes y después
 // de cambios gráficos): menú, partida de día, de tarde y de noche, cabina, carros y personas de
-// cerca, carro dañado, vista aérea, gráficos medios y bajos, garaje y resultado.
+// cerca, carro dañado, vista aérea, gráficos medios y bajos, clima (lluvia, tormenta, neblina,
+// garúa y nublado), garaje y resultado.
 // Uso: CHROMIUM_PATH=... node tests/fotos.mjs [carpeta] [prefijo] [solo=a,b,c]
 //   → <carpeta>/<prefijo>-<vista>.png y <carpeta>/<prefijo>-rendimiento.json
 import { chromium } from 'playwright';
@@ -228,6 +229,39 @@ if (want('media')) {
   perf.media = await ev(() => __F.measure());
   console.log(JSON.stringify(perf.media));
   await ev(() => { save.opt.graficos = 'alta'; applyQuality(); });
+}
+
+// 10) clima: la misma toma fija de 'fija-' con lluvia, tormenta, neblina, garúa y nublado (las de
+//     lluvia también se miden), una persecución de noche con lluvia y la cabina con lluvia
+//     (limpiaparabrisas y gotas). La simulación queda congelada pero el clima sigue andando.
+const CLIMA = [['lluvia-noche', 'lluvia', 'noche', true], ['lluvia-dia', 'lluvia', 'dia', true], ['tormenta-tarde', 'tormenta', 'tarde'], ['tormenta-noche', 'tormenta', 'noche'],
+  ['neblina-noche', 'neblina', 'noche'], ['neblina-dia', 'neblina', 'dia'], ['garua-tarde', 'garua', 'tarde'], ['nublado-dia', 'nublado', 'dia']];
+for (const [name, weather, time, measure] of CLIMA) {
+  if (!want(name)) continue;
+  await ev(([weather, time]) => {
+    __F.seed(7); __F.play({ role: 'ladron', diff: 'normal', goal: 'survive', t: 180, time, weather, name: 'Clima' }); __F.freeze(); __F.stage(-138, -200, 0);
+    __F.cam([-138, 3.1, -207.8], [-138, 1.1, -195]); G.mode = 'play'; WX.next = 0.12;     // (con tormenta, un relámpago en la foto)
+  }, [weather, time]);
+  await shot(name);
+  if (measure) { perf[name] = await ev(() => __F.measure()); console.log(JSON.stringify(perf[name])); }
+}
+if (want('lluvia-persecucion')) {
+  await ev(() => { __F.play({ role: 'ladron', diff: 'normal', goal: 'survive', t: 180, time: 'noche', weather: 'lluvia', name: 'Noche caliente' }); __F.run(20); __F.freeze(); });
+  await shot('lluvia-persecucion');
+  perf['lluvia-persecucion'] = await ev(() => __F.measure());
+  console.log(JSON.stringify(perf['lluvia-persecucion']));
+}
+if (want('lluvia-cabina')) {
+  await ev(() => { __F.play({ role: 'ladron', diff: 'normal', goal: 'survive', t: 180, time: 'tarde', weather: 'lluvia', name: 'Cabina' }); __F.run(8); G.cam = 'cabina'; setCam(); __F.freeze(); });
+  await shot('lluvia-cabina', 4000);
+  await ev(() => { G.cam = 'afuera'; setCam(); });
+}
+if (want('lluvia-baja')) {
+  await ev(() => { save.opt.quality = 'baja'; applyQuality(); __F.seed(7); __F.play({ role: 'ladron', diff: 'normal', goal: 'survive', t: 180, time: 'noche', weather: 'lluvia', name: 'Baja' }); __F.freeze(); __F.stage(-138, -200, 0); __F.cam([-138, 3.1, -207.8], [-138, 1.1, -195]); G.mode = 'play'; });
+  await shot('lluvia-baja');
+  perf['lluvia-baja'] = await ev(() => __F.measure());
+  console.log(JSON.stringify(perf['lluvia-baja']));
+  await ev(() => { save.opt.quality = 'alta'; applyQuality(); });
 }
 
 // 9) garaje y resultado

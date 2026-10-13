@@ -119,6 +119,7 @@ function startGame(cfg) {
   G.cfg = cfg;
   const D = DIFFS[cfg.diff];
   setTimeOfDay(cfg.time);
+  setWeather(cfg.weather || 'despejado');            // (antes de armar los carros: faros según el clima)
   G.time = 0; G.bar = 0; G.acc = 0; G.got = 0; G.reds = 0; G.bridges = 0; G.wrecked = 0; G.tunnel = false; G.lastNode = null; G.onBridge = false;
   G.stats = { maxJump: 0, top: 0, maxBar: 0 };
   const spec = carById(save.car);
@@ -156,9 +157,9 @@ function startGame(cfg) {
     for (const p of pick) { const m = makeBag(); m.position.set(p.x, groundH(p.x, p.z) + 1.2, p.z); W.scene.add(m); G.bags.push({ x: p.x, z: p.z, mesh: m, got: false }); }
   }
   spawnTraffic(D.traffic, [G.player.body, G.thief.body]);
-  // luces de noche: faros del jugador y luces de los patrulleros
-  if (cfg.time !== 'dia') {
-    G.head = new THREE.SpotLight(0xfff0d0, cfg.time === 'noche' ? 220 : 80, 90, 0.55, 0.5, 1.3);
+  // luces de noche (o de día con tormenta o neblina): faros del jugador y luces de los patrulleros
+  if (cfg.time !== 'dia' || W.carLights >= 0.6) {
+    G.head = new THREE.SpotLight(0xfff0d0, cfg.time === 'noche' ? 220 : cfg.time === 'tarde' ? 80 : 50, 90, 0.55, 0.5, 1.3);
     W.scene.add(G.head, G.head.target);
   }
   G.copLights = [];
@@ -170,6 +171,7 @@ function startGame(cfg) {
   save.stats.runs++; persist();
   SFX.init();
   hudStatic();
+  if (W.gripMul < 1) setTimeout(() => toast(`${WEATHER[W.weather].icon} Pista mojada: frena antes de las curvas`), 300);
   warmUp();
 }
 
@@ -204,6 +206,8 @@ function carFx(a, dt) {
   if (hp < 0.18 && Math.random() < dt * (b.dead ? 30 : 12)) fxFire(hx, b.y + B.belt + 0.1, hz, 1, b.dead ? 1.4 : 0.8);
   // nitro: llama azul por el escape
   if (b.boost) { const ex = b.x - fx * (B.L / 2 + 0.2) + lx * 0.4, ez = b.z - fz * (B.L / 2 + 0.2) + lz * 0.4; fxFire(ex, b.y + B.clr + 0.15, ez, 1, 0.55, 0x3f8cff); }
+  // calle mojada: agua que levantan las llantas
+  if (W.wet > 0.25) wetSpray(a, dt);
 }
 
 // ---------- simulación ----------
@@ -420,6 +424,8 @@ function startAttract() {
   clearGame();
   document.getElementById('big').className = '';
   setTimeOfDay(['tarde', 'noche', 'dia'][Math.floor(Math.random() * 3)]);
+  // la mitad de las veces con algún clima (garúa, lluvia, tormenta, neblina o nublado)
+  setWeather(Math.random() < 0.5 ? 'despejado' : WX_LIST[1 + Math.floor(Math.random() * (WX_LIST.length - 1))]);
   G.cfg = { role: 'demo', diff: 'normal' };
   const seg = randomSegment(Math.random, null, 0);
   G.thief = spawnActor(Object.assign({}, carById('muscle'), { color: 0x101010 }), seg.s.x, seg.s.z, seg.s.h, { role: 'ladron' });
@@ -478,6 +484,8 @@ function hudStatic() {
   const cfg = G.cfg;
   document.getElementById('hName').textContent = cfg.name || (cfg.role === 'ladron' ? 'Ladrón' : 'Policía');
   document.getElementById('hRole').textContent = cfg.role === 'ladron' ? '💰 LADRÓN' : '🚓 POLICÍA';
+  const wx = WEATHER[W.weather];
+  document.getElementById('hWx').textContent = W.weather !== 'despejado' ? `${wx.icon} ${wx.name}` : '';
   document.getElementById('hGoal').textContent = goalText(cfg);
   document.body.classList.toggle('modo-poli', cfg.role === 'policia');
 }

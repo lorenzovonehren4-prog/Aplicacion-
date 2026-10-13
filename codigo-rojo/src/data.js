@@ -30,21 +30,21 @@ const DIFFS = {
   leyenda: { name: 'Leyenda', speed: 1.07, skill: 1.0, aggro: 1, arrest: 1.4, traffic: 32, reward: 3.2 },
 };
 
-// Misiones. role: 'ladron' o 'policia'.
+// Misiones. role: 'ladron' o 'policia'. weather (opcional): clima fijo de la misión (WEATHER en weather.js).
 // goal: survive (aguanta t s), bags (aguanta t s y junta n bolsas), escape (llega a la guarida antes de t),
 //       arrest (atrápalo en t s), stop (atrápalo antes de que llegue a su guarida).
 const MISSIONS = [
   { id: 'l1', role: 'ladron', diff: 'facil', goal: 'survive', t: 60, time: 'dia', name: 'Primer golpe', desc: 'Te vieron saliendo del banco. Aguanta 60 segundos.' },
   { id: 'p1', role: 'policia', diff: 'facil', goal: 'arrest', t: 120, time: 'dia', name: 'Primera patrulla', desc: 'Un ladrón novato se escapa. Atrápalo en 2 minutos.' },
   { id: 'l2', role: 'ladron', diff: 'facil', goal: 'bags', t: 90, n: 5, time: 'tarde', name: 'Bolsas sueltas', desc: 'Se te cayó el botín. Junta 5 bolsas y aguanta 90 segundos.' },
-  { id: 'p2', role: 'policia', diff: 'normal', goal: 'arrest', t: 120, time: 'tarde', name: 'Hora punta', desc: 'Más tráfico y un ladrón con más maña. 2 minutos.' },
+  { id: 'p2', role: 'policia', diff: 'normal', goal: 'arrest', t: 120, time: 'tarde', weather: 'garua', name: 'Hora punta', desc: 'Garúa, más tráfico y un ladrón con más maña. 2 minutos.' },
   { id: 'l3', role: 'ladron', diff: 'normal', goal: 'escape', t: 120, time: 'dia', name: 'A la guarida', desc: 'Llega a la guarida marcada antes de 2 minutos sin que te atrapen.' },
   { id: 'p3', role: 'policia', diff: 'normal', goal: 'stop', t: 150, time: 'noche', name: 'Que no llegue', desc: 'El ladrón va a su guarida. Atrápalo antes de que llegue.' },
-  { id: 'l4', role: 'ladron', diff: 'normal', goal: 'survive', t: 120, time: 'noche', name: 'Noche caliente', desc: 'De noche y con sirenas por todos lados. Aguanta 2 minutos.' },
+  { id: 'l4', role: 'ladron', diff: 'normal', goal: 'survive', t: 120, time: 'noche', weather: 'lluvia', name: 'Noche caliente', desc: 'De noche, con lluvia y sirenas por todos lados. Aguanta 2 minutos.' },
   { id: 'p4', role: 'policia', diff: 'dificil', goal: 'arrest', t: 100, time: 'dia', name: 'Profesional', desc: 'Un ladrón rápido que se mete por el túnel y los puentes.' },
   { id: 'l5', role: 'ladron', diff: 'dificil', goal: 'bags', t: 120, n: 8, time: 'tarde', name: 'El gran botín', desc: '8 bolsas repartidas por el barrio y 3 patrulleros furiosos.' },
-  { id: 'p5', role: 'policia', diff: 'dificil', goal: 'stop', t: 150, time: 'noche', name: 'Cierre de puentes', desc: 'Va al otro lado del canal. Que no llegue.' },
-  { id: 'l6', role: 'ladron', diff: 'dificil', goal: 'escape', t: 150, time: 'noche', name: 'Fuga nocturna', desc: 'Cruza el barrio hasta la guarida de noche.' },
+  { id: 'p5', role: 'policia', diff: 'dificil', goal: 'stop', t: 150, time: 'noche', weather: 'tormenta', name: 'Cierre de puentes', desc: 'Tormenta sobre el canal y el ladrón va al otro lado. Que no llegue.' },
+  { id: 'l6', role: 'ladron', diff: 'dificil', goal: 'escape', t: 150, time: 'noche', weather: 'neblina', name: 'Fuga nocturna', desc: 'Cruza el barrio de noche entre la neblina hasta la guarida.' },
   { id: 'p6', role: 'policia', diff: 'leyenda', goal: 'arrest', t: 90, time: 'noche', name: 'El fantasma', desc: 'El ladrón más rápido del barrio. 90 segundos.' },
   { id: 'l7', role: 'ladron', diff: 'leyenda', goal: 'survive', t: 180, time: 'tarde', name: 'Leyenda del barrio', desc: 'Tres minutos contra los mejores patrulleros.' },
   { id: 'p7', role: 'policia', diff: 'leyenda', goal: 'stop', t: 140, time: 'dia', name: 'Código rojo', desc: 'La última persecución. Atrápalo antes de su guarida.' },

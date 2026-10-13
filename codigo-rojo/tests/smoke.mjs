@@ -96,6 +96,23 @@ await shot('5-resultado');
 await page.evaluate(() => { startGame({ role: 'ladron', diff: 'normal', goal: 'escape', t: 120, time: 'noche', name: 'Prueba' }); showScreen('hud'); G.mode = 'play'; for (let i = 0; i < 300; i++) { KEYS.ArrowUp = true; simulate(1 / 60); } KEYS.ArrowUp = false; });
 await page.waitForTimeout(1500);
 await shot('6-noche');
+// clima: tormenta de noche (gotas, calle mojada, menos agarre, relámpagos) y limpiaparabrisas en la cabina
+const wx = await page.evaluate(() => {
+  startGame({ role: 'ladron', diff: 'normal', goal: 'survive', t: 120, time: 'noche', weather: 'tormenta', name: 'Prueba clima' }); showScreen('hud'); G.mode = 'play';
+  G.cam = 'cabina'; setCam();
+  const rf = renderFrame, w0 = G.player.car.wipers[0].pv.rotation.z;
+  let moved = false, spray = 0;
+  window.renderFrame = () => {};
+  for (let i = 0; i < 60 * 25; i++) { KEYS.ArrowUp = i < 400; step(1 / 60); if (Math.abs(G.player.car.wipers[0].pv.rotation.z - w0) > 0.2) moved = true; spray = Math.max(spray, FX.spray.length); }
+  window.renderFrame = rf; KEYS.ArrowUp = false; G.cam = 'afuera'; setCam();
+  return { drops: WX.rain.visible ? WX.rain.geometry.instanceCount : 0, wet: W.roadMeshes[0].material === WX.asphaltWet, grip: W.gripMul, strikes: WX.strikes, moved, spray };
+});
+console.log('clima:', JSON.stringify(wx));
+check(wx.drops > 0 && wx.wet && wx.grip < 1, 'lluvia: gotas, calle mojada y menos agarre');
+check(wx.strikes > 0, 'tormenta: relámpagos');
+check(wx.moved, 'limpiaparabrisas en la cabina');
+await page.waitForTimeout(1500);
+await shot('6b-tormenta');
 await page.evaluate(() => { act('menu'); });
 await page.waitForTimeout(800);
 await page.evaluate(() => { act('garage'); });

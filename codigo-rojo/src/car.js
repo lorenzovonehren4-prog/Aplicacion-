@@ -475,7 +475,7 @@ function makeCar(spec, opts = {}) {
   mk(police ? geo.paintPolice : geo.paintAll, paint);
   const cab = mk(geo.glass, S.glass);
   mk(police ? pg.trim : geo.trim, S.trim);
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff2d8, emissiveIntensity: 0.8, roughness: 0.1 });
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff2d8, emissiveIntensity: 0.8 + 0.7 * (W.carLights || 0), roughness: 0.1 });
   const tailMat = new THREE.MeshStandardMaterial({ color: 0x8a0a0a, emissive: 0xff1a10, emissiveIntensity: 0.5, roughness: 0.2 });
   mk(geo.head, headMat); mk(geo.tail, tailMat);
   mk(geo.plates, S.plate);
@@ -639,6 +639,8 @@ function makeCockpit(car) {
   // reflejo leve en el parabrisas
   const ws = new THREE.Mesh(new THREE.PlaneGeometry(cw, Math.hypot(B.roof - y0, B.zR1 - front)), new THREE.MeshPhysicalMaterial({ color: 0x9fc4e8, transparent: true, opacity: 0.07, roughness: 0.05, depthWrite: false, side: THREE.DoubleSide }));
   ws.position.set(0, (B.roof + y0) / 2, (B.zR1 + front) / 2); ws.rotation.x = Math.atan2(front - B.zR1, B.roof - y0) - Math.PI / 2; ck.add(ws);
+  // limpiaparabrisas y gotas en el vidrio (se mueven con lluvia: weather.js)
+  makeWipers(car, ck, ws, cw, Math.hypot(B.roof - y0, B.zR1 - front));
   car.body.add(ck);
   car.cockpit = ck; car.steerWheel = steer; car.dashCv = cv; car.dashTex = tex; car.navCv = ncv; car.navTex = ntex;
   car.eye = eye;
@@ -712,6 +714,7 @@ function poseCockpit(car, s) {
       place(H.upper, H.shoulder, el); place(H.fore, el, hp);
     }
   }
+  updateWipers(car);
   car.dashT = (car.dashT || 0) + 1;
   if (car.dashT % 2 === 0) drawDash(car, s);
   if (car.dashT % 6 === 0) drawNav(car, s);
@@ -734,19 +737,20 @@ function stepBody(c, inp, dt, ev) {
   const top = sp.top * (c.topMul || 1) * (c.dead ? 0.15 : 1) * (c.boost ? 1.22 : 1);
   if (!c.air) {
     c.grass = !onRoad(c.x, c.z);
-    const grip = sp.grip * (c.grass ? 0.78 : 1) * (inp.hand ? 0.5 : 1);
+    // con lluvia hay menos agarre (W.gripMul, ver weather.js) y se frena un poco peor
+    const wg = W.gripMul || 1, grip = sp.grip * wg * (c.grass ? 0.78 : 1) * (inp.hand ? 0.5 : 1);
     let a = 0;
     if (inp.thr > 0 && f > -0.5) a += sp.acc * inp.thr * Math.max(0, 1 - Math.pow(Math.max(0, f) / top, 2.4));
     if (c.boost) a += sp.acc * 0.9 * Math.max(0, 1 - Math.pow(Math.max(0, f) / top, 2));
     // frenar parado es reversa, salvo que sea "quedarse quieto" (stop)
-    if (inp.brk > 0) { if (f > 0.5) a -= sp.brake * inp.brk; else if (inp.stop) a -= Math.sign(f) * Math.min(Math.abs(f) / dt, sp.brake); else if (inp.thr <= 0) a -= 5 * inp.brk; }
+    if (inp.brk > 0) { if (f > 0.5) a -= sp.brake * (0.5 + 0.5 * wg) * inp.brk; else if (inp.stop) a -= Math.sign(f) * Math.min(Math.abs(f) / dt, sp.brake); else if (inp.thr <= 0) a -= 5 * inp.brk; }
     if (inp.thr <= 0 && inp.brk <= 0) a -= Math.sign(f) * Math.min(Math.abs(f) / dt, 1.2 + Math.abs(f) * 0.02);
     if (inp.hand) a -= Math.sign(f) * 3;
     a -= f * Math.abs(f) * 0.0007 + (c.grass ? f * 0.25 : 0);
     f += a * dt;
     if (f < -9) f = -9;
     const fa = Math.max(Math.abs(f), 1);
-    const maxA = Math.min(0.6, Math.atan(1.25 * sp.grip * 9.8 * 2.7 / (fa * fa)));
+    const maxA = Math.min(0.6, Math.atan(1.25 * sp.grip * wg * 9.8 * 2.7 / (fa * fa)));
     let yaw = f / 2.7 * Math.tan(inp.steer * maxA) / (1 + Math.abs(l) * 0.15);
     if (inp.hand && Math.abs(f) > 6) yaw *= 1.7;
     c.h -= yaw * dt;
@@ -885,5 +889,5 @@ function poseCar(car, c, dt, t) {
     const ph = Math.floor(t * 8) % 2;
     car.bar[0].material.emissiveIntensity = ph ? 3 : 0.15; car.bar[1].material.emissiveIntensity = ph ? 0.15 : 3;
   }
-  car.tailMat.emissiveIntensity = c.braking ? 2.2 : (W.time === 'noche' ? 0.8 : 0.3);
+  car.tailMat.emissiveIntensity = c.braking ? 2.2 : 0.3 + 0.5 * (W.carLights || 0);
 }

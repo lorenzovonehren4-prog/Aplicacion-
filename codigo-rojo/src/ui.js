@@ -7,6 +7,8 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 let screen = 'intro';
 const hex = c => '#' + c.toString(16).padStart(6, '0');
 const TIME_ICON = { dia: '☀️', tarde: '🌇', noche: '🌙' };
+// etiqueta del clima de una misión (sólo si no es despejado)
+const wxTag = m => m.weather && m.weather !== 'despejado' ? `<span class="tag wx">${WEATHER[m.weather].icon} ${WEATHER[m.weather].name}</span>` : '';
 
 function showScreen(id) {
   screen = id;
@@ -47,10 +49,11 @@ function renderMenu() {
   $('#mmRank').innerHTML = `<i>${R.icon}</i>${R.name}`;
   // misión destacada: la siguiente sin ganar (alternando ladrón y policía)
   const m = MISSIONS.find(x => missionOpen(x) && !save.done[x.id]) || MISSIONS[MISSIONS.length - 1];
-  const art = { dia: 'linear-gradient(160deg,#4a8fd9,#d3e7f4)', tarde: 'linear-gradient(160deg,#34508f,#ffad72)', noche: 'linear-gradient(160deg,#04070f,#2a3560)' }[m.time];
+  const art = m.weather && WEATHER[m.weather].gray > 0.5 ? { dia: 'linear-gradient(160deg,#6c7580,#b9c0c8)', tarde: 'linear-gradient(160deg,#4c4a58,#a08c88)', noche: 'linear-gradient(160deg,#05070b,#23252c)' }[m.time]
+    : { dia: 'linear-gradient(160deg,#4a8fd9,#d3e7f4)', tarde: 'linear-gradient(160deg,#34508f,#ffad72)', noche: 'linear-gradient(160deg,#04070f,#2a3560)' }[m.time];
   $('#mmFeat').innerHTML = `<div class="art" style="background:${art}">${m.role === 'ladron' ? '💰' : '🚓'}</div><div class="in">
     <div class="k">${save.done[m.id] ? 'REPETIR' : 'SIGUIENTE MISIÓN'} · ${m.role === 'ladron' ? 'LADRÓN' : 'POLICÍA'}</div><h3>${m.name}</h3><p>${m.desc}</p>
-    <div class="tags"><span class="tag ${m.diff}">${DIFFS[m.diff].name}</span><span class="tag">${TIME_ICON[m.time]} ${TIMES[m.time].name}</span><span class="tag">⏱ ${m.t} s</span><span class="tag">🪙 ${Math.round(150 * DIFFS[m.diff].reward)}+</span></div>
+    <div class="tags"><span class="tag ${m.diff}">${DIFFS[m.diff].name}</span><span class="tag">${TIME_ICON[m.time]} ${TIMES[m.time].name}</span>${wxTag(m)}<span class="tag">⏱ ${m.t} s</span><span class="tag">🪙 ${Math.round(150 * DIFFS[m.diff].reward)}+</span></div>
     <button class="btn main" data-mis="${m.id}">▶ Jugar ahora</button></div>`;
 }
 const RANKS = [[0, 'Novato', '🔰'], [2, 'Callejero', '🛞'], [5, 'Profesional', '⭐'], [9, 'Experto', '🔥'], [14, 'Leyenda', '👑']];
@@ -63,13 +66,13 @@ function renderMissions() {
       const open = missionOpen(m), done = save.done[m.id];
       return `<button class="ms ${open ? '' : 'locked'}" data-mis="${m.id}"><span class="n">${open ? i + 1 : '🔒'}</span>
         <span><b>${m.name}</b><small>${open ? m.desc : 'Gana la misión anterior para abrirla'}</small>
-        <span class="tags"><span class="tag ${m.diff}">${DIFFS[m.diff].name}</span><span class="tag">${TIME_ICON[m.time]} ${TIMES[m.time].name}</span><span class="tag">⏱ ${m.t} s</span></span></span>
+        <span class="tags"><span class="tag ${m.diff}">${DIFFS[m.diff].name}</span><span class="tag">${TIME_ICON[m.time]} ${TIMES[m.time].name}</span>${wxTag(m)}<span class="tag">⏱ ${m.t} s</span></span></span>
         <span class="st">${done ? `<span class="mstars">${[0, 1, 2].map(k => `<i class="${k < (save.stars[m.id] || 1) ? 'on' : ''}">★</i>`).join('')}</span>` : ''}</span></button>`;
     }).join('');
   }
 }
 
-const FREE = { role: 'ladron', diff: 'normal', goal: 'survive', t: 120, time: 'noche' };
+const FREE = { role: 'ladron', diff: 'normal', goal: 'survive', t: 120, time: 'noche', weather: 'despejado' };
 function renderFree() {
   const seg = (k, vals) => `<div class="seg">${vals.map(([v, t]) => `<button class="btn ${FREE[k] === v ? 'sel' : ''}" data-free="${k}" data-val="${v}">${t}</button>`).join('')}</div>`;
   const goals = FREE.role === 'ladron' ? [['survive', 'Aguantar'], ['bags', 'Bolsas'], ['escape', 'Guarida']] : [['arrest', 'Atrapar'], ['stop', 'Que no llegue']];
@@ -80,7 +83,8 @@ function renderFree() {
     <div class="opt"><span>Meta</span>${seg('goal', goals)}</div>
     <div class="opt"><span>Tiempo</span>${seg('t', [[60, '1 min'], [90, '1:30'], [120, '2 min'], [180, '3 min']])}</div>
     <div class="opt"><span>Hora</span>${seg('time', [['dia', '☀️ Día'], ['tarde', '🌇 Tarde'], ['noche', '🌙 Noche']])}</div>
-    <p class="hint">${goalText(Object.assign({ n: 5 }, FREE))}</p>
+    <div class="opt"><span>Clima</span>${seg('weather', WX_LIST.map(k => [k, `${WEATHER[k].icon} ${WEATHER[k].name}`]))}</div>
+    <p class="hint">${goalText(Object.assign({ n: 5 }, FREE))}${WEATHER[FREE.weather].grip < 1 ? ' · Con la pista mojada se resbala más.' : FREE.weather === 'neblina' ? ' · Con neblina se ve poco: usa el radar.' : ''}</p>
     <button class="btn main" data-act="playfree">¡A jugar!</button>`;
 }
 
@@ -363,8 +367,10 @@ function step(dt) {
   (G.copLights || []).forEach((l, i) => { const c = G.cops.filter(x => !x.player)[i]; if (!c) { l.intensity = 0; return; } l.position.set(c.body.x, c.body.y + 2.5, c.body.z); l.color.set(Math.floor(W.t * 8) % 2 ? 0xff2030 : 0x2050ff); l.intensity = c.body.dead ? 0 : 40; });
   // sonido
   const playing = G.mode === 'play' || G.mode === 'count' || G.mode === 'busted';
+  SFX.cabin = G.cam === 'cabina' && !!G.player && W.camera.parent === G.player.car.body;
+  if (G.mode === 'menu') SFX.setRain(G.garage ? 0 : W.rainAmt);   // lluvia también detrás del menú
   if (G.player && playing) {
-    SFX.drive(G.player.body, true, false, G.mode === 'play' ? inp.thr : 0);
+    SFX.drive(G.player.body, true, W.rainAmt * WX.inside, G.mode === 'play' ? inp.thr : 0);
     const P = G.player.body;
     let sir = 0, fast = false;
     if (G.cfg.role === 'policia') { sir = 0.8; fast = true; }

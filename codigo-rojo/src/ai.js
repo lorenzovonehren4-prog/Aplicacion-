@@ -56,8 +56,9 @@ function cornerSpeed(c, fr, skill) {
   const top = c.spec.top * (c.topMul || 1);
   if (fr.turn < 0.25) return top;
   const R = fr.turn > 2.5 ? 5 : 10 + skill * 4;
-  const vc = Math.sqrt(c.spec.grip * 9.8 * 0.85 * R) * (0.85 + skill * 0.2);
-  return Math.min(top, Math.sqrt(vc * vc + 2 * c.spec.brake * 0.75 * Math.max(0, fr.dEnd - 7)));
+  // con lluvia (W.gripMul) toman las curvas más despacio y frenan antes, igual que el jugador
+  const wg = W.gripMul || 1, vc = Math.sqrt(c.spec.grip * wg * 9.8 * 0.85 * R) * (0.85 + skill * 0.2);
+  return Math.min(top, Math.sqrt(vc * vc + 2 * c.spec.brake * (0.5 + 0.5 * wg) * 0.75 * Math.max(0, fr.dEnd - 7)));
 }
 
 // Carro de adelante en el mismo carril (para no chocarlo).

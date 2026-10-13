@@ -41,7 +41,9 @@ const SFX = {
     this.screech = this.loop(1, 'bandpass', 2400, 7);
     this.screech2 = this.loop(1.3, 'bandpass', 3400, 9);
     this.gravel = this.loop(0.6, 'bandpass', 380, 0.9);
+    // lluvia en dos capas: el siseo agudo y el golpeteo grave (en la cabina, sobre el techo)
     this.rain = this.loop(1, 'highpass', 3000, 0.5);
+    this.rainLo = this.loop(0.7, 'bandpass', 1100, 0.7);
     this.last = { gear: 1, thr: 0, rpm: 0 };
     // sirena: dos osciladores que suben y bajan (gemido) con un LFO
     const so = c.createOscillator(); so.type = 'sawtooth';
@@ -69,7 +71,7 @@ const SFX = {
     return { g, f };
   },
   setVol() { if (this.master) this.master.gain.value = save.opt.sound ? save.opt.vol * 0.8 : 0; },
-  // Se llama cada cuadro mientras se maneja. thr: acelerador (0-1).
+  // Se llama cada cuadro mientras se maneja. rain: lluvia (0-1 o true/false). thr: acelerador (0-1).
   drive(C, on, rain, thr = 0) {
     if (!this.ctx) return;
     const t = this.ctx.currentTime, k = 0.06, E = this.eng, L = this.last;
@@ -110,8 +112,18 @@ const SFX = {
     this.screech2.g.gain.setTargetAtTime(Math.min(0.1, sl * 0.03), t, 0.03);
     this.screech.f.frequency.setTargetAtTime(2200 + Math.sin(t * 13) * 300, t, 0.02);
     this.gravel.g.gain.setTargetAtTime(on && C.grass && C.state === 'drive' ? Math.min(0.35, sp * 0.012) : 0, t, 0.05);
-    this.rain.g.gain.setTargetAtTime(rain ? 0.12 : 0, t, 0.3);
+    this.setRain(rain === true ? 1 : +rain || 0);
   },
+  // Volumen de la lluvia (0-1). Con this.cabin (cámara adentro) suena más el techo y menos el siseo.
+  setRain(r) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime, cab = !!this.cabin;
+    this.rain.g.gain.setTargetAtTime(r * (cab ? 0.05 : 0.11), t, 0.3);
+    this.rainLo.g.gain.setTargetAtTime(r * (cab ? 0.22 : 0.08), t, 0.3);
+    this.rainLo.f.frequency.setTargetAtTime(cab ? 520 : 1100, t, 0.3);
+  },
+  // plumilla del limpiaparabrisas que llega a un extremo
+  wiper() { this.burst(0.07, 320, 0.05); this.tone(150, 0.07, 'sine', 0.025); },
   // volumen de la sirena (0 a 1) según qué tan cerca está el patrullero; fast = ritmo de persecución
   setSiren(v, fast) {
     if (!this.ctx) return;
@@ -208,7 +220,15 @@ const SFX = {
       speechSynthesis.speak(u);
     } catch (e) { /* sin voz */ }
   },
-  thunder() { this.burst(2.6, 180, 0.7); this.burst(1.2, 90, 0.5, 'lowpass', 0.2); },
+  // Trueno: dist 0 (cerca: estallido seco y retumbo fuerte) a 1 (lejos: sólo el retumbo grave).
+  thunder(dist = 0.5) {
+    if (!this.ctx) return;
+    const near = 1 - clamp(dist, 0, 1);
+    if (near > 0.45) { this.burst(0.22, 2600, 0.3 * near, 'highpass'); this.burst(0.5, 700, 0.55 * near); }
+    this.burst(2.6 + dist, 170, 0.5 + 0.3 * near);
+    this.burst(1.6, 85, 0.5, 'lowpass', 0.2);
+    for (let i = 0, d = 0.4; i < 4; i++, d += 0.35 + Math.random() * 0.45) this.burst(0.6 + Math.random(), 100 + Math.random() * 120, 0.16 + 0.2 * near, 'lowpass', d);
+  },
   nitro() { this.sweep(0.9, 300, 2600, 0.28); this.burst(0.7, 700, 0.35); },
   buy() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.12, i * 0.06)); },
   win() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => this.tone(f, i === 5 ? 0.6 : 0.16, 'square', 0.09, i * 0.13)); },
