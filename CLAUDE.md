@@ -17,3 +17,5 @@ Se publica como Artifact de Claude (no GitHub Pages): `node portal/tools/artifac
 - Kartódromo, Combi Rush y Modo Carrera Fútbol tienen resolución dinámica (`adaptResolution`): bajan píxeles si van a menos de ~45 FPS.
 
 Pruebas: `CHROMIUM_PATH=... node portal/tests/portal.mjs --shots` y `node portal/tests/botones.mjs` (todos los botones) (capturas en `portal/tests/capturas/`, ignoradas por git).
+
+- `shorts/`: shorts verticales del canal de YouTube Cosmo.ia («¿Qué pasaría si…?») y la marca del canal; no es parte del portal. Ver `shorts/README.md`. En `.claude/skills/` están youtube-agent-skill (`yt-*`, no publica) y graphify.

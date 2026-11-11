@@ -9,3 +9,9 @@ Thumbs.db
 .idea/
 node_modules
 **/tests/capturas/
+
+# Shorts: lo que se genera no se guarda
+shorts/*/audio.wav
+shorts/*/timeline.json
+shorts/*/*.mp4
+shorts/*/fotos/

@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{margin:0;box-sizing:border-box}body{background:#05060d;font-family:Inter,sans-serif;font-weight:900}
+#a,#b{position:absolute;left:0;top:0;overflow:hidden}
+#a{width:800px;height:800px}#b{width:2560px;height:1440px;display:none}
+.wm{position:absolute;color:#fff;letter-spacing:-3px;text-transform:uppercase;white-space:nowrap}
+.wm b{color:#ffd400}.tag{position:absolute;color:#ff8a1e;text-transform:uppercase;letter-spacing:10px;white-space:nowrap}
+</style></head><body>
+<div id="a"><svg id="sa" width="800" height="800" viewBox="0 0 800 800"></svg></div>
+<div id="b"><svg id="sb" width="2560" height="1440" viewBox="0 0 2560 1440"></svg>
+ <div class="wm" style="left:1040px;top:590px;font-size:180px;line-height:1">Cosmo<b>.ia</b></div>
+ <div class="tag" style="left:1050px;top:780px;font-size:38px">¿Qué pasaría si…?</div>
+ <div class="tag" style="left:1050px;top:838px;font-size:26px;color:#9fb0d8;letter-spacing:6px">Datos del universo en 40 segundos</div></div>
+<script>
+const rnd=i=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)};
+function art(w,h,cx,cy,R,stars){let s=`<defs>
+<radialGradient id="bg${w}" cx="${cx/w}" cy="${cy/h}" r="0.9"><stop offset="0" stop-color="#1b1440"/><stop offset=".45" stop-color="#0a0b1e"/><stop offset="1" stop-color="#030409"/></radialGradient>
+<radialGradient id="pl${w}" cx=".34" cy=".3" r=".8"><stop offset="0" stop-color="#ffe98a"/><stop offset=".35" stop-color="#ffb21e"/><stop offset=".75" stop-color="#e2470f"/><stop offset="1" stop-color="#5a1206"/></radialGradient>
+<linearGradient id="tr${w}" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a1e" stop-opacity="0"/><stop offset=".7" stop-color="#ff8a1e"/><stop offset="1" stop-color="#fff3c4"/></linearGradient>
+<filter id="gl${w}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${R*.09}"/></filter>
+<clipPath id="front${w}"><rect x="0" y="${cy}" width="${w}" height="${h}"/></clipPath></defs>
+<rect width="${w}" height="${h}" fill="url(#bg${w})"/>`;
+ for(let i=0;i<stars;i++){const x=rnd(i*3.1+w)*w,y=rnd(i*7.7+w)*h,r=.6+rnd(i*5.3)*2.4*(R/230);s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity="${.25+rnd(i*9.9)*.7}"/>`;}
+ const ring=(clip)=>`<g transform="rotate(-20 ${cx} ${cy})" ${clip?`clip-path="url(#front${w})"`:''}><ellipse cx="${cx}" cy="${cy}" rx="${R*1.62}" ry="${R*.36}" fill="none" stroke="#fff" stroke-width="${R*.085}"/><ellipse cx="${cx}" cy="${cy}" rx="${R*1.38}" ry="${R*.27}" fill="none" stroke="#ffd400" stroke-width="${R*.045}"/></g>`;
+ s+=`<circle cx="${cx}" cy="${cy}" r="${R*1.25}" fill="#ff6a1e" opacity=".35" filter="url(#gl${w})"/>`;
+ s+=ring(false)+`<circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#pl${w})"/>
+ <ellipse cx="${cx-R*.1}" cy="${cy-R*.38}" rx="${R*.7}" ry="${R*.09}" fill="#fff" opacity=".18"/><ellipse cx="${cx+R*.1}" cy="${cy+R*.25}" rx="${R*.8}" ry="${R*.11}" fill="#5a1206" opacity=".28"/>`+ring(true);
+ // meteorito
+ const mx=cx+R*1.05,my=cy-R*1.12;
+ s+=`<path d="M${mx+R*1.25} ${my-R*1.0} L${mx+R*.06} ${my-R*.12} L${mx-R*.1} ${my+R*.08} Z" fill="url(#tr${w})"/><circle cx="${mx}" cy="${my}" r="${R*.2}" fill="#fff3c4" filter="url(#gl${w})" opacity=".9"/><circle cx="${mx}" cy="${my}" r="${R*.12}" fill="#fff"/>`;
+ return s;}
+document.getElementById('sa').innerHTML=art(800,800,400,420,205,90);
+document.getElementById('sb').innerHTML=art(2560,1440,800,720,140,420);
+</script></body></html>

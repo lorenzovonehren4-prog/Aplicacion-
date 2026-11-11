@@ -1,0 +1,89 @@
+[
+ {
+  "id": "h1",
+  "img": "a",
+  "t": "Si ves este destello en el cielo, no te acerques a la ventana.",
+  "dur": 3.315
+ },
+ {
+  "id": "h2",
+  "img": "a",
+  "t": "¿Qué pasaría si cae un meteorito? Depende del tamaño.",
+  "dur": 2.868
+ },
+ {
+  "id": "s1a",
+  "img": "a",
+  "tag": "20 m",
+  "t": "Veinte metros. Como un edificio de seis pisos.",
+  "dur": 2.548
+ },
+ {
+  "id": "s1b",
+  "img": "b",
+  "tag": "20 m",
+  "t": "Explota en el aire con la fuerza de treinta bombas atómicas.",
+  "dur": 3.272
+ },
+ {
+  "id": "s1c",
+  "img": "b",
+  "tag": "20 m",
+  "t": "En Rusia, en dos mil trece, la onda expansiva reventó miles de ventanas, e hirió a mil quinientas personas.",
+  "dur": 5.854
+ },
+ {
+  "id": "s2a",
+  "img": "c",
+  "tag": "60 m",
+  "t": "Sesenta metros.",
+  "dur": 1.101
+ },
+ {
+  "id": "s2b",
+  "img": "c",
+  "tag": "60 m",
+  "t": "En mil novecientos ocho, uno así arrasó ochenta millones de árboles en Siberia.",
+  "dur": 4.382
+ },
+ {
+  "id": "s2c",
+  "img": "c",
+  "tag": "60 m",
+  "t": "Sobre una ciudad, no quedaría nada.",
+  "dur": 1.975
+ },
+ {
+  "id": "s3a",
+  "img": "d",
+  "tag": "10 km",
+  "t": "Diez kilómetros.",
+  "dur": 1.037
+ },
+ {
+  "id": "s3b",
+  "img": "d",
+  "tag": "10 km",
+  "t": "Este acabó con los dinosaurios.",
+  "dur": 1.826
+ },
+ {
+  "id": "s3c",
+  "img": "d",
+  "tag": "10 km",
+  "t": "Incendios gigantescos, y un cielo negro durante meses.",
+  "dur": 3.017
+ },
+ {
+  "id": "f1",
+  "img": "a",
+  "t": "La buena noticia: hoy vigilamos el cielo.",
+  "dur": 2.334
+ },
+ {
+  "id": "f2",
+  "img": "a",
+  "t": "Pero si ves el destello...",
+  "dur": 1.535
+ }
+]
