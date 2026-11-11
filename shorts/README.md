@@ -55,3 +55,7 @@ Se redibujan con `node canal/marca.cjs`.
 
 - `.claude/skills/yt-*`: youtube-agent-skill (guion, título + miniatura, SEO, Shorts, retención…). Escribe; **no publica**.
 - `.claude/skills/graphify`: `/graphify .` arma un grafo del código (necesita `pip install graphifyy`).
+
+## Versión en inglés
+
+`meteorito-en/` es el mismo short con guion, voz (Kokoro `am_michael`) y textos en inglés. Se rearma igual; `python3 voz.py <carpeta de modelos> <voz>` cambia la voz.

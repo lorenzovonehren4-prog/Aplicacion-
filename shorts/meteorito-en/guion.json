@@ -1,0 +1,73 @@
+[
+ {
+  "id": "h1",
+  "t": "If you see this flash in the sky, get away from the window!",
+  "dur": 2.982
+ },
+ {
+  "id": "h2",
+  "t": "What happens if a meteor hits? It depends on the size.",
+  "dur": 2.938
+ },
+ {
+  "id": "s1a",
+  "t": "Twenty meters. As tall as a six-story building.",
+  "c": "20 meters. As tall as a six-story building.",
+  "dur": 2.818
+ },
+ {
+  "id": "s1b",
+  "t": "It explodes in mid-air, with the force of thirty atomic bombs.",
+  "c": "It explodes in mid-air, with the force of 30 atomic bombs.",
+  "dur": 3.619
+ },
+ {
+  "id": "s1c",
+  "t": "In Russia, in twenty thirteen, the shock wave shattered thousands of windows, and injured fifteen hundred people.",
+  "c": "In Russia, in 2013, the shock wave shattered thousands of windows, and injured 1,500 people.",
+  "dur": 6.296
+ },
+ {
+  "id": "s2a",
+  "t": "Sixty meters.",
+  "c": "60 meters.",
+  "dur": 0.975
+ },
+ {
+  "id": "s2b",
+  "t": "In nineteen oh eight, one like this flattened eighty million trees in Siberia.",
+  "c": "In 1908, one like this flattened 80 million trees in Siberia.",
+  "dur": 4.106
+ },
+ {
+  "id": "s2c",
+  "t": "Over a city? Nothing would be left.",
+  "dur": 1.855
+ },
+ {
+  "id": "s3a",
+  "t": "Ten kilometers.",
+  "c": "10 kilometers.",
+  "dur": 0.988
+ },
+ {
+  "id": "s3b",
+  "t": "This one wiped out the dinosaurs.",
+  "dur": 1.798
+ },
+ {
+  "id": "s3c",
+  "t": "Massive wildfires, and a black sky for months.",
+  "dur": 2.786
+ },
+ {
+  "id": "f1",
+  "t": "The good news? Today, we watch the sky.",
+  "dur": 2.161
+ },
+ {
+  "id": "f2",
+  "t": "But if you ever see that flash...",
+  "dur": 1.55
+ }
+]
