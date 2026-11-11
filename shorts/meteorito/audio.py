@@ -2,8 +2,8 @@ import json, numpy as np, soundfile as sf
 from scipy import signal
 SR=44100
 g=json.load(open('guion.json'))
-GAP={'h1':.25,'h2':.35,'s1a':.3,'s1b':.15,'s1c':.4,'s2a':.55,'s2b':.15,'s2c':.4,'s3a':.55,'s3b':.15,'s3c':.45,'f1':.15,'f2':.3}
-t=0.25
+GAP={'h1':.1,'h2':.18,'s1a':.15,'s1b':.1,'s1c':.28,'s2a':.4,'s2b':.1,'s2c':.28,'s3a':.4,'s3b':.1,'s3c':.35,'f1':.1,'f2':.3}
+t=0.05
 for s in g:
     s['start']=round(t,3); t+=s['dur']+GAP[s['id']]
 TOTAL=round(t,3)
@@ -90,8 +90,10 @@ put(music,strings(T['s3a']-T['s2a'],174.6),T['s2a'])
 put(music,strings(T['f1']-T['s3a'],220.0),T['s3a'],1.25)
 # efectos
 put(fx,siren(T['h2']+0.6)*np.linspace(1,0.55,int((T['h2']+0.6)*SR)),0.0)
-put(fx,boom(.6),0.0,0.6)
-put(fx,whoosh(.45),T['h1']+1.45)
+put(fx,boom(.8),0.0,0.8)
+put(fx,whoosh(.4),0.45)
+put(fx,boom(1.0),0.9,0.9); put(fx,glass(),0.92,0.9)
+put(fx,whoosh(.4),1.7)
 put(fx,whoosh(.5),T['h2']-0.3)
 put(fx,riser(1.2),T['s1b']-1.2); put(fx,boom(1.0),T['s1b'],0.95)
 put(fx,glass(),T['s1c']+0.05,0.9); put(fx,boom(.5),T['s1c'],0.45)

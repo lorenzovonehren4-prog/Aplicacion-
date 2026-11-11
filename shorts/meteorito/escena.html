@@ -102,7 +102,8 @@ function shockRing(x,y,r,a,w=50){ if(a<=0||r<=0) return; g.save(); g.globalCompo
 
 // ---------- escenas ----------
 // 1. Calle de noche: travelling junto al camión de bomberos; la cámara sube hacia el meteorito.
-function street(t){ const tilt=eio(k01(t,T('h1')+1.5,T('h1')+2.3)), back=t>=T('f1'), tt=back?t-T('f1'):t; const off=tilt*620*(back?0:1)+(back?620:0);
+function meteorClose(t){ const k=t/.7; sky('#03070f','#0c2030','#3a1c10'); stars(60,t,H,2); const x=lerp(900,300,k), y=lerp(330,1100,k); glow(x,y,1300,'rgba(255,120,30,A)',.6); meteor(x,y,170,2.22,t,9); }
+function street(t){ const tilt=eio(k01(t,T('h2')+D('h2')*.55,T('h2')+D('h2')*.55+.5)), back=t>=T('f1'), tt=back?t-T('f1'):t*1.8; const off=tilt*620*(back?0:1)+(back?620:0);
   const mk=back?k01(t,T('f2'),TL.total):k01(t,0,T('s1a')); const mx=back?lerp(700,560,eio(mk)):lerp(940,480,mk), my=(back?lerp(430,560,eio(mk)):lerp(250,640,mk)), mR=back?lerp(26,170,ein(mk)):lerp(34,74,mk);
   sky(back?'#02040c':'#040a14',back?'#0b1830':'#10283a','#3a2416'); stars(70,t,900,1);
   glow(mx,my,900,'rgba(255,120,30,A)',back?.25+mk*.5:.38);
@@ -161,7 +162,7 @@ function airburst(t){ const t0=T('s1b'), te=t0+D('s1b')*.3, k=k01(t,t0,te), ex=t
     glow(ex0,ey0,R*1.1,'rgba(255,255,240,A)',1); shockRing(ex0,ey0,ex*900,clamp(1-ex/1.8,0,.8),60); shockRing(ex0,ey0,ex*620-80,clamp(.6-ex/2.2,0,.5),26); } }
 
 // 4. La onda llega a la ventana.
-function windowScene(t){ const t0=T('s1c'), hit=t0+.55, a=t-hit, on=a>=0;
+function windowScene(t,hit){ const a=t-hit, on=a>=0;
   sky('#0d1626','#111d33','#0a1120'); g.fillStyle='#0a101d'; g.fillRect(-60,1560,W+120,H);
   const wx=170,wy=380,ww=620,wh=820;
   g.save(); g.beginPath(); g.rect(wx,wy,ww,wh); g.clip(); const o=g.createLinearGradient(0,wy,0,wy+wh); o.addColorStop(0,'#9fb6d6'); o.addColorStop(1,'#eef3fb'); g.fillStyle=o; g.fillRect(wx,wy,ww,wh);
@@ -219,17 +220,18 @@ function earth(t){ const hit=T('s3b')+.45, a=t-hit, cx=540, cy=1120, R=470;
   else { glow(ix,iy,640,'rgba(255,240,200,A)',1.2*Math.exp(-a*1.1)); g.save(); g.globalCompositeOperation='lighter'; for(let i=0;i<60;i++){ const an=-2.6+rnd(i*3.1)*2.2+ (i%2?0:3.4), v=320+rnd(i*7.3)*760, px=ix+Math.cos(an)*v*a*.8, py=iy+Math.sin(an)*v*a*.8+90*a*a; g.fillStyle=`rgba(255,${130+rnd(i)*110|0},40,${clamp(1.1-a*.35,0,1)})`; g.beginPath(); g.arc(px,py,5+rnd(i*5)*11,0,7); g.fill(); } g.restore(); } }
 
 // ---------- línea de tiempo ----------
-const scenes=[[0,street],[T('s1a'),t=>compare(0,T('s1a'),t)],[T('s1b'),airburst],[T('s1c'),windowScene],[T('s2a'),t=>compare(1,T('s2a'),t)],[T('s2b'),forest],[T('s2c'),cityFall],
+const HOOK_HIT=.9;
+const scenes=[[0,meteorClose],[.7,t=>windowScene(t,HOOK_HIT)],[1.9,street],[T('s1a'),t=>compare(0,T('s1a'),t)],[T('s1b'),airburst],[T('s1c'),t=>windowScene(t,T('s1c')+.55)],[T('s2a'),t=>compare(1,T('s2a'),t)],[T('s2b'),forest],[T('s2c'),cityFall],
   [T('s3a'),t=>compare(2,T('s3a'),t)],[T('s3b'),earth],[T('f1'),street]];
 const cuts=scenes.map(s=>s[0]);
-const flashes=[[0,.4,.08],[T('s1a'),.7,.1],[T('s1b')+D('s1b')*.3,1,.3],[T('s1c')+.55,.5,.12],[T('s2a'),.8,.12],[T('s2b'),1,.3],[T('s2c'),.8,.2],[T('s3a'),.8,.12],[T('s3b')+.45,1,.45],[T('f1'),.5,.12]];
-const hits=[T('s1b')+D('s1b')*.3,T('s1c')+.55,T('s2b')+.15,T('s2c'),T('s3b')+.45];
+const flashes=[[0,.25,.06],[.7,.7,.07],[HOOK_HIT,1,.2],[1.9,.7,.08],[T('h2'),.5,.08],[T('s1a'),.7,.1],[T('s1b')+D('s1b')*.3,1,.3],[T('s1c')+.55,.5,.12],[T('s2a'),.8,.12],[T('s2b'),1,.3],[T('s2c'),.8,.2],[T('s3a'),.8,.12],[T('s3b')+.45,1,.45],[T('f1'),.5,.12]];
+const hits=[0,HOOK_HIT,T('s1b')+D('s1b')*.3,T('s1c')+.55,T('s2b')+.15,T('s2c'),T('s3b')+.45];
 const shakeBase=t=>t<T('s1a')?5:(t>=T('s2b')&&t<T('s3a')?5:(t>=T('f2')?8:1.5));
 
 function capChunks(text){ const words=text.replace(/\.\.\./g,'…').split(/\s+/), out=[]; let cur=[];
   for(const w of words){ cur.push(w); const len=cur.join(' ').length; if(len>=13||/[.,?:…]$/.test(w)||cur.length>=3){out.push(cur.join(' '));cur=[];} }
   if(cur.length) out.push(cur.join(' ')); return out; }
-const HOT=/^(destello|ventana|meteorito|tamaño|veinte|metros|treinta|bombas|atómicas|rusia|ventanas|mil|quinientas|sesenta|ochenta|millones|nada|diez|kilómetros|dinosaurios|incendios|negro|meses|vigilamos)$/i;
+const HOT=/^(destello|ventana|aléjate|meteorito|tamaño|veinte|metros|treinta|bombas|atómicas|rusia|ventanas|mil|quinientas|sesenta|ochenta|millones|nada|diez|kilómetros|dinosaurios|incendios|negro|meses|vigilamos)$/i;
 TL.segs.forEach(s=>{ const ch=capChunks(s.t), tot=ch.reduce((a,c)=>a+c.length+2,0); let a=0;
   s.caps=ch.map(c=>{const o={t0:s.start+s.dur*a/tot,txt:c}; a+=c.length+2; o.t1=s.start+s.dur*a/tot; return o;}); s.caps[s.caps.length-1].t1=s.start+s.dur+0.12; });
 const hl=txt=>txt.split(' ').map(w=>HOT.test(w.replace(/[^\p{L}]/gu,''))?`<b>${w}</b>`:w).join(' ');
@@ -251,13 +253,13 @@ window.setT=function(t){
   // --- capa de efectos
   ctx.clearRect(0,0,W,H);
   let near=99; for(const c of cuts) if(t>=c) near=t-c;
-  const speed=(t<T('h1')+1.5)?1:(t>=T('f2')?k01(t,T('f2'),T('f2')+.6):(near<.3?.7*(1-near/.3):0));
+  const speed=(t<.7||(t>=1.9&&t<T('h2')))?1:(t>=T('f2')?k01(t,T('f2'),T('f2')+.6):(near<.3?.7*(1-near/.3):0));
   if(speed>0){ const fr=Math.floor(t*15); ctx.save(); ctx.globalCompositeOperation='lighter';
-    if(t<T('h1')+1.5){ for(let i=0;i<40;i++){ const y=rnd(i*3+fr*7)*H, w=200+rnd(i+fr)*700, x=rnd(i*5+fr*3)*W*1.3-200; ctx.fillStyle=`rgba(255,255,255,${.06+.14*rnd(i+fr*2)})`; ctx.fillRect(x,y,w,2+rnd(i)*5);} }
+    if(t>=1.9&&t<T('h2')){ for(let i=0;i<40;i++){ const y=rnd(i*3+fr*7)*H, w=200+rnd(i+fr)*700, x=rnd(i*5+fr*3)*W*1.3-200; ctx.fillStyle=`rgba(255,255,255,${.06+.14*rnd(i+fr*2)})`; ctx.fillRect(x,y,w,2+rnd(i)*5);} }
     else { const cx=W/2, cy=H*.42; for(let i=0;i<70;i++){ const a=rnd(i*9+fr*5)*Math.PI*2, r0=560+rnd(i+fr)*360, r1=r0+500+rnd(i*2+fr)*700;
         ctx.strokeStyle=`rgba(255,255,255,${(.1+.28*rnd(i*4+fr))*speed})`; ctx.lineWidth=2+rnd(i)*8; ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0*1.5); ctx.lineTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1*1.5); ctx.stroke(); } }
     ctx.restore(); }
-  { const d=t-T('s1c')-.55; if(d>=0&&d<2.6){ ctx.save();           // vidrios hacia la cámara
+  for(const hh of [[HOOK_HIT,1.9],[T('s1c')+.55,T('s2a')]]){ const d=t-hh[0]; if(d>=0&&t<hh[1]&&d<2.6){ ctx.save();           // vidrios hacia la cámara
     for(let i=0;i<60;i++){ const a=rnd(i*2.3)*Math.PI*2, v=420+rnd(i*7.7)*1400, q=d-rnd(i*4.1)*.3; if(q<0) continue;
       const x=480+Math.cos(a)*v*q, y=790+Math.sin(a)*v*q+520*q*q, sz=(16+rnd(i*1.9)*56)*(1+q*2.2);
       ctx.save(); ctx.translate(x,y); ctx.rotate(a+q*(4+rnd(i)*8)); ctx.globalAlpha=clamp(1.3-q*.6,0,.92);
@@ -277,7 +279,7 @@ window.setT=function(t){
   // --- textos
   const A=$('alert'); if(t<T('h2')-.1){A.style.display='block'; A.style.opacity=(Math.floor(t*6)%2)?1:.25;} else A.style.display='none';
   const ti=$('title'), su=$('sub');
-  if(t>=T('h2')&&t<T('s1a')){ ti.style.display=su.style.display='block'; ti.innerHTML='¿Qué pasaría si cae un <b>meteorito?</b>'; pop(ti,t,T('h2'),1.6,.16);
+  if(t>=T('h2')&&t<T('s1a')){ ti.style.display=su.style.display='block'; ti.innerHTML='¿Qué pasa si cae un <b>meteorito?</b>'; pop(ti,t,T('h2'),1.6,.16);
     su.textContent='3 tamaños'; const t3=T('h2')+D('h2')*.62; su.style.visibility=t>=t3?'visible':'hidden'; pop(su,t,t3,2,.12); }
   else ti.style.display=su.style.display='none';
   const secs=[['s1a','s2a','20 m',0],['s2a','s3a','60 m',1],['s3a','f1','10 km',2]]; const nu=$('num'), la=$('lab'), pp=$('pips');
