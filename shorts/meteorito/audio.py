@@ -2,7 +2,7 @@ import json, numpy as np, soundfile as sf
 from scipy import signal
 SR=44100
 g=json.load(open('guion.json'))
-GAP={'h1':.25,'h2':.35,'s1a':.15,'s1b':.15,'s1c':.4,'s2a':.1,'s2b':.15,'s2c':.4,'s3a':.1,'s3b':.15,'s3c':.45,'f1':.15,'f2':.3}
+GAP={'h1':.25,'h2':.35,'s1a':.3,'s1b':.15,'s1c':.4,'s2a':.55,'s2b':.15,'s2c':.4,'s3a':.55,'s3b':.15,'s3c':.45,'f1':.15,'f2':.3}
 t=0.25
 for s in g:
     s['start']=round(t,3); t+=s['dur']+GAP[s['id']]
@@ -28,8 +28,8 @@ def boom(size=1.0):
     f=28+70*np.exp(-k*6); ph=2*np.pi*np.cumsum(f)/SR
     x=np.sin(ph)*np.exp(-k/ (0.9*size))
     x+=lp(rng.standard_normal(n),220)*np.exp(-k/0.7)*1.5
-    x+=bp(rng.standard_normal(n),300,2500)*np.exp(-k/0.12)*0.5
-    return np.tanh(x*1.6)*0.9
+    x+=bp(rng.standard_normal(n),200,1200)*np.exp(-k/0.2)*0.25
+    return np.tanh(x*1.1)*0.7
 def whoosh(d=0.5):
     n=int(d*SR); k=np.linspace(0,1,n)
     x=rng.standard_normal(n); out=np.zeros(n)
@@ -42,8 +42,8 @@ def siren(d):
     n=int(d*SR); k=np.arange(n)/SR
     f=780+330*signal.sawtooth(2*np.pi*k/1.15,0.5)   # ulular de bomberos
     ph=2*np.pi*np.cumsum(f)/SR
-    x=np.sign(np.sin(ph))*0.5+np.sin(ph)*0.5
-    return lp(x,2600)*0.22
+    x=np.sin(ph)+0.25*np.sin(2*ph)+0.12*np.sin(3*ph)
+    return lp(x,1800)*0.07
 def klaxon(d):
     n=int(d*SR); k=np.arange(n)/SR
     x=(np.sin(2*np.pi*440*k)+np.sin(2*np.pi*554*k)+0.5*np.sign(np.sin(2*np.pi*880*k)))
@@ -90,7 +90,6 @@ put(music,strings(T['s3a']-T['s2a'],174.6),T['s2a'])
 put(music,strings(T['f1']-T['s3a'],220.0),T['s3a'],1.25)
 # efectos
 put(fx,siren(T['h2']+0.6)*np.linspace(1,0.55,int((T['h2']+0.6)*SR)),0.0)
-put(fx,klaxon(1.7),0.0)
 put(fx,boom(.6),0.0,0.6)
 put(fx,whoosh(.45),T['h1']+1.45)
 put(fx,whoosh(.5),T['h2']-0.3)
@@ -110,14 +109,16 @@ put(fx,cr*np.minimum(1,np.arange(n)/SR/0.5),T['s2a'],0.55)
 for s in g:
     v,sr=sf.read(f"voz/{s['id']}.wav"); v=signal.resample_poly(v,SR,sr)
     put(voice,v,s['start'])
-voice=hp(voice,90); voice+=0.25*bp(voice,2500,6000)      # presencia
-voice=np.tanh(voice*2.6)/np.tanh(2.6)*0.9
+voice=hp(voice,75)
+# compresor suave: iguala el volumen sin ensuciar la voz
+lvl=np.sqrt(np.maximum(lp(voice**2,8),0)+1e-8); gain=np.minimum(3.0,(0.11/np.maximum(lvl,0.02))**0.55); voice=voice*lp(gain,12)
+voice=voice/np.abs(voice).max()*0.88
 # la música se agacha cuando habla
-e=lp(np.abs(voice),6); duck=1-0.5*np.clip(e/ (e.max()+1e-9)*4,0,1)
-mix=voice*1.0+ (music*1.15+fx*0.75)*duck
+e=lp(np.abs(voice),6); duck=1-0.6*np.clip(e/ (e.max()+1e-9)*4,0,1)
+mix=voice*1.0+ (music*0.9+fx*0.5)*duck
 # estéreo simple: efectos algo abiertos
 d=int(0.011*SR); wide=np.concatenate([np.zeros(d),(fx*0.25*duck)[:-d]])
 L=mix+wide; R=mix-wide
 out=np.stack([L,R],1); fade=int(0.25*SR); out[-fade:]*=np.linspace(1,0.0,fade)[:,None]
-out=np.tanh(out*1.15); out/=np.abs(out).max()/0.97
+pk=np.abs(out).max(); out=out/pk*0.95 if pk>0.95 else out
 sf.write('audio.wav',out,SR); print('total',TOTAL)

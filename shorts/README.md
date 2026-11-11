@@ -12,9 +12,8 @@ NODE_PATH=$(npm root -g) node render.mjs short.mp4 # dibuja escena.html cuadro a
 
 - `guion.json`: las frases de la narración, la imagen de cada una y su duración.
 - `voz.py`: vuelve a grabar la narración con Kokoro (voz `em_alex`) si cambia el guion.
-- `escena.html`: planos, cámara, temblores, destellos, vidrios, brasas y textos. Todo depende de `setT(t)`.
-- `img/`: ilustraciones clave hechas en OpenArt. Con el plan gratuito traen la marca de agua de OpenArt;
-  con un plan de pago basta reemplazar los archivos y volver a renderizar.
+- `escena.html`: las escenas animadas, temblores, destellos, vidrios, brasas y textos. Todo depende de `setT(t)`.
+- No usa imágenes: todas las escenas (calle, explosión, ventana, bosque, ciudad, Tierra, observatorio) se dibujan con código.
 - Necesita `pip install numpy scipy soundfile`, `ffmpeg` y Playwright.
 
 ## Canal
