@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que un papa ordenó juzgar el cadáver de otro papa?",
+  "gap": 0.45,
+  "dur": 3.049
+ },
+ {
+  "id": "c1",
+  "t": "Roma, finales del siglo nueve. La ciudad y la Iglesia están divididas entre facciones que luchan por el poder.",
+  "gap": 0.15,
+  "dur": 6.009
+ },
+ {
+  "id": "c2",
+  "t": "El papa Formoso muere en el año 896. Había coronado emperador a Arnulfo de Carintia, y eso le ganó enemigos poderosos.",
+  "gap": 0.2,
+  "dur": 7.83
+ },
+ {
+  "id": "d1",
+  "t": "Meses después, el nuevo papa, Esteban sexto, cercano a la facción rival de Spoleto, decide algo sin precedentes.",
+  "gap": 0.25,
+  "dur": 6.801
+ },
+ {
+  "id": "d2",
+  "t": "En enero de 897, el cuerpo de Formoso es sacado de su tumba, vestido con ropas papales, y sentado en un trono.",
+  "gap": 0.3,
+  "dur": 7.283
+ },
+ {
+  "id": "d3",
+  "t": "En la basílica de San Juan de Letrán comienza el juicio. Un diácono responde en nombre del muerto.",
+  "gap": 0.2,
+  "dur": 4.755
+ },
+ {
+  "id": "r1",
+  "t": "Lo acusan de perjurio y de haber llegado al papado de forma ilegal. El veredicto: culpable.",
+  "gap": 0.25,
+  "dur": 5.289
+ },
+ {
+  "id": "r2",
+  "t": "Sus nombramientos se anulan, y su cuerpo termina arrojado al río Tíber.",
+  "gap": 0.25,
+  "dur": 4.24
+ },
+ {
+  "id": "f1",
+  "t": "Poco después, Esteban sexto fue depuesto, encarcelado y estrangulado. Y otro papa rehabilitó a Formoso.",
+  "gap": 0.25,
+  "dur": 6.479
+ },
+ {
+  "id": "f2",
+  "t": "El acusado no podía defenderse. Había muerto meses antes.",
+  "gap": 0.5,
+  "dur": 3.481
+ }
+]

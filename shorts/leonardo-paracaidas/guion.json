@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que Leonardo da Vinci dibujó un paracaídas hace más de quinientos años?",
+  "gap": 0.45,
+  "dur": 4.115
+ },
+ {
+  "id": "c1",
+  "t": "Milán, hacia 1485. En su taller, Leonardo llena cuadernos con máquinas, alas y mecanismos.",
+  "gap": 0.15,
+  "dur": 6.985
+ },
+ {
+  "id": "c2",
+  "t": "En una de esas páginas, hoy en el Códice Atlántico, aparece una pirámide de tela.",
+  "gap": 0.2,
+  "dur": 4.724
+ },
+ {
+  "id": "d1",
+  "t": "Su nota dice, más o menos: con una tela de lino de doce brazas por lado, un hombre podrá lanzarse desde cualquier altura sin hacerse daño.",
+  "gap": 0.25,
+  "dur": 7.665
+ },
+ {
+  "id": "d2",
+  "t": "Unos siete metros de lado. Un armazón de madera, cubierto de lino, con forma de pirámide.",
+  "gap": 0.2,
+  "dur": 5.154
+ },
+ {
+  "id": "d3",
+  "t": "Ojo: no fue el primero en imaginar algo así, y no hay pruebas de que lo probara en vida.",
+  "gap": 0.3,
+  "dur": 5.202
+ },
+ {
+  "id": "r1",
+  "t": "Pasaron más de quinientos años. En el año 2000, el paracaidista británico Adrian Nicholas construyó una réplica con materiales que Leonardo podía tener.",
+  "gap": 0.2,
+  "dur": 8.327
+ },
+ {
+  "id": "r2",
+  "t": "Se lanzó desde un globo, a unos tres mil metros, sobre Sudáfrica. Y el diseño funcionó: bajó de forma suave y estable.",
+  "gap": 0.25,
+  "dur": 7.035
+ },
+ {
+  "id": "f1",
+  "t": "Por seguridad, a unos seiscientos metros lo soltó y abrió un paracaídas moderno.",
+  "gap": 0.2,
+  "dur": 4.679
+ },
+ {
+  "id": "f2",
+  "t": "Una idea dibujada hace más de cinco siglos, terminó siendo puesta a prueba en tiempos modernos.",
+  "gap": 0.5,
+  "dur": 5.491
+ }
+]

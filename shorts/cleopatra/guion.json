@@ -1,0 +1,56 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que Cleopatra vivió más cerca de nuestra época que de la construcción de la Gran Pirámide?",
+  "gap": 0.45,
+  "dur": 4.933
+ },
+ {
+  "id": "c1",
+  "t": "Esta es la Gran Pirámide de Guiza. Se terminó hacia el año 2560 antes de Cristo, para el faraón Keops.",
+  "gap": 0.15,
+  "dur": 7.664
+ },
+ {
+  "id": "c2",
+  "t": "Y esta es Cleopatra séptima, la última reina del Egipto antiguo. Murió en el año 30 antes de Cristo.",
+  "gap": 0.2,
+  "dur": 6.323
+ },
+ {
+  "id": "d1",
+  "t": "Entre la pirámide y Cleopatra pasaron unos dos mil quinientos treinta años.",
+  "gap": 0.2,
+  "dur": 4.297
+ },
+ {
+  "id": "d2",
+  "t": "Cuando ella la miraba, la pirámide ya era más antigua para ella... que Cleopatra para nosotros.",
+  "gap": 0.35,
+  "dur": 5.484
+ },
+ {
+  "id": "r1",
+  "t": "Ahora contemos desde su muerte hasta hoy: unos dos mil cincuenta y cinco años.",
+  "gap": 0.2,
+  "dur": 4.394
+ },
+ {
+  "id": "r2",
+  "t": "Pon las dos líneas juntas. La de la pirámide es casi quinientos años más larga.",
+  "gap": 0.3,
+  "dur": 4.441
+ },
+ {
+  "id": "f1",
+  "t": "Así que sí: Cleopatra está más cerca de la llegada a la Luna que de la Gran Pirámide.",
+  "gap": 0.2,
+  "dur": 4.666
+ },
+ {
+  "id": "f2",
+  "t": "Cuando Cleopatra gobernaba Egipto, la Gran Pirámide ya tenía unos dos mil quinientos años.",
+  "gap": 0.5,
+  "dur": 6.05
+ }
+]
