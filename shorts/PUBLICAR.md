@@ -1,22 +1,22 @@
 # Publicación de los 10 shorts
 
 Todos: visibilidad **pública**, «No, no es contenido para niños», categoría **Educación**, y marcar **«Contenido alterado o sintético: sí»** (voz e imágenes generadas). Archivo: `<carpeta>/<carpeta>.mp4`.
-Horario: **2 por día, a las 12:30 y a las 19:30 (hora de Lima, UTC-5)**, las franjas de más consumo de Shorts en Latinoamérica (almuerzo y noche). Se suben como privados con publicación programada (`publishAt`), así salen solos a su hora.
+Canal: **Historia.Universal** (@HistoriaUniversalExplicada). Horario: 2 por día, 12:30 y 19:30 (hora de Lima, UTC-5). Subidos el 12 de noviembre de 2026 como privados con publicación programada; YouTube los publica solos.
 
-| Fecha | Hora | Carpeta | Título |
-| --- | --- | --- | --- |
-| 13 nov | 12:30 | `anibal` | Juró destruir Roma a los 9 años… y casi lo logra |
-| 13 nov | 19:30 | `iran-israel-eeuu` | Irán contra Israel y EE. UU.: de 1979 a la guerra de 2026 |
-| 14 nov | 12:30 | `termopilas` | 300 espartanos frenaron a un imperio (pero no estaban solos) |
-| 14 nov | 19:30 | `uranio-iran` | ¿Por qué EE. UU. no quiere que Irán enriquezca uranio? |
-| 15 nov | 12:30 | `napoleon-rusia` | Napoleón entró en Rusia con 400.000 soldados. Volvieron muy pocos |
-| 15 nov | 19:30 | `israel-palestina` | Israel y Palestina: cómo empezó todo |
-| 16 nov | 12:30 | `dia-d` | Día D: 150.000 soldados en una noche… y Hitler esperaba en otro lugar |
-| 16 nov | 19:30 | `rusia-ucrania` | Rusia y Ucrania: la guerra no empezó en 2022 |
-| 17 nov | 12:30 | `constantinopla` | La ciudad que resistió 1.000 años… hasta un cañón de 8 metros |
-| 17 nov | 19:30 | `crisis-cuba` | El hombre que evitó una guerra nuclear en 1962 |
+| Publicación (Lima) | Vídeo | Enlace |
+| --- | --- | --- |
+| 12 nov, 13:03 (ya publicado) | Aníbal | https://youtube.com/shorts/7bJ6AnijV6o |
+| 12 nov, 18:30 | Irán contra Israel y EE. UU. | https://youtube.com/shorts/nOU38WXwJNk |
+| 13 nov, 12:30 | Termópilas | https://youtube.com/shorts/m1InRwLDRfI |
+| 13 nov, 19:30 | Uranio de Irán | https://youtube.com/shorts/phKkMEPyLlk |
+| 14 nov, 12:30 | Napoleón en Rusia | https://youtube.com/shorts/T7kxJ58Huho |
+| 14 nov, 19:30 | Israel y Palestina | https://youtube.com/shorts/PPGB57cd8U8 |
+| 15 nov, 12:30 | Día D | https://youtube.com/shorts/vclEmkPptGk |
+| 15 nov, 19:30 | Rusia y Ucrania | https://youtube.com/shorts/rlt3OpUxJKY |
+| 16 nov, 12:30 | Constantinopla | https://youtube.com/shorts/cKBSetSS0SU |
+| 16 nov, 19:30 | Crisis de Cuba | https://youtube.com/shorts/rm5dlEhGyvo |
 
-Si el canal se conecta más tarde, las fechas se corren y se mantienen las horas.
+Todos: categoría Educación, «no es para niños», contenido sintético declarado y comentario de cierre en la descripción.
 
 ## Descripciones
 
