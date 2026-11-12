@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que una batalla de hace más de dos mil doscientos años se sigue estudiando en las academias militares?",
+  "gap": 0.45,
+  "dur": 5.545
+ },
+ {
+  "id": "c1",
+  "t": "Año 216 antes de Cristo. Cannas, en el sur de Italia. Roma reúne uno de los ejércitos más grandes de su historia: unos ochenta mil hombres.",
+  "gap": 0.15,
+  "dur": 9.014
+ },
+ {
+  "id": "c2",
+  "t": "Enfrente está Aníbal, el general de Cartago, con unos cincuenta mil. Menos soldados, y lejos de casa.",
+  "gap": 0.2,
+  "dur": 6.124
+ },
+ {
+  "id": "d1",
+  "t": "El plan romano es simple: atacar por el centro con todo su peso, y aplastar al enemigo.",
+  "gap": 0.15,
+  "dur": 5.402
+ },
+ {
+  "id": "d2",
+  "t": "Aníbal coloca su línea en forma de media luna, con el centro hacia adelante... y pone ahí a sus tropas más débiles.",
+  "gap": 0.2,
+  "dur": 6.974
+ },
+ {
+  "id": "d3",
+  "t": "Los romanos empujan. El centro cartaginés retrocede, poco a poco, a propósito. Los romanos creen que están ganando, y se meten cada vez más adentro.",
+  "gap": 0.3,
+  "dur": 8.925
+ },
+ {
+  "id": "r1",
+  "t": "Entonces, las tropas veteranas de los lados giran hacia dentro, y la caballería de Aníbal ataca por la espalda. Los romanos quedan rodeados.",
+  "gap": 0.2,
+  "dur": 7.752
+ },
+ {
+  "id": "r2",
+  "t": "Según las fuentes antiguas, decenas de miles de romanos murieron en una sola tarde.",
+  "gap": 0.25,
+  "dur": 4.493
+ },
+ {
+  "id": "f1",
+  "t": "A esa maniobra se le llama doble envolvimiento. Siglos después, el estado mayor alemán la estudió obsesivamente, y hoy se sigue enseñando como el ejemplo perfecto de cercar a un enemigo más grande.",
+  "gap": 0.2,
+  "dur": 11.011
+ },
+ {
+  "id": "f2",
+  "t": "Aníbal no ganó la guerra. Pero su táctica sigue ganando batallas en los libros.",
+  "gap": 0.5,
+  "dur": 4.209
+ }
+]

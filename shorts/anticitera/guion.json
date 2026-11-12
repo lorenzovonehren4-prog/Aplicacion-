@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que los griegos construyeron una especie de computadora hace más de dos mil años?",
+  "gap": 0.45,
+  "dur": 4.898
+ },
+ {
+  "id": "c1",
+  "t": "1901. Unos buzos que buscaban esponjas encuentran un barco hundido de época romana, junto a la isla griega de Anticitera.",
+  "gap": 0.15,
+  "dur": 7.639
+ },
+ {
+  "id": "c2",
+  "t": "Entre estatuas y monedas, sacan un bloque de bronce corroído, del tamaño de una caja de zapatos. Nadie le presta atención.",
+  "gap": 0.2,
+  "dur": 7.364
+ },
+ {
+  "id": "d1",
+  "t": "En 1902, un arqueólogo nota algo extraño en una de las piezas: una rueda dentada.",
+  "gap": 0.2,
+  "dur": 5.972
+ },
+ {
+  "id": "d2",
+  "t": "Dentro había docenas de engranajes diminutos. Hoy se conservan al menos treinta. Durante un siglo, nadie entendió para qué servían.",
+  "gap": 0.2,
+  "dur": 7.438
+ },
+ {
+  "id": "d3",
+  "t": "En 2005, un equipo de científicos lo escaneó con rayos X, y pudo leer las inscripciones ocultas en su interior.",
+  "gap": 0.3,
+  "dur": 6.95
+ },
+ {
+  "id": "r1",
+  "t": "Era una calculadora astronómica. Al girar una manivela, mostraba la posición del Sol y de la Luna, las fases lunares... y predecía los eclipses.",
+  "gap": 0.2,
+  "dur": 8.28
+ },
+ {
+  "id": "r2",
+  "t": "Hasta marcaba el ciclo de los Juegos Olímpicos.",
+  "gap": 0.25,
+  "dur": 2.516
+ },
+ {
+  "id": "f1",
+  "t": "No se conoce nada tan complejo hasta los relojes astronómicos de la Edad Media, más de mil años después.",
+  "gap": 0.2,
+  "dur": 6.057
+ },
+ {
+  "id": "f2",
+  "t": "Hoy se conserva en Atenas. Y todavía guarda secretos.",
+  "gap": 0.5,
+  "dur": 3.047
+ }
+]

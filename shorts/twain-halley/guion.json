@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que Mark Twain predijo que moriría cuando volviera el cometa Halley... y acertó?",
+  "gap": 0.45,
+  "dur": 4.341
+ },
+ {
+  "id": "c1",
+  "t": "30 de noviembre de 1835. En un pueblo de Misuri nace Samuel Clemens, el futuro Mark Twain.",
+  "gap": 0.15,
+  "dur": 6.461
+ },
+ {
+  "id": "c2",
+  "t": "Ese mes, el cometa Halley brilla en el cielo. Dos semanas antes había pasado por su punto más cercano al Sol.",
+  "gap": 0.2,
+  "dur": 6.324
+ },
+ {
+  "id": "d1",
+  "t": "El Halley vuelve, más o menos, cada setenta y cinco o setenta y seis años.",
+  "gap": 0.15,
+  "dur": 4.406
+ },
+ {
+  "id": "d2",
+  "t": "Twain se convierte en el escritor más famoso de Estados Unidos: Tom Sawyer, Huckleberry Finn.",
+  "gap": 0.2,
+  "dur": 5.675
+ },
+ {
+  "id": "d3",
+  "t": "En 1909, ya mayor, dice: «Llegué con el cometa Halley en 1835. Vuelve el año que viene, y espero irme con él».",
+  "gap": 0.3,
+  "dur": 8.877
+ },
+ {
+  "id": "r1",
+  "t": "Y añade, con humor: «Estos dos fenómenos inexplicables vinieron juntos. Deben irse juntos».",
+  "gap": 0.25,
+  "dur": 5.497
+ },
+ {
+  "id": "r2",
+  "t": "20 de abril de 1910: el cometa Halley vuelve a pasar por su punto más cercano al Sol.",
+  "gap": 0.3,
+  "dur": 5.688
+ },
+ {
+  "id": "f1",
+  "t": "Al día siguiente, el 21 de abril de 1910, Mark Twain muere de un ataque al corazón.",
+  "gap": 0.25,
+  "dur": 6.046
+ },
+ {
+  "id": "f2",
+  "t": "¿Casualidad? Seguramente. Pero pocas casualidades han estado tan bien escritas.",
+  "gap": 0.5,
+  "dur": 4.672
+ }
+]

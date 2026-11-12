@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que un hombre sobrevivió a la bomba atómica de Hiroshima... y tres días después, a la de Nagasaki?",
+  "gap": 0.45,
+  "dur": 5.242
+ },
+ {
+  "id": "c1",
+  "t": "Se llamaba Tsutomu Yamaguchi. Trabajaba en Mitsubishi diseñando barcos petroleros, y vivía en Nagasaki.",
+  "gap": 0.15,
+  "dur": 5.893
+ },
+ {
+  "id": "c2",
+  "t": "En el verano de 1945 lo envían a Hiroshima por trabajo. Su último día allí iba a ser el 6 de agosto.",
+  "gap": 0.2,
+  "dur": 6.765
+ },
+ {
+  "id": "d1",
+  "t": "A las 8:15 de la mañana, camino de la oficina, ve un avión en el cielo. Y después, un destello enorme.",
+  "gap": 0.2,
+  "dur": 6.636
+ },
+ {
+  "id": "d2",
+  "t": "La bomba estalla a unos tres kilómetros. Sufre quemaduras graves y queda medio sordo. Pasa la noche en un refugio.",
+  "gap": 0.2,
+  "dur": 6.846
+ },
+ {
+  "id": "d3",
+  "t": "Herido y vendado, consigue subir a un tren de vuelta a casa: a Nagasaki.",
+  "gap": 0.3,
+  "dur": 4.614
+ },
+ {
+  "id": "r1",
+  "t": "El 9 de agosto vuelve a la oficina. Le está contando a su jefe lo que vio en Hiroshima... cuando el cielo se ilumina otra vez.",
+  "gap": 0.25,
+  "dur": 6.459
+ },
+ {
+  "id": "r2",
+  "t": "La segunda bomba atómica estalla también a unos tres kilómetros. Y otra vez, sobrevive.",
+  "gap": 0.25,
+  "dur": 5.115
+ },
+ {
+  "id": "f1",
+  "t": "En 2009, Japón lo reconoció oficialmente como superviviente de las dos bombas. Pasó sus últimos años pidiendo el fin de las armas nucleares, y murió en 2010, a los noventa y tres años.",
+  "gap": 0.2,
+  "dur": 11.495
+ },
+ {
+  "id": "f2",
+  "t": "Sobrevivió dos veces al fin del mundo. Y lo usó para pedir que no hubiera una tercera.",
+  "gap": 0.5,
+  "dur": 4.465
+ }
+]

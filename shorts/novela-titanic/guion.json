@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Sabías que un escritor describió el hundimiento del Titanic catorce años antes de que ocurriera?",
+  "gap": 0.45,
+  "dur": 5.062
+ },
+ {
+  "id": "c1",
+  "t": "1898. Morgan Robertson, un escritor estadounidense que había sido marinero, publica una novela corta: Futility.",
+  "gap": 0.15,
+  "dur": 8.088
+ },
+ {
+  "id": "c2",
+  "t": "Cuenta la historia del barco más grande del mundo, uno al que todos llaman insumergible. Su nombre: Titán.",
+  "gap": 0.2,
+  "dur": 6.192
+ },
+ {
+  "id": "d1",
+  "t": "En la novela, el Titán cruza el Atlántico Norte en abril, a toda velocidad.",
+  "gap": 0.15,
+  "dur": 4.512
+ },
+ {
+  "id": "d2",
+  "t": "De noche, choca contra un iceberg y se hunde. No lleva botes salvavidas para todos. Solo sobreviven trece personas.",
+  "gap": 0.25,
+  "dur": 6.848
+ },
+ {
+  "id": "d3",
+  "t": "Catorce años después, en abril de 1912, el Titanic, el barco que decían insumergible, choca de noche contra un iceberg en el Atlántico Norte.",
+  "gap": 0.3,
+  "dur": 9.535
+ },
+ {
+  "id": "r1",
+  "t": "Y tampoco llevaba botes para todos. Hasta los nombres se parecen: Titán y Titanic.",
+  "gap": 0.2,
+  "dur": 4.754
+ },
+ {
+  "id": "r2",
+  "t": "Pero hay diferencias: el Titán de la novela era algo más pequeño, y navegaba en sentido contrario, de Nueva York hacia Inglaterra.",
+  "gap": 0.25,
+  "dur": 7.36
+ },
+ {
+  "id": "f1",
+  "t": "¿Fue una profecía? Robertson lo negó. Conocía bien el mar, y sabía que barcos cada vez más grandes y rápidos corrían un riesgo enorme con el hielo.",
+  "gap": 0.2,
+  "dur": 8.785
+ },
+ {
+  "id": "f2",
+  "t": "A veces, el futuro no se adivina. Se deduce.",
+  "gap": 0.5,
+  "dur": 2.827
+ }
+]
