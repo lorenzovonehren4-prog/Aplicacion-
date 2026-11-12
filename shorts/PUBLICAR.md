@@ -1,20 +1,22 @@
 # Publicación de los 10 shorts
 
 Todos: visibilidad **pública**, «No, no es contenido para niños», categoría **Educación**, y marcar **«Contenido alterado o sintético: sí»** (voz e imágenes generadas). Archivo: `<carpeta>/<carpeta>.mp4`.
-Orden sugerido: uno al día a la misma hora, alternando historia y actualidad.
+Horario: **2 por día, a las 12:30 y a las 19:30 (hora de Lima, UTC-5)**, las franjas de más consumo de Shorts en Latinoamérica (almuerzo y noche). Se suben como privados con publicación programada (`publishAt`), así salen solos a su hora.
 
-| Día | Carpeta | Título |
-| --- | --- | --- |
-| 1 | `anibal` | Juró destruir Roma a los 9 años… y casi lo logra |
-| 2 | `iran-israel-eeuu` | Irán contra Israel y EE. UU.: de 1979 a la guerra de 2026 |
-| 3 | `termopilas` | 300 espartanos frenaron a un imperio (pero no estaban solos) |
-| 4 | `uranio-iran` | ¿Por qué EE. UU. no quiere que Irán enriquezca uranio? |
-| 5 | `napoleon-rusia` | Napoleón entró en Rusia con 400.000 soldados. Volvieron muy pocos |
-| 6 | `israel-palestina` | Israel y Palestina: cómo empezó todo |
-| 7 | `dia-d` | Día D: 150.000 soldados en una noche… y Hitler esperaba en otro lugar |
-| 8 | `rusia-ucrania` | Rusia y Ucrania: la guerra no empezó en 2022 |
-| 9 | `constantinopla` | La ciudad que resistió 1.000 años… hasta un cañón de 8 metros |
-| 10 | `crisis-cuba` | El hombre que evitó una guerra nuclear en 1962 |
+| Fecha | Hora | Carpeta | Título |
+| --- | --- | --- | --- |
+| 13 nov | 12:30 | `anibal` | Juró destruir Roma a los 9 años… y casi lo logra |
+| 13 nov | 19:30 | `iran-israel-eeuu` | Irán contra Israel y EE. UU.: de 1979 a la guerra de 2026 |
+| 14 nov | 12:30 | `termopilas` | 300 espartanos frenaron a un imperio (pero no estaban solos) |
+| 14 nov | 19:30 | `uranio-iran` | ¿Por qué EE. UU. no quiere que Irán enriquezca uranio? |
+| 15 nov | 12:30 | `napoleon-rusia` | Napoleón entró en Rusia con 400.000 soldados. Volvieron muy pocos |
+| 15 nov | 19:30 | `israel-palestina` | Israel y Palestina: cómo empezó todo |
+| 16 nov | 12:30 | `dia-d` | Día D: 150.000 soldados en una noche… y Hitler esperaba en otro lugar |
+| 16 nov | 19:30 | `rusia-ucrania` | Rusia y Ucrania: la guerra no empezó en 2022 |
+| 17 nov | 12:30 | `constantinopla` | La ciudad que resistió 1.000 años… hasta un cañón de 8 metros |
+| 17 nov | 19:30 | `crisis-cuba` | El hombre que evitó una guerra nuclear en 1962 |
+
+Si el canal se conecta más tarde, las fechas se corren y se mantienen las horas.
 
 ## Descripciones
 
