@@ -1,62 +1,62 @@
 [
  {
   "id": "h1",
-  "t": "¿Sabías que los griegos construyeron una especie de computadora hace más de dos mil años?",
-  "gap": 0.45,
-  "dur": 4.898
+  "t": "¿Sabías que los griegos construyeron una computadora hace más de dos mil años?",
+  "gap": 0.3,
+  "dur": 4.191
  },
  {
   "id": "c1",
-  "t": "1901. Unos buzos que buscaban esponjas encuentran un barco hundido de época romana, junto a la isla griega de Anticitera.",
+  "t": "1901. Unos buzos encuentran un barco hundido junto a la isla de Anticitera.",
   "gap": 0.15,
-  "dur": 7.639
+  "dur": 4.63
  },
  {
   "id": "c2",
-  "t": "Entre estatuas y monedas, sacan un bloque de bronce corroído, del tamaño de una caja de zapatos. Nadie le presta atención.",
+  "t": "Sacan un bloque de bronce oxidado. Nadie le presta atención.",
   "gap": 0.2,
-  "dur": 7.364
+  "dur": 3.284
  },
  {
   "id": "d1",
-  "t": "En 1902, un arqueólogo nota algo extraño en una de las piezas: una rueda dentada.",
+  "t": "Un año después, un arqueólogo ve algo dentro: una rueda dentada.",
   "gap": 0.2,
-  "dur": 5.972
+  "dur": 3.678
  },
  {
   "id": "d2",
-  "t": "Dentro había docenas de engranajes diminutos. Hoy se conservan al menos treinta. Durante un siglo, nadie entendió para qué servían.",
+  "t": "Docenas de engranajes diminutos. Nadie sabe para qué sirven.",
   "gap": 0.2,
-  "dur": 7.438
+  "dur": 3.339
  },
  {
   "id": "d3",
-  "t": "En 2005, un equipo de científicos lo escaneó con rayos X, y pudo leer las inscripciones ocultas en su interior.",
+  "t": "Un siglo después, los rayos X revelan el secreto.",
   "gap": 0.3,
-  "dur": 6.95
+  "dur": 2.79
  },
  {
   "id": "r1",
-  "t": "Era una calculadora astronómica. Al girar una manivela, mostraba la posición del Sol y de la Luna, las fases lunares... y predecía los eclipses.",
+  "t": "Giras una manivela, y muestra el Sol, la Luna... y predice los eclipses.",
   "gap": 0.2,
-  "dur": 8.28
+  "dur": 3.8
  },
  {
   "id": "r2",
-  "t": "Hasta marcaba el ciclo de los Juegos Olímpicos.",
+  "t": "Hasta marcaba los Juegos Olímpicos.",
   "gap": 0.25,
-  "dur": 2.516
+  "dur": 1.883
  },
  {
   "id": "f1",
-  "t": "No se conoce nada tan complejo hasta los relojes astronómicos de la Edad Media, más de mil años después.",
+  "t": "No se conoce nada igual en más de mil años.",
   "gap": 0.2,
-  "dur": 6.057
+  "dur": 2.074
  },
  {
   "id": "f2",
-  "t": "Hoy se conserva en Atenas. Y todavía guarda secretos.",
+  "t": "Una computadora... de la Antigua Grecia.",
   "gap": 0.5,
-  "dur": 3.047
+  "dur": 1.726
  }
 ]

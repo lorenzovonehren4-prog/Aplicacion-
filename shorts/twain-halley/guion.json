@@ -1,62 +1,62 @@
 [
  {
   "id": "h1",
-  "t": "¿Sabías que Mark Twain predijo que moriría cuando volviera el cometa Halley... y acertó?",
-  "gap": 0.45,
-  "dur": 4.341
+  "t": "¿Sabías que Mark Twain anunció que moriría con el cometa Halley... y acertó?",
+  "gap": 0.3,
+  "dur": 3.388
  },
  {
   "id": "c1",
-  "t": "30 de noviembre de 1835. En un pueblo de Misuri nace Samuel Clemens, el futuro Mark Twain.",
+  "t": "1835. Nace Mark Twain.",
   "gap": 0.15,
-  "dur": 6.461
+  "dur": 2.504
  },
  {
   "id": "c2",
-  "t": "Ese mes, el cometa Halley brilla en el cielo. Dos semanas antes había pasado por su punto más cercano al Sol.",
+  "t": "Ese mismo año, el cometa Halley cruza el cielo.",
   "gap": 0.2,
-  "dur": 6.324
+  "dur": 2.7
  },
  {
   "id": "d1",
-  "t": "El Halley vuelve, más o menos, cada setenta y cinco o setenta y seis años.",
+  "t": "El cometa vuelve cada setenta y seis años, más o menos.",
   "gap": 0.15,
-  "dur": 4.406
+  "dur": 2.931
  },
  {
   "id": "d2",
-  "t": "Twain se convierte en el escritor más famoso de Estados Unidos: Tom Sawyer, Huckleberry Finn.",
+  "t": "Twain se hace famoso con Tom Sawyer y Huckleberry Finn.",
   "gap": 0.2,
-  "dur": 5.675
+  "dur": 2.826
  },
  {
   "id": "d3",
-  "t": "En 1909, ya mayor, dice: «Llegué con el cometa Halley en 1835. Vuelve el año que viene, y espero irme con él».",
+  "t": "En 1909 dice: llegué con el cometa Halley, y espero irme con él.",
   "gap": 0.3,
-  "dur": 8.877
+  "dur": 4.176
  },
  {
   "id": "r1",
-  "t": "Y añade, con humor: «Estos dos fenómenos inexplicables vinieron juntos. Deben irse juntos».",
+  "t": "Y bromea: vinimos juntos, tenemos que irnos juntos.",
   "gap": 0.25,
-  "dur": 5.497
+  "dur": 3.039
  },
  {
   "id": "r2",
-  "t": "20 de abril de 1910: el cometa Halley vuelve a pasar por su punto más cercano al Sol.",
+  "t": "20 de abril de 1910. El cometa vuelve a su punto más cercano al Sol.",
   "gap": 0.3,
-  "dur": 5.688
+  "dur": 4.248
  },
  {
   "id": "f1",
-  "t": "Al día siguiente, el 21 de abril de 1910, Mark Twain muere de un ataque al corazón.",
+  "t": "Al día siguiente, Mark Twain muere.",
   "gap": 0.25,
-  "dur": 6.046
+  "dur": 2.133
  },
  {
   "id": "f2",
-  "t": "¿Casualidad? Seguramente. Pero pocas casualidades han estado tan bien escritas.",
+  "t": "¿Casualidad? Seguramente. Pero qué casualidad.",
   "gap": 0.5,
-  "dur": 4.672
+  "dur": 2.455
  }
 ]

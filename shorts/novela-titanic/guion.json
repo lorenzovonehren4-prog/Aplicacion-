@@ -1,62 +1,62 @@
 [
  {
   "id": "h1",
-  "t": "¿Sabías que un escritor describió el hundimiento del Titanic catorce años antes de que ocurriera?",
-  "gap": 0.45,
-  "dur": 5.062
+  "t": "¿Sabías que un escritor contó el hundimiento del Titanic catorce años antes de que pasara?",
+  "gap": 0.3,
+  "dur": 4.353
  },
  {
   "id": "c1",
-  "t": "1898. Morgan Robertson, un escritor estadounidense que había sido marinero, publica una novela corta: Futility.",
+  "t": "1898. Morgan Robertson, un exmarinero, publica una novela.",
   "gap": 0.15,
-  "dur": 8.088
+  "dur": 4.644
  },
  {
   "id": "c2",
-  "t": "Cuenta la historia del barco más grande del mundo, uno al que todos llaman insumergible. Su nombre: Titán.",
+  "t": "Habla del barco más grande del mundo. Lo llaman insumergible. Su nombre: Titán.",
   "gap": 0.2,
-  "dur": 6.192
+  "dur": 4.184
  },
  {
   "id": "d1",
-  "t": "En la novela, el Titán cruza el Atlántico Norte en abril, a toda velocidad.",
+  "t": "En abril, cruzando el Atlántico Norte de noche...",
   "gap": 0.15,
-  "dur": 4.512
+  "dur": 2.332
  },
  {
   "id": "d2",
-  "t": "De noche, choca contra un iceberg y se hunde. No lleva botes salvavidas para todos. Solo sobreviven trece personas.",
+  "t": "choca contra un iceberg y se hunde. No hay botes para todos.",
   "gap": 0.25,
-  "dur": 6.848
+  "dur": 3.148
  },
  {
   "id": "d3",
-  "t": "Catorce años después, en abril de 1912, el Titanic, el barco que decían insumergible, choca de noche contra un iceberg en el Atlántico Norte.",
+  "t": "Catorce años después, en abril de 1912, el Titanic choca contra un iceberg, de noche, en el Atlántico Norte.",
   "gap": 0.3,
-  "dur": 9.535
+  "dur": 6.891
  },
  {
   "id": "r1",
-  "t": "Y tampoco llevaba botes para todos. Hasta los nombres se parecen: Titán y Titanic.",
+  "t": "Tampoco había botes para todos. Titán... y Titanic.",
   "gap": 0.2,
-  "dur": 4.754
+  "dur": 2.783
  },
  {
   "id": "r2",
-  "t": "Pero hay diferencias: el Titán de la novela era algo más pequeño, y navegaba en sentido contrario, de Nueva York hacia Inglaterra.",
+  "t": "No es idéntico: el Titán era más pequeño y navegaba en sentido contrario.",
   "gap": 0.25,
-  "dur": 7.36
+  "dur": 4.388
  },
  {
   "id": "f1",
-  "t": "¿Fue una profecía? Robertson lo negó. Conocía bien el mar, y sabía que barcos cada vez más grandes y rápidos corrían un riesgo enorme con el hielo.",
+  "t": "¿Profecía? Robertson dijo que no. Solo conocía muy bien el mar.",
   "gap": 0.2,
-  "dur": 8.785
+  "dur": 3.515
  },
  {
   "id": "f2",
-  "t": "A veces, el futuro no se adivina. Se deduce.",
+  "t": "A veces el futuro no se adivina. Se deduce.",
   "gap": 0.5,
-  "dur": 2.827
+  "dur": 2.364
  }
 ]

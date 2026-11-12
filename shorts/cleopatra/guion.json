@@ -1,56 +1,56 @@
 [
  {
   "id": "h1",
-  "t": "¿Sabías que Cleopatra vivió más cerca de nuestra época que de la construcción de la Gran Pirámide?",
-  "gap": 0.45,
-  "dur": 4.933
+  "t": "¿Sabías que Cleopatra vivió más cerca de ti... que de la Gran Pirámide?",
+  "gap": 0.3,
+  "dur": 2.993
  },
  {
   "id": "c1",
-  "t": "Esta es la Gran Pirámide de Guiza. Se terminó hacia el año 2560 antes de Cristo, para el faraón Keops.",
+  "t": "La Gran Pirámide de Guiza se terminó hacia el año 2560 antes de Cristo.",
   "gap": 0.15,
-  "dur": 7.664
+  "dur": 4.523
  },
  {
   "id": "c2",
-  "t": "Y esta es Cleopatra séptima, la última reina del Egipto antiguo. Murió en el año 30 antes de Cristo.",
+  "t": "Cleopatra, la última reina de Egipto, murió en el año 30 antes de Cristo.",
   "gap": 0.2,
-  "dur": 6.323
+  "dur": 4.17
  },
  {
   "id": "d1",
-  "t": "Entre la pirámide y Cleopatra pasaron unos dos mil quinientos treinta años.",
+  "t": "Entre las dos: unos dos mil quinientos treinta años.",
   "gap": 0.2,
-  "dur": 4.297
+  "dur": 2.824
  },
  {
   "id": "d2",
-  "t": "Cuando ella la miraba, la pirámide ya era más antigua para ella... que Cleopatra para nosotros.",
-  "gap": 0.35,
-  "dur": 5.484
+  "t": "Para Cleopatra, la pirámide ya era una ruina antiquísima.",
+  "gap": 0.3,
+  "dur": 3.678
  },
  {
   "id": "r1",
-  "t": "Ahora contemos desde su muerte hasta hoy: unos dos mil cincuenta y cinco años.",
+  "t": "Y de Cleopatra a hoy: unos dos mil cincuenta y cinco años.",
   "gap": 0.2,
-  "dur": 4.394
+  "dur": 3.08
  },
  {
   "id": "r2",
-  "t": "Pon las dos líneas juntas. La de la pirámide es casi quinientos años más larga.",
+  "t": "Casi quinientos años menos.",
   "gap": 0.3,
-  "dur": 4.441
+  "dur": 1.441
  },
  {
   "id": "f1",
-  "t": "Así que sí: Cleopatra está más cerca de la llegada a la Luna que de la Gran Pirámide.",
+  "t": "Cleopatra está más cerca de la llegada a la Luna... que de la pirámide.",
   "gap": 0.2,
-  "dur": 4.666
+  "dur": 2.953
  },
  {
   "id": "f2",
-  "t": "Cuando Cleopatra gobernaba Egipto, la Gran Pirámide ya tenía unos dos mil quinientos años.",
+  "t": "La historia antigua es mucho más larga de lo que crees.",
   "gap": 0.5,
-  "dur": 6.05
+  "dur": 2.68
  }
 ]

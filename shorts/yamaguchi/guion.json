@@ -1,62 +1,62 @@
 [
  {
   "id": "h1",
-  "t": "¿Sabías que un hombre sobrevivió a la bomba atómica de Hiroshima... y tres días después, a la de Nagasaki?",
-  "gap": 0.45,
-  "dur": 5.242
+  "t": "¿Sabías que un hombre sobrevivió a la bomba de Hiroshima... y tres días después, a la de Nagasaki?",
+  "gap": 0.3,
+  "dur": 4.395
  },
  {
   "id": "c1",
-  "t": "Se llamaba Tsutomu Yamaguchi. Trabajaba en Mitsubishi diseñando barcos petroleros, y vivía en Nagasaki.",
+  "t": "Se llamaba Tsutomu Yamaguchi. Trabajaba en Mitsubishi y vivía en Nagasaki.",
   "gap": 0.15,
-  "dur": 5.893
+  "dur": 4.034
  },
  {
   "id": "c2",
-  "t": "En el verano de 1945 lo envían a Hiroshima por trabajo. Su último día allí iba a ser el 6 de agosto.",
+  "t": "En agosto de 1945 estaba en Hiroshima por trabajo. Era su último día allí.",
   "gap": 0.2,
-  "dur": 6.765
+  "dur": 4.904
  },
  {
   "id": "d1",
-  "t": "A las 8:15 de la mañana, camino de la oficina, ve un avión en el cielo. Y después, un destello enorme.",
+  "t": "8:15 de la mañana. Un avión. Un destello.",
   "gap": 0.2,
-  "dur": 6.636
+  "dur": 2.629
  },
  {
   "id": "d2",
-  "t": "La bomba estalla a unos tres kilómetros. Sufre quemaduras graves y queda medio sordo. Pasa la noche en un refugio.",
+  "t": "La bomba estalla a tres kilómetros. Queda quemado y medio sordo.",
   "gap": 0.2,
-  "dur": 6.846
+  "dur": 3.583
  },
  {
   "id": "d3",
-  "t": "Herido y vendado, consigue subir a un tren de vuelta a casa: a Nagasaki.",
+  "t": "Al día siguiente, vendado, toma un tren de vuelta a casa.",
   "gap": 0.3,
-  "dur": 4.614
+  "dur": 3.651
  },
  {
   "id": "r1",
-  "t": "El 9 de agosto vuelve a la oficina. Le está contando a su jefe lo que vio en Hiroshima... cuando el cielo se ilumina otra vez.",
+  "t": "9 de agosto. Le cuenta a su jefe lo que vio... y el cielo se ilumina otra vez.",
   "gap": 0.25,
-  "dur": 6.459
+  "dur": 3.92
  },
  {
   "id": "r2",
-  "t": "La segunda bomba atómica estalla también a unos tres kilómetros. Y otra vez, sobrevive.",
+  "t": "Nagasaki. Otra bomba, también a tres kilómetros. Y sobrevive.",
   "gap": 0.25,
-  "dur": 5.115
+  "dur": 3.53
  },
  {
   "id": "f1",
-  "t": "En 2009, Japón lo reconoció oficialmente como superviviente de las dos bombas. Pasó sus últimos años pidiendo el fin de las armas nucleares, y murió en 2010, a los noventa y tres años.",
+  "t": "Japón lo reconoció oficialmente en 2009. Murió en 2010, a los noventa y tres años.",
   "gap": 0.2,
-  "dur": 11.495
+  "dur": 5.505
  },
  {
   "id": "f2",
-  "t": "Sobrevivió dos veces al fin del mundo. Y lo usó para pedir que no hubiera una tercera.",
+  "t": "Sobrevivió dos veces al fin del mundo. Y dedicó su vida a pedir que no hubiera una tercera.",
   "gap": 0.5,
-  "dur": 4.465
+  "dur": 4.586
  }
 ]

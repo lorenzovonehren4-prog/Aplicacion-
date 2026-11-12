@@ -1,62 +1,62 @@
 [
  {
   "id": "h1",
-  "t": "¿Sabías que un papa ordenó juzgar el cadáver de otro papa?",
-  "gap": 0.45,
-  "dur": 3.049
+  "t": "¿Sabías que un papa mandó juzgar el cadáver de otro papa?",
+  "gap": 0.3,
+  "dur": 2.909
  },
  {
   "id": "c1",
-  "t": "Roma, finales del siglo nueve. La ciudad y la Iglesia están divididas entre facciones que luchan por el poder.",
+  "t": "Roma, año 897. La Iglesia está dividida en bandos enemigos.",
   "gap": 0.15,
-  "dur": 6.009
+  "dur": 4.22
  },
  {
   "id": "c2",
-  "t": "El papa Formoso muere en el año 896. Había coronado emperador a Arnulfo de Carintia, y eso le ganó enemigos poderosos.",
+  "t": "El papa Formoso había muerto meses antes. Sus rivales no lo perdonaban.",
   "gap": 0.2,
-  "dur": 7.83
+  "dur": 3.861
  },
  {
   "id": "d1",
-  "t": "Meses después, el nuevo papa, Esteban sexto, cercano a la facción rival de Spoleto, decide algo sin precedentes.",
+  "t": "El nuevo papa, Esteban sexto, tiene una idea macabra.",
   "gap": 0.25,
-  "dur": 6.801
+  "dur": 3.342
  },
  {
   "id": "d2",
-  "t": "En enero de 897, el cuerpo de Formoso es sacado de su tumba, vestido con ropas papales, y sentado en un trono.",
+  "t": "Sacan a Formoso de su tumba, lo visten de papa... y lo sientan en un trono.",
   "gap": 0.3,
-  "dur": 7.283
+  "dur": 3.426
  },
  {
   "id": "d3",
-  "t": "En la basílica de San Juan de Letrán comienza el juicio. Un diácono responde en nombre del muerto.",
+  "t": "Empieza el juicio. Un diácono responde por el muerto.",
   "gap": 0.2,
-  "dur": 4.755
+  "dur": 2.561
  },
  {
   "id": "r1",
-  "t": "Lo acusan de perjurio y de haber llegado al papado de forma ilegal. El veredicto: culpable.",
+  "t": "Lo acusan de llegar al papado de forma ilegal. Culpable.",
   "gap": 0.25,
-  "dur": 5.289
+  "dur": 2.979
  },
  {
   "id": "r2",
-  "t": "Sus nombramientos se anulan, y su cuerpo termina arrojado al río Tíber.",
+  "t": "Anulan sus decisiones, y tiran su cuerpo al río Tíber.",
   "gap": 0.25,
-  "dur": 4.24
+  "dur": 2.832
  },
  {
   "id": "f1",
-  "t": "Poco después, Esteban sexto fue depuesto, encarcelado y estrangulado. Y otro papa rehabilitó a Formoso.",
+  "t": "Meses después, Esteban sexto fue derrocado, encarcelado y estrangulado.",
   "gap": 0.25,
-  "dur": 6.479
+  "dur": 4.338
  },
  {
   "id": "f2",
-  "t": "El acusado no podía defenderse. Había muerto meses antes.",
+  "t": "A ese juicio se le llamó el Sínodo del Cadáver.",
   "gap": 0.5,
-  "dur": 3.481
+  "dur": 2.269
  }
 ]
