@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿De verdad el ser humano llegó a la Luna? ¿O todo fue un montaje?",
+  "gap": 0.35,
+  "dur": 3.676
+ },
+ {
+  "id": "c1",
+  "t": "20 de julio de 1969. Neil Armstrong pisa la Luna, y cientos de millones de personas lo ven en directo por televisión.",
+  "gap": 0.1,
+  "dur": 7.8
+ },
+ {
+  "id": "c2",
+  "t": "Pero desde los años setenta, algunos aseguran que todo se grabó en un estudio.",
+  "gap": 0.2,
+  "dur": 4.513
+ },
+ {
+  "id": "d1",
+  "t": "Sus argumentos: la bandera parece moverse con el viento, no se ven estrellas en las fotos, y nadie ha vuelto desde 1972.",
+  "gap": 0.15,
+  "dur": 8.512
+ },
+ {
+  "id": "d2",
+  "t": "La bandera tenía una barra horizontal para sostenerla, y solo se movía mientras la clavaban. Sin aire, nada la frenaba.",
+  "gap": 0.15,
+  "dur": 7.801
+ },
+ {
+  "id": "d3",
+  "t": "Y las estrellas no salen porque las cámaras estaban ajustadas para el suelo iluminado por el sol, que era muy brillante.",
+  "gap": 0.25,
+  "dur": 7.121
+ },
+ {
+  "id": "r1",
+  "t": "Pero hay pruebas que cualquiera puede comprobar. Los astronautas dejaron espejos en la Luna, y hoy los observatorios les disparan láseres y reciben el rebote.",
+  "gap": 0.15,
+  "dur": 8.648
+ },
+ {
+  "id": "r2",
+  "t": "En 2009, una sonda de la NASA fotografió desde la órbita los módulos que siguen allí, y hasta los caminos de sus huellas.",
+  "gap": 0.2,
+  "dur": 6.981
+ },
+ {
+  "id": "f1",
+  "t": "Además, la Unión Soviética, el gran rival en plena Guerra Fría, seguía las misiones con sus antenas, y nunca lo negó.",
+  "gap": 0.15,
+  "dur": 8.118
+ },
+ {
+  "id": "f2",
+  "t": "La respuesta es sí: doce personas caminaron sobre la Luna. Y la NASA prepara volver.",
+  "gap": 0.4,
+  "dur": 5.15
+ }
+]

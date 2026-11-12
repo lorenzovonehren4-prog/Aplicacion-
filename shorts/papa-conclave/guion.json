@@ -1,0 +1,68 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Por qué el mundo entero mira una chimenea para saber quién es el nuevo Papa?",
+  "gap": 0.35,
+  "dur": 4.458
+ },
+ {
+  "id": "c1",
+  "t": "El Papa es el obispo de Roma y el líder de unos mil cuatrocientos millones de católicos. Cuando muere o renuncia, la Iglesia se queda sin cabeza.",
+  "gap": 0.1,
+  "dur": 8.677
+ },
+ {
+  "id": "c2",
+  "t": "Entonces, los cardenales menores de ochenta años se encierran en la Capilla Sixtina. Sin teléfonos, sin internet, sin contacto con el exterior.",
+  "gap": 0.15,
+  "dur": 8.285
+ },
+ {
+  "id": "c3",
+  "t": "Por eso se llama cónclave: del latín cum clave, con llave.",
+  "gap": 0.2,
+  "dur": 4.026
+ },
+ {
+  "id": "d1",
+  "t": "Todo empezó en el siglo trece. Tras la muerte de Clemente cuarto, los cardenales tardaron casi tres años en ponerse de acuerdo.",
+  "gap": 0.15,
+  "dur": 7.035
+ },
+ {
+  "id": "d2",
+  "t": "La gente de Viterbo, harta, los encerró, les redujo la comida a pan y agua y, según la tradición, quitó el techo del palacio.",
+  "gap": 0.15,
+  "dur": 8.18
+ },
+ {
+  "id": "d3",
+  "t": "Desde entonces se vota en secreto, una y otra vez, hasta que alguien consiga dos tercios de los votos.",
+  "gap": 0.25,
+  "dur": 5.728
+ },
+ {
+  "id": "r1",
+  "t": "Y aquí está la respuesta: después de cada votación, las papeletas se queman en una estufa.",
+  "gap": 0.15,
+  "dur": 5.424
+ },
+ {
+  "id": "r2",
+  "t": "Si el humo sale negro, todavía no hay Papa. Si sale blanco, hay nuevo Papa. Hoy se añaden químicos para que el color no deje dudas.",
+  "gap": 0.2,
+  "dur": 8.267
+ },
+ {
+  "id": "f1",
+  "t": "En mayo de 2025, tras cuatro votaciones, salió humo blanco: el estadounidense Robert Prevost se convirtió en León catorce.",
+  "gap": 0.15,
+  "dur": 8.028
+ },
+ {
+  "id": "f2",
+  "t": "Un método de casi ochocientos años, que todavía funciona con fuego y una chimenea.",
+  "gap": 0.4,
+  "dur": 5.415
+ }
+]

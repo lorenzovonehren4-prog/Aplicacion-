@@ -384,3 +384,8 @@ const MOTOR={ run(cfg){
   };
   window.ready=document.fonts.ready;
 } };
+// ---------------- utilidades de la tanda 3 ----------------
+function txt(s,x,y,size=60,col='#fff8e6',a=1,align='center'){ if(a<=0) return; c.save(); c.globalAlpha=a; c.font=`900 ${size}px Inter`; c.textAlign=align; c.lineJoin='round'; c.lineWidth=size*.18; c.strokeStyle='#0b0806'; c.strokeText(s,x,y); c.fillStyle=col; c.fillText(s,x,y); c.restore(); }
+function papel(x,y,w,h,rot=0,col='#f4ecd8',lines=6){ c.save(); c.translate(x,y); c.rotate(rot); c.fillStyle=col; c.strokeStyle='#0b0806'; c.lineWidth=6; c.fillRect(-w/2,-h/2,w,h); c.strokeRect(-w/2,-h/2,w,h); c.fillStyle='rgba(60,50,40,.45)'; for(let i=0;i<lines;i++) c.fillRect(-w/2+w*.12,-h/2+h*.18+i*h*.7/lines,w*(.76-(i%3)*.12),h*.035); c.restore(); }
+function sello(s,x,y,size,t,t0,col='#d0262e'){ const k=k01(t,t0,t0+.25); if(k<=0) return; c.save(); c.translate(x,y); c.rotate(-.18); const sc=1+2*(1-eout(k)); c.scale(sc,sc); c.globalAlpha=k; c.strokeStyle=col; c.lineWidth=size*.12; c.font=`900 ${size}px Inter`; c.textAlign='center'; const w=c.measureText(s).width+size*.6; c.strokeRect(-w/2,-size*.95,w,size*1.3); c.fillStyle=col; c.fillText(s,0,size*.05); c.restore(); }
+function sala(t,keys,top='#1e2a38',mid='#283646',bot='#141c26'){ setCam(keys,t); grad(top,mid,bot); layer(.6); c.fillStyle='#120e0c'; c.fillRect(-500,1500,2100,900); layer(1); }

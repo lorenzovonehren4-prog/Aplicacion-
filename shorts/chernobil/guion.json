@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Por qué explotó Chernóbil durante una prueba de seguridad?",
+  "gap": 0.35,
+  "dur": 3.339
+ },
+ {
+  "id": "c1",
+  "t": "26 de abril de 1986, a la una y veintitrés de la madrugada. Central nuclear de Chernóbil, en la Ucrania soviética.",
+  "gap": 0.1,
+  "dur": 9.009
+ },
+ {
+  "id": "c2",
+  "t": "Esa noche, el reactor cuatro hacía una prueba: comprobar si podía seguir refrigerándose durante un apagón.",
+  "gap": 0.2,
+  "dur": 6.758
+ },
+ {
+  "id": "d1",
+  "t": "Pero la prueba se retrasó, cambió el turno, y el reactor quedó a muy baja potencia, inestable.",
+  "gap": 0.15,
+  "dur": 6.32
+ },
+ {
+  "id": "d2",
+  "t": "Para continuar, los operadores retiraron casi todas las barras de control, y desactivaron sistemas de seguridad.",
+  "gap": 0.15,
+  "dur": 6.689
+ },
+ {
+  "id": "d3",
+  "t": "Cuando pulsaron el botón de apagado de emergencia, un defecto del diseño hizo que la potencia se disparara en segundos.",
+  "gap": 0.25,
+  "dur": 6.645
+ },
+ {
+  "id": "r1",
+  "t": "Dos explosiones destruyeron el reactor. La tapa de mil toneladas saltó, y la radiación salió al aire.",
+  "gap": 0.15,
+  "dur": 6.001
+ },
+ {
+  "id": "r2",
+  "t": "La Unión Soviética calló. Dos días después, saltaron las alarmas de radiación en una central de Suecia, a más de mil kilómetros.",
+  "gap": 0.2,
+  "dur": 7.6
+ },
+ {
+  "id": "f1",
+  "t": "Más de cien mil personas fueron evacuadas. La ciudad de Prípiat sigue vacía hasta hoy.",
+  "gap": 0.15,
+  "dur": 4.779
+ },
+ {
+  "id": "f2",
+  "t": "La respuesta: una prueba mal hecha, en un reactor que escondía un defecto. Y un sistema que prefería el secreto.",
+  "gap": 0.4,
+  "dur": 7.741
+ }
+]

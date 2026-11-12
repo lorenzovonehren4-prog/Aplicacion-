@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Por qué se hundió el Titanic, si decían que era insumergible?",
+  "gap": 0.35,
+  "dur": 3.552
+ },
+ {
+  "id": "c1",
+  "t": "1912. El Titanic es el barco más grande del mundo. La prensa lo describía como prácticamente insumergible. En su viaje inaugural, de Southampton a Nueva York, lleva a más de dos mil doscientas personas.",
+  "gap": 0.1,
+  "dur": 13.391
+ },
+ {
+  "id": "c2",
+  "t": "Tenía dieciséis compartimentos estancos, y podía seguir a flote con hasta cuatro inundados.",
+  "gap": 0.2,
+  "dur": 5.485
+ },
+ {
+  "id": "d1",
+  "t": "14 de abril, de noche. Había recibido varios avisos de hielo, pero navegaba casi a toda velocidad.",
+  "gap": 0.15,
+  "dur": 6.433
+ },
+ {
+  "id": "d2",
+  "t": "A las once y cuarenta, los vigías, que ni siquiera tenían prismáticos, ven un iceberg justo delante. Intentan esquivarlo. No alcanza.",
+  "gap": 0.15,
+  "dur": 8.808
+ },
+ {
+  "id": "d3",
+  "t": "El hielo raja el casco a lo largo del costado. Se inundan al menos cinco compartimentos.",
+  "gap": 0.25,
+  "dur": 4.931
+ },
+ {
+  "id": "r1",
+  "t": "Y ahí está la clave: los muros entre compartimentos no llegaban hasta arriba. El agua pasaba de uno a otro, como en una cubitera.",
+  "gap": 0.15,
+  "dur": 8.038
+ },
+ {
+  "id": "r2",
+  "t": "Además, solo llevaba botes para unas mil ciento setenta personas. A bordo había más de dos mil doscientas.",
+  "gap": 0.2,
+  "dur": 6.26
+ },
+ {
+  "id": "f1",
+  "t": "En menos de tres horas, el Titanic se hunde. El agua está a dos grados bajo cero. Mueren más de mil quinientas personas.",
+  "gap": 0.15,
+  "dur": 7.042
+ },
+ {
+  "id": "f2",
+  "t": "No era insumergible. Solo lo creían, y por eso no había botes para todos.",
+  "gap": 0.4,
+  "dur": 4.732
+ }
+]

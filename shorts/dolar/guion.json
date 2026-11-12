@@ -1,0 +1,62 @@
+[
+ {
+  "id": "h1",
+  "t": "¿Por qué casi todo el mundo usa el dólar, aunque no sea su moneda?",
+  "gap": 0.35,
+  "dur": 3.943
+ },
+ {
+  "id": "c1",
+  "t": "Hoy, más de la mitad de las reservas de los bancos centrales del mundo están en dólares.",
+  "gap": 0.1,
+  "dur": 4.683
+ },
+ {
+  "id": "c2",
+  "t": "Y el petróleo, el trigo o el cobre se compran y se venden en dólares en casi todo el planeta.",
+  "gap": 0.2,
+  "dur": 5.218
+ },
+ {
+  "id": "d1",
+  "t": "Todo empieza en 1944, en un hotel de Bretton Woods, en Estados Unidos. La guerra aún no ha terminado, y cuarenta y cuatro países diseñan el nuevo orden económico.",
+  "gap": 0.15,
+  "dur": 10.854
+ },
+ {
+  "id": "d2",
+  "t": "Acuerdan atar sus monedas al dólar, y el dólar al oro: treinta y cinco dólares por onza.",
+  "gap": 0.15,
+  "dur": 5.4
+ },
+ {
+  "id": "d3",
+  "t": "Estados Unidos tenía entonces la mayor parte del oro del mundo y la economía más fuerte.",
+  "gap": 0.25,
+  "dur": 5.301
+ },
+ {
+  "id": "r1",
+  "t": "En 1971, el presidente Nixon rompe el vínculo con el oro. Muchos pensaron que el dólar se hundiría.",
+  "gap": 0.15,
+  "dur": 6.834
+ },
+ {
+  "id": "r2",
+  "t": "Pero poco después, Estados Unidos y Arabia Saudita llegan a un acuerdo: el petróleo saudí se vende en dólares, y esos dólares se invierten en Estados Unidos.",
+  "gap": 0.2,
+  "dur": 9.712
+ },
+ {
+  "id": "f1",
+  "t": "Por eso todos necesitan dólares: para comprar energía, pagar deudas y comerciar. China y otros países intentan cambiarlo, pero todavía no lo logran.",
+  "gap": 0.15,
+  "dur": 9.554
+ },
+ {
+  "id": "f2",
+  "t": "La moneda más poderosa del mundo nació en un hotel, y se sostiene sobre el petróleo.",
+  "gap": 0.4,
+  "dur": 4.583
+ }
+]
