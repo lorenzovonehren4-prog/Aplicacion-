@@ -411,7 +411,8 @@ function cabezon(P,o){ const s=o.s||1, H=(P.h||520)*s, x=o.x, y=o.y, lk=o.look||
   c.strokeStyle='#0b0806'; c.lineWidth=lw; for(const k of [-1,1]){ const a=sw*k*.45; const fx=x+k*H*.045+Math.sin(a)*H*.16, fy=y-Math.max(0,-Math.cos(ph==null?0:ph+k*1.6))*H*.03*(ph==null?0:1); c.strokeStyle=P.legs||'#0b0806'; c.beginPath(); c.moveTo(x+k*H*.04,tB-H*.01); c.lineTo(fx,fy); c.stroke(); c.fillStyle='#0b0806'; c.beginPath(); c.ellipse(fx+lk*H*.02,fy,H*.035,H*.014,0,0,7); c.fill(); }
   // brazo trasero
   const arm=(ang,front)=>{ const sx=x-(front?-1:1)*lk*R*.42, sy=nY+H*.05+br, L=H*.27, a=ang!=null?ang:(front?.25:-.25)*lk+sw*(front?.5:-.5); const ex=sx+Math.sin(a)*L, ey=sy+Math.cos(a)*L; c.strokeStyle='#0b0806'; c.lineWidth=lw; c.beginPath(); c.moveTo(sx,sy); c.lineTo(ex,ey); c.stroke(); c.fillStyle=P.glove||'#0b0806'; c.beginPath(); c.arc(ex,ey,H*.028,0,7); c.fill(); if(front&&o.hold) o.hold(ex,ey); return [ex,ey]; };
-  arm(o.armB?o.armB[0]+Math.sin(t*3)*(o.armB[1]-o.armB[0])*.5:null,false);
+  const aF=o.armF?o.armF[0]+Math.sin(t*3)*(o.armF[1]-o.armF[0])*.5:null, alto=aF!=null&&Math.cos(aF)<-.15;
+  arm(o.armB?o.armB[0]+Math.sin(t*3)*(o.armB[1]-o.armB[0])*.5:null,false); if(alto) arm(aF,true);
   // torso
   c.fillStyle=P.top||'#c8402e'; c.strokeStyle='#0b0806'; c.lineWidth=ow; const tw=R*.62; c.beginPath(); c.moveTo(x-tw*.8,nY+br); c.quadraticCurveTo(x-tw*1.05,(nY+tB)/2,x-tw,tB); c.lineTo(x+tw,tB); c.quadraticCurveTo(x+tw*1.05,(nY+tB)/2,x+tw*.8,nY+br); c.closePath(); c.fill(); c.stroke(); c.save(); c.clip(); c.fillStyle='rgba(0,0,0,.16)'; c.fillRect(lk>0?x+tw*.15:x-tw*1.4,nY-10,tw*1.25,H*.4); c.restore();
   if(P.top2){ c.fillStyle=P.top2; for(const k of [-1,1]){ c.beginPath(); c.moveTo(x+k*tw*.82,nY+br); c.quadraticCurveTo(x+k*tw*1.05,(nY+tB)/2,x+k*tw,tB); c.lineTo(x+k*tw*.25,tB); c.lineTo(x+k*tw*.2,nY+br); c.closePath(); c.fill(); c.stroke(); } }
@@ -444,7 +445,7 @@ function cabezon(P,o){ const s=o.s||1, H=(P.h||520)*s, x=o.x, y=o.y, lk=o.look||
   if(P.liner){ c.strokeStyle='#0b0806'; c.lineWidth=ow*1.2; for(const k of [-1,1]){ const xx=ex+k*sp; c.beginPath(); c.moveTo(xx+R*.06,ey-R*.06); c.lineTo(xx+R*.2,ey-R*.12); c.stroke(); } }
   // sombrero
   cabezonHat(P,hx,hy+br,R,lk,ow,t);
-  arm(o.armF?o.armF[0]+Math.sin(t*3)*(o.armF[1]-o.armF[0])*.5:null,true);
+  if(!alto) arm(aF,true);
   c.restore(); }
 function cabezonHat(P,x,y,R,lk,ow,t){ const k=P.hat; if(!k) return; c.fillStyle=P.hatCol||'#c8a060'; c.strokeStyle='#0b0806'; c.lineWidth=ow*1.2;
   if(k==='cowboy'){ c.beginPath(); c.ellipse(x,y-R*.62,R*1.55,R*.2,-.05,0,7); c.fill(); c.stroke(); c.beginPath(); c.moveTo(x-R*.75,y-R*.65); c.quadraticCurveTo(x-R*.8,y-R*1.45,x-R*.3,y-R*1.35); c.quadraticCurveTo(x,y-R*1.2,x+R*.3,y-R*1.35); c.quadraticCurveTo(x+R*.8,y-R*1.45,x+R*.75,y-R*.65); c.closePath(); c.fill(); c.stroke(); c.fillStyle='#5a3a1e'; c.fillRect(x-R*.75,y-R*.8,R*1.5,R*.12); }
