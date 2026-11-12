@@ -1,0 +1,29 @@
+// Pearl Harbor (7-12-1941). Sin personajes históricos dibujados: marineros, aviones, barcos. Aviones japoneses verde claro con círculo rojo.
+const Tm=(id,f)=>T(id)+D(id)*f;
+const MARINO=i=>({skin:SKINS[i%6],hair:'#3a2a1c',hairStyle:'short',tunic:'#f4f1ea',sleeves:'#f4f1ea',legs:'#f4f1ea',boots:'#14110e',h:300,helmet:'marinero'});
+function zero(x,y,s,dir=1){ c.save(); c.translate(x,y); c.scale(s*dir,s); plane(0,0,1,'prop',1,'#c8c8a8'); c.fillStyle='#c8102e'; c.beginPath(); c.arc(-40,-55,18,0,7); c.fill(); c.restore(); }
+function puerto(t,o){ setCam(o.keys,t); grad(...(o.sky||['#5a9ae0','#c8e0f4','#f4e8d0'])); layer(.06); clouds(t,250,false); layer(.15); mountains(1080,6,250,450,'#4a7a4a',null,2,2600,-900);
+  layer(.5); c.fillStyle='#2a6a8a'; c.fillRect(-500,1180,2100,900); c.fillStyle='rgba(255,255,255,.25)'; for(let i=0;i<30;i++) c.fillRect(mod(rnd(i)*1900+t*20,1900)-400,1200+rnd(i*3)*500,70,4);
+  for(let i=0;i<5;i++){ const x=-100+i*290, y=1300+(i%2)*60; c.save(); c.translate(x,y); c.scale(.55,.55); ship(0,0,1,'warship',t,1); c.restore(); if(o.dmg&&o.dmg(t)>i/5){ explosion(x,y-40,90,mod(t*.6+i*.4,2.4)); smoke(x,y-80,70,t,i,.6); } }
+  if(o.planes) for(let i=0;i<7;i++){ const k=mod((t-o.planes)*.25+i/7,1); zero(lerp(1300,-300,k),300+i*90+Math.sin(t*2+i)*20,.42,-1); }
+  if(o.bombs) for(let i=0;i<6;i++){ const a=mod(t*.9+i/6,1); const x=100+i*170, y=lerp(400,1300,a*a); c.fillStyle='#14110e'; c.beginPath(); c.ellipse(x,y,8,18,0,0,7); c.fill(); }
+  layer(1); if(o.front) o.front(t); }
+MOTOR.run(()=>({
+  hot:/^(domingo|353|hawái|1941|japón|china|embargo|petróleo|7|diciembre|7:48|oleada|arizona|1\.000|2\.400|portaaviones|guerra|despertarlo|hiroshima|nagasaki)$/i,
+  hits:[T('d2')+.4,T('d3')+.3,Tm('d3',.5)], flashes:[[T('d3')+.3,.8,.2]],
+  titles:[[0,T('c1'),'353 AVIONES<small>UN DOMINGO POR LA MAÑANA</small>','150px'],[E('f2')-.3,TL.total,'PEARL HARBOR<small>7 DE DICIEMBRE DE 1941</small>','140px']],
+  dates:[[T('c1'),T('d1'),'1941'],[T('d1'),T('d2'),'7:48 · 7 DIC.']],
+  counts:[[Tm('r1',.2),T('r2'),()=>['+2.400','ESTADOUNIDENSES MUERTOS'],420]],
+  scenes:[
+   [0,t=>puerto(t,{keys:[[0,540,900,1.3,0],[E('h1'),540,1050,1.0,0]],planes:0}),'rgba(255,220,160,.05)'],
+   [T('c1'),t=>{ setMap(125,25,28); mapCam([[T('c1'),120,28,.8],[E('c1'),112,22,.9]],t); mapDraw({colors:{Japan:['#c8102e',null],China:['#d8a03a',null]}},t); layer(1); mapLabel('JAPÓN',138,37,'#c8102e',T('c1'),t,{size:48,dot:false}); mapLabel('CHINA',105,32,'#d8a03a',T('c1')+.2,t,{size:48,dot:false}); mapArrow([[121,31],[110,20],[103,13]],eio(k01(t,T('c1')+.3,E('c1'))),'#c8102e',false,14); },'rgba(255,220,160,.04)'],
+   [T('c2'),t=>{ setMap(145,32,28); mapCam([[T('c2'),148,33,.85],[E('c2'),143,35,1.0]],t); mapDraw({colors:{Japan:['#c8102e',null]}},t); layer(1); mapArrow([[165,30],[152,32],[141,35]],eio(k01(t,T('c2')+.2,Tm('c2',.6))),'#3a3a3a',true,14); const k=k01(t,Tm('c2',.6),Tm('c2',.75)); if(k>0){ const [x,y]=PX(150,32); c.save(); c.translate(x,y); c.scale(1.5*k/CAM.z,1.5*k/CAM.z); c.strokeStyle='#ff3b30'; c.lineWidth=26; c.lineCap='round'; c.beginPath(); c.moveTo(-60,-60); c.lineTo(60,60); c.moveTo(60,-60); c.lineTo(-60,60); c.stroke(); c.restore(); } mapLabel('PETRÓLEO DE EE. UU. →',156,28,'#fff',T('c2')+.2,t,{size:38,dot:false}); mapLabel('JAPÓN',138,38.5,'#c8102e',T('c2'),t,{size:44,dot:false}); },'rgba(255,220,160,.04)'],
+   [T('c3'),talk({bg:'sala',keys:[[T('c3'),540,1000,1.0,0],[E('c3'),540,980,1.2,0]],chars:[{P:{...SOLDADO.civil(2),tunic:'#2a2e3a',sleeves:'#2a2e3a',legs:'#2a2e3a',helmet:'officer',hatCol:'#3a3a2a'},x:380,look:1,s:1.05,face:()=>({brow:.6,mouth:'f'})},{P:{...SOLDADO.civil(4),tunic:'#2a2e3a',sleeves:'#2a2e3a',legs:'#2a2e3a',helmet:'officer',hatCol:'#3a3a2a'},x:720,look:-1,s:1.05,talkIn:['c3'],face:()=>({brow:.7})}],wallMap:t=>{ c.fillStyle='#cfae74'; c.fillRect(200,400,680,380); c.fillStyle='#c8102e'; c.beginPath(); c.arc(320,560,40,0,7); c.fill(); c.strokeStyle='#c8102e'; c.lineWidth=8; c.setLineDash([16,10]); c.beginPath(); c.moveTo(320,560); c.quadraticCurveTo(540,420,780,600); c.stroke(); c.setLineDash([]); c.fillStyle='#14110e'; c.font='900 40px Inter'; c.fillText('✕',760,615); }}),'rgba(255,200,140,.05)'],
+   [T('d1'),t=>puerto(t,{sky:['#e8a060','#f4d0a0','#c8dcec'],keys:[[T('d1'),540,800,1.2,0],[E('d1'),540,950,1.0,0]],planes:T('d1')}),'rgba(255,180,120,.06)'],
+   [T('d2'),t=>puerto(t,{keys:[[T('d2'),540,1150,1.0,0],[E('d2'),540,1200,1.15,0]],planes:T('d1'),bombs:true,dmg:t=>k01(t,T('d2')+.3,E('d2'))}),'rgba(255,160,100,.06)'],
+   [T('d3'),t=>puerto(t,{sky:['#3a3030','#8a5a3a','#c0804a'],keys:[[T('d3'),540,1250,1.4,0],[E('d3'),540,1200,1.2,0]],dmg:()=>1,front:t=>{ explosion(540,1260,260,t-T('d3')-.3); for(let i=0;i<3;i++) smoke(300+i*220,1180,90,t,i,.45); }}),'rgba(255,90,40,.1)'],
+   [T('r1'),t=>puerto(t,{sky:['#4a4a50','#8a8070','#a09080'],keys:[[T('r1'),540,1150,1.0,0],[E('r1'),540,1180,1.1,0]],dmg:()=>1,front:t=>{ for(let i=0;i<4;i++) smoke(-50+i*330,1250,80,t,i,.35); }}),'rgba(120,120,130,.06)'],
+   [T('r2'),talk({bg:'oficina',flags:['usa'],keys:[[T('r2'),540,1000,1.0,0],[E('r2'),540,980,1.2,0]],chars:[{P:MARINO(1),x:300,look:1,s:1.2,face:()=>({brow:.7,mouth:'f'})},{P:MARINO(3),x:540,look:1,s:1.2,face:()=>({brow:.8,mouth:'f'})},{P:MARINO(4),x:780,look:-1,s:1.2,face:()=>({brow:.7,mouth:'f'})}]}),'rgba(255,200,140,.05)'],
+   [T('f1'),t=>{ setMap(150,28,22); mapCam([[T('f1'),158,26,.8],[E('f1'),146,31,.95]],t); mapDraw({colors:{Japan:['#c8102e',null]}},t); layer(1); mapArrow([[172,20],[160,24],[148,30],[140,35]],eio(k01(t,T('f1')+.2,E('f1'))),'#3a5aa8',false,16); mapLabel('← DESDE HAWÁI',166,17,'#3a5aa8',T('f1'),t,{size:38,dot:false}); },'rgba(255,220,160,.04)'],
+   [T('f2'),t=>puerto(t,{sky:['#2a2a4a','#c87a4a','#e8a060'],keys:[[T('f2'),540,1100,1.2,0],[TL.total,540,1150,1.0,0]],front:t=>{ flag(470,700,180,120,'usa',t); }}),'rgba(255,140,80,.06)'],
+  ]}));

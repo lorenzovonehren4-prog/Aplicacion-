@@ -1,0 +1,69 @@
+[
+ {
+  "id": "h1",
+  "t": "Es uno de los países más pobres de Asia. Y aun así tiene bombas atómicas y misiles capaces de llegar a Estados Unidos.",
+  "gap": 0.25,
+  "dur": 7.084
+ },
+ {
+  "id": "c1",
+  "t": "1950. Corea del Norte invade el sur. Empieza la guerra de Corea.",
+  "gap": 0.1,
+  "dur": 5.534
+ },
+ {
+  "id": "c2",
+  "t": "En 1953 se firma un armisticio. Pero nunca un tratado de paz: técnicamente, la guerra no ha terminado.",
+  "gap": 0.2,
+  "dur": 7.982
+ },
+ {
+  "id": "c3",
+  "t": "Desde entonces la gobierna la misma familia: Kim Il Sung, su hijo, y ahora su nieto, Kim Jong Un.",
+  "gap": 0.15,
+  "dur": 6.728
+ },
+ {
+  "id": "d1",
+  "t": "El régimen cree que la bomba atómica es su seguro de vida contra una invasión.",
+  "gap": 0.1,
+  "dur": 4.861
+ },
+ {
+  "id": "d2",
+  "t": "Entre 2006 y 2017 hace seis pruebas nucleares, a pesar de las sanciones de la ONU.",
+  "gap": 0.15,
+  "dur": 6.124
+ },
+ {
+  "id": "d3",
+  "t": "Y en 2026 sigue lanzando misiles, casi cada mes.",
+  "gap": 0.2,
+  "dur": 3.736
+ },
+ {
+  "id": "r1",
+  "t": "Desde 2024 tiene un nuevo aliado: Rusia. Según Corea del Sur, envió más de dieciséis mil soldados y millones de proyectiles para la guerra en Ucrania.",
+  "gap": 0.15,
+  "c": "Desde 2024 tiene un nuevo aliado: Rusia. Según Corea del Sur, envió más de 16.000 soldados y millones de proyectiles para la guerra en Ucrania.",
+  "dur": 9.436
+ },
+ {
+  "id": "r2",
+  "t": "A cambio, recibiría dinero, comida, energía y tecnología militar.",
+  "gap": 0.2,
+  "dur": 4.885
+ },
+ {
+  "id": "f1",
+  "t": "Estados Unidos cree que Pyongyang prepara su séptima prueba nuclear, cuando decida hacerla.",
+  "gap": 0.15,
+  "dur": 5.415
+ },
+ {
+  "id": "f2",
+  "t": "Un país cerrado al mundo... que el mundo no puede ignorar.",
+  "gap": 0.4,
+  "dur": 2.933
+ }
+]

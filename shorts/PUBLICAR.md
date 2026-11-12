@@ -52,3 +52,53 @@ Todos: categoría Educación, «no es para niños», contenido sintético declar
 
 ## Comentario fijado (para todos)
 ¿Qué historia o conflicto quieres que explique después? 👇
+
+
+# Tanda 2 (≈70 s, voz más clara)
+
+Mismos ajustes. Programados con `publishAt`, 2 por día (hora de Lima). Enlaces al subir.
+
+| Publicación (Lima) | Vídeo | Título | Enlace |
+| --- | --- | --- | --- |
+| 13 nov, 12:30 | caida-roma | La caída de Roma: no fue en un día 🏛️ | ENLACE_caida-roma |
+| 13 nov, 19:30 | venezuela | Venezuela: la noche del 3 de enero de 2026 | ENLACE_venezuela |
+| 14 nov, 12:30 | tenochtitlan | 500 españoles contra un imperio: Tenochtitlan | ENLACE_tenochtitlan |
+| 14 nov, 19:30 | china-taiwan | Taiwán: la isla de la que depende tu teléfono | ENLACE_china-taiwan |
+| 15 nov, 12:30 | gengis-kan | Gengis Kan: de niño abandonado a dueño de medio mundo | ENLACE_gengis-kan |
+| 15 nov, 19:30 | corea-norte | Corea del Norte: pobre, pero con bombas atómicas | ENLACE_corea-norte |
+| 16 nov, 12:30 | pearl-harbor | Pearl Harbor: 353 aviones un domingo por la mañana | ENLACE_pearl-harbor |
+| 16 nov, 19:30 | stalingrado | Stalingrado: la batalla más sangrienta de la historia | ENLACE_stalingrado |
+| 17 nov, 12:30 | muro-berlin | El Muro de Berlín: cayó por una frase dicha por error | ENLACE_muro-berlin |
+| 17 nov, 19:30 | hiroshima | Hiroshima, 8:15: la bomba que cambió el mundo | ENLACE_hiroshima |
+
+## Descripciones (tanda 2)
+
+**caida-roma** — De la máxima extensión en el 117 a 476: crisis, división, hunos, visigodos y vándalos. Y por qué Oriente duró mil años más. Fuentes: Britannica; Peter Heather, «La caída del Imperio romano». Recreación animada.
+#historia #roma #imperioromano #476 #shorts
+
+**venezuela** — Petróleo, crisis, las actas de 2024, la presión de EE. UU. y la captura de Maduro. Qué pasa hoy y qué critica la ONU. Datos a noviembre de 2026 (Reuters, AP, ACNUR). Recreación animada; no muestra a líderes vivos.
+#venezuela #geopolítica #noticias #eeuu #shorts
+
+**tenochtitlan** — 1519–1521: Cortés, Malinche, los aliados indígenas, la viruela y la caída de la capital mexica. Fuentes: Britannica; Matthew Restall; Bernal Díaz del Castillo. Recreación animada.
+#historia #méxico #tenochtitlan #aztecas #shorts
+
+**china-taiwan** — Desde 1949 hasta los 49 aviones del 2 de noviembre de 2026: por qué China reclama Taiwán y por qué el mundo vigila el estrecho. Datos del Ministerio de Defensa de Taiwán y Reuters. Recreación animada; no muestra a líderes vivos.
+#taiwán #china #geopolítica #chips #shorts
+
+**gengis-kan** — Temuyín, 1206, los jinetes arqueros, Corasmia y el imperio terrestre más grande de la historia. Fuentes: Britannica; «Historia secreta de los mongoles». Recreación animada.
+#historia #gengiskan #mongoles #imperio #shorts
+
+**corea-norte** — La guerra que nunca terminó, la dinastía Kim, seis pruebas nucleares y soldados enviados a Rusia. Datos a noviembre de 2026 (Yonhap, Reuters, 38 North). Recreación animada; no muestra a líderes vivos.
+#coreadelnorte #geopolítica #nuclear #noticias #shorts
+
+**pearl-harbor** — 7 de diciembre de 1941: el embargo de petróleo, el radar ignorado, el Arizona y el error que despertó a Estados Unidos. Fuentes: National WWII Museum; Naval History and Heritage Command. Recreación animada.
+#historia #pearlharbor #segundaguerramundial #shorts
+
+**stalingrado** — 1942–1943: calle por calle, el Volga, la Operación Urano y la rendición del 6.º Ejército. Fuentes: Britannica; Antony Beevor. Recreación animada.
+#historia #stalingrado #segundaguerramundial #shorts
+
+**muro-berlin** — 13 de agosto de 1961: una ciudad partida en una noche. 9 de noviembre de 1989: una rueda de prensa lo cambia todo. Fuentes: Memorial del Muro de Berlín; Britannica. Recreación animada.
+#historia #murodeberlín #guerrafría #alemania #shorts
+
+**hiroshima** — 6 de agosto de 1945: por qué se lanzó, qué pasó y el debate que sigue abierto. Contado con respeto. Fuentes: Museo Memorial de la Paz de Hiroshima; Britannica. Recreación animada.
+#historia #hiroshima #segundaguerramundial #shorts

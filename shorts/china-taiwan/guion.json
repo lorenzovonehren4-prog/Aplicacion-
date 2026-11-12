@@ -1,0 +1,68 @@
+[
+ {
+  "id": "h1",
+  "t": "Una isla más pequeña que muchos países fabrica casi todos los chips más avanzados del mundo. Y China dice que es suya.",
+  "gap": 0.25,
+  "dur": 7.762
+ },
+ {
+  "id": "c1",
+  "t": "1949. Termina la guerra civil china. Los comunistas de Mao toman el continente.",
+  "gap": 0.1,
+  "dur": 5.835
+ },
+ {
+  "id": "c2",
+  "t": "Los nacionalistas derrotados huyen a la isla de Taiwán, y siguen gobernando allí.",
+  "gap": 0.15,
+  "dur": 4.526
+ },
+ {
+  "id": "c3",
+  "t": "Desde entonces, Pekín considera a Taiwán una provincia rebelde que debe reunificarse, por las buenas o por la fuerza.",
+  "gap": 0.2,
+  "dur": 6.7
+ },
+ {
+  "id": "d1",
+  "t": "Pero Taiwán cambió. Desde los años noventa es una democracia, con elecciones libres.",
+  "gap": 0.1,
+  "dur": 5.196
+ },
+ {
+  "id": "d2",
+  "t": "Y se volvió clave para la economía mundial: sus fábricas producen la gran mayoría de los chips más avanzados.",
+  "gap": 0.15,
+  "dur": 6.262
+ },
+ {
+  "id": "d3",
+  "t": "Estados Unidos no la reconoce oficialmente como país, pero le vende armas para defenderse.",
+  "gap": 0.2,
+  "dur": 5.348
+ },
+ {
+  "id": "r1",
+  "t": "China responde con presión constante: aviones militares, barcos de guardacostas, y grandes ejercicios alrededor de la isla.",
+  "gap": 0.15,
+  "dur": 7.646
+ },
+ {
+  "id": "r2",
+  "t": "El 2 de noviembre de 2026, Taiwán detectó 49 aviones militares chinos en un solo día, la cifra más alta del año.",
+  "gap": 0.2,
+  "dur": 8.62
+ },
+ {
+  "id": "f1",
+  "t": "No hay guerra. Pero cada maniobra se vigila desde todo el mundo.",
+  "gap": 0.15,
+  "dur": 3.769
+ },
+ {
+  "id": "f2",
+  "t": "Porque si algo pasa en Taiwán, lo sentirá tu teléfono.",
+  "gap": 0.4,
+  "dur": 3.396
+ }
+]

@@ -147,8 +147,11 @@ for s in g:
     v, sr = sf.read(f"{d}/voz/{s['id']}.wav"); v = signal.resample_poly(v, SR, sr); put(voice, v, s['start'])
 voice = hp(voice, 80); lvl = np.sqrt(np.maximum(lp(voice ** 2, 8), 0) + 1e-8)
 voice = voice * lp(np.minimum(2.5, (0.1 / np.maximum(lvl, .02)) ** .5), 12); voice = voice / np.abs(voice).max() * .9
-e = lp(np.abs(voice), 5); duck = 1 - .62 * np.clip(e / (e.max() + 1e-9) * 4, 0, 1)
-mix = voice + (music * .95 + amb * .45) * duck + fx * .6 * (1 - .35 * (1 - duck))
+voice = voice + .35 * bp(voice, 2200, 5000)  # presencia: consonantes más claras
+voice = voice / np.abs(voice).max() * .9
+DK, BED = P.get('duck', .62), P.get('bed', .95)
+e = lp(np.abs(voice), 5); duck = 1 - DK * np.clip(e / (e.max() + 1e-9) * 4, 0, 1)
+mix = voice + (music * BED + amb * .45 * BED) * duck + fx * .6 * (1 - .45 * (1 - duck))
 dl = int(.012 * SR); wide = np.concatenate([np.zeros(dl), (amb * .2 * duck + fx * .12)[:-dl]])
 out = np.stack([mix + wide, mix - wide], 1); f = int(.4 * SR); out[-f:] *= np.linspace(1, 0, f)[:, None]
 pk = np.abs(out).max(); out = out / pk * .95 if pk > .95 else out
