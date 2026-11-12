@@ -25,3 +25,7 @@ MOTOR.run(()=>({
    [T('f1'),t=>{ setCam([[T('f1'),540,1050,1.0,0],[E('f1'),540,980,1.2,0]],t); grad('#2a3a5a','#4a6a8a','#c8dcec'); desenfoque(6,()=>{ layer(.4); c.fillStyle='#e8e4d8'; c.fillRect(-300,500,1700,1000); glow(540,700,600,'rgba(255,240,200,A)',.4); }); layer(.8); c.fillStyle='#3a3a44'; c.fillRect(-500,1520,2100,900); layer(1); c.fillStyle='#5a3a1e'; c.strokeStyle='#0b0806'; c.lineWidth=6; c.fillRect(380,1300,320,240); c.strokeRect(380,1300,320,240); cabezon(VIEJO,{x:540,y:1300,s:.95,t,look:1,seed:1,talk:true,armF:[1.6,2.2]}); },'rgba(200,220,255,.06)'],
    [T('f2'),t=>{ setCam([[T('f2'),540,1000,1.0,0],[TL.total,540,1000,1.25,0]],t); grad('#3a3a6a','#c8805a','#e8b080'); layer(1); for(let i=0;i<9;i++){ const x=mod(rnd(i)*1300+t*(30+rnd(i*3)*30),1400)-160, y=400+rnd(i*7)*900+Math.sin(t+i)*30; c.save(); c.translate(x,y); c.fillStyle=['#f4f1ea','#e8b4c8','#f4d06a','#9ad0ff'][i%4]; c.strokeStyle='#0b0806'; c.lineWidth=3; c.beginPath(); c.moveTo(-40,0); c.lineTo(0,-30-Math.sin(t*6+i)*14); c.lineTo(10,0); c.lineTo(50,-10); c.lineTo(10,12); c.closePath(); c.fill(); c.stroke(); c.restore(); } },'rgba(255,170,120,.06)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function oficina(t,o={}){ escInterior(t,{pared:'#9a9080',blur:o.blur,ventanaX:640,suelo:'#7a6a54'}); if(o.flash){ screen(); c.fillStyle=`rgba(255,255,240,${o.flash})`; c.fillRect(0,0,W,H); layer(1); } }
+function ciudad(t,o={}){ escCalle(t,{sky:o.sky,color:'#7a6a5a',puerta:false,postes:true,barriles:true,blurFachada:7}); }

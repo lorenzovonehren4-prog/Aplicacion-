@@ -23,3 +23,6 @@ MOTOR.run(()=>({
    [T('f1'),t=>pueblo(t,{keys:[[T('f1'),540,1000,1.0,0],[E('f1'),540,1050,1.15,0]],luz:false,cx:620,cy:380}),'rgba(90,110,200,.1)'],
    [T('f2'),t=>pueblo(t,{keys:[[T('f2'),540,700,1.3,0],[TL.total,540,960,1.0,0]],cx:lerp(300,900,k01(t,T('f2'),TL.total)),cy:420}),'rgba(120,150,255,.08)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function pueblo(t,o={}){ setCam(o.keys,t); escCalle(t,{sky:['#020410','#0a1430','#1a2448'],cielo:t=>{ for(let i=0;i<160;i++){ c.fillStyle=`rgba(255,255,255,${.3+rnd(i)*.6})`; c.fillRect(rnd(i*3)*1400-160,rnd(i*7)*900,2+rnd(i)*3,2+rnd(i)*3); } if(o.cometa!==false) cometa(o.cx||760,Math.min(o.cy||150,170),1.0,-.35,t); },luz:o.luz!==false,color:'#3a2a3a',letrero:'GENERAL STORE',suelo:'#3a3028',blurFachada:o.blur??5}); if(o.extra) o.extra(t); }

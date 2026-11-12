@@ -27,3 +27,6 @@ MOTOR.run(()=>({
    [T('f1'),t=>linea(t,{keys:[[T('f1'),540,960,1.0,0],[E('f1'),540,960,1.06,0]],bars:[{x0:80,x1:1000,y:1000,col:'#8a8a9a',t0:T('f1'),t1:T('f1')+.6,w:10}],extra:t=>{ const X=a=>170+740*(a+2560)/(2026+2560); iconoPir(X(-2560),900,.45); iconoCleo(X(-30),950,.4,t); c.font='110px serif'; c.textAlign='center'; c.fillText('🌕',X(1969),930); txt('1969',X(1969),1100,40,'#fff'); txt('2560 a. C.',X(-2560)+40,1100,40,'#fff'); txt('30 a. C.',X(-30),1100,40,'#fff'); const k=k01(t,T('f1')+.6,T('f1')+1.4); c.strokeStyle='#3ad0a0'; c.lineWidth=12; c.beginPath(); c.moveTo(X(-30),1180); c.lineTo(lerp(X(-30),X(1969),k),1180); c.stroke(); c.strokeStyle='#e8c03a'; c.beginPath(); c.moveTo(X(-30),1220); c.lineTo(lerp(X(-30),X(-2560),k),1220); c.stroke(); }}),''],
    [T('f2'),t=>{ setCam([[T('f2'),560,880,1.3,0],[TL.total,540,960,.95,0]],t); desierto(t,{blur:4,sky:['#2a2a5a','#c87a4a','#f0b070'],sunY:900}); cabezon(CLEO,{x:420,y:1520,s:1.3,t,look:1,seed:2,face:{mouth:'s'}}); },'rgba(255,160,100,.08)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function desierto(t,o={}){ escEgipto(t,{sky:o.sky,solY:o.sunY,blurFondo:o.blur??5,vieja:o.old}); }

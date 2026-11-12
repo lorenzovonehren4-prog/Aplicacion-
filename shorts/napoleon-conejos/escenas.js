@@ -28,3 +28,6 @@ MOTOR.run(()=>({
    [T('f1'),t=>{ setCam([[T('f1'),540,1300,1.3,0],[E('f1'),540,1200,1.1,0]],t); campo(t,{blur:10}); cabezon(NAPO,{x:300,y:PIE,s:BIG*.95,t,look:1,seed:1,face:{eyes:'m',brow:.9,mouth:'f'}}); for(let i=0;i<6;i++){ conejo(640+i*80,1700-(i%2)*60,.8,t+i,-1,i); } c.fillStyle='#ff8a2a'; c.strokeStyle='#0b0806'; c.lineWidth=5; c.beginPath(); c.moveTo(560,1480); c.lineTo(700,1440); c.lineTo(580,1520); c.closePath(); c.fill(); c.stroke(); },'rgba(255,230,180,.05)'],
    [T('f2'),t=>{ setCam([[T('f2'),540,1100,1.3,0],[TL.total,540,1050,1.0,0]],t); campo(t,{sky:['#3a3a7a','#d0805a','#f0b070'],blur:9}); carruaje(540,1800,1.6); cabezon(NAPO,{x:430,y:1520,s:.72,t,look:1,seed:1,face:{brow:.9,mouth:'f',eyes:'m'}}); for(let i=0;i<10;i++) conejo(120+i*95,1880+(i%2)*20,.65,t+i,i%2?1:-1,i); for(let i=0;i<3;i++) conejo(400+i*120,1340,.6,t+i,1,i+3); },'rgba(255,170,110,.07)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function campo(t,o={}){ escCampo(t,{sky:o.sky,blurFondo:Math.min(o.blur??7,8),heno:[900],tienda:-120}); }

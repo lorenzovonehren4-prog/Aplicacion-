@@ -25,3 +25,6 @@ MOTOR.run(()=>({
    [T('f1'),t=>{ setMap(5,47,40); mapCam([[T('f1'),5,48,.8],[E('f1'),5,47,.95]],t); mapDraw({colors:{France:['#c8a070',null]}},t); layer(1); [[-0.2,48.9,'Falaise'],[4.3,46.95,'Autun'],[8.2,47,''],[11,51,''],[4.4,50.8,'']].forEach(([lo,la,n],i)=>{ mapPulse(lo,la,T('f1')+i*.25,t); if(n) mapLabel(n,lo,la,'#e8c03a',T('f1')+i*.25,t,{size:40}); }); },'rgba(255,220,160,.04)'],
    [T('f2'),t=>{ setCam([[T('f2'),540,1050,1.0,0],[TL.total,540,1100,1.3,0]],t); tribunal(t,{blur:8}); cerdo(540,1650,1.0,t,1); c.save(); screen(); const g=c.createRadialGradient(540,1300,200,540,1300,1100); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.8)'); c.fillStyle=g; c.fillRect(0,0,W,H); c.restore(); },'rgba(255,170,80,.08)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function tribunal(t,o={}){ escPiedra(t,{blur:o.blur,estandarte:'#2a3a6a'}); layer(.85); tablones(170,1080,740,240,'#5a3a1e','h'); c.strokeStyle='#0b0806'; c.lineWidth=6; c.strokeRect(170,1080,740,240); c.fillStyle='#8a1a1a'; c.fillRect(170,1080,740,40); layer(1); }

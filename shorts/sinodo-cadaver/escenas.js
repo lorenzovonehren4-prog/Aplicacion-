@@ -25,3 +25,6 @@ MOTOR.run(()=>({
    [T('f1'),t=>{ setCam([[T('f1'),540,1050,1.0,0],[E('f1'),540,1000,1.15,0]],t); grad('#14101a','#201a2a','#0a0810'); layer(1); cabezon(ESTEBAN,{x:540,y:1500,s:1.25,t,look:1,seed:3,face:{brow:-.7,mouth:'f'}}); c.fillStyle='#3a3a40'; for(let i=0;i<8;i++) c.fillRect(160+i*105,600,26,1000); c.fillRect(140,600,800,30); c.fillRect(140,1570,800,30); txt('DEPUESTO · 897',540,520,80,'#ff6a6a',k01(t,T('f1')+.2,T('f1')+.5)); },'rgba(120,120,160,.08)'],
    [T('f2'),t=>{ setCam([[T('f2'),540,1100,1.4,0],[TL.total,540,1050,1.0,0]],t); basilica(t,{blur:8}); trono(540,1540,1.2); },'rgba(150,120,200,.1)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function basilica(t,o={}){ escPiedra(t,{blur:o.blur,estandarte:'#6a1a5a',bancos:false}); }

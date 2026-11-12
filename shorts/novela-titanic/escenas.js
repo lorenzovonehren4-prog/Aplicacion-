@@ -23,3 +23,6 @@ MOTOR.run(()=>({
    [T('f1'),t=>{ setCam([[T('f1'),540,1050,1.0,0],[E('f1'),540,980,1.2,0]],t); estudio(t); cabezon({...ROB,hairCol:'#8a8278',mustache:'#8a8278'},{x:540,y:1560,s:1.4,t,look:1,seed:1,talk:true,armF:[-1.4,1.6]}); },'rgba(255,180,100,.06)'],
    [T('f2'),t=>noche(t,{keys:[[T('f2'),540,1050,1.3,0],[TL.total,540,1000,1.0,0]],extra:t=>{ c.globalAlpha=.6; transatlantico(560,1260,1.0,t,{luces:true}); c.globalAlpha=1; }}),'rgba(80,120,220,.1)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function estudio(t,o={}){ escInterior(t,{estante:true,blur:o.blur,ventanaX:720,mesa:true,velas:true,mesaX:760}); }

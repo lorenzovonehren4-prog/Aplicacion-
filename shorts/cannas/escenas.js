@@ -33,3 +33,6 @@ MOTOR.run(()=>({
    [T('f1'),t=>{ setCam([[T('f1'),540,1000,1.0,0],[E('f1'),540,900,1.15,0]],t); aula(t); const k=k01(t,T('f1'),Tm('f1',.6)); tiza([[300,950],[540,650],[780,950]],1,'#f4f1ea',12); tiza([[200,600],[260,760],[400,900]],k,'#ffd23a',12); tiza([[880,600],[820,760],[680,900]],k,'#ffd23a',12); txt('DOBLE ENVOLVIMIENTO',540,560,52,'#ffd23a',k01(t,Tm('f1',.4),Tm('f1',.5))); for(let i=0;i<4;i++) cabezon(CADETE(i),{x:120+i*280,y:1700,s:1.05,t,look:1,seed:i,face:{eyes:i%2?'o':'n',mouth:i%2?'o':'n'}}); },'rgba(255,220,160,.05)'],
    [T('f2'),t=>{ setCam([[T('f2'),540,920,1.3,0],[TL.total,540,1000,1.0,0]],t); grad('#2a1a3a','#c4592a','#f0a040'); desenfoque(6,()=>{ layer(.4); glow(800,1100,600,'rgba(255,200,120,A)',.6); hills(1300,80,'#4a2028',4); }); layer(1); cabezon(ANIBAL,{x:500,y:1540,s:1.35,t,look:1,seed:3,face:{brow:.3,mouth:'s'}}); },'rgba(255,160,100,.07)'],
   ]}));
+
+// sobrescrito con escenarios detallados del motor
+function aula(t,o={}){ escInterior(t,{pared:'#6a6a5a',blur:o.blur,ventanaX:900}); layer(.6); pizarra(120,420,840,620); layer(1); }
