@@ -1,0 +1,74 @@
+[
+ {
+  "id": "h1",
+  "t": "Es la guerra más grande en Europa desde 1945. ¿Por qué empezó?",
+  "gap": 0.3,
+  "dur": 4.192
+ },
+ {
+  "id": "c1",
+  "t": "En 1991 se desintegra la Unión Soviética, y Ucrania se independiza, con millones de habitantes que hablan ruso.",
+  "gap": 0.1,
+  "dur": 6.647
+ },
+ {
+  "id": "c2",
+  "t": "Durante años, el país duda entre acercarse a Europa o a Rusia.",
+  "gap": 0.1,
+  "dur": 3.299
+ },
+ {
+  "id": "c3",
+  "t": "En 2014, protestas masivas en Kiev hacen caer a un presidente cercano a Moscú.",
+  "gap": 0.2,
+  "dur": 4.731
+ },
+ {
+  "id": "d1",
+  "t": "Rusia responde anexionándose Crimea. Y en el Donbás estalla una guerra con separatistas apoyados por Moscú.",
+  "gap": 0.15,
+  "dur": 5.239
+ },
+ {
+  "id": "d2",
+  "t": "Putin dice que la OTAN se acerca demasiado a sus fronteras, y que Ucrania es parte del mundo ruso.",
+  "gap": 0.1,
+  "dur": 5.103
+ },
+ {
+  "id": "d3",
+  "t": "Ucrania y Occidente responden que es un país soberano que puede elegir sus alianzas.",
+  "gap": 0.3,
+  "dur": 3.979
+ },
+ {
+  "id": "r1",
+  "t": "24 de febrero de 2022: Rusia invade Ucrania por el norte, el este y el sur.",
+  "gap": 0.15,
+  "dur": 5.45
+ },
+ {
+  "id": "r2",
+  "t": "Kiev resiste. Rusia se retira del norte, pero se queda con gran parte del este y del sur.",
+  "gap": 0.15,
+  "dur": 5.204
+ },
+ {
+  "id": "r3",
+  "t": "Desde entonces: trincheras, drones y bombardeos. Los muertos y heridos se cuentan por cientos de miles.",
+  "gap": 0.3,
+  "dur": 5.697
+ },
+ {
+  "id": "f1",
+  "t": "En noviembre de 2026 hay negociaciones en Abu Dabi. Pero la guerra sigue, y el Donbás es el gran obstáculo.",
+  "gap": 0.25,
+  "dur": 6.007
+ },
+ {
+  "id": "f2",
+  "t": "Una guerra por un mapa... y por el futuro de Europa.",
+  "gap": 0.5,
+  "dur": 2.397
+ }
+]

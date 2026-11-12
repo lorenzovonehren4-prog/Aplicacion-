@@ -18,4 +18,4 @@ Se publica como Artifact de Claude (no GitHub Pages): `node portal/tools/artifac
 
 Pruebas: `CHROMIUM_PATH=... node portal/tests/portal.mjs --shots` y `node portal/tests/botones.mjs` (todos los botones) (capturas en `portal/tests/capturas/`, ignoradas por git).
 
-- `shorts/`: shorts verticales del canal de YouTube; no es parte del portal. Antes de hacer un vídeo leer `shorts/SISTEMA.md` (brief del dueño: historia, política y geopolítica con personajes stickman 2D, método en 7 entregas). `shorts/README.md` explica cómo se renderiza. En `.claude/skills/` están youtube-agent-skill (`yt-*`, no publica) y graphify.
+- `shorts/`: shorts verticales del canal de YouTube; no es parte del portal. Antes de hacer un vídeo leer `shorts/SISTEMA.md` (brief del dueño: historia, política y geopolítica con personajes stickman 2D, método en 7 entregas). `shorts/README.md` explica la estructura (motor común en `shorts/motor/`, una carpeta por vídeo con `PLAN.md`) y cómo se renderiza. En temas actuales no se dibujan líderes vivos y las cifras se verifican con fuentes recientes. En `.claude/skills/` están youtube-agent-skill (`yt-*`, no publica) y graphify.

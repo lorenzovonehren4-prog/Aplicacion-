@@ -1,0 +1,95 @@
+[
+ {
+  "id": "h1",
+  "t": "Dos pueblos reclaman la misma tierra. Y llevan más de cien años sin ponerse de acuerdo.",
+  "gap": 0.3,
+  "dur": 4.314
+ },
+ {
+  "id": "c1",
+  "t": "Hace poco más de un siglo, esta tierra es parte del Imperio otomano, y la mayoría de sus habitantes son árabes.",
+  "gap": 0.1,
+  "dur": 6.014
+ },
+ {
+  "id": "c2",
+  "t": "Entonces nace el sionismo: un movimiento que busca un Estado judío en su tierra histórica.",
+  "gap": 0.1,
+  "dur": 5.014
+ },
+ {
+  "id": "c3",
+  "t": "En 1917, Gran Bretaña promete un hogar nacional judío allí. Y llegan miles de judíos huyendo de la persecución en Europa.",
+  "gap": 0.2,
+  "dur": 7.101
+ },
+ {
+  "id": "d1",
+  "t": "1947: la ONU propone dos Estados. Los líderes judíos aceptan; los árabes, no.",
+  "gap": 0.15,
+  "dur": 5.862
+ },
+ {
+  "id": "d2",
+  "t": "1948: nace Israel, y cinco ejércitos árabes lo atacan.",
+  "gap": 0.1,
+  "dur": 4.741
+ },
+ {
+  "id": "d3",
+  "t": "Israel gana. Más de 700000 palestinos huyen o son expulsados. Ellos lo llaman la Nakba: la catástrofe.",
+  "gap": 0.25,
+  "c": "Israel gana. Más de 700.000 palestinos huyen o son expulsados. Ellos lo llaman la Nakba: la catástrofe.",
+  "dur": 6.183
+ },
+ {
+  "id": "d4",
+  "t": "1967: en seis días, Israel ocupa Gaza, Cisjordania y Jerusalén Este.",
+  "gap": 0.15,
+  "dur": 5.314
+ },
+ {
+  "id": "d5",
+  "t": "En 1993, los acuerdos de Oslo prometen la paz. Nunca llega del todo.",
+  "gap": 0.1,
+  "dur": 4.639
+ },
+ {
+  "id": "d6",
+  "t": "En 2007, Hamás toma el control de Gaza, e Israel y Egipto la bloquean.",
+  "gap": 0.3,
+  "dur": 4.36
+ },
+ {
+  "id": "r1",
+  "t": "Y el 7 de octubre de 2023, Hamás ataca Israel: unas 1200 personas mueren y 251 son secuestradas.",
+  "gap": 0.2,
+  "c": "Y el 7 de octubre de 2023, Hamás ataca Israel: unas 1.200 personas mueren y 251 son secuestradas.",
+  "dur": 7.33
+ },
+ {
+  "id": "r2",
+  "t": "Israel responde con una guerra en Gaza. Según el Ministerio de Salud de Gaza, más de 73000 palestinos han muerto.",
+  "gap": 0.15,
+  "c": "Israel responde con una guerra en Gaza. Según el Ministerio de Salud de Gaza, más de 73.000 palestinos han muerto.",
+  "dur": 6.444
+ },
+ {
+  "id": "r3",
+  "t": "Desde octubre de 2025 hay un alto el fuego. Pero los ataques no han parado del todo.",
+  "gap": 0.35,
+  "dur": 4.934
+ },
+ {
+  "id": "f1",
+  "t": "Las mismas preguntas siguen sin respuesta: fronteras, Jerusalén, refugiados y seguridad.",
+  "gap": 0.2,
+  "dur": 4.99
+ },
+ {
+  "id": "f2",
+  "t": "Dos pueblos. Una misma tierra.",
+  "gap": 0.5,
+  "dur": 1.762
+ }
+]

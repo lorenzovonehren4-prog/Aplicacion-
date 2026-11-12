@@ -1,0 +1,5 @@
+{"plan":[[0,"T:c1","sea",{"gain":.8}],[0,"T:c1","pad",{"chord":[0.5,1,1.2],"key":"fa"}],[0,"T:c1","drums",{"bpm":90,"pat":"B000b000"}],
+ ["T:c1","T:d1","ostinato",{"bpm":100,"amp":.05,"key":"fa"}],["T:c1","T:d1","pad",{"chord":[0.5,0.75,1.2],"key":"fa"}],["T:d1","T:d2","wind",{"gain":.7}],["T:d1","T:d3","pad",{"chord":[0.5,0.6,0.9],"key":"fa"}],
+ ["T:d2","T:d3","drums",{"bpm":112,"pat":"BtbtBtbb"}],["T:d3","T:r1","drums",{"bpm":128,"pat":"BtBtBbBt","inten":1}],["T:d3","T:r1","sea",{"gain":.9}],["T:r1","END","pad",{"chord":[0.5,1,1.5],"amp":.07,"key":"fa"}],["T:r2","T:f1","wind",{"gain":.3}]],
+ "cues":[["T:h1","jet",.6,{"d":3}],["F:h1:0.5","boom",.6],["T:c1","paper",1],["F:c1:0.5","whoosh",.7],["T:c3","whoosh",.6],["T:d1","jet",.8],["T:d2","paper",1],["T:d3","boom",1],["F:d3:0.2","gunshot",.6],["F:d3:0.3","gunshot",.6],["F:d3:0.4","boom",.9],["F:d3:0.6","gunshot",.6],["F:d3:0.75","boom",.8],
+  ["T:r2","bell",.5,{"f":147}],["T:f1","paper",1],["E:f2","boom",.8,{"size":1.2}]]}

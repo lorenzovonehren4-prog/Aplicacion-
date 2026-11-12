@@ -1,61 +1,31 @@
-# Shorts de Cosmo.ia
+# Shorts del canal
 
-Shorts verticales (1080×1920) de «¿Qué pasaría si…?». Cada carpeta es un short que se arma solo.
+Vídeos verticales (1080×1920) de historia, política y geopolítica. El brief del dueño está en `SISTEMA.md` y manda sobre todo lo demás.
 
-## Rearmar un short
+## Estructura
+- `motor/`: lo común a todos los vídeos.
+  - `motor.js`: personajes con ficha, soldados por época (`SOLDADO`), escenas genéricas (`march`, `charge`, `talk`, `city`), mapas con fronteras reales (`setMap`, `mapDraw`, `mapArrow`, `mapLabel`), vehículos, efectos, cámara con paralaje, subtítulos y rótulos (`MOTOR.run`).
+  - `mundo.js`: fronteras de Natural Earth 1:110m (dominio público).
+  - `voz.py`, `sonido.py`, `render.mjs`: narración, banda sonora y exportación.
+- Una carpeta por vídeo, con `guion.json` (texto de la voz y pausas), `pista.json` (música y efectos), `escenas.js` (planos), `escena.html` y `PLAN.md` (las entregas A–G del sistema: investigación, guion, biblia visual, storyboard, prompts, montaje y evaluación).
+
+## Vídeos
+`anibal`, `termopilas`, `constantinopla`, `napoleon-rusia`, `dia-d`, `crisis-cuba`, `israel-palestina`, `uranio-iran`, `iran-israel-eeuu`, `rusia-ucrania`.
+`meteorito/` y `meteorito-en/` son los primeros intentos, de antes del sistema actual.
+
+## Rearmar un vídeo
+Necesita `pip install piper-tts numpy scipy soundfile`, `ffmpeg`, Playwright y la voz `es_MX-claude-high` (`.onnx` y `.onnx.json`) de https://huggingface.co/rhasspy/piper-voices (carpeta `es/es_MX/claude/high`).
 
 ```bash
-cd shorts/meteorito
-python3 audio.py                                   # arma timeline.json y audio.wav (voz + sirenas + golpes + música)
-NODE_PATH=$(npm root -g) node render.mjs short.mp4 # dibuja escena.html cuadro a cuadro y lo une con el audio
+python3 motor/voz.py termopilas <carpeta-de-la-voz> 0.74
+python3 motor/sonido.py termopilas
+NODE_PATH=$(npm root -g) node motor/render.mjs termopilas termopilas/termopilas.mp4
 ```
 
-- `guion.json`: las frases de la narración, la imagen de cada una y su duración.
-- `voz.py`: vuelve a grabar la narración con Kokoro (voz `em_alex`) si cambia el guion.
-- `escena.html`: las escenas animadas, temblores, destellos, vidrios, brasas y textos. Todo depende de `setT(t)`.
-- No usa imágenes: todas las escenas (calle, explosión, ventana, bosque, ciudad, Tierra, observatorio) se dibujan con código.
-- Necesita `pip install numpy scipy soundfile`, `ffmpeg` y Playwright.
+Para revisar planos sueltos: `node motor/render.mjs termopilas --fotos 1,5,9`.
+`anibal/` conserva su propio `audio.py` y sus escenas originales en `base.js`.
 
-## Canal
-
-`canal/cosmo-ia-perfil.png` (800×800) y `canal/cosmo-ia-banner.png` (2560×1440, texto dentro de la zona segura).
-Se redibujan con `node canal/marca.cjs`.
-
-**Nombre:** Cosmo.ia  ·  **Identificador sugerido:** @cosmo.ia (o @cosmoia.shorts si está tomado)
-
-**Descripción del canal:**
-
-> ¿Qué pasaría si cae un meteorito? ¿Y si la Tierra tuviera dos soles? ¿Y si el Sol se apagara mañana?
->
-> En Cosmo.ia respondemos las preguntas más locas del universo en menos de 60 segundos, con datos reales
-> y animación de película. Espacio, catástrofes, ciencia y curiosidades que no te enseñaron en el colegio.
->
-> 🚀 Shorts nuevos cada semana
-> 🔔 Suscríbete y deja tu «¿qué pasaría si…?» en los comentarios: el mejor se convierte en video.
->
-> Las imágenes y la voz se crean con inteligencia artificial; los datos se verifican antes de publicar.
-
-**Palabras clave del canal:** qué pasaría si, datos curiosos, espacio, universo, ciencia, astronomía, meteorito, curiosidades, shorts
-
-## Short 1 — meteorito
-
-- **Título:** ¿Qué pasaría si cae un meteorito? 3 tamaños ☄️
-- **Descripción:**
-  > 20 metros, 60 metros, 10 kilómetros: qué le pasa a tu ciudad con cada uno.
-  > Si ves el destello… aléjate de la ventana.
-  >
-  > Datos: Cheliábinsk (2013, ~1 500 heridos, casi todos por vidrios), Tunguska (1908, ~80 millones de
-  > árboles), Chicxulub (hace 66 millones de años).
-  >
-  > #quépasaríasi #datoscuriosos #meteorito #espacio #ciencia #shorts
-- **Comentario fijado:** ¿Cuál «¿qué pasaría si…?» quieres ver después? 👇
-- Al subirlo, marcar «contenido alterado o sintético» (imágenes y voz hechas con IA).
-
-## Herramientas instaladas en el proyecto
-
-- `.claude/skills/yt-*`: youtube-agent-skill (guion, título + miniatura, SEO, Shorts, retención…). Escribe; **no publica**.
-- `.claude/skills/graphify`: `/graphify .` arma un grafo del código (necesita `pip install graphifyy`).
-
-## Versión en inglés
-
-`meteorito-en/` es el mismo short con guion, voz (Kokoro `am_michael`) y textos en inglés. Se rearma igual; `python3 voz.py <carpeta de modelos> <voz>` cambia la voz.
+## Reglas que se aplican
+- Los datos de temas actuales se verifican con fuentes recientes (están en cada `PLAN.md`), y las cifras discutidas se atribuyen en pantalla.
+- No se dibujan líderes vivos; los nombres aparecen solo en rótulos. Las figuras históricas tienen ficha fija.
+- Todo lleva el rótulo «RECREACIÓN ANIMADA».

@@ -1,0 +1,77 @@
+[
+ {
+  "id": "h1",
+  "t": "Durante trece días de 1962, el mundo estuvo más cerca que nunca de una guerra nuclear.",
+  "gap": 0.3,
+  "c": "Durante 13 días de 1962, el mundo estuvo más cerca que nunca de una guerra nuclear.",
+  "dur": 5.349
+ },
+ {
+  "id": "c1",
+  "t": "Guerra Fría. Estados Unidos y la Unión Soviética compiten por todo.",
+  "gap": 0.1,
+  "dur": 3.562
+ },
+ {
+  "id": "c2",
+  "t": "En 1959, Fidel Castro toma el poder en Cuba, a unos ciento cincuenta kilómetros de Florida, y se acerca a Moscú.",
+  "gap": 0.1,
+  "c": "En 1959, Fidel Castro toma el poder en Cuba, a unos 150 km de Florida, y se acerca a Moscú.",
+  "dur": 7.354
+ },
+ {
+  "id": "c3",
+  "t": "En 1961, Estados Unidos intenta derrocarlo en bahía de Cochinos, y fracasa.",
+  "gap": 0.2,
+  "dur": 5.405
+ },
+ {
+  "id": "d1",
+  "t": "Jrushchov decide instalar misiles nucleares en Cuba. En secreto.",
+  "gap": 0.15,
+  "dur": 3.572
+ },
+ {
+  "id": "d2",
+  "t": "Pero el 14 de octubre de 1962, un avión espía U-2 los fotografía.",
+  "gap": 0.15,
+  "dur": 4.786
+ },
+ {
+  "id": "d3",
+  "t": "Kennedy ordena un bloqueo naval alrededor de la isla. Y los barcos soviéticos se acercan.",
+  "gap": 0.3,
+  "dur": 4.649
+ },
+ {
+  "id": "r1",
+  "t": "El 27 de octubre, un U-2 es derribado sobre Cuba. Y un submarino soviético, acorralado, está a punto de disparar un torpedo nuclear.",
+  "gap": 0.15,
+  "dur": 7.528
+ },
+ {
+  "id": "r2",
+  "t": "Un oficial, Vasili Arjípov, se niega a autorizarlo.",
+  "gap": 0.3,
+  "dur": 3.244
+ },
+ {
+  "id": "r3",
+  "t": "Al día siguiente, Jrushchov acepta retirar los misiles. A cambio, Kennedy promete no invadir Cuba, y en secreto, retirar sus misiles de Turquía.",
+  "gap": 0.25,
+  "dur": 8.297
+ },
+ {
+  "id": "f1",
+  "t": "Después instalaron una línea directa entre Washington y Moscú.",
+  "gap": 0.2,
+  "dur": 2.831
+ },
+ {
+  "id": "f2",
+  "t": "Trece días... y el mundo siguió existiendo.",
+  "gap": 0.5,
+  "c": "13 días… y el mundo siguió existiendo.",
+  "dur": 2.004
+ }
+]

@@ -1,0 +1,5 @@
+{"plan":[[0,"T:c1","pad",{"chord":[0.5,0.75,1.2],"key":"re"}],[0,"T:c1","wind",{"gain":.4}],["T:c1","T:d2","ostinato",{"bpm":96,"amp":.04}],["T:c1","T:d2","pad",{"chord":[0.5,1,1.2]}],["T:c3","T:d1","sea",{"gain":.5}],["T:d1","T:d2","crowd",{"gain":.4}],
+ ["T:d2","T:d4","pad",{"chord":[0.5,0.6,0.9],"amp":.07}],["T:d2","T:d3","drums",{"bpm":100,"pat":"B000b000"}],["T:d3","T:d4","wind",{"gain":.6}],["T:d4","T:r1","ostinato",{"bpm":100,"amp":.04}],["T:d4","T:r1","pad",{"chord":[0.5,0.75,1.125]}],
+ ["T:r1","T:r3","pad",{"chord":[0.5,0.53,0.75],"amp":.08}],["T:r1","T:r2","siren",{"gain":.8}],["T:r2","T:r3","wind",{"gain":.5}],["T:r3","END","pad",{"chord":[0.5,0.75,1.2],"amp":.07}],["T:f1","END","wind",{"gain":.3}]],
+ "cues":[["F:h1:0.45","boom",.7],["T:c1","paper",1],["T:c2","whoosh",.6],["T:c3","bell",.4,{"f":220}],["F:d1:0.3","paper",.8],["F:d1:0.7","boom",.5],["T:d2","boom",.8],["T:d4","paper",1],["T:d5","whoosh",.5],["T:d6","paper",1],
+  ["T:r1","boom",.8],["F:r1:0.3","rocket",.6],["F:r1:0.6","rocket",.6],["F:r2:0.05","boom",.7],["F:r2:0.4","boom",.6],["F:r2:0.7","boom",.6],["F:r3:0.6","boom",.4],["T:f1","whoosh",.4],["E:f2","boom",.6,{"size":1.1}]]}

@@ -1,0 +1,77 @@
+[
+ {
+  "id": "h1",
+  "t": "Trescientos espartanos contra el ejército más grande del mundo. Pero no estaban solos.",
+  "gap": 0.3,
+  "dur": 4.169
+ },
+ {
+  "id": "c1",
+  "t": "Año 480 antes de Cristo. Jerjes, rey de Persia, invade Grecia.",
+  "gap": 0.1,
+  "dur": 4.534
+ },
+ {
+  "id": "c2",
+  "t": "Heródoto habla de millones de soldados. Los historiadores de hoy creen que eran entre cien mil y trescientos mil.",
+  "gap": 0.2,
+  "c": "Heródoto habla de millones de soldados. Los historiadores de hoy creen que eran entre 100.000 y 300.000.",
+  "dur": 5.106
+ },
+ {
+  "id": "d1",
+  "t": "Para frenarlo, los griegos eligen un paso estrecho entre la montaña y el mar: las Termópilas.",
+  "gap": 0.1,
+  "dur": 5.209
+ },
+ {
+  "id": "d2",
+  "t": "Los dirige el rey espartano Leónidas: trescientos espartanos y unos siete mil griegos más.",
+  "gap": 0.15,
+  "c": "Los dirige el rey espartano Leónidas: 300 espartanos y unos 7.000 griegos más.",
+  "dur": 4.781
+ },
+ {
+  "id": "d3",
+  "t": "Según Plutarco, cuando Jerjes le exige entregar las armas, Leónidas responde: ven a tomarlas.",
+  "gap": 0.25,
+  "c": "Según Plutarco, cuando Jerjes le exige entregar las armas, Leónidas responde: «Ven a tomarlas».",
+  "dur": 5.829
+ },
+ {
+  "id": "d4",
+  "t": "Durante dos días, la falange griega resiste ola tras ola. Ni los Inmortales, la élite persa, consiguen pasar.",
+  "gap": 0.3,
+  "dur": 6.648
+ },
+ {
+  "id": "r1",
+  "t": "Hasta que un griego, Efialtes, les enseña a los persas un sendero por la montaña.",
+  "gap": 0.25,
+  "dur": 4.568
+ },
+ {
+  "id": "r2",
+  "t": "Rodeado, Leónidas despide a la mayoría de sus aliados. Se queda con sus espartanos, y con cientos de tespios y tebanos.",
+  "gap": 0.15,
+  "dur": 6.411
+ },
+ {
+  "id": "r3",
+  "t": "Mueren casi todos.",
+  "gap": 0.4,
+  "dur": 1.086
+ },
+ {
+  "id": "f1",
+  "t": "Persia gana la batalla. Pero ese mismo año pierde la guerra en el mar, en Salamina.",
+  "gap": 0.2,
+  "dur": 4.626
+ },
+ {
+  "id": "f2",
+  "t": "Y las Termópilas se vuelven el símbolo de resistir hasta el final.",
+  "gap": 0.5,
+  "dur": 3.22
+ }
+]

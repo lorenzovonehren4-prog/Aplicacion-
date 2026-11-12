@@ -1,0 +1,76 @@
+[
+ {
+  "id": "h1",
+  "t": "Entró en Rusia con el ejército más grande que Europa había visto. Muy pocos volvieron.",
+  "gap": 0.3,
+  "dur": 4.525
+ },
+ {
+  "id": "c1",
+  "t": "1812. Napoleón domina casi toda Europa.",
+  "gap": 0.1,
+  "dur": 3.34
+ },
+ {
+  "id": "c2",
+  "t": "Pero el zar Alejandro deja de cumplir el bloqueo contra Gran Bretaña, y Napoleón decide castigarlo.",
+  "gap": 0.1,
+  "dur": 5.003
+ },
+ {
+  "id": "c3",
+  "t": "En junio cruza el río Niemen con más de cuatrocientos mil hombres.",
+  "gap": 0.2,
+  "c": "En junio cruza el río Niemen con más de 400.000 hombres.",
+  "dur": 3.362
+ },
+ {
+  "id": "d1",
+  "t": "Pero los rusos no le dan la batalla que busca. Se retiran... y queman todo a su paso.",
+  "gap": 0.15,
+  "dur": 4.145
+ },
+ {
+  "id": "d2",
+  "t": "En Borodinó, en septiembre, chocan por fin. En un solo día caen más de setenta mil hombres entre muertos y heridos.",
+  "gap": 0.2,
+  "c": "En Borodinó, en septiembre, chocan por fin. En un solo día caen más de 70.000 hombres entre muertos y heridos.",
+  "dur": 6.056
+ },
+ {
+  "id": "d3",
+  "t": "Napoleón entra en Moscú. La ciudad está vacía. Y esa misma noche empieza a arder.",
+  "gap": 0.25,
+  "dur": 4.543
+ },
+ {
+  "id": "r1",
+  "t": "Espera un mes la rendición del zar. Nunca llega.",
+  "gap": 0.15,
+  "dur": 2.574
+ },
+ {
+  "id": "r2",
+  "t": "En octubre ordena la retirada. Y llega el invierno: hambre, nieve, y cosacos atacando la columna.",
+  "gap": 0.15,
+  "dur": 5.566
+ },
+ {
+  "id": "r3",
+  "t": "En el río Berézina, sus ingenieros construyen puentes metidos en el agua helada para que el ejército escape.",
+  "gap": 0.25,
+  "dur": 5.277
+ },
+ {
+  "id": "f1",
+  "t": "De aquel ejército gigantesco, solo volvieron unas decenas de miles.",
+  "gap": 0.2,
+  "dur": 3.272
+ },
+ {
+  "id": "f2",
+  "t": "Fue el principio del fin de Napoleón.",
+  "gap": 0.5,
+  "dur": 1.896
+ }
+]
