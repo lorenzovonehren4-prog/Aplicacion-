@@ -1,0 +1,132 @@
+[
+ {
+  "id": "g1",
+  "t": "Un niño de nueve años jura, frente a un altar, ser enemigo de Roma para siempre.",
+  "dur": 4.301
+ },
+ {
+  "id": "g2a",
+  "t": "Veinte años después...",
+  "dur": 1.058
+ },
+ {
+  "id": "g2b",
+  "t": "casi la destruye.",
+  "dur": 0.964
+ },
+ {
+  "id": "c1",
+  "t": "Cartago acaba de perder su primera guerra contra Roma.",
+  "dur": 2.707
+ },
+ {
+  "id": "c2",
+  "t": "Año doscientos veintiuno antes de Cristo. Aníbal Barca, con veintiséis años, toma el mando en Hispania.",
+  "c": "221 a. C. Aníbal Barca, con 26 años, toma el mando en Hispania.",
+  "dur": 5.551
+ },
+ {
+  "id": "r1",
+  "t": "Tres años después hace lo impensable: no ataca por mar. Marcha por tierra.",
+  "dur": 4.009
+ },
+ {
+  "id": "r2a",
+  "t": "Cruza los Pirineos... y luego, los Alpes.",
+  "dur": 2.115
+ },
+ {
+  "id": "r2b",
+  "t": "¡Con elefantes de guerra!",
+  "dur": 1.128
+ },
+ {
+  "id": "a1",
+  "t": "Nieve, avalanchas, emboscadas.",
+  "dur": 2.061
+ },
+ {
+  "id": "a2",
+  "t": "Más de la mitad de su ejército se queda en el camino.",
+  "dur": 2.352
+ },
+ {
+  "id": "b1",
+  "t": "Pero Roma no lo ve venir. Trebia. Trasimeno.",
+  "dur": 2.46
+ },
+ {
+  "id": "k1",
+  "t": "Y en el doscientos dieciséis, Cannas. Roma reúne más de ochenta mil soldados. Aníbal, unos cincuenta mil.",
+  "c": "Y en el 216, Cannas. Roma reúne más de 80.000 soldados. Aníbal, unos 50.000.",
+  "dur": 5.578
+ },
+ {
+  "id": "k2a",
+  "t": "Entonces hace algo brillante: deja que el centro de su ejército retroceda...",
+  "dur": 3.737
+ },
+ {
+  "id": "k2b",
+  "t": "a propósito.",
+  "dur": 0.743
+ },
+ {
+  "id": "k3",
+  "t": "Los romanos avanzan, confiados... y la caballería cartaginesa cierra la trampa por detrás.",
+  "dur": 4.206
+ },
+ {
+  "id": "k4a",
+  "t": "¡Rodeados!",
+  "dur": 0.595
+ },
+ {
+  "id": "k4b",
+  "t": "En una sola tarde mueren entre cincuenta y setenta mil romanos.",
+  "c": "En una sola tarde mueren entre 50.000 y 70.000 romanos.",
+  "dur": 2.84
+ },
+ {
+  "id": "m1",
+  "t": "El camino a Roma parece abierto. Pero Aníbal no ataca la ciudad.",
+  "dur": 3.754
+ },
+ {
+  "id": "m2",
+  "t": "Según Tito Livio, uno de sus oficiales le dijo:",
+  "dur": 2.728
+ },
+ {
+  "id": "m3",
+  "t": "Sabes vencer, Aníbal. Pero no sabes aprovechar la victoria.",
+  "c": "«Sabes vencer, Aníbal, pero no sabes aprovechar la victoria.»",
+  "dur": 3.297
+ },
+ {
+  "id": "e1",
+  "t": "Quince años recorre Italia sin perder una gran batalla. Pero Roma no se rinde.",
+  "dur": 4.461
+ },
+ {
+  "id": "e2",
+  "t": "Envía a Escipión a atacar Cartago, y Aníbal tiene que volver a casa.",
+  "dur": 3.679
+ },
+ {
+  "id": "z1",
+  "t": "Zama, año doscientos dos antes de Cristo. Por primera vez, Aníbal pierde.",
+  "c": "Zama, año 202 a. C. Por primera vez, Aníbal pierde.",
+  "dur": 4.145
+ },
+ {
+  "id": "f1",
+  "t": "Pasó el resto de su vida huyendo de Roma. Y cuando iban a atraparlo, tomó veneno.",
+  "dur": 3.971
+ },
+ {
+  "id": "f2",
+  "t": "Nunca se rindió ante Roma. Tal como lo juró a los nueve años.",
+  "dur": 3.209
+ }
+]
