@@ -1,69 +1,68 @@
 [
  {
   "id": "h1",
-  "t": "A las 8:15 de la mañana, una sola bomba cambió la historia del mundo.",
-  "gap": 0.3,
-  "dur": 4.618
+  "t": "¿Sabías que en el museo de Hiroshima hay un reloj detenido para siempre a las 8:15?",
+  "gap": 0.4,
+  "dur": 5.164
  },
  {
   "id": "c1",
   "t": "Agosto de 1945. Alemania ya se ha rendido, pero Japón sigue luchando en el Pacífico. Las batallas de Iwo Jima y Okinawa costaron decenas de miles de vidas.",
   "gap": 0.1,
-  "dur": 10.691
+  "dur": 10.677
  },
  {
   "id": "c2",
   "t": "Estados Unidos tiene un arma nueva, desarrollada en secreto: la bomba atómica. El Proyecto Manhattan reunió a miles de científicos.",
   "gap": 0.15,
-  "dur": 8.077
+  "dur": 8.067
  },
  {
   "id": "c3",
   "t": "El presidente Truman decide usarla para forzar la rendición sin invadir Japón.",
   "gap": 0.2,
-  "dur": 4.267
+  "dur": 4.488
  },
  {
   "id": "d1",
   "t": "6 de agosto. El bombardero Enola Gay deja caer la bomba sobre Hiroshima. Mucha gente iba camino al trabajo o a la escuela.",
   "gap": 0.1,
-  "dur": 8.078
+  "dur": 8.092
  },
  {
   "id": "d2",
-  "t": "En un instante, la ciudad desaparece bajo un destello y una onda de calor.",
+  "t": "En un instante, la ciudad desaparece bajo un destello y una onda de calor. Un reloj de pulsera, hoy en el Museo de la Paz, quedó detenido a las 8:15.",
   "gap": 0.2,
-  "dur": 4.881
+  "dur": 10.212
  },
  {
   "id": "d3",
   "t": "Decenas de miles de personas mueren ese mismo día. A finales de año, la cifra llega a unas ciento cuarenta mil.",
   "gap": 0.25,
-  "c": "Decenas de miles de personas mueren ese mismo día. A finales de año, la cifra llega a unas 140.000.",
-  "dur": 6.407
+  "dur": 6.538
  },
  {
   "id": "r1",
   "t": "Tres días después, una segunda bomba cae sobre Nagasaki.",
   "gap": 0.2,
-  "dur": 3.659
+  "dur": 3.585
  },
  {
   "id": "r2",
   "t": "El 15 de agosto, el emperador anuncia la rendición de Japón.",
   "gap": 0.2,
-  "dur": 4.232
+  "dur": 4.138
  },
  {
   "id": "f1",
   "t": "Hasta hoy, son las únicas bombas atómicas usadas en una guerra. Los supervivientes, los hibakusha, dedicaron su vida a pedir que nunca se repita.",
   "gap": 0.15,
-  "dur": 8.908
+  "dur": 9.023
  },
  {
   "id": "f2",
   "t": "Y el debate sigue: ¿acortaron la guerra, o nunca debieron lanzarse?",
   "gap": 0.4,
-  "dur": 4.098
+  "dur": 3.971
  }
 ]

@@ -9,7 +9,7 @@ function estepa(t,o){ setCam(o.keys,t); grad(...(o.sky||['#4a8ad0','#bcd8ee','#e
 MOTOR.run(()=>({
   hot:/^(niño|estepa|imperio|temuyín|1162|mongolia|envenenado|1206|gengis|kan|jinetes|arqueros|mérito|mensajeros|corasmia|1227|corea|europa|genio|destructor)$/i,
   hits:[T('d3')+.4,Tm('d3',.6)], flashes:[[T('d3')+.4,.5,.12]],
-  titles:[[0,T('c1'),'DE NIÑO ABANDONADO<small>A DUEÑO DE MEDIO MUNDO</small>','120px'],[E('f2')-.3,TL.total,'GENGIS KAN<small>c. 1162 – 1227</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>DE NIÑO ABANDONADO A EMPERADOR</small>','150px'],[E('f2')-.3,TL.total,'GENGIS KAN<small>c. 1162 – 1227</small>']],
   dates:[[T('c1'),T('c2'),'c. 1162'],[T('c3'),T('d1'),'1206'],[T('r1'),T('r2'),'1227']],
   names:[[Tm('c1',.2),T('c2'),'TEMUYÍN','EL FUTURO GENGIS KAN'],[T('c3')+.2,E('c3'),'GENGIS KAN','GOBERNANTE UNIVERSAL']],
   scenes:[

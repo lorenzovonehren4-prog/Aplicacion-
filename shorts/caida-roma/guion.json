@@ -1,69 +1,68 @@
 [
  {
   "id": "h1",
-  "t": "Roma dominó el mundo durante siglos. Y no cayó en un día: se fue desmoronando por dentro.",
-  "gap": 0.25,
-  "dur": 5.278
+  "t": "¿Sabías que el último emperador de Roma era solo un adolescente... y que lo dejaron vivir?",
+  "gap": 0.4,
+  "dur": 5.422
  },
  {
   "id": "c1",
   "t": "En el año 117, el Imperio romano llega a su máxima extensión: de Escocia a Mesopotamia.",
   "gap": 0.1,
-  "dur": 5.973
+  "dur": 5.794
  },
  {
   "id": "c2",
   "t": "Pero mantenerlo cuesta una fortuna. Crisis económica, emperadores asesinados, guerras civiles.",
   "gap": 0.15,
-  "dur": 5.918
+  "dur": 5.894
  },
  {
   "id": "c3",
   "t": "En el año 395, el imperio se divide para siempre: Occidente, con capital en Roma, y Oriente, en Constantinopla.",
   "gap": 0.2,
-  "dur": 8.365
+  "dur": 8.398
  },
  {
   "id": "d1",
   "t": "Desde el este llegan los hunos, y empujan a los pueblos germanos hacia las fronteras romanas.",
   "gap": 0.1,
-  "dur": 5.923
+  "dur": 5.955
  },
  {
   "id": "d2",
   "t": "En el 410, los visigodos de Alarico saquean Roma. Hacía ochocientos años que nadie lo conseguía.",
   "gap": 0.15,
-  "c": "En el 410, los visigodos de Alarico saquean Roma. Hacía 800 años que nadie lo conseguía.",
-  "dur": 6.609
+  "dur": 6.597
  },
  {
   "id": "d3",
   "t": "En el 455, llegan los vándalos y la saquean otra vez.",
   "gap": 0.2,
-  "dur": 4.392
+  "dur": 4.262
  },
  {
   "id": "r1",
-  "t": "Y en el 476, un jefe germano, Odoacro, depone al último emperador de Occidente: un niño llamado Rómulo Augústulo.",
+  "t": "Y en el 476, un jefe germano, Odoacro, depone al último emperador de Occidente: un muchacho llamado Rómulo Augústulo. Odoacro no lo mató: lo mandó a vivir al sur de Italia con una pensión.",
   "gap": 0.15,
-  "dur": 8.885
+  "dur": 13.587
  },
  {
   "id": "r2",
   "t": "No hubo una gran batalla final. Simplemente, ya no quedaba un imperio que defender.",
   "gap": 0.25,
-  "dur": 5.915
+  "dur": 5.831
  },
  {
   "id": "f1",
   "t": "Pero la mitad oriental resistió casi mil años más, hasta 1453.",
   "gap": 0.15,
-  "dur": 5.387
+  "dur": 5.365
  },
  {
   "id": "f2",
   "t": "Así que Roma, en realidad, cayó dos veces.",
   "gap": 0.4,
-  "dur": 3.256
+  "dur": 3.222
  }
 ]

@@ -7,7 +7,7 @@ function mapaEstrecho(t,keys,o={}){ setMap(120.5,24.5,150); mapCam(keys,t); mapD
 MOTOR.run(()=>({
   hot:/^(isla|chips|china|1949|mao|nacionalistas|taiwán|pekín|rebelde|fuerza|democracia|noventa|mayoría|armas|aviones|guardacostas|2|noviembre|2026|49|guerra|teléfono)$/i,
   hits:[T('c1')+.2,T('r2')+.3], flashes:[[T('r2')+.3,.4,.15]],
-  titles:[[0,T('c1'),'UNA ISLA<small>Y LOS CHIPS DEL MUNDO</small>','190px'],[E('f2')-.3,TL.total,'TAIWÁN<small>EL ESTRECHO MÁS VIGILADO</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>LA ISLA DE LOS CHIPS</small>','150px'],[E('f2')-.3,TL.total,'TAIWÁN<small>EL ESTRECHO MÁS VIGILADO</small>']],
   dates:[[T('c1'),T('c3'),'1949'],[T('d1'),T('d2'),'AÑOS 90'],[T('r2'),T('f1'),'2 NOV. 2026']],
   counts:[[Tm('r2',.35),T('f1'),()=>['49','AVIONES MILITARES EN UN DÍA'],420]],
   scenes:[

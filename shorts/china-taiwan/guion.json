@@ -1,51 +1,51 @@
 [
  {
   "id": "h1",
-  "t": "Una isla más pequeña que muchos países fabrica casi todos los chips más avanzados del mundo. Y China dice que es suya.",
-  "gap": 0.25,
-  "dur": 7.762
+  "t": "¿Sabías que una isla más pequeña que muchos países fabrica casi todos los chips más avanzados del mundo? Y China dice que es suya.",
+  "gap": 0.4,
+  "dur": 8.381
  },
  {
   "id": "c1",
   "t": "1949. Termina la guerra civil china. Los comunistas de Mao toman el continente.",
   "gap": 0.1,
-  "dur": 5.835
+  "dur": 5.848
  },
  {
   "id": "c2",
   "t": "Los nacionalistas derrotados huyen a la isla de Taiwán, y siguen gobernando allí.",
   "gap": 0.15,
-  "dur": 4.526
+  "dur": 4.558
  },
  {
   "id": "c3",
   "t": "Desde entonces, Pekín considera a Taiwán una provincia rebelde que debe reunificarse, por las buenas o por la fuerza.",
   "gap": 0.2,
-  "dur": 6.7
+  "dur": 6.709
  },
  {
   "id": "d1",
   "t": "Pero Taiwán cambió. Desde los años noventa es una democracia, con elecciones libres.",
   "gap": 0.1,
-  "dur": 5.196
+  "dur": 5.166
  },
  {
   "id": "d2",
   "t": "Y se volvió clave para la economía mundial: sus fábricas producen la gran mayoría de los chips más avanzados.",
   "gap": 0.15,
-  "dur": 6.262
+  "dur": 6.325
  },
  {
   "id": "d3",
   "t": "Estados Unidos no la reconoce oficialmente como país, pero le vende armas para defenderse.",
   "gap": 0.2,
-  "dur": 5.348
+  "dur": 5.302
  },
  {
   "id": "r1",
   "t": "China responde con presión constante: aviones militares, barcos de guardacostas, y grandes ejercicios alrededor de la isla.",
   "gap": 0.15,
-  "dur": 7.646
+  "dur": 7.483
  },
  {
   "id": "r2",
@@ -57,12 +57,12 @@
   "id": "f1",
   "t": "No hay guerra. Pero cada maniobra se vigila desde todo el mundo.",
   "gap": 0.15,
-  "dur": 3.769
+  "dur": 3.792
  },
  {
   "id": "f2",
   "t": "Porque si algo pasa en Taiwán, lo sentirá tu teléfono.",
   "gap": 0.4,
-  "dur": 3.396
+  "dur": 3.341
  }
 ]

@@ -1,68 +1,68 @@
 [
  {
   "id": "h1",
-  "t": "Un niño abandonado en la estepa terminó creando el imperio terrestre más grande de la historia.",
-  "gap": 0.25,
-  "dur": 5.163
+  "t": "¿Sabías que el creador del imperio terrestre más grande de la historia fue un niño abandonado en la estepa?",
+  "gap": 0.4,
+  "dur": 5.942
  },
  {
   "id": "c1",
   "t": "Se llamaba Temuyín. Nació hacia 1162 en Mongolia. Su padre fue envenenado, y su familia quedó sola.",
   "gap": 0.1,
-  "dur": 7.092
+  "dur": 7.091
  },
  {
   "id": "c2",
   "t": "Sobrevivió cazando, escapó de la esclavitud, y fue uniendo a las tribus una por una. Cuando secuestraron a su esposa, Börte, reunió aliados y la rescató.",
   "gap": 0.15,
-  "dur": 9.624
+  "dur": 9.66
  },
  {
   "id": "c3",
   "t": "En 1206, las tribus lo proclaman Gengis Kan: el gobernante universal.",
   "gap": 0.2,
-  "dur": 5.294
+  "dur": 5.148
  },
  {
   "id": "d1",
   "t": "Su ejército era de jinetes arqueros. Cada uno llevaba varios caballos, y podían recorrer enormes distancias en días.",
   "gap": 0.15,
-  "dur": 6.768
+  "dur": 6.787
  },
  {
   "id": "d2",
   "t": "Ascendía a sus oficiales por mérito, no por familia. Y creó un sistema de mensajeros a caballo que cruzaba el continente.",
   "gap": 0.15,
-  "dur": 7.237
+  "dur": 7.134
  },
  {
   "id": "d3",
   "t": "Cuando el imperio de Corasmia asesinó a sus embajadores, su respuesta fue devastadora. Ciudades enteras fueron arrasadas.",
   "gap": 0.2,
-  "dur": 6.909
+  "dur": 6.897
  },
  {
   "id": "r1",
   "t": "Murió en 1227. Pero sus hijos y nietos siguieron conquistando.",
   "gap": 0.15,
-  "dur": 4.582
+  "dur": 4.514
  },
  {
   "id": "r2",
   "t": "En su punto máximo, el Imperio mongol iba de Corea hasta Europa del Este.",
   "gap": 0.2,
-  "dur": 4.201
+  "dur": 4.246
  },
  {
   "id": "f1",
   "t": "Unió Asia, abrió rutas de comercio... y dejó millones de muertos. Bajo el dominio mongol, viajeros como Marco Polo pudieron cruzar Asia.",
   "gap": 0.15,
-  "dur": 8.065
+  "dur": 8.017
  },
  {
   "id": "f2",
   "t": "¿Genio o destructor? Probablemente las dos cosas.",
   "gap": 0.4,
-  "dur": 2.933
+  "dur": 2.802
  }
 ]

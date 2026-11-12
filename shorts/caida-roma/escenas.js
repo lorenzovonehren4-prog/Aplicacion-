@@ -12,7 +12,7 @@ const mapa=(keys,cols,ev)=>t=>{ setMap(18,40,38); mapCam(keys,t); mapDraw({color
 MOTOR.run(()=>({
   hot:/^(roma|117|escocia|mesopotamia|395|occidente|oriente|constantinopla|hunos|germanos|410|alarico|800|455|vándalos|476|odoacro|rómulo|augústulo|1453|dos|veces)$/i,
   hits:[T('d2')+.3,T('d3')+.3,T('r1')+.5], flashes:[[T('d2'),.5,.1]],
-  titles:[[0,T('c1'),'ROMA<small>NO CAYÓ EN UN DÍA</small>'],[E('f2')-.3,TL.total,'476<small>LA CAÍDA DE ROMA</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>EL ÚLTIMO EMPERADOR ERA UN ADOLESCENTE</small>','150px'],[E('f2')-.3,TL.total,'476<small>LA CAÍDA DE ROMA</small>']],
   dates:[[T('c1'),T('c2'),'117 d. C.'],[T('c3'),T('d1'),'395'],[T('d2'),T('d3'),'410'],[T('d3'),T('r1'),'455'],[T('r1'),T('r2'),'476'],[T('f1'),T('f2'),'1453']],
   names:[[Tm('d2',.2),T('d3'),'ALARICO','REY VISIGODO'],[Tm('r1',.2),T('r2'),'ODOACRO Y RÓMULO AUGÚSTULO','EL FIN DEL IMPERIO DE OCCIDENTE']],
   scenes:[

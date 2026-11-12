@@ -8,7 +8,7 @@ function ruinas(t,o={}){ setCam(o.keys,t); grad(...(o.sky||['#4a4a50','#7a7068',
 MOTOR.run(()=>({
   hot:/^(sangrienta|stalin|1942|alemania|petróleo|cáucaso|stalingrado|volga|hitler|23|agosto|calle|casa|piso|19|noviembre|sexto|ejército|1943|rinden|90\.000|este)$/i,
   hits:[T('d1')+.5,Tm('d1',.6),T('r1')+.3], flashes:[[T('d1')+.5,.5,.12]],
-  titles:[[0,T('c1'),'STALINGRADO<small>LA BATALLA MÁS SANGRIENTA</small>'],[E('f2')-.3,TL.total,'STALINGRADO<small>1942 – 1943</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>LA BATALLA MÁS SANGRIENTA</small>','150px'],[E('f2')-.3,TL.total,'STALINGRADO<small>1942 – 1943</small>']],
   dates:[[T('c1'),T('c3'),'1942'],[T('d1'),T('d2'),'23 AGO. 1942'],[T('r1'),T('r2'),'19 NOV. 1942'],[T('r2'),T('f1'),'FEB. 1943']],
   counts:[[Tm('f1',.2),T('f2'),()=>['≈90.000','ALEMANES CAPTURADOS'],420]],
   scenes:[

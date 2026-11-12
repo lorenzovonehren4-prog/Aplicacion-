@@ -1,71 +1,68 @@
 [
  {
   "id": "h1",
-  "t": "Unos quinientos españoles derrotaron a un imperio de millones. Pero no lo hicieron solos.",
-  "gap": 0.25,
-  "c": "Unos 500 españoles derrotaron a un imperio de millones. Pero no lo hicieron solos.",
-  "dur": 4.963
+  "t": "¿Sabías que Hernán Cortés derribó un imperio de millones con solo quinientos hombres? El secreto no fueron las armas.",
+  "gap": 0.4,
+  "dur": 6.363
  },
  {
   "id": "c1",
   "t": "1519. Tenochtitlan, la capital mexica, tiene unos doscientos mil habitantes. Más que casi cualquier ciudad de Europa.",
   "gap": 0.1,
-  "c": "1519. Tenochtitlan, la capital mexica, tiene unos 200.000 habitantes. Más que casi cualquier ciudad de Europa.",
-  "dur": 8.249
+  "dur": 8.334
  },
  {
   "id": "c2",
   "t": "Hernán Cortés desembarca en la costa con unos quinientos hombres, caballos y cañones.",
   "gap": 0.15,
-  "c": "Hernán Cortés desembarca en la costa con unos 500 hombres, caballos y cañones.",
-  "dur": 4.94
+  "dur": 4.907
  },
  {
   "id": "c3",
   "t": "Muchos pueblos estaban sometidos a los mexicas y les pagaban tributo. Los tlaxcaltecas se unen a Cortés.",
   "gap": 0.15,
-  "dur": 6.042
+  "dur": 6.16
  },
  {
   "id": "d1",
   "t": "Malinche, una mujer indígena, se convierte en su intérprete. Sin ella, nada de esto habría sido posible.",
   "gap": 0.15,
-  "dur": 6.905
+  "dur": 6.882
  },
  {
   "id": "d2",
   "t": "Moctezuma lo recibe en la ciudad. Pero en 1520 la convivencia estalla, y los españoles huyen de noche, perdiendo a cientos de hombres.",
   "gap": 0.2,
-  "dur": 8.553
+  "dur": 8.483
  },
  {
   "id": "d3",
   "t": "Entonces llega un enemigo invisible: la viruela. Mata a miles, incluido el nuevo emperador.",
   "gap": 0.2,
-  "dur": 6.172
+  "dur": 6.288
  },
  {
   "id": "r1",
   "t": "En 1521, Cortés vuelve con barcos y decenas de miles de aliados indígenas, y sitia la ciudad durante meses.",
   "gap": 0.15,
-  "dur": 7.719
+  "dur": 7.659
  },
  {
   "id": "r2",
   "t": "El 13 de agosto de 1521, Tenochtitlan cae. El emperador Cuauhtémoc es capturado.",
   "gap": 0.25,
-  "dur": 6.135
+  "dur": 6.136
  },
  {
   "id": "f1",
   "t": "Sobre sus ruinas se construyó la Ciudad de México.",
   "gap": 0.15,
-  "dur": 2.646
+  "dur": 2.674
  },
  {
   "id": "f2",
   "t": "Fue una conquista. Pero también una rebelión de los pueblos sometidos, y una epidemia.",
   "gap": 0.4,
-  "dur": 5.157
+  "dur": 5.085
  }
 ]

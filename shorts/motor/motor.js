@@ -30,7 +30,7 @@ const T=id=>S[id].start, D=id=>S[id].dur, E=id=>S[id].start+S[id].dur;
 // ---------------- cámara ----------------
 function camAt(keys,t){ if(t<=keys[0][0]) return keys[0]; for(let i=0;i<keys.length-1;i++){ const a=keys[i],b=keys[i+1]; if(t<=b[0]){ const e=(b[5]||eio)(k01(t,a[0],b[0])); return [t,lerp(a[1],b[1],e),lerp(a[2],b[2],e),lerp(a[3],b[3],e),lerp(a[4]||0,b[4]||0,e)]; } } return keys[keys.length-1]; }
 function setCam(keys,t){ const k=camAt(keys,t); CAM={x:k[1],y:k[2],z:k[3],r:k[4]||0}; }
-function layer(d){ const z=Math.pow(CAM.z,d), sx=SHAKE*(Math.sin(TT*63)+Math.sin(TT*41.7))*.5, sy=SHAKE*(Math.sin(TT*57)+Math.sin(TT*33.1))*.5;
+function layer(d){ if(window.ESTILO==='cabezon') c.filter=d<.75?`blur(${((.75-d)*10).toFixed(1)}px)`:'none'; const z=Math.pow(CAM.z,d), sx=SHAKE*(Math.sin(TT*63)+Math.sin(TT*41.7))*.5, sy=SHAKE*(Math.sin(TT*57)+Math.sin(TT*33.1))*.5;
   c.setTransform(1,0,0,1,0,0); c.translate(W/2+sx,H/2+sy); c.rotate(CAM.r*d); c.scale(z,z); c.translate(-(W/2+(CAM.x-W/2)*d),-(H/2+(CAM.y-H/2)*d)); }
 function screen(){ c.setTransform(1,0,0,1,0,0); }
 
@@ -71,7 +71,7 @@ function foreground(t,sp,col='#14100c',y0=1840){ c.fillStyle=col; for(let i=0;i<
 function limb(x,y,a1,l1,a2,l2,w,col){ const ex=x+Math.sin(a1)*l1, ey=y+Math.cos(a1)*l1, hx=ex+Math.sin(a2)*l2, hy=ey+Math.cos(a2)*l2;
   c.lineCap='round'; c.lineJoin='round'; c.strokeStyle='#0b0806'; c.lineWidth=w+7; c.beginPath(); c.moveTo(x,y); c.lineTo(ex,ey); c.lineTo(hx,hy); c.stroke();
   c.strokeStyle=col; c.lineWidth=w; c.beginPath(); c.moveTo(x,y); c.lineTo(ex,ey); c.lineTo(hx,hy); c.stroke(); return [hx,hy]; }
-function person(P,o){
+function person(P,o){ if(window.ESTILO==='cabezon'&&!o.__old) return personaCabezon(P,o);
   const s=o.s||1, Hh=P.h*s, x=o.x, y=o.y, lk=o.look||1, t=o.t||0, sd0=o.seed||0;
   const hr=Hh*.13, hy=y-Hh+hr, shY=y-Hh*.73, hipY=y-Hh*.43, lw=Hh*.052, ow=Math.max(2.5,Hh*.011);
   const ph=o.walk, sw=ph==null?0:Math.sin(ph), breath=Math.sin(t*2.2+sd0)*Hh*.004;
@@ -445,10 +445,21 @@ function cabezonHat(P,x,y,R,lk,ow,t){ const k=P.hat; if(!k) return; c.fillStyle=
   else if(k==='corona_egipto'){ c.fillStyle='#e8c03a'; c.beginPath(); c.ellipse(x,y-R*.8,R*.92,R*.2,0,0,7); c.fill(); c.stroke(); c.fillStyle='#2a8a5a'; c.beginPath(); c.arc(x+lk*R*.1,y-R*1.02,R*.12,0,7); c.fill(); c.stroke(); c.fillStyle='#c8102e'; c.beginPath(); c.arc(x+lk*R*.1,y-R*1.02,R*.05,0,7); c.fill(); }
   else if(k==='birrete'){ c.fillStyle=P.hatCol||'#14110e'; c.fillRect(x-R*.75,y-R*1.2,R*1.5,R*.5); c.strokeRect(x-R*.75,y-R*1.2,R*1.5,R*.5); c.beginPath(); c.ellipse(x,y-R*.72,R*.9,R*.15,0,0,7); c.fill(); c.stroke(); }
   else if(k==='boina'){ c.fillStyle=P.hatCol||'#3a2a4a'; c.beginPath(); c.ellipse(x-lk*R*.1,y-R*.8,R*1.0,R*.35,-lk*.15,0,7); c.fill(); c.stroke(); }
-  else if(k==='casco'){ c.fillStyle=P.hatCol||'#8a8a8a'; c.beginPath(); c.arc(x,y-R*.25,R*1.05,Math.PI,0); c.lineTo(x+R*1.05,y-R*.1); c.lineTo(x-R*1.05,y-R*.1); c.closePath(); c.fill(); c.stroke(); }
+  else if(k==='casco'){ c.fillStyle=P.hatCol||'#8a8a8a'; c.beginPath(); c.arc(x,y-R*.45,R*1.02,Math.PI,0); c.lineTo(x+R*1.12,y-R*.32); c.lineTo(x-R*1.12,y-R*.32); c.closePath(); c.fill(); c.stroke(); }
   else if(k==='capucha'){ c.fillStyle=P.hatCol||'#5a4a3a'; c.beginPath(); c.arc(x,y,R*1.12,Math.PI*.82,Math.PI*2.18); c.closePath(); c.fill(); c.stroke(); c.fillStyle=P.skin||'#f2e2c4'; c.beginPath(); c.arc(x+lk*R*.05,y+R*.05,R*.86,0,7); c.fill(); }
 }
 // conejo cartoon
 function conejo(x,y,s,t,dir=1,seed=0){ const hop=Math.abs(Math.sin(t*9+seed))*30*s; c.save(); c.translate(x,y-hop); c.scale(s*dir,s); c.fillStyle=['#f4f1ea','#c8a88a','#8a6a4a','#d8d4cc'][seed%4]; c.strokeStyle='#0b0806'; c.lineWidth=5; c.beginPath(); c.ellipse(0,-40,55,40,0,0,7); c.fill(); c.stroke(); c.beginPath(); c.arc(50,-80,32,0,7); c.fill(); c.stroke(); for(const o of [0,18]){ c.beginPath(); c.ellipse(40+o,-145,11,40,-.15+o*.01,0,7); c.fill(); c.stroke(); } c.fillStyle='#0b0806'; c.beginPath(); c.arc(62,-86,6,0,7); c.fill(); c.fillStyle='#f4a0a0'; c.beginPath(); c.arc(80,-76,5,0,7); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.arc(-55,-45,14,0,7); c.fill(); c.stroke(); c.restore(); }
 // cerdo cartoon
 function cerdo(x,y,s,t,dir=1,ropa){ c.save(); c.translate(x,y); c.scale(s*dir,s); c.fillStyle='#f0b8b0'; c.strokeStyle='#0b0806'; c.lineWidth=6; for(const k of [-50,-15,25,55]){ c.fillRect(k,-40,18,40); c.strokeRect(k,-40,18,40); } c.beginPath(); c.ellipse(0,-90,110,65,0,0,7); c.fill(); c.stroke(); if(ropa){ c.fillStyle=ropa; c.beginPath(); c.ellipse(-10,-90,80,62,0,0,7); c.fill(); c.stroke(); } c.fillStyle='#f0b8b0'; c.beginPath(); c.arc(110,-110,50,0,7); c.fill(); c.stroke(); c.beginPath(); c.ellipse(152,-105,18,22,0,0,7); c.fill(); c.stroke(); c.fillStyle='#0b0806'; c.beginPath(); c.arc(148,-108,4,0,7); c.arc(158,-102,4,0,7); c.arc(118,-128,7,0,7); c.fill(); c.fillStyle='#e8a0a0'; c.beginPath(); c.moveTo(85,-150); c.lineTo(100,-180); c.lineTo(115,-150); c.fill(); c.stroke(); c.restore(); }
+
+// Convierte las fichas antiguas (person) al estilo cabezón: mismo tamaño en pantalla, cabeza grande y cuerpo de palo.
+const HATMAP={roman:['casco','#9aa0a8'],true:['casco','#9aa0a8'],greek:['casco','#c99a3e'],m1:['casco',null],modern:['casco',null],stahl:['casco','#5a5f62'],shako:['birrete',null],bicorne:['bicorne',null],officer:['boina',null],cap:['boina',null],ushanka:['capucha','#5a4a3a'],cloth:['capucha',null],turban:['capucha','#f4f1ea'],kufiya:['capucha','#f4f1ea'],piel:['casco','#7a5a3a'],morion:['casco','#b8bec8'],plumas:['corona_egipto',null],jaguar:['capucha','#d8a03a'],laurel:['zucchetto','#3a8a3a'],marinero:['zucchetto','#f4f1ea'],kippah:['zucchetto',null],crown:['corona_egipto',null],tiara:['tiara',null],bork:['mitra','#f4f1ea']};
+function personaCabezon(P,o){ const hm=P.helmet!=null?HATMAP[P.helmet]:null; const hairMap={long:'long',curlyShort:'short',short:'short',bald:'bald'};
+  const Q={skin:P.skin&&P.skin!=='#e8c0a0'?mixCol(P.skin,'#f0dcb8',.35):'#f0dcb8',top:P.armor||P.tunic||'#8a6a4a',top2:P.cloak&&P.cloak!==P.tunic?null:null,cape:P.cloak||null,trim:P.belt||P.trim||null,legs:'#0b0806',
+    hat:hm?hm[0]:null,hatCol:(hm&&hm[1])||P.hatCol||(P.tunic||'#5a5a5a'),hair:hairMap[P.hairStyle]||'short',hairCol:P.hair||'#2a1a10',beard:P.beard||null,mustache:P.mustache||null,h:(P.h||300)*1.08};
+  if(P.helmet==='modern'||P.helmet==='m1') Q.hatCol=P.hatCol||P.tunic||'#5a6448';
+  const w=P.weapon, o2={...o};
+  if(w&&!o.hold){ o2.armF=o.armF||(o.aim?[1.45,1.5]:[.9,1.0]); o2.hold=(x,y)=>{ c.save(); c.lineCap='round'; if(w==='spear'){ c.strokeStyle='#6a4a2a'; c.lineWidth=6; c.beginPath(); c.moveTo(x,y+60); c.lineTo(x+(o.look||1)*10,y-160); c.stroke(); c.fillStyle='#c8c8c8'; c.beginPath(); c.moveTo(x+(o.look||1)*10-10,y-160); c.lineTo(x+(o.look||1)*10,y-200); c.lineTo(x+(o.look||1)*10+10,y-160); c.fill(); } else if(w==='sword'){ c.strokeStyle='#c8c8d0'; c.lineWidth=7; c.beginPath(); c.moveTo(x,y); c.lineTo(x+(o.look||1)*40,y-90); c.stroke(); } else if(w==='bow'){ c.strokeStyle='#6a4a2a'; c.lineWidth=5; c.beginPath(); c.arc(x,y,50,-1.2,1.2); c.stroke(); } else { c.strokeStyle='#3a2a1a'; c.lineWidth=9; c.beginPath(); c.moveTo(x-(o.look||1)*30,y+15); c.lineTo(x+(o.look||1)*110,y-25); c.stroke(); } c.restore(); }; }
+  if(P.shield){ const lk=o.look||1, H=Q.h*(o.s||1); c.save(); c.fillStyle=P.shieldCol||'#7a5534'; c.strokeStyle='#0b0806'; c.lineWidth=5; c.beginPath(); if(P.shield==='scutum') c.roundRect(o.x+lk*H*.05-H*.1,o.y-H*.55,H*.2,H*.3,8); else c.arc(o.x+lk*H*.06,o.y-H*.42,H*.12,0,7); c.fill(); c.stroke(); c.restore(); }
+  cabezon(Q,o2); }

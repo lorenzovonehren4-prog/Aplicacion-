@@ -9,7 +9,7 @@ function grullas(t){ for(let i=0;i<9;i++){ const x=mod(rnd(i)*1300+t*(30+rnd(i*3
 MOTOR.run(()=>({
   hot:/^(8:15|bomba|1945|alemania|japón|atómica|truman|rendición|6|agosto|enola|gay|hiroshima|140\.000|nagasaki|15|emperador|únicas|debate)$/i,
   hits:[T('d2')], flashes:[[T('d2'),1,.6]],
-  titles:[[0,T('c1'),'8:15<small>6 DE AGOSTO DE 1945</small>','240px'],[E('f2')-.3,TL.total,'HIROSHIMA<small>NUNCA MÁS</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>EL RELOJ QUE SE DETUVO A LAS 8:15</small>','150px'],[E('f2')-.3,TL.total,'HIROSHIMA<small>NUNCA MÁS</small>']],
   dates:[[T('c1'),T('d1'),'AGOSTO 1945'],[T('d1'),T('d2'),'6 AGO. · 8:15'],[T('r1'),T('r2'),'9 AGO. 1945'],[T('r2'),T('f1'),'15 AGO. 1945']],
   counts:[[Tm('d3',.4),T('r1'),()=>['≈140.000','MUERTOS A FINALES DE 1945 (ESTIMACIÓN)'],380]],
   names:[[T('c3')+.2,T('d1'),'HARRY S. TRUMAN','PRESIDENTE DE EE. UU.']],

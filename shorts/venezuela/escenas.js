@@ -10,7 +10,7 @@ function heli(x,y,s,t){ c.save(); c.translate(x,y); c.scale(s,s); c.save(); c.gl
 MOTOR.run(()=>({
   hot:/^(3|enero|2026|caracas|venezuela|petróleo|hiperinflación|millones|2024|actas|narcotráfico|recompensa|2025|caribe|lanchas|nueva|york|culpable|onu|interina|fases|elecciones|futuro)$/i,
   hits:[T('h1')+.4,T('r1')+.3], flashes:[[T('r1')+.3,.5,.15]],
-  titles:[[0,T('c1'),'3 DE ENERO<small>LA NOCHE QUE CAMBIÓ VENEZUELA</small>','170px'],[E('f2')-.3,TL.total,'VENEZUELA<small>¿QUIÉN DECIDE SU FUTURO?</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>VENEZUELA Y LA NOCHE DEL 3 DE ENERO</small>','150px'],[E('f2')-.3,TL.total,'VENEZUELA<small>¿QUIÉN DECIDE SU FUTURO?</small>']],
   dates:[[T('c3'),T('d1'),'JULIO 2024'],[T('d2'),T('r1'),'2025'],[T('r1'),T('r2'),'3 ENE. 2026'],[T('f1'),T('f2'),'NOV. 2026']],
   counts:[[Tm('c2',.45),T('c3'),()=>['+7,9 MILLONES','DE VENEZOLANOS FUERA DEL PAÍS (ACNUR)'],380]],
   names:[[T('c3')+.3,T('d1')+.2,'NICOLÁS MADURO','PROCLAMADO GANADOR EN 2024'],[T('r2')+.2,T('f1'),'ONU','CRITICA LA LEGALIDAD DE LA OPERACIÓN'],[T('f1')+.2,T('f2'),'DELCY RODRÍGUEZ','PRESIDENTA INTERINA']],

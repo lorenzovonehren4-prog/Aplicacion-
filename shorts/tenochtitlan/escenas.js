@@ -16,7 +16,7 @@ function ciudad(t,o={}){ setCam(o.keys,t); grad(...(o.sky||['#4a8ad0','#bcd8ee',
 MOTOR.run(()=>({
   hot:/^(500|1519|tenochtitlan|200\.000|cortés|tlaxcaltecas|malinche|moctezuma|1520|viruela|1521|13|agosto|cuauhtémoc|méxico|conquista|rebelión|epidemia|solos)$/i,
   hits:[T('d2')+.5,T('r1')+.3,T('r2')+.4], flashes:[[T('r2'),.4,.1]],
-  titles:[[0,T('c1'),'500<small>CONTRA UN IMPERIO</small>','240px'],[E('f2')-.3,TL.total,'1521<small>LA CAÍDA DE TENOCHTITLAN</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>500 CONTRA UN IMPERIO</small>','150px'],[E('f2')-.3,TL.total,'1521<small>LA CAÍDA DE TENOCHTITLAN</small>']],
   dates:[[T('c1'),T('c3'),'1519'],[T('d2'),T('d3'),'1520'],[T('r1'),T('f1'),'1521']],
   counts:[[Tm('c1',.4),T('c2'),()=>['≈200.000','HABITANTES'],420]],
   names:[[Tm('c2',.2),T('c3'),'HERNÁN CORTÉS','CONQUISTADOR ESPAÑOL'],[T('d1')+.2,T('d2'),'MALINCHE','INTÉRPRETE'],[T('d2')+.2,Tm('d2',.5),'MOCTEZUMA II','HUEY TLATOANI MEXICA']],

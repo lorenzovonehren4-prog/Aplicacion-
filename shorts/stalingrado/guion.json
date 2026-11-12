@@ -1,69 +1,68 @@
 [
  {
   "id": "h1",
-  "t": "La batalla más sangrienta de la historia se libró por una ciudad que llevaba el nombre de Stalin.",
-  "gap": 0.25,
-  "dur": 5.556
+  "t": "¿Sabías que la batalla más sangrienta de la historia se libró por una ciudad que llevaba el nombre de Stalin?",
+  "gap": 0.4,
+  "dur": 6.068
  },
  {
   "id": "c1",
   "t": "Verano de 1942. Alemania invade la Unión Soviética y avanza hacia el sur, buscando el petróleo del Cáucaso.",
   "gap": 0.1,
-  "dur": 8.303
+  "dur": 8.367
  },
  {
   "id": "c2",
   "t": "En el camino está Stalingrado, junto al río Volga.",
   "gap": 0.15,
-  "dur": 3.184
+  "dur": 3.155
  },
  {
   "id": "c3",
   "t": "Para Hitler, tomarla es un símbolo. Para Stalin, perderla es impensable.",
   "gap": 0.2,
-  "dur": 5.106
+  "dur": 5.003
  },
  {
   "id": "d1",
   "t": "El 23 de agosto, la aviación alemana bombardea la ciudad hasta dejarla en ruinas.",
   "gap": 0.1,
-  "dur": 5.159
+  "dur": 5.055
  },
  {
   "id": "d2",
   "t": "Y empieza una guerra calle por calle, casa por casa, a veces piso por piso. Los soldados alemanes la llamaban la guerra de las ratas.",
   "gap": 0.15,
-  "dur": 8.397
+  "dur": 8.399
  },
  {
   "id": "d3",
   "t": "Los soviéticos resisten aferrados a la orilla del Volga, con tropas que cruzan el río bajo fuego cada noche.",
   "gap": 0.2,
-  "dur": 6.143
+  "dur": 6.209
  },
  {
   "id": "r1",
   "t": "El 19 de noviembre, el Ejército Rojo lanza un contraataque por los flancos. En cuatro días, rodea a todo el sexto ejército alemán.",
   "gap": 0.15,
-  "dur": 8.052
+  "dur": 7.971
  },
  {
   "id": "r2",
   "t": "Hambre, frío y munición agotada. A principios de febrero de 1943, los alemanes se rinden.",
   "gap": 0.2,
-  "dur": 7.327
+  "dur": 7.292
  },
  {
   "id": "f1",
   "t": "Unos noventa mil soldados alemanes son capturados. Las bajas de ambos bandos se cuentan por cientos de miles.",
   "gap": 0.15,
-  "c": "Unos 90.000 soldados alemanes son capturados. Las bajas de ambos bandos se cuentan por cientos de miles.",
-  "dur": 6.368
+  "dur": 6.225
  },
  {
   "id": "f2",
   "t": "Desde ahí, Alemania ya no volvió a avanzar en el este.",
   "gap": 0.4,
-  "dur": 3.33
+  "dur": 3.391
  }
 ]

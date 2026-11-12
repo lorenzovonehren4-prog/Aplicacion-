@@ -1,70 +1,68 @@
 [
  {
   "id": "h1",
-  "t": "Un domingo por la mañana, 353 aviones aparecieron en el cielo de Hawái. Estados Unidos no lo vio venir.",
-  "gap": 0.25,
-  "dur": 7.038
+  "t": "¿Sabías que un radar detectó los aviones de Pearl Harbor casi una hora antes... y nadie hizo caso?",
+  "gap": 0.4,
+  "dur": 6.035
  },
  {
   "id": "c1",
   "t": "1941. Japón está en guerra en China y avanza por el sudeste asiático.",
   "gap": 0.1,
-  "dur": 5.847
+  "dur": 5.848
  },
  {
   "id": "c2",
   "t": "Estados Unidos responde con un embargo de petróleo. Japón importaba de allí la mayor parte de su combustible.",
   "gap": 0.15,
-  "dur": 6.575
+  "dur": 6.661
  },
  {
   "id": "c3",
   "t": "Sin petróleo, su ejército se detiene. Así que Japón decide atacar primero.",
   "gap": 0.2,
-  "dur": 4.35
+  "dur": 4.226
  },
  {
   "id": "d1",
-  "t": "7 de diciembre de 1941, siete y cuarenta y ocho de la mañana. Llega la primera oleada. Un radar detecta los aviones, pero creen que son bombarderos propios.",
+  "t": "7 de diciembre de 1941. A las siete de la mañana, un radar detecta muchos aviones. Les dicen que son bombarderos propios. A las siete y cuarenta y ocho, llega la primera oleada.",
   "gap": 0.15,
-  "c": "7 de diciembre de 1941, 7:48 de la mañana. Llega la primera oleada. Un radar detecta los aviones, pero creen que son bombarderos propios.",
-  "dur": 11.266
+  "dur": 12.957
  },
  {
   "id": "d2",
   "t": "Bombas y torpedos caen sobre la flota del Pacífico, anclada en Pearl Harbor.",
   "gap": 0.1,
-  "dur": 4.734
+  "dur": 4.767
  },
  {
   "id": "d3",
   "t": "El acorazado Arizona explota. Mueren más de mil hombres solo en ese barco.",
   "gap": 0.2,
-  "c": "El acorazado Arizona explota. Mueren más de 1.000 hombres solo en ese barco.",
-  "dur": 4.438
+  "dur": 4.531
  },
  {
   "id": "r1",
   "t": "En dos horas mueren más de 2.400 estadounidenses. Pero los portaaviones no estaban en el puerto.",
   "gap": 0.2,
-  "dur": 6.09
+  "dur": 6.065
  },
  {
   "id": "r2",
   "t": "Al día siguiente, Estados Unidos declara la guerra a Japón. El presidente Roosevelt lo llama: una fecha que vivirá en la infamia.",
   "gap": 0.15,
-  "dur": 7.763
+  "dur": 7.903
  },
  {
   "id": "f1",
   "t": "Japón quería frenar a Estados Unidos. Consiguió lo contrario: despertarlo.",
   "gap": 0.15,
-  "dur": 4.67
+  "dur": 4.633
  },
  {
   "id": "f2",
   "t": "Cuatro años después, la guerra terminaría en Hiroshima y Nagasaki.",
   "gap": 0.4,
-  "dur": 3.951
+  "dur": 3.892
  }
 ]

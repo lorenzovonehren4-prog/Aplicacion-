@@ -1,69 +1,68 @@
 [
  {
   "id": "h1",
-  "t": "Una ciudad fue partida en dos en una sola noche. Y así se quedó durante veintiocho años.",
-  "gap": 0.25,
-  "c": "Una ciudad fue partida en dos en una sola noche. Y así se quedó durante 28 años.",
-  "dur": 5.102
+  "t": "¿Sabías que el Muro de Berlín cayó por culpa de una frase dicha por error?",
+  "gap": 0.4,
+  "dur": 3.908
  },
  {
   "id": "c1",
   "t": "Tras la Segunda Guerra Mundial, Alemania queda dividida: el oeste, aliado de Estados Unidos, y el este, comunista.",
   "gap": 0.1,
-  "dur": 7.49
+  "dur": 7.569
  },
  {
   "id": "c2",
   "t": "Berlín queda dentro de la Alemania del Este, y también dividida.",
   "gap": 0.1,
-  "dur": 3.63
+  "dur": 3.534
  },
  {
   "id": "c3",
   "t": "Millones de personas huyen del este hacia el oeste por Berlín. Entre 1949 y 1961 se van más de dos millones y medio.",
   "gap": 0.2,
-  "dur": 9.297
+  "dur": 9.274
  },
  {
   "id": "d1",
   "t": "La noche del 13 de agosto de 1961, soldados del este cierran la frontera con alambre de púas.",
   "gap": 0.15,
-  "dur": 6.094
+  "dur": 6.027
  },
  {
   "id": "d2",
   "t": "Familias quedan separadas de un día para otro. Después llega el muro de hormigón.",
   "gap": 0.15,
-  "dur": 4.807
+  "dur": 4.749
  },
  {
   "id": "d3",
   "t": "Torres de vigilancia, perros, minas. Al menos 140 personas mueren intentando cruzar.",
   "gap": 0.25,
-  "dur": 5.642
+  "dur": 5.748
  },
  {
   "id": "r1",
   "t": "9 de noviembre de 1989. Un portavoz del gobierno anuncia por error que se puede cruzar, de inmediato. Fue Günter Schabowski, en una rueda de prensa en directo.",
   "gap": 0.15,
-  "dur": 10.46
+  "dur": 10.445
  },
  {
   "id": "r2",
   "t": "Miles de personas corren a la frontera. Los guardias, sin órdenes, abren las puertas.",
   "gap": 0.2,
-  "dur": 5.127
+  "dur": 5.059
  },
  {
   "id": "f1",
   "t": "Esa noche, la gente se sube al muro y lo empieza a romper con martillos. Un año después, Alemania se reunifica.",
   "gap": 0.15,
-  "dur": 7.886
+  "dur": 7.957
  },
  {
   "id": "f2",
   "t": "Un muro que parecía eterno cayó por una frase dicha por error.",
   "gap": 0.4,
-  "dur": 3.499
+  "dur": 3.464
  }
 ]

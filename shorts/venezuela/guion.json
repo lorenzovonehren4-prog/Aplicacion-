@@ -1,27 +1,27 @@
 [
  {
   "id": "h1",
-  "t": "3 de enero de 2026. Fuerzas de Estados Unidos entran en Caracas y se llevan detenido al presidente de Venezuela.",
-  "gap": 0.3,
-  "dur": 7.059
+  "t": "¿Sabías que el país con más petróleo del mundo vio irse a casi ocho millones de personas? Y en 2026, todo cambió en una noche.",
+  "gap": 0.4,
+  "dur": 8.078
  },
  {
   "id": "c1",
   "t": "Venezuela tiene las mayores reservas de petróleo del mundo. Pero durante años vivió una crisis enorme.",
   "gap": 0.1,
-  "dur": 5.725
+  "dur": 5.746
  },
  {
   "id": "c2",
   "t": "Hiperinflación, escasez de comida, y millones de venezolanos que se fueron del país.",
   "gap": 0.15,
-  "dur": 4.95
+  "dur": 4.997
  },
  {
   "id": "c3",
   "t": "En las elecciones de 2024, el gobierno declaró ganador a Nicolás Maduro sin publicar las actas. La oposición mostró actas que daban la victoria a su candidato.",
   "gap": 0.2,
-  "dur": 9.908
+  "dur": 9.932
  },
  {
   "id": "d1",
@@ -33,30 +33,30 @@
   "id": "d2",
   "t": "Durante 2025 aumenta la presión: barcos de guerra en el Caribe, y ataques contra lanchas acusadas de llevar droga.",
   "gap": 0.2,
-  "dur": 7.791
+  "dur": 7.835
  },
  {
   "id": "r1",
   "t": "Y en la madrugada del 3 de enero, una operación militar captura a Maduro y a su esposa, y los traslada a Nueva York.",
   "gap": 0.15,
-  "dur": 7.157
+  "dur": 7.181
  },
  {
   "id": "r2",
   "t": "Allí se declara no culpable. Funcionarios de la ONU y varios gobiernos critican la legalidad de la operación.",
   "gap": 0.2,
-  "dur": 6.134
+  "dur": 6.204
  },
  {
   "id": "f1",
   "t": "Hoy, Delcy Rodríguez gobierna de forma interina. Washington habla de una transición por fases, pero todavía no hay fecha de elecciones.",
   "gap": 0.2,
-  "dur": 8.109
+  "dur": 8.015
  },
  {
   "id": "f2",
   "t": "Venezuela sigue esperando decidir su propio futuro.",
   "gap": 0.4,
-  "dur": 2.9
+  "dur": 2.881
  }
 ]

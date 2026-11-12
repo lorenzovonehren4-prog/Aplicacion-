@@ -11,7 +11,7 @@ function puerto(t,o){ setCam(o.keys,t); grad(...(o.sky||['#5a9ae0','#c8e0f4','#f
 MOTOR.run(()=>({
   hot:/^(domingo|353|hawái|1941|japón|china|embargo|petróleo|7|diciembre|7:48|oleada|arizona|1\.000|2\.400|portaaviones|guerra|despertarlo|hiroshima|nagasaki)$/i,
   hits:[T('d2')+.4,T('d3')+.3,Tm('d3',.5)], flashes:[[T('d3')+.3,.8,.2]],
-  titles:[[0,T('c1'),'353 AVIONES<small>UN DOMINGO POR LA MAÑANA</small>','150px'],[E('f2')-.3,TL.total,'PEARL HARBOR<small>7 DE DICIEMBRE DE 1941</small>','140px']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>EL RADAR LOS VIO LLEGAR</small>','150px'],[E('f2')-.3,TL.total,'PEARL HARBOR<small>7 DE DICIEMBRE DE 1941</small>','140px']],
   dates:[[T('c1'),T('d1'),'1941'],[T('d1'),T('d2'),'7:48 · 7 DIC.']],
   counts:[[Tm('r1',.2),T('r2'),()=>['+2.400','ESTADOUNIDENSES MUERTOS'],420]],
   scenes:[

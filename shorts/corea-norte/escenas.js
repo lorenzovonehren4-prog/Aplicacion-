@@ -10,7 +10,7 @@ function retrato(x,y,w,t0,t){ const k=eout(k01(t,t0,t0+.3)); if(k<=0) return; c.
 MOTOR.run(()=>({
   hot:/^(pobres|atómicas|misiles|1950|invade|1953|armisticio|paz|familia|kim|bomba|seguro|2006|2017|seis|onu|2026|rusia|2024|dieciséis|ucrania|tecnología|séptima|ignorar)$/i,
   hits:[Tm('h1',.5),T('d2')+.4,Tm('d2',.6),T('f1')+.5], flashes:[[T('d2')+.4,.6,.2]],
-  titles:[[0,T('c1'),'POBRE<small>PERO CON BOMBAS ATÓMICAS</small>','200px'],[E('f2')-.3,TL.total,'COREA DEL NORTE<small>EL PAÍS MÁS CERRADO DEL MUNDO</small>','120px']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>LA GUERRA QUE NUNCA TERMINÓ</small>','150px'],[E('f2')-.3,TL.total,'COREA DEL NORTE<small>EL PAÍS MÁS CERRADO DEL MUNDO</small>','120px']],
   dates:[[T('c1'),T('c2'),'1950'],[T('c2'),T('c3'),'1953'],[T('d2'),T('d3'),'2006 – 2017'],[T('d3'),T('r1'),'2026'],[T('r1'),T('f1'),'DESDE 2024']],
   counts:[[Tm('r1',.5),T('r2'),()=>['+16.000','SOLDADOS A RUSIA (SEGÚN COREA DEL SUR)'],400],[Tm('d2',.3),T('d3'),t=>[String(Math.min(6,1+Math.floor((t-T('d2'))/(D('d2')*.12)))),'PRUEBAS NUCLEARES'],420]],
   names:[[T('c3')+.6,Tm('c3',.45),'KIM IL SUNG','1948 – 1994'],[Tm('c3',.45),Tm('c3',.7),'KIM JONG IL','1994 – 2011'],[Tm('c3',.7),T('d1'),'KIM JONG UN','DESDE 2011']],

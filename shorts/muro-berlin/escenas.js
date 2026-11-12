@@ -10,7 +10,7 @@ function muro(t,o){ setCam(o.keys,t); grad(...(o.sky||['#7a8aa0','#b8c4d0','#d8d
 MOTOR.run(()=>({
   hot:/^(ciudad|noche|28|alemania|berlín|13|agosto|1961|alambre|muro|140|9|noviembre|1989|error|inmediato|guardias|puertas|martillos|reunifica|frase)$/i,
   hits:[T('r2')+.3], flashes:[[T('r2')+.3,.4,.15]],
-  titles:[[0,T('c1'),'EN UNA NOCHE<small>UNA CIUDAD PARTIDA EN DOS</small>','150px'],[E('f2')-.3,TL.total,'9 · 11 · 1989<small>LA CAÍDA DEL MURO</small>']],
+  titles:[[0,T('c1'),'¿SABÍAS QUE...?<small>EL MURO CAYÓ POR UN ERROR</small>','150px'],[E('f2')-.3,TL.total,'9 · 11 · 1989<small>LA CAÍDA DEL MURO</small>']],
   dates:[[T('c1'),T('c3'),'1945'],[T('d1'),T('d3'),'13 AGO. 1961'],[T('r1'),T('f1'),'9 NOV. 1989'],[Tm('f1',.6),T('f2'),'1990']],
   names:[[T('r1')+.4,T('r2'),'GÜNTER SCHABOWSKI','PORTAVOZ DE LA RDA']],
   counts:[[Tm('d3',.4),T('r1'),()=>['≥140','MUERTOS INTENTANDO CRUZAR'],420]],
