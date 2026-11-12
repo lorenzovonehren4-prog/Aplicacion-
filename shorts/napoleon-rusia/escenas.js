@@ -18,7 +18,7 @@ MOTOR.run(()=>({
   hot:/^(rusia|1812|napoleón|zar|alejandro|gran|bretaña|niemen|400\.000|queman|borodinó|70\.000|moscú|arder|rendición|invierno|cosacos|berézina|puentes|decenas|fin)$/i,
   hits:[Tm('h1',.5),T('d2'),Tm('d2',.4),Tm('d3',.6)],
   flashes:[[Tm('h1',.5),.5,.12],[T('d2'),.6,.12]],
-  titles:[[Tm('h1',.05),Tm('h1',.5),'1812<small>NAPOLEÓN EN RUSIA</small>'],[E('f2')-.3,TL.total,'1812<small>EL PRINCIPIO DEL FIN</small>']],
+  titles:[[0,Tm('h1',.45),'+400.000<small>ENTRARON EN RUSIA</small>'],[Tm('h1',.5),T('c1'),'¿Y CUÁNTOS<br>VOLVIERON?','130px'],[E('f2')-.3,TL.total,'1812<small>EL PRINCIPIO DEL FIN</small>']],
   dates:[[T('c3'),T('d1'),'JUNIO 1812'],[T('d2'),Tm('d2',.4),'7 SEPT. 1812'],[T('d3'),T('r1'),'14 SEPT. 1812'],[T('r2'),T('r3'),'OCTUBRE'],[T('r3'),Tm('r3',.4),'NOVIEMBRE']],
   counts:[[Tm('c3',.3),T('d1'),()=>['+400.000','SOLDADOS'],420],[Tm('d2',.45),T('d3'),()=>['+70.000','CAÍDOS EN UN DÍA'],420],[T('f1'),T('f2'),t=>[Math.round(lerp(400,40,eio(k01(t,T('f1'),Tm('f1',.8)))))+'.000','SOBREVIVIENTES (APROX.)'],420]],
   names:[[Tm('c2',.1),T('c3'),'NAPOLEÓN BONAPARTE','EMPERADOR DE LOS FRANCESES']],

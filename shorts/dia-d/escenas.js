@@ -40,8 +40,8 @@ MOTOR.run(()=>({
   hot:/^(1944|150\.000|mancha|hitler|muro|atlántico|overlord|falso|inflables|calais|paracaidistas|7\.000|utah|omaha|gold|juno|sword|francia|4\.000|nazi|rinde|europa)$/i,
   hits:[T('h1')+.1,T('d3'),Tm('d3',.4)],
   flashes:[[T('d3'),.4,.1]],
-  titles:[[T('c2'),Tm('c2',.9),'OPERACIÓN<br>OVERLORD','150px'],[E('f2')-.3,TL.total,'6 · 6 · 1944<small>EL DÍA MÁS LARGO</small>']],
-  dates:[[T('h1'),Tm('h1',.45),'6 JUNIO 1944'],[T('f1'),T('f2'),'8 MAYO 1945']],
+  titles:[[0,Tm('h1',.5),'150.000<small>EN UNA SOLA NOCHE</small>'],[Tm('h1',.5),T('c1'),'¿DÓNDE LOS<br>ESPERABAN?','130px'],[T('c2'),Tm('c2',.9),'OPERACIÓN<br>OVERLORD','150px'],[E('f2')-.3,TL.total,'6 · 6 · 1944<small>EL DÍA MÁS LARGO</small>']],
+  dates:[[T('c1'),Tm('c1',.4),'6 JUNIO 1944'],[T('f1'),T('f2'),'8 MAYO 1945']],
   counts:[[Tm('h1',.5),T('c1'),()=>['+150.000','SOLDADOS ALIADOS'],420],[Tm('d2',.3),T('d3'),()=>['≈7.000','BARCOS'],170],[Tm('r2',.35),T('f1'),()=>['+4.000','ALIADOS MUERTOS ESE DÍA'],300]],
   names:[[Tm('c2',.2),T('c3'),'DWIGHT D. EISENHOWER','COMANDANTE SUPREMO ALIADO']],
   scenes:[

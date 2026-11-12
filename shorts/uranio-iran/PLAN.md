@@ -12,7 +12,7 @@ Hecho según `shorts/SISTEMA.md`. Texto exacto de la voz en `guion.json`; escena
 Fuentes: Reuters/Al-Monitor/US News («The status of Iran's uranium enrichment programme», octubre de 2026); CRS (R40094, IF12106); World Nuclear Association.
 
 ## B. Guion
-- **h1**: Una roca gris puede encender una ciudad... o destruirla.
+- **h1**: Un solo número separa la electricidad de una bomba atómica. E Irán llegó más cerca que ningún país sin armas nucleares.
 - **c1**: El uranio natural tiene menos de un uno por ciento de uranio 235: el que se puede partir para liberar energía.
 - **c2**: Para aumentarlo hay que enriquecerlo, con miles de centrifugadoras girando a velocidades enormes.
 - **c3**: Del 3 al 5 %, sirve para una central eléctrica.
@@ -68,3 +68,6 @@ No hay imágenes generadas con IA: cada plano es código en `escenas.js`, que us
 | Potencial de retención | 8 | Tema muy buscado. |
 
 **Límites comunes:** la animación por código no tiene sincronía labial ni poses complejas, y la voz y la música son gratuitas y sintetizadas. Mejoraría con una voz profesional, música con licencia y más primeros planos.
+
+## Retención (segunda pasada)
+Gancho reescrito con giro o pregunta abierta, texto grande desde el primer cuadro (también se entiende sin sonido), voz un 5 % más rápida, pausas un 30 % más cortas, golpe de sonido en cada corte de escena y un microzoom en cada bloque de subtítulo (un cambio visual cada 1,5–2 s).

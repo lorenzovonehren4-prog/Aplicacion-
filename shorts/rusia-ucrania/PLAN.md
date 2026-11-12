@@ -13,7 +13,7 @@ Hecho según `shorts/SISTEMA.md`. Texto exacto de la voz en `guion.json`; escena
 Fuentes: ISW (10-11-2026, vía Kyiv Post); Britannica («Russia-Ukraine War»); BBC/Reuters como contexto.
 
 ## B. Guion
-- **h1**: Es la guerra más grande en Europa desde 1945. ¿Por qué empezó?
+- **h1**: La guerra más grande en Europa desde 1945 no empezó en 2022. Empezó mucho antes.
 - **c1**: En 1991 se desintegra la Unión Soviética, y Ucrania se independiza, con millones de habitantes que hablan ruso.
 - **c2**: Durante años, el país duda entre acercarse a Europa o a Rusia.
 - **c3**: En 2014, protestas masivas en Kiev hacen caer a un presidente cercano a Moscú.
@@ -68,3 +68,6 @@ No hay imágenes generadas con IA: cada plano es código en `escenas.js`, que us
 | Potencial de retención | 8 | Tema actual. |
 
 **Límites comunes:** la animación por código no tiene sincronía labial ni poses complejas, y la voz y la música son gratuitas y sintetizadas. Mejoraría con una voz profesional, música con licencia y más primeros planos.
+
+## Retención (segunda pasada)
+Gancho reescrito con giro o pregunta abierta, texto grande desde el primer cuadro (también se entiende sin sonido), voz un 5 % más rápida, pausas un 30 % más cortas, golpe de sonido en cada corte de escena y un microzoom en cada bloque de subtítulo (un cambio visual cada 1,5–2 s).

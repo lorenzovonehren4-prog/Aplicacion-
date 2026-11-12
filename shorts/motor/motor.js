@@ -345,6 +345,7 @@ const MOTOR={ run(cfg){
   window.ALLCAPS=[]; let ix=0; TL.segs.forEach(s=>s.caps.forEach(q=>{ q.i=ix++; ALLCAPS.push(q); }));
   $('tag').textContent=C.tag||'RECREACIÓN ANIMADA';
   const cuts=C.scenes.map(s=>s[0]);
+  window.__CORTES=cuts.filter(x=>x>.3);
   window.setT=function(t){
     TT=t; SHAKE=0; for(const h of (C.hits||[])){ const d=t-h; if(d>=0&&d<1.1) SHAKE+=34*Math.exp(-d*4); }
     screen(); c.clearRect(0,0,W,H); c.globalAlpha=1; c.globalCompositeOperation='source-over'; c.setLineDash([]); c.filter='none';

@@ -11,7 +11,7 @@ Hecho según `shorts/SISTEMA.md`. Texto exacto de la voz en `guion.json`; escena
 Fuentes: National WWII Museum; D-Day Center (Portsmouth); Britannica («Normandy Invasion»).
 
 ## B. Guion
-- **h1**: 6 de junio de 1944. Más de 150.000 soldados cruzan el canal de la Mancha en una sola noche.
+- **h1**: En una sola noche, 150.000 soldados cruzaron el mar. Y Hitler los esperaba en el lugar equivocado.
 - **c1**: Hitler domina Europa occidental, y ha levantado el Muro del Atlántico: búnkeres, minas y obstáculos en las playas.
 - **c2**: Los aliados preparan el desembarco más grande de la historia: la Operación Overlord.
 - **c3**: Para engañar a los alemanes, crean un ejército falso, con tanques inflables, que apunta a Calais.
@@ -65,3 +65,6 @@ No hay imágenes generadas con IA: cada plano es código en `escenas.js`, que us
 | Potencial de retención | 7 | Cierre respetuoso. |
 
 **Límites comunes:** la animación por código no tiene sincronía labial ni poses complejas, y la voz y la música son gratuitas y sintetizadas. Mejoraría con una voz profesional, música con licencia y más primeros planos.
+
+## Retención (segunda pasada)
+Gancho reescrito con giro o pregunta abierta, texto grande desde el primer cuadro (también se entiende sin sonido), voz un 5 % más rápida, pausas un 30 % más cortas, golpe de sonido en cada corte de escena y un microzoom en cada bloque de subtítulo (un cambio visual cada 1,5–2 s).

@@ -18,7 +18,7 @@ MOTOR.run(()=>({
   hot:/^(1945|1991|soviética|ucrania|ruso|europa|rusia|2014|kiev|moscú|crimea|donbás|otan|soberano|24|2022|norte|este|sur|drones|cientos|miles|2026|abu|dabi|mapa)$/i,
   hits:[Tm('h1',.3),T('r1')+.4],
   flashes:[[Tm('h1',.3),.5,.12]],
-  titles:[[Tm('h1',.55),T('c1'),'RUSIA Y UCRANIA<small>¿POR QUÉ EMPEZÓ?</small>'],[E('f2')-.3,TL.total,'UCRANIA<small>NOVIEMBRE 2026</small>']],
+  titles:[[0,Tm('h1',.5),'NO EMPEZÓ<br>EN 2022','150px'],[Tm('h1',.55),T('c1'),'RUSIA Y UCRANIA<small>¿POR QUÉ EMPEZÓ?</small>'],[E('f2')-.3,TL.total,'UCRANIA<small>NOVIEMBRE 2026</small>']],
   dates:[[T('c1'),T('c2'),'1991'],[T('c3'),T('d2'),'2014'],[T('r1'),T('r2'),'24 FEB. 2022'],[T('f1'),T('f2'),'NOV. 2026']],
   counts:[[Tm('r3',.5),T('f1'),()=>['CIENTOS DE MILES','MUERTOS Y HERIDOS (ESTIMACIONES)'],330]],
   scenes:[

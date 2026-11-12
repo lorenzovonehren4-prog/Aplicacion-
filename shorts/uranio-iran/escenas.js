@@ -26,7 +26,7 @@ MOTOR.run(()=>({
   hot:/^(roca|ciudad|destruirla|uranio|235|centrifugadoras|3|5|central|90|bomba|2015|3,67|2018|60|corto|pacífico|natanz|fordo|isfahán|2026|200|comprobarlo|derecho|número)$/i,
   hits:[Tm('h1',.55),T('r2')+.8,Tm('r2',.55)],
   flashes:[[Tm('h1',.55),.8,.2]],
-  titles:[[T('c1')-.4,T('c1')+.6,'URANIO<small>¿POR QUÉ IMPORTA TANTO?</small>'],[E('f2')-.3,TL.total,'¿60… O 90?<small>EL NÚMERO QUE DECIDE</small>']],
+  titles:[[0,Tm('h1',.5),'60 % → 90 %<small>EL NÚMERO QUE LO CAMBIA TODO</small>'],[T('c1')-.4,T('c1')+.6,'URANIO<small>¿POR QUÉ IMPORTA TANTO?</small>'],[E('f2')-.3,TL.total,'¿60… O 90?<small>EL NÚMERO QUE DECIDE</small>']],
   dates:[[T('d1'),T('d2'),'2015'],[T('d2'),T('d3'),'2018'],[T('r2'),Tm('r2',.55),'JUNIO 2025'],[Tm('r2',.55),T('r3'),'FEB. 2026']],
   counts:[[T('c1')+.6,T('c2'),()=>['0,7 %','URANIO 235 EN EL URANIO NATURAL'],220],[Tm('r3',.2),T('f1'),()=>['+200 kg al 60 %','ESTIMACIÓN DEL OIEA · NO VERIFICADO'],180]],
   scenes:[

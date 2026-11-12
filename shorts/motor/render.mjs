@@ -15,6 +15,7 @@ page.on('pageerror', e => { console.error('ERROR', e.message); process.exit(1); 
 await page.goto('file://' + path.join(dir, 'escena.html'));
 await page.waitForFunction(() => window.setT && window.ready);
 await page.evaluate(() => window.ready);
+if (rest[0] === '--cortes') { fs.writeFileSync(path.join(dir, 'cortes.json'), JSON.stringify(await page.evaluate(() => window.__CORTES || []))); await browser.close(); process.exit(0); }
 if (rest[0] === '--fotos') {
   fs.mkdirSync(path.join(dir, 'fotos'), { recursive: true });
   for (const t of rest[1].split(',').map(Number)) {

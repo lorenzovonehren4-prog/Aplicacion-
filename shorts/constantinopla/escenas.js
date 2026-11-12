@@ -37,7 +37,7 @@ MOTOR.run(()=>({
   hot:/^(mil|cañón|ocho|metros|constantinopla|murallas|1453|mehmed|ii|21|7\.000|orbán|cadena|tierra|colina|53|29|mayo|jenízaros|brecha|constantino|xi|estambul|edad|media)$/i,
   hits:[Tm('h1',.45),...[0,1,2,3,4].map(i=>Tm('d3',.1+i*.18)),T('r1')],
   flashes:[[Tm('h1',.45),.7,.12],[T('r1'),.5,.15]],
-  titles:[[Tm('h1',.5),T('c1'),'CONSTANTINOPLA<small>1453</small>'],[E('f2')-.3,TL.total,'1453<small>FIN DE LA EDAD MEDIA</small>']],
+  titles:[[0,Tm('h1',.45),'1.000 AÑOS<small>Y UN CAÑÓN</small>'],[Tm('h1',.5),T('c1'),'CONSTANTINOPLA<small>1453</small>'],[E('f2')-.3,TL.total,'1453<small>FIN DE LA EDAD MEDIA</small>']],
   dates:[[T('c2'),T('c3'),'1453'],[T('r1'),Tm('r1',.6),'29 DE MAYO']],
   counts:[[Tm('c3',.2),T('d1'),()=>['≈7.000','DEFENSORES'],420],[T('d3'),T('r1'),t=>['DÍA '+Math.max(1,Math.round(lerp(1,53,k01(t,T('d3'),E('d3'))))),'DEL ASEDIO']]],
   names:[[Tm('c2',.15),T('c3'),'MEHMED II','SULTÁN OTOMANO · 21 AÑOS'],[T('d1')+.2,T('d2'),'ORBÁN','INGENIERO DE CAÑONES'],[T('r2')+.2,E('r2'),'CONSTANTINO XI','ÚLTIMO EMPERADOR BIZANTINO']],

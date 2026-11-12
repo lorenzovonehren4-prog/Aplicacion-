@@ -140,6 +140,9 @@ for a, b, kind, o in P.get('plan', []):
 for cue in P.get('cues', []):
     at, name, gn = tm(cue[0]), cue[1], (cue[2] if len(cue) > 2 else 1); o = cue[3] if len(cue) > 3 else {}
     put(fx, SFX[name](o), at, gn)
+import os
+if os.path.exists(f'{d}/cortes.json') and P.get('cortes', True):
+    for ct in json.load(open(f'{d}/cortes.json')): put(fx, whoosh(.32), ct - .2, .45); put(fx, tom(48, .35, .2), ct, .35)
 for s in g:
     v, sr = sf.read(f"{d}/voz/{s['id']}.wav"); v = signal.resample_poly(v, SR, sr); put(voice, v, s['start'])
 voice = hp(voice, 80); lvl = np.sqrt(np.maximum(lp(voice ** 2, 8), 0) + 1e-8)

@@ -2,71 +2,71 @@
  {
   "id": "h1",
   "t": "Una ciudad resistió más de mil años. Hasta que llegó un cañón de ocho metros.",
-  "gap": 0.3,
-  "dur": 3.884
+  "gap": 0.21,
+  "dur": 3.697
  },
  {
   "id": "c1",
   "t": "Constantinopla, capital del Imperio bizantino. Sus murallas nunca habían caído ante un asalto.",
-  "gap": 0.1,
-  "dur": 5.437
+  "gap": 0.07,
+  "dur": 5.262
  },
  {
   "id": "c2",
   "t": "En 1453, el sultán otomano Mehmed Segundo, de veintiún años, la rodea con decenas de miles de soldados.",
-  "gap": 0.1,
+  "gap": 0.07,
   "c": "En 1453, el sultán otomano Mehmed II, de 21 años, la rodea con decenas de miles de soldados.",
-  "dur": 6.845
+  "dur": 6.425
  },
  {
   "id": "c3",
   "t": "Dentro hay apenas unos siete mil defensores.",
-  "gap": 0.25,
+  "gap": 0.175,
   "c": "Dentro hay apenas unos 7.000 defensores.",
-  "dur": 2.367
+  "dur": 2.235
  },
  {
   "id": "d1",
   "t": "Mehmed trae cañones gigantes, construidos por un ingeniero llamado Orbán.",
-  "gap": 0.15,
-  "dur": 3.677
+  "gap": 0.105,
+  "dur": 3.454
  },
  {
   "id": "d2",
   "t": "Una cadena cierra el puerto. Así que Mehmed hace algo increíble: arrastra sus barcos por tierra, sobre una colina.",
-  "gap": 0.25,
-  "dur": 6.764
+  "gap": 0.175,
+  "dur": 6.501
  },
  {
   "id": "d3",
   "t": "Durante cincuenta y tres días, los cañones golpean las murallas.",
-  "gap": 0.2,
+  "gap": 0.14,
   "c": "Durante 53 días, los cañones golpean las murallas.",
-  "dur": 3.427
+  "dur": 3.257
  },
  {
   "id": "r1",
   "t": "El 29 de mayo, antes del amanecer, los jenízaros entran por una brecha.",
-  "gap": 0.2,
-  "dur": 4.068
+  "gap": 0.14,
+  "dur": 3.732
  },
  {
   "id": "r2",
   "t": "El último emperador, Constantino Once, muere durante el asalto.",
-  "gap": 0.35,
+  "gap": 0.245,
   "c": "El último emperador, Constantino XI, muere durante el asalto.",
-  "dur": 3.813
+  "dur": 3.639
  },
  {
   "id": "f1",
   "t": "La ciudad se convierte en la capital otomana. Hoy la conocemos como Estambul.",
-  "gap": 0.2,
-  "dur": 4.255
+  "gap": 0.14,
+  "dur": 4.014
  },
  {
   "id": "f2",
   "t": "Para muchos historiadores, ahí termina la Edad Media.",
-  "gap": 0.5,
-  "dur": 3.056
+  "gap": 0.35,
+  "dur": 2.961
  }
 ]

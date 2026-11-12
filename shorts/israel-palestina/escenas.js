@@ -26,7 +26,7 @@ MOTOR.run(()=>({
   hot:/^(cien|otomano|árabes|sionismo|judío|1917|gran|bretaña|1947|onu|1948|israel|700\.000|nakba|1967|gaza|cisjordania|jerusalén|1993|oslo|2007|hamás|7|2023|1\.200|251|73\.000|2025|fronteras|refugiados|seguridad|tierra)$/i,
   hits:[T('d2'),T('r1')+.6],
   flashes:[[T('r1'),.4,.12]],
-  titles:[[Tm('h1',.45),T('c1'),'ISRAEL Y PALESTINA<small>CÓMO EMPEZÓ TODO</small>'],[E('f2')-.3,TL.total,'DOS PUEBLOS<small>UNA MISMA TIERRA</small>']],
+  titles:[[0,T('c1'),'ISRAEL Y PALESTINA<small>CÓMO EMPEZÓ TODO</small>'],[E('f2')-.3,TL.total,'DOS PUEBLOS<small>UNA MISMA TIERRA</small>']],
   dates:[[T('c2'),T('c3'),'1897'],[T('c3'),T('d1'),'1917'],[T('d2'),T('d3'),'1948'],[T('d4'),T('d5'),'1967'],[T('d5'),T('d6'),'1993'],[T('d6'),T('r1'),'2007'],[T('r1'),Tm('r1',.5),'7 OCT. 2023'],[T('r3'),Tm('r3',.5),'OCT. 2025']],
   counts:[[Tm('d3',.3),T('d4'),()=>['+700.000','PALESTINOS DESPLAZADOS'],330],[Tm('r1',.5),T('r2'),()=>['≈1.200 · 251','MUERTOS · SECUESTRADOS'],330],[Tm('r2',.45),T('r3'),()=>['+73.000','MUERTOS EN GAZA · MINISTERIO DE SALUD DE GAZA'],330]],
   names:[[Tm('d5',.2),T('d6'),'RABIN · ARAFAT','ACUERDOS DE OSLO · 1993']],

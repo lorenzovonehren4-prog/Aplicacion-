@@ -20,8 +20,8 @@ MOTOR.run(()=>({
   hot:/^(2026|líder|supremo|1979|revolución|islámica|satán|52|444|hezbolá|hamás|hutíes|bomba|2024|drones|misiles|2025|doce|12|b-2|fordo|ormuz|petróleo|mojtabá|jamenei|trump|paz|pregunta)$/i,
   hits:[T('h1')+.5,T('h1')+1.5,T('d3')+D('d3')*.45,T('r1')+.8],
   flashes:[[T('h1')+.5,.6,.12],[Tm('d3',.45),.6,.15]],
-  titles:[[Tm('h1',.7),T('c1'),'IRÁN<small>CONTRA ISRAEL Y EE. UU.</small>'],[Tm('d3',.6),T('r1'),'LA GUERRA<br>DE LOS 12 DÍAS','120px'],[E('f2')-.3,TL.total,'¿Y AHORA?<small>IRÁN · NOVIEMBRE 2026</small>']],
-  dates:[[T('h1'),Tm('h1',.6),'28 FEB. 2026'],[T('c1'),T('c2'),'1979'],[T('d2'),T('d3'),'ABRIL 2024'],[T('d3'),Tm('d3',.6),'JUNIO 2025'],[T('r1'),T('r2'),'2026'],[T('f1'),T('f2'),'NOV. 2026']],
+  titles:[[0,Tm('h1',.6),'28 FEB. 2026<small>EE. UU. E ISRAEL ATACAN IRÁN</small>'],[Tm('h1',.65),T('c1'),'IRÁN<small>CONTRA ISRAEL Y EE. UU.</small>'],[Tm('d3',.6),T('r1'),'LA GUERRA<br>DE LOS 12 DÍAS','120px'],[E('f2')-.3,TL.total,'¿Y AHORA?<small>IRÁN · NOVIEMBRE 2026</small>']],
+  dates:[[T('c1'),T('c2'),'1979'],[T('d2'),T('d3'),'ABRIL 2024'],[T('d3'),Tm('d3',.6),'JUNIO 2025'],[T('r1'),T('r2'),'2026'],[T('f1'),T('f2'),'NOV. 2026']],
   counts:[[Tm('c2',.4),T('c3'),()=>['52 · 444','REHENES · DÍAS'],330],[Tm('r2',.2),T('r3'),()=>['≈20 %','DEL PETRÓLEO MUNDIAL PASA POR AQUÍ'],330]],
   names:[[Tm('h1',.2),Tm('h1',.95),'ALÍ JAMENEI','LÍDER SUPREMO DE IRÁN (1989–2026)'],[Tm('r3',.55),E('r3'),'MOJTABÁ JAMENEI','NUEVO LÍDER SUPREMO']],
   scenes:[

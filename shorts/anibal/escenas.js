@@ -18,7 +18,7 @@ return {
   hot:/^(roma|cartago|aníbal|barca|hispania|pirineos|alpes|elefantes|trebia|trasimeno|cannas|escipión|zama|veneno|nueve|mitad|propósito|rodeados|brillante|livio|quince|221|216|202|26|80\.000|50\.000|70\.000|años)$/i,
   hits:[T('g2b'),T('a1')+.7,T('b1')+D('b1')*.55,T('b1')+D('b1')*.85,T('k4a'),Tm('z1',.42),T('z1')+D('z1')*.55],
   flashes:[[T('g2a'),.9,.18],[T('g2b'),.6,.12],[k1m,.8,.15],[T('k4a'),.8,.2],[T('z1'),.5,.12],[T('f2'),.6,.25]],
-  titles:[[T('g2b'),T('c1'),'ANÍBAL<small>EL HOMBRE QUE CASI DESTRUYE ROMA</small>','220px'],[E('f2')-.2,TL.total,'ANÍBAL BARCA<small>247 – c. 183 a. C.</small>','130px']],
+  titles:[[0,T('g2a'),'JURÓ<br>DESTRUIR ROMA','150px'],[T('g2b'),T('c1'),'ANÍBAL<small>EL HOMBRE QUE CASI DESTRUYE ROMA</small>','220px'],[E('f2')-.2,TL.total,'ANÍBAL BARCA<small>247 – c. 183 a. C.</small>','130px']],
   dates:[[T('c2'),T('r1'),'221 a. C.'],[T('r1'),T('r2a'),'218 a. C.'],[T('k1')+.2,k1m,'216 a. C.'],[T('z1'),Tm('z1',.5),'202 a. C.']],
   counts:[[T('a2'),T('b1'),t=>[Math.round(lerp(59000,26000,eio(k01(t,T('a2')+.2,E('a2'))))).toLocaleString('es-ES'),'SOLDADOS']],
     [k1m+.4,T('k2a'),()=>['<span style="color:#ff6a60">+80.000</span> vs <span style="color:#e6b8ff">50.000</span>','ROMA · ANÍBAL'],250],

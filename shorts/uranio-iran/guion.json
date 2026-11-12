@@ -1,86 +1,86 @@
 [
  {
   "id": "h1",
-  "t": "Una roca gris puede encender una ciudad... o destruirla.",
-  "gap": 0.3,
-  "dur": 2.448
+  "t": "Un solo número separa la electricidad de una bomba atómica. E Irán llegó más cerca que ningún país sin armas nucleares.",
+  "gap": 0.21,
+  "dur": 5.911
  },
  {
   "id": "c1",
   "t": "El uranio natural tiene menos de un uno por ciento de uranio 235: el que se puede partir para liberar energía.",
-  "gap": 0.1,
-  "dur": 6.253
+  "gap": 0.07,
+  "dur": 5.742
  },
  {
   "id": "c2",
   "t": "Para aumentarlo hay que enriquecerlo, con miles de centrifugadoras girando a velocidades enormes.",
-  "gap": 0.15,
-  "dur": 4.668
+  "gap": 0.105,
+  "dur": 4.495
  },
  {
   "id": "c3",
   "t": "Del 3 al 5 por ciento, sirve para una central eléctrica.",
-  "gap": 0.1,
+  "gap": 0.07,
   "c": "Del 3 al 5 %, sirve para una central eléctrica.",
-  "dur": 2.933
+  "dur": 2.84
  },
  {
   "id": "c4",
   "t": "Al 90 por ciento, sirve para una bomba.",
-  "gap": 0.35,
+  "gap": 0.245,
   "c": "Al 90 %, sirve para una bomba.",
-  "dur": 2.341
+  "dur": 2.123
  },
  {
   "id": "d1",
   "t": "En 2015, Irán firmó un acuerdo: no pasaría del 3,67 por ciento a cambio de que le quitaran sanciones.",
-  "gap": 0.15,
+  "gap": 0.105,
   "c": "En 2015, Irán firmó un acuerdo: no pasaría del 3,67 % a cambio de que le quitaran sanciones.",
-  "dur": 6.452
+  "dur": 6.303
  },
  {
   "id": "d2",
   "t": "En 2018, Estados Unidos abandonó el acuerdo. E Irán empezó a enriquecer más.",
-  "gap": 0.1,
-  "dur": 4.964
+  "gap": 0.07,
+  "dur": 4.743
  },
  {
   "id": "d3",
   "t": "Llegó al 60 por ciento. Y el salto del 60 al 90 es el más corto de todo el camino.",
-  "gap": 0.3,
+  "gap": 0.21,
   "c": "Llegó al 60 %. Y el salto del 60 al 90 es el más corto de todo el camino.",
-  "dur": 4.539
+  "dur": 4.284
  },
  {
   "id": "r1",
   "t": "Irán dice que su programa es pacífico. Estados Unidos e Israel no le creen.",
-  "gap": 0.15,
-  "dur": 3.965
+  "gap": 0.105,
+  "dur": 3.713
  },
  {
   "id": "r2",
   "t": "En junio de 2025 bombardearon Natanz, Fordo e Isfahán. Y en febrero de 2026 empezó una guerra abierta.",
-  "gap": 0.2,
-  "dur": 6.686
+  "gap": 0.14,
+  "dur": 6.278
  },
  {
   "id": "r3",
   "t": "El organismo nuclear de la ONU cree que más de 200 kilos al 60 por ciento siguen en túneles de Isfahán. Pero no puede comprobarlo.",
-  "gap": 0.3,
+  "gap": 0.21,
   "c": "El organismo nuclear de la ONU cree que más de 200 kg al 60 % siguen en túneles de Isfahán. Pero no puede comprobarlo.",
-  "dur": 6.496
+  "dur": 6.09
  },
  {
   "id": "f1",
   "t": "Por eso Washington exige que Irán deje de enriquecer. E Irán responde que no renunciará a su derecho.",
-  "gap": 0.25,
-  "dur": 4.795
+  "gap": 0.175,
+  "dur": 4.575
  },
  {
   "id": "f2",
   "t": "Todo depende de un número: ¿60... o 90?",
-  "gap": 0.5,
+  "gap": 0.35,
   "c": "Todo depende de un número: ¿60… o 90?",
-  "dur": 2.399
+  "dur": 2.216
  }
 ]

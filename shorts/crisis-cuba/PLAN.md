@@ -12,7 +12,7 @@ Hecho según `shorts/SISTEMA.md`. Texto exacto de la voz en `guion.json`; escena
 Fuentes: National Security Archive (GWU); JFK Library; Britannica («Cuban missile crisis»).
 
 ## B. Guion
-- **h1**: Durante 13 días de 1962, el mundo estuvo más cerca que nunca de una guerra nuclear.
+- **h1**: En 1962, un solo hombre en un submarino evitó una guerra nuclear. Así llegamos hasta ahí.
 - **c1**: Guerra Fría. Estados Unidos y la Unión Soviética compiten por todo.
 - **c2**: En 1959, Fidel Castro toma el poder en Cuba, a unos 150 km de Florida, y se acerca a Moscú.
 - **c3**: En 1961, Estados Unidos intenta derrocarlo en bahía de Cochinos, y fracasa.
@@ -67,3 +67,6 @@ No hay imágenes generadas con IA: cada plano es código en `escenas.js`, que us
 | Potencial de retención | 8 | La historia de Arjípov es muy compartible. |
 
 **Límites comunes:** la animación por código no tiene sincronía labial ni poses complejas, y la voz y la música son gratuitas y sintetizadas. Mejoraría con una voz profesional, música con licencia y más primeros planos.
+
+## Retención (segunda pasada)
+Gancho reescrito con giro o pregunta abierta, texto grande desde el primer cuadro (también se entiende sin sonido), voz un 5 % más rápida, pausas un 30 % más cortas, golpe de sonido en cada corte de escena y un microzoom en cada bloque de subtítulo (un cambio visual cada 1,5–2 s).

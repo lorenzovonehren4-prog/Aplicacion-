@@ -1,71 +1,71 @@
 [
  {
   "id": "h1",
-  "t": "6 de junio de 1944. Más de ciento cincuenta mil soldados cruzan el canal de la Mancha en una sola noche.",
-  "gap": 0.3,
-  "c": "6 de junio de 1944. Más de 150.000 soldados cruzan el canal de la Mancha en una sola noche.",
-  "dur": 6.406
+  "t": "En una sola noche, 150000 soldados cruzaron el mar. Y Hitler los esperaba en el lugar equivocado.",
+  "gap": 0.21,
+  "c": "En una sola noche, 150.000 soldados cruzaron el mar. Y Hitler los esperaba en el lugar equivocado.",
+  "dur": 5.308
  },
  {
   "id": "c1",
   "t": "Hitler domina Europa occidental, y ha levantado el Muro del Atlántico: búnkeres, minas y obstáculos en las playas.",
-  "gap": 0.1,
-  "dur": 6.82
+  "gap": 0.07,
+  "dur": 6.374
  },
  {
   "id": "c2",
   "t": "Los aliados preparan el desembarco más grande de la historia: la Operación Overlord.",
-  "gap": 0.1,
-  "dur": 4.247
+  "gap": 0.07,
+  "dur": 4.072
  },
  {
   "id": "c3",
   "t": "Para engañar a los alemanes, crean un ejército falso, con tanques inflables, que apunta a Calais.",
-  "gap": 0.2,
-  "dur": 5.507
+  "gap": 0.14,
+  "dur": 5.24
  },
  {
   "id": "d1",
   "t": "Esa noche, miles de paracaidistas saltan detrás de las líneas enemigas.",
-  "gap": 0.15,
-  "dur": 3.686
+  "gap": 0.105,
+  "dur": 3.464
  },
  {
   "id": "d2",
   "t": "Al amanecer, casi siete mil barcos llegan a cinco playas: Utah, Omaha, Gold, Juno y Sword.",
-  "gap": 0.2,
+  "gap": 0.14,
   "c": "Al amanecer, casi 7.000 barcos llegan a cinco playas: Utah, Omaha, Gold, Juno y Sword.",
-  "dur": 5.786
+  "dur": 5.544
  },
  {
   "id": "d3",
   "t": "En Omaha, el fuego alemán es brutal. Muchos soldados caen antes de pisar la arena.",
-  "gap": 0.3,
-  "dur": 4.488
+  "gap": 0.21,
+  "dur": 4.244
  },
  {
   "id": "r1",
   "t": "Pero al anochecer, los aliados ya tienen un pie en Francia.",
-  "gap": 0.15,
-  "dur": 3.049
+  "gap": 0.105,
+  "dur": 3.099
  },
  {
   "id": "r2",
   "t": "Ese día murieron más de cuatro mil soldados aliados.",
-  "gap": 0.3,
+  "gap": 0.21,
   "c": "Ese día murieron más de 4.000 soldados aliados.",
-  "dur": 2.582
+  "dur": 2.423
  },
  {
   "id": "f1",
   "t": "Once meses después, la Alemania nazi se rinde.",
-  "gap": 0.2,
-  "dur": 2.669
+  "gap": 0.14,
+  "dur": 2.467
  },
  {
   "id": "f2",
   "t": "El día más largo abrió el camino al final de la guerra en Europa.",
-  "gap": 0.5,
-  "dur": 4.185
+  "gap": 0.35,
+  "dur": 3.872
  }
 ]

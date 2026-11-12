@@ -11,7 +11,7 @@ Hecho según `shorts/SISTEMA.md`. Texto exacto de la voz en `guion.json`; escena
 Fuentes: Adam Zamoyski, *1812: Napoleon's Fatal March on Moscow*; Britannica («French invasion of Russia»).
 
 ## B. Guion
-- **h1**: Entró en Rusia con el ejército más grande que Europa había visto. Muy pocos volvieron.
+- **h1**: Napoleón entró en Rusia con más de 400.000 soldados. Volvieron muy pocos. Y no fue por las balas.
 - **c1**: 1812. Napoleón domina casi toda Europa.
 - **c2**: Pero el zar Alejandro deja de cumplir el bloqueo contra Gran Bretaña, y Napoleón decide castigarlo.
 - **c3**: En junio cruza el río Niemen con más de 400.000 hombres.
@@ -66,3 +66,6 @@ No hay imágenes generadas con IA: cada plano es código en `escenas.js`, que us
 | Potencial de retención | 7 | Gran arco narrativo. |
 
 **Límites comunes:** la animación por código no tiene sincronía labial ni poses complejas, y la voz y la música son gratuitas y sintetizadas. Mejoraría con una voz profesional, música con licencia y más primeros planos.
+
+## Retención (segunda pasada)
+Gancho reescrito con giro o pregunta abierta, texto grande desde el primer cuadro (también se entiende sin sonido), voz un 5 % más rápida, pausas un 30 % más cortas, golpe de sonido en cada corte de escena y un microzoom en cada bloque de subtítulo (un cambio visual cada 1,5–2 s).

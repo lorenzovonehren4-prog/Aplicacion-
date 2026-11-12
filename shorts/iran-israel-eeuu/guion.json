@@ -2,74 +2,74 @@
  {
   "id": "h1",
   "t": "28 de febrero de 2026. Estados Unidos e Israel atacan Irán, y matan a su líder supremo.",
-  "gap": 0.35,
-  "dur": 5.73
+  "gap": 0.245,
+  "dur": 5.306
  },
  {
   "id": "c1",
   "t": "Pero esta historia empieza en 1979, cuando una revolución convierte a Irán en una república islámica.",
-  "gap": 0.1,
-  "dur": 6.907
+  "gap": 0.07,
+  "dur": 6.373
  },
  {
   "id": "c2",
   "t": "El nuevo régimen llama a Estados Unidos «el gran Satán», y retiene a 52 diplomáticos estadounidenses durante 444 días.",
-  "gap": 0.15,
-  "dur": 7.224
+  "gap": 0.105,
+  "dur": 6.843
  },
  {
   "id": "c3",
   "t": "Después, Irán arma y financia a grupos en la región: Hezbolá en el Líbano, Hamás en Gaza, los hutíes en Yemen.",
-  "gap": 0.2,
-  "dur": 6.499
+  "gap": 0.14,
+  "dur": 6.082
  },
  {
   "id": "d1",
   "t": "Israel ve un Irán con la bomba atómica como una amenaza para su existencia.",
-  "gap": 0.1,
-  "dur": 4.399
+  "gap": 0.07,
+  "dur": 4.265
  },
  {
   "id": "d2",
   "t": "En abril de 2024, por primera vez, Irán ataca Israel directamente, con cientos de drones y misiles.",
-  "gap": 0.15,
-  "dur": 6.079
+  "gap": 0.105,
+  "dur": 5.536
  },
  {
   "id": "d3",
   "t": "En junio de 2025 llega la guerra de los doce días. Y Estados Unidos bombardea Fordo con bombarderos B-2.",
-  "gap": 0.3,
+  "gap": 0.21,
   "c": "En junio de 2025 llega la guerra de los 12 días. Y Estados Unidos bombardea Fordo con bombarderos B-2.",
-  "dur": 6.091
+  "dur": 5.558
  },
  {
   "id": "r1",
   "t": "En 2026 llega la guerra abierta. Irán dispara contra bases estadounidenses en todo el Golfo, y bloquea de hecho el estrecho de Ormuz.",
-  "gap": 0.1,
-  "dur": 7.1
+  "gap": 0.07,
+  "dur": 6.774
  },
  {
   "id": "r2",
   "t": "Por ahí pasa cerca de una quinta parte del petróleo del mundo.",
-  "gap": 0.2,
-  "dur": 2.712
+  "gap": 0.14,
+  "dur": 2.691
  },
  {
   "id": "r3",
   "t": "Hay altos el fuego, rupturas y negociaciones. Mojtabá Jamenei, hijo del líder muerto, es el nuevo líder supremo.",
-  "gap": 0.3,
-  "dur": 6.051
+  "gap": 0.21,
+  "dur": 5.819
  },
  {
   "id": "f1",
   "t": "En noviembre de 2026, Trump dice que la guerra está prácticamente terminada. Pero todavía no hay un acuerdo de paz firmado.",
-  "gap": 0.25,
-  "dur": 6.707
+  "gap": 0.175,
+  "dur": 6.372
  },
  {
   "id": "f2",
   "t": "Y la gran pregunta sigue abierta.",
-  "gap": 0.5,
-  "dur": 1.652
+  "gap": 0.35,
+  "dur": 1.572
  }
 ]

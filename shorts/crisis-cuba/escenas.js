@@ -27,7 +27,7 @@ MOTOR.run(()=>({
   hot:/^(13|trece|1962|nuclear|guerra|fría|castro|cuba|150|cochinos|jrushchov|secreto|14|u-2|kennedy|bloqueo|27|torpedo|arjípov|turquía|línea|directa|existiendo)$/i,
   hits:[Tm('h1',.6),T('r1')+.6,Tm('r1',.5)],
   flashes:[[Tm('d2',.6),.9,.2]],
-  titles:[[Tm('h1',.55),T('c1'),'13 DÍAS<small>OCTUBRE DE 1962</small>'],[E('f2')-.3,TL.total,'13 DÍAS<small>EL MUNDO AL BORDE</small>']],
+  titles:[[0,Tm('h1',.55),'1 HOMBRE<small>EVITÓ LA GUERRA NUCLEAR</small>'],[Tm('h1',.55),T('c1'),'13 DÍAS<small>OCTUBRE DE 1962</small>'],[E('f2')-.3,TL.total,'13 DÍAS<small>EL MUNDO AL BORDE</small>']],
   dates:[[T('c2'),T('c3'),'1959'],[T('c3'),T('d1'),'1961'],[T('d2'),Tm('d2',.6),'14 OCT. 1962'],[T('d3'),T('r1'),'22 OCT. 1962'],[T('r1'),Tm('r1',.5),'27 OCT. 1962'],[T('r3'),Tm('r3',.3),'28 OCT. 1962']],
   names:[[Tm('c2',.3),T('c3'),'FIDEL CASTRO','LÍDER DE CUBA'],[T('d1')+.2,T('d2'),'NIKITA JRUSHCHOV','LÍDER SOVIÉTICO'],[T('d3')+.2,Tm('d3',.6),'JOHN F. KENNEDY','PRESIDENTE DE EE. UU.'],[T('r2')+.2,E('r2'),'VASILI ARJÍPOV','OFICIAL DEL SUBMARINO B-59']],
   scenes:[

@@ -15,7 +15,7 @@ Hecho según `shorts/SISTEMA.md`. Texto exacto de la voz en `guion.json`; escena
 Fuentes: ONU (A/RES/181); Britannica; AP/PBS (cifra de 73.000, junio de 2026); Gisha («Gaza Now», noviembre de 2026); Wikipedia como guía, contrastada.
 
 ## B. Guion
-- **h1**: Dos pueblos reclaman la misma tierra. Y llevan más de cien años sin ponerse de acuerdo.
+- **h1**: Si no entiendes cómo empezó este conflicto, no entiendes las noticias. Empieza hace más de cien años.
 - **c1**: Hace poco más de un siglo, esta tierra es parte del Imperio otomano, y la mayoría de sus habitantes son árabes.
 - **c2**: Entonces nace el sionismo: un movimiento que busca un Estado judío en su tierra histórica.
 - **c3**: En 1917, Gran Bretaña promete un hogar nacional judío allí. Y llegan miles de judíos huyendo de la persecución en Europa.
@@ -76,3 +76,6 @@ No hay imágenes generadas con IA: cada plano es código en `escenas.js`, que us
 | Potencial de retención | 8 | Tema de máxima búsqueda. |
 
 **Límites comunes:** la animación por código no tiene sincronía labial ni poses complejas, y la voz y la música son gratuitas y sintetizadas. Mejoraría con una voz profesional, música con licencia y más primeros planos.
+
+## Retención (segunda pasada)
+Gancho reescrito con giro o pregunta abierta, texto grande desde el primer cuadro (también se entiende sin sonido), voz un 5 % más rápida, pausas un 30 % más cortas, golpe de sonido en cada corte de escena y un microzoom en cada bloque de subtítulo (un cambio visual cada 1,5–2 s).

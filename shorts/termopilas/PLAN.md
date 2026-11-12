@@ -12,7 +12,7 @@ Hecho según `shorts/SISTEMA.md`. Texto exacto de la voz en `guion.json`; escena
 Fuentes: Heródoto, *Historias* VII–VIII; Plutarco; Encyclopaedia Britannica («Battle of Thermopylae»).
 
 ## B. Guion
-- **h1**: Trescientos espartanos contra el ejército más grande del mundo. Pero no estaban solos.
+- **h1**: 300 espartanos frenaron a un imperio. Pero la historia que te contaron está incompleta.
 - **c1**: Año 480 antes de Cristo. Jerjes, rey de Persia, invade Grecia.
 - **c2**: Heródoto habla de millones de soldados. Los historiadores de hoy creen que eran entre 100.000 y 300.000.
 - **d1**: Para frenarlo, los griegos eligen un paso estrecho entre la montaña y el mar: las Termópilas.
@@ -67,3 +67,6 @@ No hay imágenes generadas con IA: cada plano es código en `escenas.js`, que us
 | Potencial de retención | 7 | Final emotivo. |
 
 **Límites comunes:** la animación por código no tiene sincronía labial ni poses complejas, y la voz y la música son gratuitas y sintetizadas. Mejoraría con una voz profesional, música con licencia y más primeros planos.
+
+## Retención (segunda pasada)
+Gancho reescrito con giro o pregunta abierta, texto grande desde el primer cuadro (también se entiende sin sonido), voz un 5 % más rápida, pausas un 30 % más cortas, golpe de sonido en cada corte de escena y un microzoom en cada bloque de subtítulo (un cambio visual cada 1,5–2 s).

@@ -40,7 +40,7 @@ MOTOR.run(()=>({
   hot:/^(espartanos|trescientos|300|jerjes|persia|grecia|heródoto|millones|termópilas|leónidas|plutarco|tomarlas|inmortales|efialtes|sendero|salamina|100\.000|300\.000|7\.000|480|mueren|final)$/i,
   hits:[Tm('h1',.55),Tm('d4',.2),Tm('d4',.55),T('r3')],
   flashes:[[Tm('h1',.55),.5,.1],[T('d4'),.6,.12],[T('r3'),.5,.2]],
-  titles:[[Tm('h1',.55),T('c1'),'TERMÓPILAS<small>480 a. C.</small>'],[E('f2')-.3,TL.total,'TERMÓPILAS<small>RESISTIR HASTA EL FINAL</small>','140px']],
+  titles:[[0,Tm('h1',.45),'300<small>CONTRA UN IMPERIO</small>','260px'],[Tm('h1',.55),T('c1'),'TERMÓPILAS<small>480 a. C.</small>'],[E('f2')-.3,TL.total,'TERMÓPILAS<small>RESISTIR HASTA EL FINAL</small>','140px']],
   dates:[[T('c1'),T('c2'),'480 a. C.'],[T('f1'),T('f2'),'SALAMINA']],
   counts:[[Tm('c2',.4),T('d1'),()=>['100.000–300.000','PERSAS (ESTIMACIÓN ACTUAL)']],[T('d2'),T('d3'),()=>['300 + 7.000','GRIEGOS EN EL PASO']]],
   names:[[Tm('c2',.1),T('d1'),'JERJES I','REY DE PERSIA'],[Tm('d2',.15),T('d3'),'LEÓNIDAS I','REY DE ESPARTA'],[Tm('r1',.2),T('r2'),'EFIALTES','EL TRAIDOR']],
