@@ -29,3 +29,6 @@ Para revisar planos sueltos: `node motor/render.mjs termopilas --fotos 1,5,9`.
 - Los datos de temas actuales se verifican con fuentes recientes (están en cada `PLAN.md`), y las cifras discutidas se atribuyen en pantalla.
 - No se dibujan líderes vivos; los nombres aparecen solo en rótulos. Las figuras históricas tienen ficha fija.
 - Todo lleva el rótulo «RECREACIÓN ANIMADA».
+
+## Calidad visual (comparación con shorts virales)
+El motor aplica en cada cuadro etalonaje (brillo 1,13, contraste 1,3), resplandor en las luces, un microzoom en cada bloque de subtítulo y un leve movimiento de cámara en mano (`post` en `MOTOR.run` permite ajustarlo por vídeo). Los personajes llevan sombreado, luz de contorno y brillo en los ojos; las escenas exteriores, nubes, rayos de luz y primer plano en paralaje; y los subtítulos resaltan la palabra que se dice. `antes-despues.jpg` muestra el cambio.
