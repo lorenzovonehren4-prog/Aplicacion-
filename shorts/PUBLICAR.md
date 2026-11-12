@@ -1,7 +1,7 @@
 # Publicación de los 10 shorts
 
 Todos: visibilidad **pública**, «No, no es contenido para niños», categoría **Educación**, y marcar **«Contenido alterado o sintético: sí»** (voz e imágenes generadas). Archivo: `<carpeta>/<carpeta>.mp4`.
-Canal: **Historia.Universal** (@HistoriaUniversalExplicada). Horario: 2 por día, 12:30 y 19:30 (hora de Lima, UTC-5). Subidos el 12 de noviembre de 2026 como privados con publicación programada; YouTube los publica solos.
+Canal: **Historia.Universal** (@HistoriaUniversalExplicada). Horario: 2 por día, 12:30 y 19:30 (hora de Lima, UTC-5). Subidos el 12 de noviembre de 2026. A pedido del dueño, los 10 se hicieron públicos ese mismo día (la tabla conserva el horario que estaba previsto).
 
 | Publicación (Lima) | Vídeo | Enlace |
 | --- | --- | --- |
