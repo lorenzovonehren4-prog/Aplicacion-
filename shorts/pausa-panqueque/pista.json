@@ -1,0 +1,1 @@
+{"duck": 0.6, "bed": 0.9, "plan": [[0, "END", "pad", {"chord": [0.5, 0.75, 1.0], "key": "sol"}], ["E:h1", "T:f1", "drums", {"bpm": 128, "pat": "BtbtBtbb"}], ["E:h1", "T:f1", "ostinato", {"bpm": 128, "amp": 0.05, "key": "sol"}], ["E:h1", "T:f1", "clock", {"gain": 0.6}]], "cues": [["T:h1", "riser", 0.4], ["E:h1", "whoosh", 0.6], ["T:f1", "bell", 0.6, {"f": 262}]]}
