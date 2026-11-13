@@ -181,3 +181,10 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
 | 1 | t01-no-abras | No abras la puerta 🚪 ¿A o B? | Son las 2:17 de la madrugada y alguien toca la puerta con la voz de tu hermano. Tú decides: comenta A o B y la historia sigue con la opción que gane. Historia de ficción. | #terror #misterio #historiasdeterror #tudecides #shorts | https://youtube.com/shorts/NjXJER2iyAc (subido en privado, SIN fecha: el dueño pidió no publicarlo) |
+
+
+# Tanda 6: g01 (narración del dueño, voz Álvaro)
+
+| # | Carpeta | Título | Descripción | Etiquetas | Enlace |
+| --- | --- | --- | --- | --- | --- |
+| 1 | g01-bohemian-grove | ¿Sabías que los más poderosos se reúnen en secreto frente a un búho gigante? | Bohemian Grove: el club privado de California donde cada julio se juntan presidentes, banqueros y magnates. ¿Club social o algo más? | #historia #bohemiangrove #misterio #sabiasque #shorts | pendiente |
