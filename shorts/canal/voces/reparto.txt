@@ -1,0 +1,3 @@
+ALEX: e01-colon-vikingos e05-gran-muralla e09-torre-salvada e13-rosetta e17-hedy-lamarr f01-lustig f05-fortitude cleopatra leonardo-paracaidas twain-halley nintendo e03-cascos-vikingos e07-salem e11-mar-muerto e15-nazca e19-mincemeat f03-zanzibar f07-demara juicios-animales cannas ketchup wojtek
+ALVARO: e02-machu-picchu e06-vomitorios e10-sutra-diamante e14-tutankamon e18-katherine-johnson f02-mary-celeste f06-senal-wow napoleon-conejos anticitera plaga-baile carne-picada e04-tierra-redonda e08-gripe-espanola e12-lascaux e16-qeswachaka e20-cable-atlantico f04-yamaguchi f08-emus sinodo-cadaver novela-titanic vikingos oxford-aztecas
+DALIA: t01-no-abras (voz tras la puerta: Álvaro)

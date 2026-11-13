@@ -22,7 +22,8 @@
   "t": "¡Soy yo! Abre, hace mucho frío.",
   "gap": 0.6,
   "fx": "puerta",
-  "dur": 3.153
+  "dur": 3.153,
+  "voz": "es-ES-AlvaroNeural"
  },
  {
   "id": "s4",
@@ -41,7 +42,8 @@
   "t": "¿Por qué no abres? Sé que estás ahí.",
   "gap": 0.7,
   "fx": "puerta",
-  "dur": 2.862
+  "dur": 2.862,
+  "voz": "es-ES-AlvaroNeural"
  },
  {
   "id": "s7",
@@ -60,7 +62,8 @@
   "t": "Ya sé que leíste el mensaje.",
   "gap": 1.2,
   "fx": "susurro",
-  "dur": 1.637
+  "dur": 1.637,
+  "voz": "es-ES-AlvaroNeural"
  },
  {
   "id": "s10",

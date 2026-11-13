@@ -6,18 +6,18 @@ from piper import PiperVoice, SynthesisConfig
 d, m = sys.argv[1], sys.argv[2]; ls = float(sys.argv[3]) if len(sys.argv) > 3 else 0.72
 EDGE = os.environ.get('VOZ_EDGE')  # p. ej. es-MX-JorgeNeural: voz neuronal de Microsoft (pip install edge-tts); RATE=+10% ajusta la velocidad
 v = None if EDGE else PiperVoice.load(f'{m}/es_MX-claude-high.onnx'); os.makedirs(f'{d}/voz', exist_ok=True)
-def edge(txt, dst):
+def edge(txt, dst, voz=None):
     import asyncio, subprocess, edge_tts
     for k in range(4):
         try:
-            asyncio.run(edge_tts.Communicate(txt, EDGE, rate=os.environ.get('RATE', '+10%'), proxy=os.environ.get('HTTPS_PROXY')).save(dst + '.mp3')); break
+            asyncio.run(edge_tts.Communicate(txt, voz or EDGE, rate=os.environ.get('RATE', '+10%'), proxy=os.environ.get('HTTPS_PROXY')).save(dst + '.mp3')); break
         except Exception as e:
             if k == 3: raise
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', dst + '.mp3', '-ac', '1', '-ar', '24000', dst], check=True); os.remove(dst + '.mp3')
 g = json.load(open(f'{d}/guion.json'))
 for s in g:
     tmp = f"{d}/voz/{s['id']}.tmp.wav"
-    if EDGE: edge(s['t'], tmp)
+    if EDGE: edge(s['t'], tmp, s.get('voz'))
     else:
       with wave.open(tmp, 'wb') as w: v.synthesize_wav(s['t'], w, syn_config=SynthesisConfig(length_scale=s.get('ls', ls), noise_scale=float(os.environ.get('NS', 0.6)), noise_w_scale=float(os.environ.get('NW', 0.7))))
     a, sr = sf.read(tmp); os.remove(tmp); i = np.where(np.abs(a) > 0.012)[0]; a = a[max(0, i[0] - 300):i[-1] + 1500]
