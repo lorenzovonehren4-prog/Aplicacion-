@@ -1,0 +1,15 @@
+AUTO({hot:/^(oso|soldado|segunda|guerra|1942|polacos|irán|osezno|wojtek|leche|vodka|camión|cerveza|italia|animales|alistan|número|1944|montecassino|munición|cargarlas|emblema|proyectil|edimburgo|polaco)$/i,
+ titulo:['¿SABÍAS QUE...?','EL OSO QUE FUE SOLDADO'], final:['SOLDADO WOJTEK','1942 – 1963','150px'],
+ P:{S:{top:'#6a6a44',hat:'boina',hatCol:'#5a5a38',hair:'short',hairCol:'#6a4a2a',h:500},T:{top:'#6a6a44',hat:'casco',hatCol:'#5a6448',mustache:'#3a2a1a',h:510},O:{top:'#5a6448',top2:'#4a5438',hat:'boina',hatCol:'#3a4428',mustache:'#8a8278',h:520},N:{skin:'#d8a878',top:'#8a6a3a',hair:'short',hairCol:'#1d140e',h:400}},
+ fechas:[[1,3,'IRÁN · 1942'],[6,7,'MONTECASSINO · 1944']], cifras:[[5,'SOLDADO','22.ª COMPAÑÍA DE SUMINISTROS']], golpes:[5,7],
+ escenas:[
+  {bg:'woj_campo',cam:'out',animales:[{tipo:'oso',x:560,y:1780,s:1.2,gorra:true}]},
+  {bg:'woj_iran',chars:[{p:'S',x:300,cara:'s',brazos:'senala',s:1.4},{p:'N',x:640,look:-1,cara:'s',s:1.3}],animales:[{tipo:'oso',x:880,y:1760,s:.45,dir:-1}]},
+  {bg:'woj_campo',cam:'in',chars:[{p:'S',x:320,cara:'g',s:1.5,hold:(x,y)=>{c.fillStyle='#d8e8f0';c.strokeStyle='#0b0806';c.lineWidth=5;c.fillRect(x,y-90,40,100);c.strokeRect(x,y-90,40,100);c.fillRect(x+10,y-120,20,30);}}],animales:[{tipo:'oso',x:760,y:1760,s:.55,dir:-1}]},
+  {bg:'woj_campo',chars:[{p:'T',x:260,cara:'g',brazos:'arriba',s:1.3}],animales:[{tipo:'oso',x:700,y:1780,s:1.0,dir:-1}],extra:t=>{ c.font='130px serif'; c.textAlign='center'; c.fillText('🍺',900,1180); }},
+  {bg:'woj_puerto',chars:[{p:'O',x:330,cara:'e',habla:true,brazos:'senala',s:1.5}],animales:[{tipo:'oso',x:800,y:1780,s:.9,dir:-1}],sello:{t:'NO ANIMALES',y:560,size:80}},
+  {bg:'woj_puerto',cam:'crash',animales:[{tipo:'oso',x:540,y:1820,s:1.25,gorra:true}],texto:{t:'¡ALISTADO!',y:520}},
+  {bg:'woj_monte',chars:[{p:'T',anda:[150,500],cara:'e',s:1.3,hold:(x,y)=>{c.fillStyle='#6a7a4a';c.strokeStyle='#0b0806';c.lineWidth=5;c.fillRect(x-60,y-50,150,80);c.strokeRect(x-60,y-50,150,80);}}],animales:[{tipo:'oso',x:820,y:1780,s:.95,dir:-1}],extra:t=>explosion(300,900,90,mod(t,2.6))},
+  {bg:'woj_monte',cam:'in',animales:[{tipo:'oso',x:540,y:1820,s:1.25,carga:true,gorra:true}]},
+  {bg:'woj_campo',extra:t=>{ c.fillStyle='#f4f1ea'; c.strokeStyle='#0b0806'; c.lineWidth=10; c.beginPath(); c.arc(540,1050,330,0,7); c.fill(); c.stroke(); c.save(); c.translate(540,1330); oso(0,0,.75,0,1,{carga:true}); c.restore(); }},
+  {bg:'woj_zoo',cam:'out',chars:[{p:'S',x:280,cara:'g',brazos:'arriba',s:1.4}],animales:[{tipo:'oso',x:760,y:1780,s:1.0,dir:-1}]}]});

@@ -1,0 +1,15 @@
+AUTO({hot:/^(guerra|corta|fútbol|1896|zanzíbar|sultán|khalid|palacio|ultimátum|nueve|tres|mil|fuego|arde|hunde|bandera|treinta|ocho|minutos|quinientos|ventana|alemán)$/i,
+ titulo:['¿SABÍAS QUE...?','LA GUERRA MÁS CORTA DE LA HISTORIA'], final:['38 MINUTOS','GUERRA ANGLO-ZANZIBARÍ · 1896','200px'],
+ P:{K:{skin:'#c89a6a',top:'#f4f1ea',robe:'#f4f1ea',trim:'#e8c03a',hat:'capucha',hatCol:'#c8102e',beard:'#1d140e',h:520},B:{top:'#f4f1ea',top2:'#e8e4d8',hat:'casco',hatCol:'#f4f1ea',mustache:'#6a4a2a',h:520},G:{skin:'#c89a6a',top:'#8a1a1a',hat:'capucha',hatCol:'#f4f1ea',h:480}},
+ fechas:[[1,4,'27 AGO. 1896'],[5,6,'9:02'],[7,7,'9:40']], cifras:[[8,'38 MIN','LA GUERRA MÁS CORTA REGISTRADA']], golpes:[5,6], destellos:[5],
+ escenas:[
+  {bg:'zan_puerto',cam:'out',chars:[{p:'B',x:320,cara:'m',hold:(x,y)=>{c.fillStyle='#e8c03a';c.strokeStyle='#0b0806';c.lineWidth=5;c.beginPath();c.arc(x,y-30,44,0,7);c.fill();c.stroke();c.beginPath();c.moveTo(x,y-30);c.lineTo(x,y-60);c.moveTo(x,y-30);c.lineTo(x+20,y-30);c.stroke();}}]},
+  {bg:'zan_puerto',cam:'sube'},
+  {bg:'zan_palacio',chars:[{p:'K',x:540,cara:'m',brazos:'arriba',s:1.6}]},
+  {bg:'zan_puerto',chars:[{p:'B',x:330,cara:'e',habla:true,brazos:'senala'}],texto:{t:'9:00',y:600}},
+  {bg:'zan_palacio',chars:[{p:'K',x:300,cara:'e',s:1.4},{p:'G',x:650,look:-1,cara:'e',s:1.2},{p:'G',x:880,look:-1,cara:'e',s:1.2,seed:3}]},
+  {bg:'zan_puerto',cam:'crash',extra:(t,k)=>{ for(let i=0;i<3;i++){ c.save(); c.translate(200+i*340,1500+i*60); c.scale(.7,.7); ship(0,0,1,'warship',t,1); c.restore(); glow(300+i*340,1420+i*60,140,'rgba(255,220,120,A)',mod(t*3+i/3,1)<.2?1:0); } }},
+  {bg:'zan_palacio',tinte:'rgba(255,90,30,.25)',extra:(t,k)=>{ for(let i=0;i<5;i++) flame(150+i*200,1300,70,160,t,i); for(let i=0;i<4;i++) smoke(200+i*230,1000,100,t,i,.5); },chars:[{p:'G',anda:[300,1200],cara:'o',brazos:'arriba',s:1.2,vel:14}]},
+  {bg:'zan_palacio',extra:(t,k)=>{ c.fillStyle='#3a2a1a'; c.fillRect(530,400,14,600); c.save(); c.translate(544,lerp(420,900,eio(k))); flag(0,0,200,130,'#c8102e',t,false); c.restore(); }},
+  {bg:'zan_puerto',chars:[{p:'B',x:540,cara:'s',brazos:'pensar',s:1.6}]},
+  {bg:'zan_palacio',cam:'der',chars:[{p:'K',anda:[200,900],cara:'o',vel:14,s:1.3}]}]});

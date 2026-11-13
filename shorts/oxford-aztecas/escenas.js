@@ -1,0 +1,15 @@
+AUTO({hot:/^(oxford|antigua|azteca|1096|profesores|peleas|1209|cambridge|mexicas|águila|nopal|isla|lago|1325|tenochtitlan|doscientos|imperio|siglo|antiguo|moderno)$/i,
+ titulo:['¿SABÍAS QUE...?','OXFORD ES MÁS ANTIGUA QUE LOS AZTECAS'], final:['1096 vs 1325','229 AÑOS DE DIFERENCIA','170px'],
+ P:{F:{top:'#2a2a3a',robe:'#2a2a3a',hat:'birrete',hatCol:'#14110e',beard:'#d8d4cc',h:520},E:{top:'#5a3a2a',robe:'#5a3a2a',hair:'short',hairCol:'#6a4a2a',h:470},V:{top:'#5a6a3a',hat:'capucha',hatCol:'#6a5a3a',beard:'#5a3a1e',h:490},M:{skin:'#c8946a',top:'#f4f1ea',trim:'#c8102e',hat:'corona_egipto',hatCol:'#3a8a5a',hair:'long',hairCol:'#1d140e',h:500},K:{skin:'#c8946a',top:'#d8a03a',hair:'short',hairCol:'#1d140e',h:480}},
+ fechas:[[1,2,'1096'],[3,3,'1209'],[6,6,'1325'],[8,8,'1428']], cifras:[[7,'+200 AÑOS','DE VENTAJA']], golpes:[3,6],
+ escenas:[
+  {bg:'oxf_patio',cam:'out',chars:[{p:'F',x:300,cara:'s',s:1.4},{p:'M',x:780,look:-1,cara:'o',s:1.4}]},
+  {bg:'oxf_aula',chars:[{p:'F',x:330,cara:'s',habla:true,brazos:'senala',s:1.5},{p:'E',x:800,look:-1,cara:'n',s:1.3}]},
+  {bg:'oxf_calle',chars:[{p:'E',x:300,cara:'e',brazos:'arriba',s:1.4},{p:'V',x:780,look:-1,cara:'e',brazos:'arriba',s:1.4}]},
+  {bg:'oxf_calle',cam:'der',chars:[{p:'F',anda:[150,900],cara:'o',vel:13,s:1.3},{p:'E',anda:[-50,700],cara:'o',vel:13,s:1.2,seed:3}],texto:{t:'→ CAMBRIDGE',y:560,size:84}},
+  {bg:'azt_lago',chars:[{p:'M',anda:[150,450],cara:'f',s:1.4},{p:'K',anda:[-50,250],cara:'f',s:1.3,seed:2}]},
+  {bg:'azt_lago',cam:'in',chars:[{p:'M',x:300,cara:'o',brazos:'senala',s:1.5}],extra:t=>{ c.fillStyle='#3a8a3a'; c.strokeStyle='#0b0806'; c.lineWidth=6; for(const [x,y,r] of [[760,1500,70],[700,1400,50],[830,1390,54]]){ c.beginPath(); c.ellipse(x,y,r*.7,r,0,0,7); c.fill(); c.stroke(); } c.font='170px serif'; c.textAlign='center'; c.fillText('🦅',770,1300+Math.sin(t*3)*10); }},
+  {bg:'azt_ciudad',cam:'sube',chars:[{p:'M',x:540,cara:'g',brazos:'arriba',s:1.5}]},
+  {bg:'oxf_patio',chars:[{p:'F',x:540,cara:'s',brazos:'pensar',s:1.6}]},
+  {bg:'azt_ciudad',chars:[{p:'M',x:330,cara:'s',s:1.5},{p:'K',x:780,look:-1,cara:'s',s:1.4}]},
+  {bg:'oxf_patio',cam:'out',chars:[{p:'F',x:300,cara:'g',s:1.4},{p:'M',x:780,look:-1,cara:'g',s:1.4}]}]});

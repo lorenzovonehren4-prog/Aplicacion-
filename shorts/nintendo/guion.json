@@ -1,0 +1,62 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que Nintendo existe desde antes de que se inventara el avión?",
+  "gap": 0.3,
+  "dur": 3.022
+ },
+ {
+  "id": "s1",
+  "t": "Kioto, Japón, 1889. Fusajiro Yamauchi abre una pequeña tienda.",
+  "gap": 0.15,
+  "dur": 4.895
+ },
+ {
+  "id": "s2",
+  "t": "No vende videojuegos, claro. Vende cartas pintadas a mano, llamadas hanafuda.",
+  "gap": 0.15,
+  "dur": 4.357
+ },
+ {
+  "id": "s3",
+  "t": "Las cartas triunfan, y la empresa crece durante décadas.",
+  "gap": 0.15,
+  "dur": 2.798
+ },
+ {
+  "id": "s4",
+  "t": "En los años sesenta, el negocio de las cartas se cae.",
+  "gap": 0.15,
+  "dur": 2.481
+ },
+ {
+  "id": "s5",
+  "t": "Nintendo prueba de todo: una compañía de taxis, arroz instantáneo, juguetes.",
+  "gap": 0.15,
+  "dur": 4.171
+ },
+ {
+  "id": "s6",
+  "t": "Casi nada funciona.",
+  "gap": 0.15,
+  "dur": 1.129
+ },
+ {
+  "id": "s7",
+  "t": "Hasta que un ingeniero de la casa, Gunpei Yokoi, inventa un juguete que vende más de un millón.",
+  "gap": 0.15,
+  "dur": 4.695
+ },
+ {
+  "id": "s8",
+  "t": "De los juguetes pasan a los videojuegos. En 1981 llega Donkey Kong. En 1985, Super Mario.",
+  "gap": 0.15,
+  "dur": 6.779
+ },
+ {
+  "id": "s9",
+  "t": "Una tienda de cartas de 1889... que hoy conoce todo el mundo.",
+  "gap": 0.5,
+  "dur": 3.673
+ }
+]

@@ -1,0 +1,62 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que un estafador vendió la Torre Eiffel... y nadie lo denunció?",
+  "gap": 0.3,
+  "dur": 3.215
+ },
+ {
+  "id": "s1",
+  "t": "París, 1925. La torre está oxidada, y cuesta una fortuna mantenerla.",
+  "gap": 0.15,
+  "dur": 4.939
+ },
+ {
+  "id": "s2",
+  "t": "Victor Lustig, un estafador elegante, lee la noticia y tiene una idea.",
+  "gap": 0.15,
+  "dur": 3.982
+ },
+ {
+  "id": "s3",
+  "t": "Falsifica papeles del gobierno, y cita a seis chatarreros en un hotel de lujo.",
+  "gap": 0.15,
+  "dur": 3.79
+ },
+ {
+  "id": "s4",
+  "t": "Les dice que la torre se va a desmontar, y que venderán sus siete mil toneladas de hierro. En secreto.",
+  "gap": 0.15,
+  "dur": 4.918
+ },
+ {
+  "id": "s5",
+  "t": "Uno de ellos, André Poisson, paga. Y además, un soborno.",
+  "gap": 0.15,
+  "dur": 3.29
+ },
+ {
+  "id": "s6",
+  "t": "Lustig huye a Viena con el dinero.",
+  "gap": 0.15,
+  "dur": 1.656
+ },
+ {
+  "id": "s7",
+  "t": "¿Y Poisson? Le dio tanta vergüenza, que no fue a la policía.",
+  "gap": 0.15,
+  "dur": 3.12
+ },
+ {
+  "id": "s8",
+  "t": "Así que Lustig volvió a París... e intentó venderla otra vez.",
+  "gap": 0.15,
+  "dur": 3.049
+ },
+ {
+  "id": "s9",
+  "t": "Esa vez lo denunciaron, pero escapó. Años después, terminó en la prisión de Alcatraz.",
+  "gap": 0.5,
+  "dur": 4.459
+ }
+]

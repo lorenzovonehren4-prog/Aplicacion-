@@ -1,0 +1,15 @@
+AUTO({hot:/^(muerto|segunda|guerra|1943|sicilia|obvio|agentes|plan|cuerpo|william|martin|cartas|maletín|falsos|grecia|submarino|huelva|españa|pescador|hitler|tropas|carne|picada|glyndwr|michael|héroe)$/i,
+ titulo:['¿SABÍAS QUE...?','EL MUERTO QUE ENGAÑÓ A HITLER'], final:['CARNE PICADA','OPERACIÓN MINCEMEAT · 1943','150px'],
+ P:{A:{top:'#2a3a5a',top2:'#1a2a44',hat:'boina',hatCol:'#1a2a44',mustache:'#6a4a2a',h:520},B:{top:'#3a3a44',top2:'#2a2a30',hair:'short',hairCol:'#2a1a10',h:530},F:{skin:'#d8a878',top:'#3a5a7a',hat:'boina',hatCol:'#2a2a2a',beard:'#6a6a6a',h:490},Z:{top:'#5a6360',hat:'casco',hatCol:'#5a5f62',h:510}},
+ fechas:[[1,5,'1943'],[6,7,'30 ABR. 1943'],[8,8,'JULIO 1943']], nombres:[[9,'GLYNDWR MICHAEL','«COMANDANTE WILLIAM MARTIN»']], golpes:[5,8],
+ escenas:[
+  {bg:'car_playa',cam:'in',extra:t=>{ c.fillStyle='#5a3a1e'; c.strokeStyle='#0b0806'; c.lineWidth=6; c.fillRect(420,1560,260,170); c.strokeRect(420,1560,260,170); c.fillStyle='#e8c03a'; c.fillRect(530,1630,40,30); glow(550,1640,300,'rgba(255,220,120,A)',.4+.2*Math.sin(t*4)); }},
+  {bg:'car_mapa',chars:[{p:'A',x:330,cara:'f',brazos:'senala',s:1.5}],texto:{t:'SICILIA',y:560}},
+  {bg:'car_oficina',chars:[{p:'A',x:300,cara:'m',habla:true,s:1.5},{p:'B',x:780,look:-1,cara:'s',s:1.5}]},
+  {bg:'car_oficina',cam:'in',extra:t=>{ papel(540,1000,520,640,-.03); screen(); txt('MAYOR',540,860,60,'#14110e'); txt('WILLIAM MARTIN',540,950,52,'#14110e'); layer(1); },sello:{t:'INVENTADO',y:1200,size:80,en:.5}},
+  {bg:'car_oficina',extra:(t,k)=>{ ['💌','🎭','💼'].forEach((e,i)=>{ const q=k01(k,.1+i*.28,.25+i*.28); if(q>0){ c.save(); c.globalAlpha=q; c.font='190px serif'; c.textAlign='center'; c.fillText(e,260+i*280,1150); c.restore(); } }); }},
+  {bg:'car_mapa',cam:'crash',texto:{t:'→ GRECIA',y:620,size:110},sello:{t:'FALSO',y:900,en:.6}},
+  {bg:'car_mar',cam:'der',extra:(t,k)=>{ c.fillStyle='#3a4a4a'; c.strokeStyle='#0b0806'; c.lineWidth=6; c.beginPath(); c.ellipse(lerp(300,600,k),1500,300,60,0,Math.PI,0); c.fill(); c.stroke(); c.fillRect(lerp(300,600,k)-30,1380,60,70); c.strokeRect(lerp(300,600,k)-30,1380,60,70); }},
+  {bg:'car_playa',chars:[{p:'F',x:330,cara:'o',brazos:'senala',s:1.5}],extra:t=>{ c.fillStyle='#5a3a1e'; c.strokeStyle='#0b0806'; c.lineWidth=6; c.fillRect(680,1620,220,140); c.strokeRect(680,1620,220,140); }},
+  {bg:'car_mapa',chars:[{p:'Z',anda:[300,900],cara:'e',s:1.3,vel:12},{p:'Z',anda:[100,700],cara:'e',s:1.3,vel:12,seed:5}],texto:{t:'SICILIA ✓',y:560,en:.6,col:'#3ad06a'}},
+  {bg:'car_tumba',cam:'in',extra:t=>{ c.fillStyle='#c8c8c0'; c.strokeStyle='#0b0806'; c.lineWidth=8; c.beginPath(); c.moveTo(380,1700); c.lineTo(380,1250); c.quadraticCurveTo(540,1100,700,1250); c.lineTo(700,1700); c.closePath(); c.fill(); c.stroke(); c.font='110px serif'; c.textAlign='center'; c.fillText('🌹',540,1760); }}]});

@@ -1,0 +1,15 @@
+AUTO({hot:/^(1518|bailaron|semanas|estrasburgo|troffea|bailar|música|parar|días|treinta|cuatrocientos|cura|músicos|peor|agotamiento|septiembre|hongo|histeria|misterio)$/i,
+ titulo:['¿SABÍAS QUE...?','LA PLAGA DEL BAILE DE 1518'], final:['¿POR QUÉ?','NADIE LO SABE TODAVÍA','220px'],
+ P:{T:{top:'#8a3a3a',robe:'#8a3a3a',hair:'long',hairCol:'#8a5a2a',h:480},A:{top:'#5a6a3a',hat:'capucha',hatCol:'#6a5a3a',h:470},B:{top:'#3a4a7a',hair:'bob',hairCol:'#2a1a10',robe:'#3a4a7a',h:460},C:{top:'#c8a03a',hair:'short',hairCol:'#6a4a2a',beard:'#6a4a2a',h:480},J:{top:'#2a2a3a',robe:'#2a2a3a',trim:'#e8c03a',hat:'birrete',hatCol:'#14110e',beard:'#d8d4cc',h:520},M:{top:'#6a2a6a',hat:'boina',hatCol:'#c8102e',h:480}},
+ fechas:[[1,3,'JULIO 1518'],[8,8,'SEPT. 1518']], cifras:[[4,'≈400','PERSONAS BAILANDO']], golpes:[6],
+ escenas:[
+  {bg:'bai_plaza',cam:'out',chars:[{p:'T',x:200,brazos:'baila',cara:'f',s:1.2},{p:'A',x:480,brazos:'baila',cara:'o',s:1.2},{p:'B',x:760,brazos:'baila',cara:'f',s:1.2,look:-1},{p:'C',x:980,brazos:'baila',cara:'o',s:1.2,look:-1}]},
+  {bg:'bai_calle',chars:[{p:'T',x:520,brazos:'baila',cara:'n',s:1.6}]},
+  {bg:'bai_calle',cam:'in',chars:[{p:'T',x:420,brazos:'baila',cara:'f',s:1.6},{p:'A',x:860,look:-1,cara:'o',s:1.3}]},
+  {bg:'bai_plaza',chars:[{p:'T',x:260,brazos:'baila',cara:'f',s:1.3},{p:'B',x:560,brazos:'baila',cara:'f',s:1.3},{p:'C',x:860,brazos:'baila',cara:'o',s:1.3,look:-1}]},
+  {bg:'bai_plaza',cam:'out',extra:(t,k)=>{ const n=Math.floor(lerp(4,14,k)); for(let i=0;i<n;i++){ const P=[{top:'#8a3a3a',hair:'long',hairCol:'#8a5a2a',h:300},{top:'#5a6a3a',hat:'capucha',hatCol:'#6a5a3a',h:300},{top:'#3a4a7a',hair:'bob',h:300},{top:'#c8a03a',beard:'#6a4a2a',h:300}][i%4]; cabezon(P,{x:60+(i%7)*150,y:1500+Math.floor(i/7)*260,s:1.2,t,look:i%2?1:-1,seed:i,walk:t*12+i,face:CARAS.f,armF:[1.2,3],armB:[-3,-1.2]}); } }},
+  {bg:'bai_sala',chars:[{p:'J',x:400,cara:'s',habla:true,brazos:'senala'},{p:'C',x:800,look:-1,cara:'o',s:1.3}]},
+  {bg:'bai_plaza',chars:[{p:'M',x:260,cara:'s',s:1.3,hold:(x,y)=>{c.fillStyle='#c8862e';c.strokeStyle='#0b0806';c.lineWidth=5;c.beginPath();c.ellipse(x+20,y,60,36,-.4,0,7);c.fill();c.stroke();c.fillRect(x+60,y-70,14,80);}},{p:'T',x:620,brazos:'baila',cara:'f',s:1.3},{p:'B',x:900,brazos:'baila',cara:'f',s:1.3,look:-1}],sello:{t:'PEOR',y:560}},
+  {bg:'bai_calle',chars:[{p:'A',x:540,cara:'d',s:1.5,brazos:'pensar'}],tinte:'rgba(20,20,60,.3)'},
+  {bg:'bai_plaza',cam:'out',chars:[{p:'T',x:540,cara:'n',s:1.5}]},
+  {bg:'bai_sala',cam:'in',chars:[{p:'J',x:540,cara:'f',brazos:'pensar',s:1.6}],texto:{t:'¿?',y:520,size:200}}]});

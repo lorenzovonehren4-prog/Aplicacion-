@@ -1,0 +1,15 @@
+AUTO({hot:/^(europeos|américa|colón|quinientos|sagas|vinland|leif|erikson|groenlandia|leyenda|1960|terranova|casas|vikingo|hierro|2021|madera|solar|anillos|1021|vikingos|primero)$/i,
+ titulo:['¿SABÍAS QUE...?','LLEGARON 500 AÑOS ANTES QUE COLÓN'], final:['1021','VIKINGOS EN AMÉRICA','260px'],
+ P:{L:{top:'#5a3a2a',top2:'#8a6a3a',hat:'casco',hatCol:'#9aa0a8',hair:'long',hairCol:'#c8962e',beard:'#c8962e',cape:'#8a1a1a',h:540},V:{top:'#4a5a3a',hat:'casco',hatCol:'#8a8a8a',beard:'#8a5a2a',h:500},E:{top:'#6a5a3a',top2:'#4a3a2a',hat:'boina',hatCol:'#3a3a2a',hair:'short',hairCol:'#d8d4cc',h:510},C:{top:'#f4f4f4',hair:'bob',hairCol:'#6a4a2a',h:490}},
+ fechas:[[4,5,'1960'],[6,7,'2021']], cifras:[[8,'471 AÑOS','ANTES QUE COLÓN']], nombres:[[2,'LEIF ERIKSON','NAVEGANTE NÓRDICO']], golpes:[4,8],
+ escenas:[
+  {bg:'vik_costa',cam:'out',chars:[{p:'L',x:340,cara:'s',brazos:'senala',s:1.5}]},
+  {bg:'vik_sala',chars:[{p:'V',x:330,cara:'s',habla:true,brazos:'arriba',s:1.5},{p:'V',x:800,look:-1,cara:'o',s:1.3,seed:4}]},
+  {bg:'vik_mar',cam:'der',extra:(t,k)=>{ c.save(); c.translate(lerp(200,700,k),1500); c.scale(1.4,1.4); ship(0,0,1,'galley',t,1,'#c8102e'); c.restore(); }},
+  {bg:'vik_sala',chars:[{p:'E',x:540,cara:'f',brazos:'pensar',s:1.6}],texto:{t:'¿LEYENDA?',y:560}},
+  {bg:'vik_ruinas',chars:[{p:'E',x:330,cara:'o',brazos:'senala',s:1.5},{p:'C',x:800,look:-1,cara:'o',s:1.4}]},
+  {bg:'vik_ruinas',cam:'in',extra:(t,k)=>{ for(let i=0;i<4;i++){ c.save(); c.translate(360+i*120,1500); c.rotate(.3*i-.4); c.fillStyle='#5a5a5a'; c.strokeStyle='#0b0806'; c.lineWidth=5; c.fillRect(-8,-120,16,120); c.strokeRect(-8,-120,16,120); c.fillRect(-26,-140,52,24); c.strokeRect(-26,-140,52,24); c.restore(); } }},
+  {bg:'vik_lab',chars:[{p:'C',x:360,cara:'s',s:1.5,hold:(x,y)=>{c.fillStyle='#a8743e';c.strokeStyle='#0b0806';c.lineWidth=5;c.beginPath();c.arc(x+30,y-30,70,0,7);c.fill();c.stroke();for(let r=15;r<70;r+=14){c.beginPath();c.arc(x+30,y-30,r,0,7);c.stroke();}}}]},
+  {bg:'vik_lab',cam:'crash',extra:(t,k)=>{ c.fillStyle='#a8743e'; c.strokeStyle='#0b0806'; c.lineWidth=8; c.beginPath(); c.arc(540,1000,330,0,7); c.fill(); c.stroke(); c.lineWidth=4; for(let r=30;r<330;r+=30){ c.strokeStyle=r==240?'#ff5a2a':'rgba(60,30,10,.6)'; c.lineWidth=r==240?12:4; c.beginPath(); c.arc(540,1000,r,0,7); c.stroke(); } glow(540+240,1000,90,'rgba(255,160,60,A)',.6+.3*Math.sin(t*6)); }},
+  {bg:'vik_costa',chars:[{p:'L',x:540,cara:'g',brazos:'arriba',s:1.6}]},
+  {bg:'vik_costa',cam:'out',chars:[{p:'L',x:330,cara:'s',s:1.4},{p:'V',x:780,look:-1,cara:'s',s:1.3}]}]});

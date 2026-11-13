@@ -1,0 +1,15 @@
+AUTO({hot:/^(australia|guerra|pájaros|perdió|1932|emús|trigo|ejército|ametralladoras|cincuenta|miles|balas|tanques|retira|ganado)$/i,
+ titulo:['¿SABÍAS QUE...?','AUSTRALIA PERDIÓ UNA GUERRA CONTRA PÁJAROS'], final:['EMÚS 1 · EJÉRCITO 0','LA GRAN GUERRA DEL EMÚ · 1932','120px'],
+ P:{G:{top:'#8a6a3a',top2:'#5a3a1e',hat:'cowboy',hatCol:'#c8a060',beard:'#8a6a4a',dirt:true,h:500},S:{top:'#6a6a44',hat:'cowboy',hatCol:'#7a7a50',mustache:'#3a2a1a',h:500},M:{top:'#6a6a44',top2:'#5a5a38',hat:'boina',hatCol:'#5a5a38',mustache:'#6a4a2a',h:520},F:{top:'#2a2e3a',hair:'short',hairCol:'#8a8278',h:510}},
+ fechas:[[1,3,'1932']], cifras:[[6,'≈10.000','BALAS DISPARADAS']], nombres:[[7,'MAYOR G. MEREDITH','COMANDANTE DE LA OPERACIÓN']], golpes:[3,6],
+ escenas:[
+  {bg:'emu_campo',cam:'out',chars:[{p:'S',x:300,cara:'o',brazos:'arriba'}],animales:[{tipo:'emu',x:620,n:3,sep:150,dir:-1}]},
+  {bg:'emu_campo',animales:[{tipo:'emu',x:-300,n:6,sep:190,corre:500}]},
+  {bg:'emu_granja',chars:[{p:'G',x:330,cara:'f',habla:true,brazos:'arriba'},{p:'F',x:780,look:-1,cara:'n',s:1.4}]},
+  {bg:'emu_campo',cam:'crash',chars:[{p:'M',x:300,cara:'m',brazos:'senala'},{p:'S',x:760,cara:'e',s:1.4,hold:(x,y)=>{c.strokeStyle='#2a2a2a';c.lineWidth=20;c.lineCap='round';c.beginPath();c.moveTo(x-40,y+20);c.lineTo(x+260,y-30);c.stroke();}}]},
+  {bg:'emu_campo',chars:[{p:'M',x:360,cara:'s',habla:true}],animales:[{tipo:'emu',x:760,dir:-1,s:.8}]},
+  {bg:'emu_campo',cam:'der',animales:[{tipo:'emu',x:-200,n:5,sep:260,corre:1300}],texto:{t:'50 km/h',y:620}},
+  {bg:'emu_campo',chars:[{p:'S',x:300,cara:'o',hold:(x,y)=>{c.strokeStyle='#2a2a2a';c.lineWidth=20;c.lineCap='round';c.beginPath();c.moveTo(x-40,y+20);c.lineTo(x+260,y-30);c.stroke();glow(x+280,y-34,90,'rgba(255,220,120,A)',Math.sin(TT*40)>0?.9:0);}}],animales:[{tipo:'emu',x:700,n:3,sep:200,corre:700,y:1500,s:.6}]},
+  {bg:'emu_campo',cam:'in',chars:[{p:'M',x:400,cara:'f',habla:true,brazos:'pensar'}],animales:[{tipo:'emu',x:800,dir:-1,s:.9}]},
+  {bg:'emu_atardecer',chars:[{p:'M',anda:[700,200],look:-1,cara:'f',s:1.3},{p:'S',anda:[900,400],look:-1,cara:'f',s:1.3}]},
+  {bg:'emu_atardecer',cam:'out',animales:[{tipo:'emu',x:200,n:4,sep:200,s:1.0}]}]});

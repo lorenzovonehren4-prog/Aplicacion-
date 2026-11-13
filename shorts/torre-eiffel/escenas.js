@@ -1,0 +1,15 @@
+AUTO({hot:/^(estafador|torre|eiffel|vendió|parís|1925|oxidada|lustig|idea|falsifica|chatarreros|hotel|siete|mil|toneladas|secreto|poisson|soborno|viena|vergüenza|policía|otra|vez|alcatraz)$/i,
+ titulo:['¿SABÍAS QUE...?','EL HOMBRE QUE VENDIÓ LA TORRE EIFFEL'], final:['VENDIDA','POR VICTOR LUSTIG · 1925','230px'],
+ P:{L:{top:'#2a2a3a',top2:'#1a1a24',hat:'cowboy',hatCol:'#3a3a44',mustache:'#1d140e',buttonCol:'#e8c03a',h:530},P:{top:'#6a4a2a',top2:'#4a3018',hair:'short',hairCol:'#6a4a2a',mustache:'#6a4a2a',h:500},C:{top:'#4a4a4a',hat:'boina',hatCol:'#2a2a2a',h:490},G:{top:'#2a3a6a',hat:'birrete',hatCol:'#1a2a4a',mustache:'#3a2a1a',h:510}},
+ fechas:[[1,2,'PARÍS · 1925']], cifras:[[4,'7.000 T','DE HIERRO']], nombres:[[2,'VICTOR LUSTIG','ESTAFADOR'],[5,'ANDRÉ POISSON','CHATARRERO']], golpes:[5,8],
+ escenas:[
+  {bg:'eif_torre',cam:'sube',chars:[{p:'L',x:330,cara:'s',brazos:'senala',s:1.5}]},
+  {bg:'eif_torre',cam:'in',texto:{t:'OXIDADA',y:620}},
+  {bg:'eif_cafe',chars:[{p:'L',x:400,cara:'m',cara2:'s',s:1.6,hold:(x,y)=>papel(x+40,y-60,180,220,.1)}]},
+  {bg:'eif_hotel',chars:[{p:'L',x:260,cara:'s',habla:true,brazos:'senala',s:1.4},{p:'P',x:640,look:-1,cara:'n',s:1.2},{p:'C',x:880,look:-1,cara:'n',s:1.2}]},
+  {bg:'eif_hotel',cam:'in',chars:[{p:'L',x:400,cara:'m',habla:true,brazos:'pensar',s:1.6}],sello:{t:'SECRETO',y:560,size:90}},
+  {bg:'eif_hotel',chars:[{p:'P',x:330,cara:'s',brazos:'senala',s:1.5,hold:(x,y)=>{c.fillStyle='#8ab08a';c.strokeStyle='#0b0806';c.lineWidth=5;c.fillRect(x,y-40,150,80);c.strokeRect(x,y-40,150,80);}},{p:'L',x:780,look:-1,cara:'s',s:1.5}]},
+  {bg:'eif_estacion',cam:'der',chars:[{p:'L',anda:[150,950],cara:'s',vel:13,s:1.3,hold:(x,y)=>{c.fillStyle='#5a3a1e';c.strokeStyle='#0b0806';c.lineWidth=5;c.fillRect(x-50,y,110,80);c.strokeRect(x-50,y,110,80);}}]},
+  {bg:'eif_cafe',chars:[{p:'P',x:540,cara:'f',brazos:'pensar',s:1.6}]},
+  {bg:'eif_torre',chars:[{p:'L',x:330,cara:'m',brazos:'senala',s:1.5},{p:'C',x:800,look:-1,cara:'o',s:1.3}],texto:{t:'¿OTRA VEZ?',y:560}},
+  {bg:'eif_celda',cam:'in',chars:[{p:'L',x:540,cara:'f',s:1.5}],extra:(t,k)=>{ c.fillStyle='#2a2a30'; for(let i=0;i<8;i++) c.fillRect(120+i*120,300,26,1500); }}]});
