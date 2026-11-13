@@ -137,7 +137,7 @@ def noise_bed(dd, kind):
     if kind == 'storm':  # lluvia con gotas sueltas, canalón y rachas de viento
         m = lp(rng.standard_normal(n), .5); m = .75 + .25 * m / (np.abs(m).max() + 1e-9)
         x = hp(rng.standard_normal(n), 2500) * .1 * m + bp(rng.standard_normal(n), 500, 1600) * .05 + lp(rng.standard_normal(n), 220) * .12
-        dr = (rng.random(n) > .9985) * rng.uniform(.2, 1, n); x += bp(signal.lfilter([1], [1, -.97], dr), 900, 5000) * .35
+        dr = (rng.random(n) > .9985) * rng.uniform(.2, 1, n); x += bp(signal.lfilter([1], [1, -.97], dr), 900, 5000) * .08
         w = lp(rng.standard_normal(n), 1.0); w = (.5 + .5 * w / (np.abs(w).max() + 1e-9)) ** 2; x += bp(rng.standard_normal(n), 250, 700) * w * .12
         return x
     if kind == 'drone':  # tensión: grave desafinado, filtro que respira y un agudo inquietante que crece
@@ -198,9 +198,16 @@ voice = voice * lp(np.minimum(2.5, (0.1 / np.maximum(lvl, .02)) ** .5), 12); voi
 voice = voice + .35 * bp(voice, 2200, 5000)  # presencia: consonantes más claras
 voice = voice / np.abs(voice).max() * .9
 DK, BED = P.get('duck', .62), P.get('bed', .95)
-e = lp(np.abs(voice), 5); duck = 1 - DK * np.clip(e / (e.max() + 1e-9) * 4, 0, 1)
-mix = voice + (music * BED + amb * .45 * BED) * duck + fx * .6 * (1 - .45 * (1 - duck))
+# La voz manda: el fondo baja mientras se habla y no vuelve a subir entre palabras (evita el efecto entrecortado)
+from scipy.ndimage import maximum_filter1d
+e = lp(np.abs(voice), 5); e = e / (e.max() + 1e-9); hold = maximum_filter1d(e, int(.9 * SR)); duck = 1 - DK * np.clip(lp(hold, 1.5) * 4, 0, 1)
+cama = (music * BED + amb * P.get('amb', .3) * BED) * duck
+habla = hold > .08
+if habla.any():  # garantía: durante la narración el fondo queda al menos 16 dB por debajo de la voz
+    rv = np.sqrt((voice[habla] ** 2).mean()); rb = np.sqrt((cama[habla] ** 2).mean()) + 1e-9; cama *= min(1, rv * 10 ** (-P.get('margen', 16) / 20) / rb)
+mix = voice + cama + fx * .6 * (1 - .45 * (1 - duck))
 dl = int(.012 * SR); wide = np.concatenate([np.zeros(dl), (amb * .2 * duck + fx * .12)[:-dl]])
 out = np.stack([mix + wide, mix - wide], 1); f = int(.4 * SR); out[-f:] *= np.linspace(1, 0, f)[:, None]
 pk = np.abs(out).max(); out = out / pk * .95 if pk > .95 else out
-sf.write(f'{d}/audio.wav', out, SR); print(d, 'total', TOTAL)
+db = lambda x: round(float(20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)), 1)
+sf.write(f'{d}/audio.wav', out, SR); print(d, 'total', TOTAL, '| voz', db(voice[habla]), 'fondo con voz', db(cama[habla]), 'fondo en pausas', db(cama[~habla]) if (~habla).any() else '-', 'efectos', db(fx[np.abs(fx) > 1e-4] * .6) if (np.abs(fx) > 1e-4).any() else '-')
