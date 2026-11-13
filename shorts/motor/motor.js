@@ -359,7 +359,7 @@ const MOTOR={ run(cfg){
   window.setT=function(t){
     TT=t; SHAKE=0; for(const h of (C.hits||[])){ const d=t-h; if(d>=0&&d<1.1) SHAKE+=34*Math.exp(-d*4); }
     screen(); c.clearRect(0,0,W,H); c.globalAlpha=1; c.globalCompositeOperation='source-over'; c.setLineDash([]); c.filter='none';
-    let sc=C.scenes[0]; for(const s of C.scenes) if(t>=s[0]) sc=s; c.save(); sc[1](t); bgFlush(); c.restore(); screen();
+    let sc=C.scenes[0]; for(const s of C.scenes) if(t>=s[0]) sc=s; c.save(); { const fk=fondoDeEscena(sc[0]); if(fk) pintado(fk,sc[1],t); else sc[1](t); } bgFlush(); c.restore(); screen();
     { const PP=C.post||{}; if(!window.__off){ window.__off=document.createElement('canvas'); __off.width=W; __off.height=H; }
       const oc=__off.getContext('2d'); oc.setTransform(1,0,0,1,0,0); oc.clearRect(0,0,W,H); oc.drawImage($('sc'),0,0);
       let ci=-1, c0=0; for(const q of ALLCAPS){ if(t>=q.t0) { ci=q.i; c0=q.t0; } }
@@ -561,3 +561,13 @@ if(typeof piramide==='undefined') var piramide=function(x,y,w,col='#d8b46a',old=
 function imgs(map){ window.__IMGS=window.__IMGS||{}; for(const k in map){ const im=new Image(); im.src=map[k]; window.__IMGS[k]=im; } }
 function fondoImg(k,t,o={}){ const im=(window.__IMGS||{})[k]; if(!im||!im.complete) return; screen(); const d=o.d??.3, z=Math.pow(CAM.z,d)*(o.z||1.08), cx=W/2-(CAM.x-W/2)*d*.5+(o.dx||0), cy=H/2-(CAM.y-H/2)*d*.5+(o.dy||0); const ar=im.width/im.height, h=H*z, w=Math.max(W*z,h*ar); const hh=w/ar;
   c.save(); if(o.blur) c.filter=`blur(${o.blur}px)`; c.drawImage(im,cx-w/2,cy-hh/2,w,hh); c.restore(); if(o.tinte){ c.fillStyle=o.tinte; c.fillRect(0,0,W,H); } layer(1); }
+
+// Modo pintado: si window.FONDOS asigna una imagen a la escena (por id de frase), se dibuja la imagen y se
+// anulan los fondos procedurales (cielos, paredes, suelos, fachadas), manteniendo personajes, objetos y textos.
+function fondoDeEscena(t0){ const F=window.FONDOS; if(!F) return null; for(const id in F){ if(S[id]&&Math.abs(S[id].start-t0)<1e-3) return F[id]; } return null; }
+const NOOPS=['grad','desenfoque','hills','mountains','clouds','column','fachada','tablones','suelo','escCalle','escInterior','escCampo','escEgipto','escPiedra','cielo_noche','marNoche','rays','foreground','poste'];
+function pintado(key,fn,t){ const keep={}; const camPrev=CAM; let primero=true;
+  const origSet=window.setCam; window.setCam=function(k,tt){ origSet(k,tt); if(primero){ primero=false; fondoImg(key,tt,{d:.35}); } };
+  for(const n of NOOPS){ keep[n]=window[n]; window[n]=function(){ if(n==='desenfoque'||n==='rays'||n==='foreground') return; if(n==='grad'&&primero){ } }; }
+  const fr=c.fillRect.bind(c), ctx=c; ctx.fillRect=function(x,y,w,h){ if(Math.abs(w)>=1400) return; fr(x,y,w,h); };
+  try{ fn(t); if(primero){ primero=false; screen(); fondoImg(key,t,{d:.35}); } } finally { window.setCam=origSet; for(const n of NOOPS) window[n]=keep[n]; delete ctx.fillRect; } }

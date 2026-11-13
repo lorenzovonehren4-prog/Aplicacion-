@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({can_aula:'fondos/can_aula.jpg',can_campamento:'fondos/can_campamento.jpg',can_campo:'fondos/can_campo.jpg'});
+window.FONDOS={"h1": "can_aula", "c1": "can_campo", "c2": "can_campamento", "r2": "can_campo", "f1": "can_aula", "f2": "can_campo"};
 // Cannas (216 a. C.): por qué se sigue estudiando. Diagrama aéreo y personajes cabezón.
 const Tm=(id,f)=>T(id)+D(id)*f;
 window.ESTILO='cabezon';

@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({leo_cielo:'fondos/leo_cielo.jpg',leo_hangar:'fondos/leo_hangar.jpg',leo_taller:'fondos/leo_taller.jpg'});
+window.FONDOS={"h1": "leo_cielo", "c1": "leo_taller", "d2": "leo_taller", "r1": "leo_hangar", "r2": "leo_cielo", "f1": "leo_cielo"};
 // Leonardo y su paracaídas (c. 1485) y la prueba de Adrian Nicholas (2000).
 const Tm=(id,f)=>T(id)+D(id)*f;
 const LEO={top:'#8a3a2a',robe:'#8a3a2a',trim:'#e8c03a',hat:'boina',hatCol:'#3a2a4a',hair:'long',hairCol:'#b8b0a0',beard:'#c8c0b0',h:540};

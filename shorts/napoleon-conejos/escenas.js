@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({nap_camino:'fondos/nap_camino.jpg',nap_campo:'fondos/nap_campo.jpg',nap_granero:'fondos/nap_granero.jpg',nap_tienda:'fondos/nap_tienda.jpg'});
+window.FONDOS={"h1": "nap_campo", "c1": "nap_tienda", "d1": "nap_campo", "d2": "nap_campo", "d3": "nap_campo", "d4": "nap_campo", "r1": "nap_campo", "r2": "nap_camino", "r3": "nap_granero", "f1": "nap_campo", "f2": "nap_camino"};
 // Napoleón y los conejos (relato de Thiébault). Cómico pero cuidado.
 const Tm=(id,f)=>T(id)+D(id)*f;
 const NAPO={top:'#2a3a8a',top2:'#1a2a6a',trim:'#e8c03a',legs:'#f4f1ea',hat:'bicorne',hair:'short',hairCol:'#3a2a1a',buttonCol:'#e8c03a',h:500};

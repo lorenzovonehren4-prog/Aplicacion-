@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({ant_lab:'fondos/ant_lab.jpg',ant_mar:'fondos/ant_mar.jpg',ant_museo:'fondos/ant_museo.jpg'});
+window.FONDOS={"c1": "ant_mar", "c2": "ant_museo", "d1": "ant_museo", "d3": "ant_lab", "f2": "ant_museo"};
 // El mecanismo de Anticitera.
 const Tm=(id,f)=>T(id)+D(id)*f;
 const BUZO={top:'#5a5a5a',hat:'casco',hatCol:'#b8902a',hair:'short',h:500};

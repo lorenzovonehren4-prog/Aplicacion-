@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({jui_corral:'fondos/jui_corral.jpg',jui_plaza:'fondos/jui_plaza.jpg',jui_tribunal:'fondos/jui_tribunal.jpg'});
+window.FONDOS={"h1": "jui_tribunal", "c1": "jui_plaza", "c2": "jui_corral", "d1": "jui_tribunal", "d2": "jui_plaza", "r1": "jui_tribunal", "r2": "jui_tribunal", "f2": "jui_tribunal"};
 // Juicios contra animales (Falaise 1386; ratas de Autun). Serio, sin violencia explícita.
 const Tm=(id,f)=>T(id)+D(id)*f;
 const JUEZ={top:'#6a1a1a',robe:'#6a1a1a',trim:'#e8c03a',hat:'birrete',hatCol:'#14110e',hair:'short',hairCol:'#d8d4cc',beard:'#d8d4cc',h:520};

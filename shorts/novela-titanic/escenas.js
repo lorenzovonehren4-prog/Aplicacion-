@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({tit_estudio:'fondos/tit_estudio.jpg',tit_mar:'fondos/tit_mar.jpg'});
+window.FONDOS={"h1": "tit_estudio", "c1": "tit_estudio", "c2": "tit_estudio", "d1": "tit_mar", "d2": "tit_mar", "d3": "tit_mar", "f1": "tit_estudio", "f2": "tit_mar"};
 // La novela «Futility» (1898) y el Titanic (1912).
 const Tm=(id,f)=>T(id)+D(id)*f;
 const ROB={top:'#2a3a5a',top2:'#1a2440',hair:'short',hairCol:'#3a2a1a',mustache:'#3a2a1a',h:530};

@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({cleo_atardecer:'fondos/cleo_atardecer.jpg',cleo_mercado:'fondos/cleo_mercado.jpg',cleo_palacio:'fondos/cleo_palacio.jpg'});
+window.FONDOS={"h1": "cleo_mercado", "c2": "cleo_palacio", "d2": "cleo_mercado", "f2": "cleo_atardecer"};
 // Cleopatra vs. la Gran Pirámide. Estilo cabezón con fondos desenfocados.
 const Tm=(id,f)=>T(id)+D(id)*f;
 const CLEO={skin:'#d8a878',top:'#f4f1ea',trim:'#e8c03a',hair:'bob',hairCol:'#0b0806',hat:'corona_egipto',liner:true,robe:'#f4f1ea',blush:true};

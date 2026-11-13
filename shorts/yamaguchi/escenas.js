@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({yam_calle:'fondos/yam_calle.jpg',yam_oficina:'fondos/yam_oficina.jpg',yam_refugio:'fondos/yam_refugio.jpg'});
+window.FONDOS={"c1": "yam_oficina", "c2": "yam_calle", "d1": "yam_calle", "d2": "yam_refugio", "d3": "yam_calle", "r1": "yam_oficina", "r2": "yam_oficina"};
 // Tsutomu Yamaguchi. Respetuoso: sin heridas explícitas; destellos y vendas.
 const Tm=(id,f)=>T(id)+D(id)*f;
 const YAMA={skin:'#e8c8a0',top:'#e8e4d8',top2:'#3a3a44',hair:'short',hairCol:'#1d140e',h:520};

@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({twa_estudio:'fondos/twa_estudio.jpg',twa_pueblo:'fondos/twa_pueblo.jpg'});
+window.FONDOS={"h1": "twa_pueblo", "c1": "twa_pueblo", "d2": "twa_estudio", "d3": "twa_pueblo", "r1": "twa_pueblo", "f1": "twa_pueblo", "f2": "twa_pueblo"};
 // Mark Twain y el cometa Halley (1835–1910).
 const Tm=(id,f)=>T(id)+D(id)*f;
 const TWAIN={skin:'#e8c4a0',top:'#e8e0c8',top2:'#c8bea0',hair:'short',hairCol:'#fafafa',mustache:'#fafafa',h:540};
@@ -25,4 +28,4 @@ MOTOR.run(()=>({
   ]}));
 
 // sobrescrito con escenarios detallados del motor
-function pueblo(t,o={}){ setCam(o.keys,t); escCalle(t,{sky:['#020410','#0a1430','#1a2448'],cielo:t=>{ for(let i=0;i<160;i++){ c.fillStyle=`rgba(255,255,255,${.3+rnd(i)*.6})`; c.fillRect(rnd(i*3)*1400-160,rnd(i*7)*900,2+rnd(i)*3,2+rnd(i)*3); } if(o.cometa!==false) cometa(o.cx||760,Math.min(o.cy||150,170),1.0,-.35,t); },luz:o.luz!==false,color:'#3a2a3a',letrero:'GENERAL STORE',suelo:'#3a3028',blurFachada:o.blur??5}); if(o.extra) o.extra(t); }
+function pueblo(t,o={}){ setCam(o.keys,t); escCalle(t,{sky:['#020410','#0a1430','#1a2448'],cielo:t=>{ for(let i=0;i<160;i++){ c.fillStyle=`rgba(255,255,255,${.3+rnd(i)*.6})`; c.fillRect(rnd(i*3)*1400-160,rnd(i*7)*900,2+rnd(i)*3,2+rnd(i)*3); } if(o.cometa!==false) cometa(o.cx||760,Math.min(o.cy||150,170),1.0,-.35,t); },luz:o.luz!==false,color:'#3a2a3a',letrero:'GENERAL STORE',suelo:'#3a3028',blurFachada:o.blur??5}); if(window.FONDOS&&o.cometa!==false){ screen(); cometa(o.cx||760,170,1.0,-.35,t); layer(1); } if(o.extra) o.extra(t); }

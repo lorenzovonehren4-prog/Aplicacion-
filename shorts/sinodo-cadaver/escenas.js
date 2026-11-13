@@ -1,3 +1,6 @@
+// Fondos pintados (generados con SD-Turbo, ver motor/fondos.py)
+imgs({sin_basilica:'fondos/sin_basilica.jpg',sin_celda:'fondos/sin_celda.jpg',sin_rio:'fondos/sin_rio.jpg',sin_roma:'fondos/sin_roma.jpg'});
+window.FONDOS={"h1": "sin_basilica", "c1": "sin_roma", "c2": "sin_basilica", "d1": "sin_basilica", "d2": "sin_basilica", "d3": "sin_basilica", "r1": "sin_basilica", "r2": "sin_rio", "f1": "sin_celda", "f2": "sin_basilica"};
 // Sínodo del Cadáver (enero 897). Serio, sin detalles gráficos.
 const Tm=(id,f)=>T(id)+D(id)*f;
 const FORM={top:'#f4f1ea',robe:'#f4f1ea',trim:'#e8c03a',cape:'#c8102e',hat:'tiara',hair:'short',hairCol:'#d8d4cc',beard:'#d8d4cc',h:520};
