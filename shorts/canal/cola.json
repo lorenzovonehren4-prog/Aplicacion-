@@ -1,0 +1,225 @@
+{
+ "nota": "Cola de YouTube: 2 al día (17:30Z y 00:30Z). id nulo = pendiente de subir. t01-no-abras está subido en privado sin fecha (NjXJER2iyAc): el dueño pidió no publicarlo.",
+ "cola": [
+  {
+   "carpeta": "e01-colon-vikingos",
+   "publicar": "2026-11-14T00:30:00Z",
+   "id": "RsAVSUQKR-s"
+  },
+  {
+   "carpeta": "e02-machu-picchu",
+   "publicar": "2026-11-15T00:30:00Z",
+   "id": "Eq0Dt9pS7ZA"
+  },
+  {
+   "carpeta": "e04-tierra-redonda",
+   "publicar": "2026-11-15T17:30:00Z",
+   "id": "z6FyKUyaMH8"
+  },
+  {
+   "carpeta": "e05-gran-muralla",
+   "publicar": "2026-11-16T00:30:00Z",
+   "id": "wXBeKo7UZOg"
+  },
+  {
+   "carpeta": "e06-vomitorios",
+   "publicar": "2026-11-16T17:30:00Z",
+   "id": "ZbCY2Vji6NE"
+  },
+  {
+   "carpeta": "f01-lustig",
+   "publicar": "2026-11-14T17:30:00Z",
+   "id": "g2YX5KDrPqY"
+  },
+  {
+   "carpeta": "cleopatra",
+   "publicar": "2026-11-17T00:30:00Z",
+   "id": "4fRAbq7IAyg"
+  },
+  {
+   "carpeta": "e07-salem",
+   "publicar": "2026-11-17T17:30:00Z",
+   "id": "gJfUfSG3t9o"
+  },
+  {
+   "carpeta": "f02-mary-celeste",
+   "publicar": "2026-11-18T00:30:00Z",
+   "id": "t9Y_6_1hXJo"
+  },
+  {
+   "carpeta": "napoleon-conejos",
+   "publicar": "2026-11-18T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e08-gripe-espanola",
+   "publicar": "2026-11-19T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "f03-zanzibar",
+   "publicar": "2026-11-19T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "juicios-animales",
+   "publicar": "2026-11-20T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e09-torre-salvada",
+   "publicar": "2026-11-20T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "f04-yamaguchi",
+   "publicar": "2026-11-21T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "plaga-baile",
+   "publicar": "2026-11-21T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e10-sutra-diamante",
+   "publicar": "2026-11-22T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "f05-fortitude",
+   "publicar": "2026-11-22T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "sinodo-cadaver",
+   "publicar": "2026-11-23T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e11-mar-muerto",
+   "publicar": "2026-11-23T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "f06-senal-wow",
+   "publicar": "2026-11-24T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "leonardo-paracaidas",
+   "publicar": "2026-11-24T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e12-lascaux",
+   "publicar": "2026-11-25T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "f07-demara",
+   "publicar": "2026-11-25T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "ketchup",
+   "publicar": "2026-11-26T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e13-rosetta",
+   "publicar": "2026-11-26T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "f08-emus",
+   "publicar": "2026-11-27T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "anticitera",
+   "publicar": "2026-11-27T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e14-tutankamon",
+   "publicar": "2026-11-28T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "cannas",
+   "publicar": "2026-11-28T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e15-nazca",
+   "publicar": "2026-11-29T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "nintendo",
+   "publicar": "2026-11-29T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e16-qeswachaka",
+   "publicar": "2026-11-30T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "novela-titanic",
+   "publicar": "2026-11-30T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e17-hedy-lamarr",
+   "publicar": "2026-12-01T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "wojtek",
+   "publicar": "2026-12-01T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e18-katherine-johnson",
+   "publicar": "2026-12-02T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "twain-halley",
+   "publicar": "2026-12-02T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e19-mincemeat",
+   "publicar": "2026-12-03T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "oxford-aztecas",
+   "publicar": "2026-12-03T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e20-cable-atlantico",
+   "publicar": "2026-12-04T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "vikingos",
+   "publicar": "2026-12-04T17:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "e03-cascos-vikingos",
+   "publicar": "2026-12-05T00:30:00Z",
+   "id": null
+  },
+  {
+   "carpeta": "carne-picada",
+   "publicar": "2026-12-05T17:30:00Z",
+   "id": null
+  }
+ ]
+}

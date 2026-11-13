@@ -110,7 +110,7 @@ Permiso del dueño (13-nov-2026): publicar 2 por día sin preguntar, 12:30 y 19:
 
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
-| 1 | cleopatra | ¿Sabías que Cleopatra vivió más cerca de ti que de la Gran Pirámide? | La Gran Pirámide se terminó hacia 2560 a. C.; Cleopatra murió en el 30 a. C. Haz la cuenta. | #historia #cleopatra #egipto #sabiasque #shorts | pendiente |
+| 1 | cleopatra | ¿Sabías que Cleopatra vivió más cerca de ti que de la Gran Pirámide? | La Gran Pirámide se terminó hacia 2560 a. C.; Cleopatra murió en el 30 a. C. Haz la cuenta. | #historia #cleopatra #egipto #sabiasque #shorts | https://youtube.com/shorts/4fRAbq7IAyg (programado 16-nov 19:30, hora de Lima) |
 | 2 | guerra-emus | ¿Sabías que Australia perdió una guerra contra unos pájaros? | 1932: el ejército australiano, con ametralladoras, contra miles de emús. Ganaron los emús. | #historia #australia #emus #sabiasque #shorts | pendiente |
 | 3 | napoleon-conejos | ¿Sabías que Napoleón perdió contra unos conejos? | 1807: una cacería que salió al revés, según las memorias del general Thiébault. | #historia #napoleon #curiosidades #sabiasque #shorts | pendiente |
 | 4 | guerra-38min | ¿Sabías que la guerra más corta de la historia duró 38 minutos? | 27 de agosto de 1896: Gran Bretaña contra Zanzíbar. | #historia #guerra #zanzibar #sabiasque #shorts | pendiente |
@@ -144,7 +144,7 @@ Se programan después de la tanda «¿Sabías que…?», con las mismas reglas (
 | 4 | e04-tierra-redonda | ¿Sabías que en tiempos de Colón ya se sabía que la Tierra era redonda? | La discusión no era la forma: era el tamaño. Y Colón se equivocaba. | #historia #colon #mitos #sabiasque #shorts | https://youtube.com/shorts/z6FyKUyaMH8 (programado 15-nov 12:30, hora de Lima) |
 | 5 | e05-gran-muralla | ¿Sabías que la Gran Muralla China casi no se ve desde el espacio? | Es larguísima, pero muy estrecha. Lo dicen los propios astronautas. | #historia #china #granmuralla #sabiasque #shorts | https://youtube.com/shorts/wXBeKo7UZOg (programado 15-nov 19:30, hora de Lima) |
 | 6 | e06-vomitorios | ¿Sabías que los vomitorios romanos no eran para vomitar? | Eran los pasillos por los que el público «salía a chorros» del anfiteatro. | #historia #roma #mitos #sabiasque #shorts | https://youtube.com/shorts/ZbCY2Vji6NE (programado 16-nov 12:30, hora de Lima) |
-| 7 | e07-salem | ¿Sabías que en Salem no quemaron a ninguna bruja? | 1692: lo que de verdad pasó con los condenados. | #historia #salem #brujas #sabiasque #shorts | pendiente |
+| 7 | e07-salem | ¿Sabías que en Salem no quemaron a ninguna bruja? | 1692: lo que de verdad pasó con los condenados. | #historia #salem #brujas #sabiasque #shorts | https://youtube.com/shorts/gJfUfSG3t9o (programado 17-nov 12:30, hora de Lima) |
 | 8 | e08-gripe-espanola | ¿Sabías que la gripe española no empezó en España? | 1918: por qué la pandemia lleva el nombre de un país que solo la contó. | #historia #gripeespanola #1918 #sabiasque #shorts | pendiente |
 | 9 | e09-torre-salvada | ¿Sabías que la Torre Eiffel iba a ser desmontada a los 20 años? | La salvó una antena. | #historia #paris #torreeiffel #sabiasque #shorts | pendiente |
 | 10 | e10-sutra-diamante | ¿Sabías que hay un libro impreso casi 600 años antes de Gutenberg? | El Sutra del Diamante, China, año 868. | #historia #china #imprenta #sabiasque #shorts | pendiente |
@@ -166,8 +166,8 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
-| 1 | f01-lustig | ¿Sabías que un hombre vendió la Torre Eiffel sin ser su dueño? | París, 1925: Victor Lustig y una subasta que nunca existió. | #historia #paris #torreeiffel #sabiasque #shorts | pendiente |
-| 2 | f02-mary-celeste | El barco que apareció sin nadie a bordo | 1872: el Mary Celeste, a la deriva cerca de las Azores. ¿Tú qué crees que pasó? | #historia #misterio #maryceleste #shorts | pendiente |
+| 1 | f01-lustig | ¿Sabías que un hombre vendió la Torre Eiffel sin ser su dueño? | París, 1925: Victor Lustig y una subasta que nunca existió. | #historia #paris #torreeiffel #sabiasque #shorts | https://youtube.com/shorts/g2YX5KDrPqY (programado 14-nov 12:30, hora de Lima) |
+| 2 | f02-mary-celeste | El barco que apareció sin nadie a bordo | 1872: el Mary Celeste, a la deriva cerca de las Azores. ¿Tú qué crees que pasó? | #historia #misterio #maryceleste #shorts | https://youtube.com/shorts/t9Y_6_1hXJo (programado 17-nov 19:30, hora de Lima) |
 | 3 | f03-zanzibar | ¿Sabías que hubo una guerra que duró unos 38 minutos? | Zanzíbar, 27 de agosto de 1896. | #historia #guerra #zanzibar #sabiasque #shorts | pendiente |
 | 4 | f04-yamaguchi | El hombre que sobrevivió a dos bombas atómicas | Tsutomu Yamaguchi: Hiroshima, 6 de agosto; Nagasaki, 9 de agosto de 1945. | #historia #hiroshima #nagasaki #shorts | pendiente |
 | 5 | f05-fortitude | El ejército que no existía y engañó a Hitler | 1944: tanques inflables y la Operación Fortitude antes de Normandía. | #historia #segundaguerramundial #diad #shorts | pendiente |
@@ -180,4 +180,4 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
-| 1 | t01-no-abras | No abras la puerta 🚪 ¿A o B? | Son las 2:17 de la madrugada y alguien toca la puerta con la voz de tu hermano. Tú decides: comenta A o B y la historia sigue con la opción que gane. Historia de ficción. | #terror #misterio #historiasdeterror #tudecides #shorts | https://youtube.com/shorts/NjXJER2iyAc (programado 14-nov 12:30, hora de Lima) |
+| 1 | t01-no-abras | No abras la puerta 🚪 ¿A o B? | Son las 2:17 de la madrugada y alguien toca la puerta con la voz de tu hermano. Tú decides: comenta A o B y la historia sigue con la opción que gane. Historia de ficción. | #terror #misterio #historiasdeterror #tudecides #shorts | https://youtube.com/shorts/NjXJER2iyAc (subido en privado, SIN fecha: el dueño pidió no publicarlo) |
