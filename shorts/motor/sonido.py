@@ -147,6 +147,8 @@ def noise_bed(dd, kind):
         hi = sum(np.sin(2 * np.pi * f * k * (1 + .004 * np.sin(2 * np.pi * (.3 + j * .11) * k))) for j, f in enumerate((1244, 1318, 1865))) * .012
         sub = np.sin(2 * np.pi * 41 * k) * (np.sin(2 * np.pi * k / 2.4) ** 8) * .25
         return (lo + sub) * (.45 + .55 * cr) + hi * (.2 + .8 * cr)
+    if kind == 'room':  # tono de sala: casi silencio, con aire grave
+        return lp(rng.standard_normal(n), 140) * .16 + bp(rng.standard_normal(n), 2000, 6000) * .006
     if kind == 'tictac':
         out = np.zeros(n); at = 0; j = 0
         while at < dd - .1:
@@ -188,9 +190,9 @@ if os.path.exists(f'{d}/cortes.json') and P.get('cortes', True):
     for ct in json.load(open(f'{d}/cortes.json')): put(fx, whoosh(.32), ct - .2, .45); put(fx, tom(48, .35, .2), ct, .35)
 for s in g:
     v, sr = sf.read(f"{d}/voz/{s['id']}.wav"); v = signal.resample_poly(v, SR, sr); put(voice, v, s['start'])
-if P.get('reverb'):  # sala: cola corta sobre efectos y ambiente
+if P.get('reverb', .18):  # sala: cola corta sobre efectos y ambiente
     rv = int(1.1 * SR); ir = rng.standard_normal(rv) * np.exp(-np.arange(rv) / SR / .28); ir = lp(ir, 3500); ir /= np.abs(ir).sum() ** .5 * 6
-    fx = fx + signal.fftconvolve(fx, ir)[:N] * P['reverb']; amb = amb + signal.fftconvolve(amb, ir)[:N] * P['reverb'] * .4
+    fx = fx + signal.fftconvolve(fx, ir)[:N] * P.get('reverb', .18); amb = amb + signal.fftconvolve(amb, ir)[:N] * P.get('reverb', .18) * .4
 voice = hp(voice, 80); lvl = np.sqrt(np.maximum(lp(voice ** 2, 8), 0) + 1e-8)
 voice = voice * lp(np.minimum(2.5, (0.1 / np.maximum(lvl, .02)) ** .5), 12); voice = voice / np.abs(voice).max() * .9
 voice = voice + .35 * bp(voice, 2200, 5000)  # presencia: consonantes más claras
