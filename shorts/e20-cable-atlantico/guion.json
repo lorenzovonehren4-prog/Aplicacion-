@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que el primer cable telegráfico transatlántico unió América y Europa, pero dejó de funcionar apenas unas semanas después?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 7.129
  },
  {
   "id": "s1",
   "t": "Hasta entonces, una noticia tardaba unos diez días en cruzar el océano, en barco.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.554
  },
  {
   "id": "s2",
   "t": "En 1858, dos barcos tienden un cable de más de tres mil kilómetros por el fondo del Atlántico.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 6.124
  },
  {
   "id": "s3",
   "t": "Y funciona.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 0.614
  },
  {
   "id": "s4",
   "t": "La reina Victoria le envía un mensaje al presidente Buchanan. Noventa y ocho palabras, que tardan dieciséis horas.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 6.26
  },
  {
   "id": "s5",
   "t": "En las ciudades hay fiestas y fuegos artificiales. El mundo se había encogido.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.927
  },
  {
   "id": "s6",
   "t": "Pero la señal era cada vez más débil. Un ingeniero subió el voltaje... y quemó el cable.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.401
  },
  {
   "id": "s7",
   "t": "A las pocas semanas, quedó mudo.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 1.898
  },
  {
   "id": "s8",
   "t": "Hubo que esperar hasta 1866 para tener una conexión permanente. Pero aquel primer intento abrió el camino a las comunicaciones modernas.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 7.783
  }
 ]

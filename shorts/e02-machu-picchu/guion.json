@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que el famoso explorador que hizo mundialmente conocido Machu Picchu no fue el primero en llegar a sus ruinas?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 6.281
  },
  {
   "id": "s1",
   "t": "1911. El estadounidense Hiram Bingham sube a la montaña, guiado por gente del lugar.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 5.384
  },
  {
   "id": "s2",
   "t": "Lo que ve lo deja sin palabras. Y lo contará al mundo entero.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.049
  },
  {
   "id": "s3",
   "t": "Pero en una pared encuentra algo inesperado. Un nombre, y una fecha.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.862
  },
  {
   "id": "s4",
   "t": "«Lizárraga, 14 de julio de 1902».",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 2.781
  },
  {
   "id": "s5",
   "t": "Agustín Lizárraga, un agricultor cusqueño, había estado allí nueve años antes.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.87
  },
  {
   "id": "s6",
   "t": "Y no era el único. Había familias viviendo y cultivando entre las ruinas.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.83
  },
  {
   "id": "s7",
   "t": "Para la gente de la zona, Machu Picchu nunca estuvo perdido.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.391
  },
  {
   "id": "s8",
   "t": "Bingham ayudó a darlo a conocer al mundo. Pero Lizárraga llegó antes. Y los incas, mucho antes que todos.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 5.871
  }
 ]

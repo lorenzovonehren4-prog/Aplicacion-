@@ -102,3 +102,31 @@ Mismos ajustes. Programados con `publishAt`, 2 por día (hora de Lima). Enlaces 
 
 **hiroshima** — 6 de agosto de 1945: por qué se lanzó, qué pasó y el debate que sigue abierto. Contado con respeto. Fuentes: Museo Memorial de la Paz de Hiroshima; Britannica. Recreación animada.
 #historia #hiroshima #segundaguerramundial #shorts
+
+
+# Tanda «¿Sabías que…?» (20 vídeos, 31–44 s)
+
+Permiso del dueño (13-nov-2026): publicar 2 por día sin preguntar, 12:30 y 19:30 de Lima (17:30Z y 00:30Z). Subir en privado con `publishAt`, categoría 27, no para niños, contenido sintético declarado. Cierre de la descripción: «Recreación animada: la voz y las imágenes están generadas por ordenador. ¿Qué historia quieres que cuente después? 👇». El 13-nov a las 03:30Z YouTube devolvió el límite diario de subidas: pendiente de reintento.
+
+| # | Carpeta | Título | Descripción | Etiquetas | Enlace |
+| --- | --- | --- | --- | --- | --- |
+| 1 | cleopatra | ¿Sabías que Cleopatra vivió más cerca de ti que de la Gran Pirámide? | La Gran Pirámide se terminó hacia 2560 a. C.; Cleopatra murió en el 30 a. C. Haz la cuenta. | #historia #cleopatra #egipto #sabiasque #shorts | pendiente |
+| 2 | guerra-emus | ¿Sabías que Australia perdió una guerra contra unos pájaros? | 1932: el ejército australiano, con ametralladoras, contra miles de emús. Ganaron los emús. | #historia #australia #emus #sabiasque #shorts | pendiente |
+| 3 | napoleon-conejos | ¿Sabías que Napoleón perdió contra unos conejos? | 1807: una cacería que salió al revés, según las memorias del general Thiébault. | #historia #napoleon #curiosidades #sabiasque #shorts | pendiente |
+| 4 | guerra-38min | ¿Sabías que la guerra más corta de la historia duró 38 minutos? | 27 de agosto de 1896: Gran Bretaña contra Zanzíbar. | #historia #guerra #zanzibar #sabiasque #shorts | pendiente |
+| 5 | juicios-animales | ¿Sabías que en la Edad Media se juzgaba a los animales? | Una cerda en Falaise (1386), las ratas de Autun y otros procesos reales. | #historia #edadmedia #curiosidades #sabiasque #shorts | pendiente |
+| 6 | plaga-baile | ¿Sabías que en 1518 cientos de personas bailaron sin parar durante semanas? | La plaga del baile de Estrasburgo: cinco siglos después, sigue sin explicación segura. | #historia #misterio #1518 #sabiasque #shorts | pendiente |
+| 7 | sinodo-cadaver | ¿Sabías que un papa mandó juzgar el cadáver de otro papa? | Roma, año 897: el Sínodo del Cadáver. | #historia #papa #roma #sabiasque #shorts | pendiente |
+| 8 | torre-eiffel | ¿Sabías que un estafador vendió la Torre Eiffel? | París, 1925: Victor Lustig y el timo más famoso de la historia. | #historia #paris #torreeiffel #sabiasque #shorts | pendiente |
+| 9 | leonardo-paracaidas | ¿Sabías que Leonardo da Vinci dibujó un paracaídas hace 500 años? | Lo dibujó hacia 1485. En el año 2000, alguien saltó con una réplica. | #historia #leonardodavinci #inventos #sabiasque #shorts | pendiente |
+| 10 | ketchup | ¿Sabías que el kétchup se vendía como medicina? | Estados Unidos, década de 1830: pastillas de tomate para curarlo todo. | #historia #ketchup #curiosidades #sabiasque #shorts | pendiente |
+| 11 | anticitera | ¿Sabías que los griegos construyeron una computadora hace 2.000 años? | El mecanismo de Anticitera: engranajes de bronce que predecían eclipses. | #historia #grecia #anticitera #sabiasque #shorts | pendiente |
+| 12 | vikingos | ¿Sabías que los vikingos llegaron a América casi 500 años antes que Colón? | L’Anse aux Meadows, Terranova: año 1021. | #historia #vikingos #america #sabiasque #shorts | pendiente |
+| 13 | cannas | ¿Sabías que una batalla de hace 2.000 años se sigue estudiando hoy? | Cannas, 216 a. C.: la trampa perfecta de Aníbal. | #historia #anibal #roma #sabiasque #shorts | pendiente |
+| 14 | nintendo | ¿Sabías que Nintendo existe desde antes del avión? | Kioto, 1889: una tienda de cartas pintadas a mano. | #historia #nintendo #videojuegos #sabiasque #shorts | pendiente |
+| 15 | novela-titanic | ¿Sabías que una novela contó el hundimiento del Titanic 14 años antes? | «Futility» (1898), de Morgan Robertson: lo que coincide y lo que no. | #historia #titanic #coincidencias #sabiasque #shorts | pendiente |
+| 16 | carne-picada | ¿Sabías que un muerto ayudó a ganar la Segunda Guerra Mundial? | 1943: la Operación Carne Picada y el engaño de Sicilia. | #historia #segundaguerramundial #espias #sabiasque #shorts | pendiente |
+| 17 | yamaguchi | ¿Sabías que un hombre sobrevivió a Hiroshima y a Nagasaki? | Tsutomu Yamaguchi, reconocido oficialmente por Japón en 2009. | #historia #hiroshima #nagasaki #sabiasque #shorts | pendiente |
+| 18 | wojtek | ¿Sabías que un oso fue soldado en la Segunda Guerra Mundial? | Wojtek, el oso del ejército polaco que cargó munición en Montecassino. | #historia #wojtek #segundaguerramundial #sabiasque #shorts | pendiente |
+| 19 | twain-halley | ¿Sabías que Mark Twain anunció que moriría con el cometa Halley? | Nació en 1835 y murió en 1910: los dos años del cometa. | #historia #marktwain #cometahalley #sabiasque #shorts | pendiente |
+| 20 | oxford-aztecas | ¿Sabías que Oxford es más antigua que el Imperio azteca? | En Oxford ya se enseñaba en 1096; Tenochtitlan se fundó en 1325. | #historia #oxford #aztecas #sabiasque #shorts | pendiente |

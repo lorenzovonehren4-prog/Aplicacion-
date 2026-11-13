@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que en el desierto peruano hay dibujos gigantes, de cientos de metros, hechos hace más de mil quinientos años?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 6.152
  },
  {
   "id": "s1",
   "t": "Un colibrí, un mono, una araña. Y líneas rectas de varios kilómetros.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.127
  },
  {
   "id": "s2",
   "t": "Son tan grandes, que solo se aprecian bien desde el aire.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.061
  },
  {
   "id": "s3",
   "t": "Los hizo la cultura Nazca, hace unos dos mil años.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.103
  },
  {
   "id": "s4",
   "t": "¿Cómo? El suelo está cubierto de piedras oscuras. Debajo, la tierra es clara.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.554
  },
  {
   "id": "s5",
   "t": "Bastaba con retirar las piedras para dibujar una línea.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 2.75
  },
  {
   "id": "s6",
   "t": "Con estacas y cuerdas, mantenían las proporciones. Y como casi nunca llueve, siguen ahí.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 5.019
  },
  {
   "id": "s7",
   "t": "¿Para qué? Quizá rituales para pedir agua. Quizá caminos sagrados, o señales del cielo.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.531
  },
  {
   "id": "s8",
   "t": "Sabemos cómo las hicieron. Pero su significado completo sigue bajo investigación.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 4.385
  }
 ]

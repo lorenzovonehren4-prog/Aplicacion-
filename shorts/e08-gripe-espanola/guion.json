@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que la gripe española probablemente no comenzó en España?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.2
  },
  {
   "id": "s1",
   "t": "1918. El mundo lleva cuatro años en guerra. Y aparece una gripe terrible.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 5.164
  },
  {
   "id": "s2",
   "t": "Enferman miles de soldados. Pero los países en guerra censuran las noticias.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.025
  },
  {
   "id": "s3",
   "t": "No quieren que el enemigo sepa que sus tropas están enfermas.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 2.838
  },
  {
   "id": "s4",
   "t": "España, en cambio, era neutral. Sus periódicos sí podían contarlo todo.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.165
  },
  {
   "id": "s5",
   "t": "Publicaron cada detalle. Incluso que el rey Alfonso trece había enfermado.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.0
  },
  {
   "id": "s6",
   "t": "Para el resto del mundo, parecía que solo España estaba enferma. Y le pusieron su nombre.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.309
  },
  {
   "id": "s7",
   "t": "¿Dónde empezó de verdad? Hay hipótesis: Kansas, Francia, China. Ninguna está confirmada.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 5.149
  },
  {
   "id": "s8",
   "t": "Mató a decenas de millones de personas. Y más de un siglo después, su origen sigue sin conocerse con certeza.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 5.652
  }
 ]

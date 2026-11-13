@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que durante la Segunda Guerra Mundial los británicos usaron una identidad falsa y documentos secretos para engañar a los nazis?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 6.619
  },
  {
   "id": "s1",
   "t": "1943. Los Aliados van a invadir Sicilia. Y es el objetivo más obvio.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.952
  },
  {
   "id": "s2",
   "t": "Hay que hacer creer al enemigo que atacarán en otro sitio.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 2.732
  },
  {
   "id": "s3",
   "t": "Inventan a un oficial que nunca existió: el comandante William Martin.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.573
  },
  {
   "id": "s4",
   "t": "Le preparan cartas personales, entradas de teatro, y un maletín con planes falsos: el ataque será en Grecia y Cerdeña.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 6.568
  },
  {
   "id": "s5",
   "t": "Un submarino deja el cuerpo, con el maletín, frente a la costa de Huelva, en España.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.731
  },
  {
   "id": "s6",
   "t": "Los documentos acaban en manos de la inteligencia alemana. Y se los creen.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 3.595
  },
  {
   "id": "s7",
   "t": "Alemania refuerza Grecia. En julio, los Aliados desembarcan en Sicilia.",
-  "gap": 0.12
+  "gap": 0.12,
+  "dur": 4.208
  },
  {
   "id": "s8",
   "t": "Una operación de engaño hizo que el enemigo creyera una historia falsa, justo antes de una invasión real.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 6.328
  }
 ]
