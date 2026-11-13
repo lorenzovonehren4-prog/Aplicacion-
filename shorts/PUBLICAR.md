@@ -130,3 +130,31 @@ Permiso del dueño (13-nov-2026): publicar 2 por día sin preguntar, 12:30 y 19:
 | 18 | wojtek | ¿Sabías que un oso fue soldado en la Segunda Guerra Mundial? | Wojtek, el oso del ejército polaco que cargó munición en Montecassino. | #historia #wojtek #segundaguerramundial #sabiasque #shorts | pendiente |
 | 19 | twain-halley | ¿Sabías que Mark Twain anunció que moriría con el cometa Halley? | Nació en 1835 y murió en 1910: los dos años del cometa. | #historia #marktwain #cometahalley #sabiasque #shorts | pendiente |
 | 20 | oxford-aztecas | ¿Sabías que Oxford es más antigua que el Imperio azteca? | En Oxford ya se enseñaba en 1096; Tenochtitlan se fundó en 1325. | #historia #oxford #aztecas #sabiasque #shorts | pendiente |
+
+
+# Tanda 4: episodios e01–e20 (34–47 s, tipografía Anton + Montserrat)
+
+Se programan después de la tanda «¿Sabías que…?», con las mismas reglas (2 por día, 17:30Z y 00:30Z, privado con `publishAt`). Dos temas se repiten con la tanda anterior (vikingos / e01 y carne-picada / e19): dejarlos separados al menos una semana.
+
+| # | Carpeta | Título | Descripción | Etiquetas | Enlace |
+| --- | --- | --- | --- | --- | --- |
+| 1 | e01-colon-vikingos | ¿Sabías que Colón llegó a América casi 500 años tarde? | Los vikingos ya habían estado en Terranova… y tampoco fueron los primeros. | #historia #colon #vikingos #sabiasque #shorts | pendiente |
+| 2 | e02-machu-picchu | ¿Sabías que Machu Picchu nunca estuvo «perdida»? | Cuando Hiram Bingham llegó en 1911, allí ya vivían y sembraban familias. | #historia #machupicchu #peru #sabiasque #shorts | pendiente |
+| 3 | e03-cascos-vikingos | ¿Sabías que los vikingos no llevaban cuernos en el casco? | La imagen viene de una ópera del siglo XIX, no de la arqueología. | #historia #vikingos #mitos #sabiasque #shorts | pendiente |
+| 4 | e04-tierra-redonda | ¿Sabías que en tiempos de Colón ya se sabía que la Tierra era redonda? | La discusión no era la forma: era el tamaño. Y Colón se equivocaba. | #historia #colon #mitos #sabiasque #shorts | pendiente |
+| 5 | e05-gran-muralla | ¿Sabías que la Gran Muralla China casi no se ve desde el espacio? | Es larguísima, pero muy estrecha. Lo dicen los propios astronautas. | #historia #china #granmuralla #sabiasque #shorts | pendiente |
+| 6 | e06-vomitorios | ¿Sabías que los vomitorios romanos no eran para vomitar? | Eran los pasillos por los que el público «salía a chorros» del anfiteatro. | #historia #roma #mitos #sabiasque #shorts | pendiente |
+| 7 | e07-salem | ¿Sabías que en Salem no quemaron a ninguna bruja? | 1692: lo que de verdad pasó con los condenados. | #historia #salem #brujas #sabiasque #shorts | pendiente |
+| 8 | e08-gripe-espanola | ¿Sabías que la gripe española no empezó en España? | 1918: por qué la pandemia lleva el nombre de un país que solo la contó. | #historia #gripeespanola #1918 #sabiasque #shorts | pendiente |
+| 9 | e09-torre-salvada | ¿Sabías que la Torre Eiffel iba a ser desmontada a los 20 años? | La salvó una antena. | #historia #paris #torreeiffel #sabiasque #shorts | pendiente |
+| 10 | e10-sutra-diamante | ¿Sabías que hay un libro impreso casi 600 años antes de Gutenberg? | El Sutra del Diamante, China, año 868. | #historia #china #imprenta #sabiasque #shorts | pendiente |
+| 11 | e11-mar-muerto | ¿Sabías que unos pastores encontraron por accidente los manuscritos del Mar Muerto? | Qumrán, 1947: unas vasijas en una cueva. | #historia #marmuerto #arqueologia #sabiasque #shorts | pendiente |
+| 12 | e12-lascaux | ¿Sabías que cuatro adolescentes descubrieron la cueva de Lascaux? | Francia, 1940: pinturas de hace unos 17.000 años. | #historia #lascaux #prehistoria #sabiasque #shorts | pendiente |
+| 13 | e13-rosetta | ¿Sabías que una sola piedra permitió leer los jeroglíficos? | La piedra de Rosetta: un mismo texto en tres escrituras. | #historia #egipto #rosetta #sabiasque #shorts | pendiente |
+| 14 | e14-tutankamon | ¿Sabías que la tumba de Tutankamón se encontró en la última temporada de búsqueda? | Howard Carter, Valle de los Reyes, 1922. | #historia #egipto #tutankamon #sabiasque #shorts | pendiente |
+| 15 | e15-nazca | ¿Sabías que en Perú hay dibujos gigantes que solo se entienden desde el aire? | Las líneas de Nazca: cómo se hicieron y qué se sabe de verdad. | #historia #peru #nazca #sabiasque #shorts | pendiente |
+| 16 | e16-qeswachaka | ¿Sabías que en Perú hay un puente inca que se vuelve a tejer cada año? | Q’eswachaka, Cusco: cuerdas de paja y una tradición de siglos. | #historia #peru #incas #sabiasque #shorts | pendiente |
+| 17 | e17-hedy-lamarr | ¿Sabías que una estrella de Hollywood ayudó a inventar la base del wifi? | Hedy Lamarr y el salto de frecuencia, patentado en 1942. | #historia #hedylamarr #inventos #sabiasque #shorts | pendiente |
+| 18 | e18-katherine-johnson | ¿Sabías que una matemática calculó a mano el camino a la Luna? | Katherine Johnson, NASA. | #historia #nasa #katherinejohnson #sabiasque #shorts | pendiente |
+| 19 | e19-mincemeat | ¿Sabías que un oficial que nunca existió engañó a Hitler? | 1943: la Operación Mincemeat. | #historia #segundaguerramundial #espias #sabiasque #shorts | pendiente |
+| 20 | e20-cable-atlantico | ¿Sabías que el primer cable entre América y Europa duró solo unas semanas? | 1858: el telégrafo transatlántico y su estreno fallido. | #historia #telegrafo #inventos #sabiasque #shorts | pendiente |
