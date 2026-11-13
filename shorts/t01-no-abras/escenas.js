@@ -41,22 +41,37 @@ function mirilla(t){ screen(); c.fillStyle='#000'; c.beginPath(); c.rect(0,0,108
 function opciones(t,q){ screen(); const R=[['A','Apagar todas las luces','y esconderte.','#2a5ab8'],['B','Llamar a emergencias','y alejarte de la puerta.','#c8102e']]; R.forEach(([l,a,b,col],i)=>{ const m=eio(clamp((q-.05-i*.3)*5,0,1)); if(m<=0) return; c.save(); c.globalAlpha=m; c.translate((1-m)*(i?300:-300),0); const y=470+i*470; c.fillStyle='rgba(6,8,16,.93)'; c.strokeStyle=col; c.lineWidth=12; rr(70,y,940,400,40); c.fill(); c.stroke(); c.fillStyle=col; c.beginPath(); c.arc(215,y+200,115,0,7); c.fill(); c.fillStyle='#fff'; c.font='190px Anton'; c.textAlign='center'; c.fillText(l,215,y+270); c.textAlign='left'; c.font='800 47px Montserrat'; c.fillText(a,355,y+180); c.font='600 44px Montserrat'; c.fillStyle='#dfe4f2'; c.fillText(b,360,y+260); c.restore(); }); layer(1); }
 const G=(id,...o)=>o.map(x=>E(id)+x);
 const P={prota:{top:'#3a4a6a',sleeve:'#3a4a6a',legs:'#1c2030',hair:'short',hairCol:'#2a1a10',buttons:false,belt:false,h:540}};
-const tel=(x,y)=>(t)=>{ c.save(); c.fillStyle='#0b0d14'; c.strokeStyle='#000'; c.lineWidth=5; rr(x-34,y-60,68,120,10); c.fill(); c.stroke(); c.fillStyle='#cfe0ff'; rr(x-27,y-50,54,100,6); c.fill(); c.restore(); glow(x,y-40,420,'rgba(140,175,255,A)',.3); };
+const fono=(ex,ey)=>{ c.save(); c.translate(ex,ey-30); c.rotate(.15); c.fillStyle='#0b0d14'; c.strokeStyle='#000'; c.lineWidth=5; rr(-30,-62,60,112,10); c.fill(); c.stroke(); c.fillStyle='#cfe0ff'; rr(-23,-53,46,94,6); c.fill(); c.restore(); glow(ex,ey-60,460,'rgba(140,175,255,A)',.3); };
+// protagonista con poses propias: o.tiembla, o.salto (px), o.walk, o.armF
+const YO=(t,o)=>cabezon(P.prota,{x:o.x+(o.tiembla?Math.sin(t*41)*5*o.tiembla:0),y:(o.y||1720)-(o.salto||0)+Math.sin(t*1.8)*3,s:o.s||1.5,t,look:o.look||1,seed:3,walk:o.walk,face:o.face,armF:o.armF,armB:o.armB,hold:o.hold});
+function sofa(){ c.save(); c.fillStyle='#141a2c'; c.strokeStyle='#05070e'; c.lineWidth=12; rr(60,1180,960,520,60); c.fill(); c.stroke(); c.fillStyle='rgba(255,255,255,.04)'; rr(110,1220,860,200,40); c.fill(); c.restore(); }
+function sofaFrente(){ c.save(); c.fillStyle='#1a2238'; c.strokeStyle='#05070e'; c.lineWidth=12; rr(20,1560,1040,420,50); c.fill(); c.stroke(); for(const x of [-10,880]){ c.fillStyle='#202a44'; rr(x,1400,210,600,70); c.fill(); c.stroke(); } c.strokeStyle='rgba(0,0,0,.4)'; c.lineWidth=6; c.beginPath(); c.moveTo(540,1570); c.lineTo(540,1900); c.stroke(); c.restore(); }
+// plano sobre el hombro: nuca y hombro del protagonista en primer plano, respirando o temblando
+function hombro(t,o={}){ screen(); c.save(); const tb=(o.tiembla||0), bx=Math.sin(t*39)*5*tb, by=Math.sin(t*1.9)*10+(o.dy||0)-(o.salto||0); c.translate(850+bx+(o.dx||0),1790+by); c.scale(o.s||1,o.s||1); c.filter='blur(3px)';
+  c.fillStyle='#0c1220'; c.strokeStyle='#000'; c.lineWidth=14; c.beginPath(); c.moveTo(-420,420); c.quadraticCurveTo(-380,60,-150,40); c.lineTo(170,40); c.quadraticCurveTo(380,60,420,420); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle='#b89a74'; for(const k of [-1,1]){ c.beginPath(); c.ellipse(k*262,-170,40,58,0,0,7); c.fill(); c.stroke(); } c.fillStyle='#1c120c'; c.beginPath(); c.arc(0,-200,268,0,7); c.fill(); c.stroke();
+  c.strokeStyle='rgba(130,160,235,.35)'; c.lineWidth=10; c.beginPath(); c.arc(0,-200,246,Math.PI*1.08,Math.PI*1.5); c.stroke(); c.strokeStyle='rgba(130,160,235,.2)'; c.beginPath(); c.moveTo(-330,150); c.quadraticCurveTo(-300,70,-150,60); c.stroke(); c.filter='none'; c.restore(); layer(1); }
+function toc(t,g){ for(const x of g){ const d=t-x; if(d>=0&&d<.5){ screen(); txt('¡TOC!',250+g.indexOf(x)*150,560+g.indexOf(x)*110,150,'#fff',1-d*2); layer(1);} } }
+const salto=(t,g)=>g.reduce((a,x)=>{ const d=t-x; return a+(d>=0&&d<.5?Math.sin(d*Math.PI/.5)*46*Math.exp(-d*3):0); },0);
 AUTO({tipo:2,P,titulo:['NO ABRAS','LA PUERTA','230px'],final:['¿A O B?','TU DECISIÓN CAMBIA LA HISTORIA','250px'],
  hot:/^(2:17|madrugada|solo|alguien|puerta|yo|abre|frío|voz|hermano|problema|volvería|noche|abres|ahí|mirilla|oscuro|quién|celular|vibra|leíste|mensaje|decidir|harías|a:|b:|apagar|esconderte|llamar|emergencias|alejarte|decisión|historia)$/i,
  golpes:[], nombres:[[3,'VOZ AL OTRO LADO','PARECE TU HERMANO'],[6,'VOZ AL OTRO LADO','???'],[9,'UN SUSURRO','DETRÁS DE LA PUERTA']],
  escenas:[
   {bg:'t01_fuera',cam:'in',extra:(t,k)=>{ oscuro(t,.35); rayo(t+7.1); lluvia(t,.9); reloj(t,k-.25); }},
-  {bg:'t01_sala',cam:'orbit',chars:[{p:'prota',x:520,s:1.5,cara:'n'}],extra:(t,k)=>{ tel(690,1420)(t); oscuro(t,.42); lluvia(t,.25); }},
-  {bg:'t01_pasillo',cam:'in',extra:(t,k)=>{ oscuro(t,.3); rayo(t+2); const g=G('s2',.5,.95,1.4); for(const x of g){ const d=t-x; if(d>=0&&d<.5){ screen(); txt('¡TOC!',300+g.indexOf(x)*240,780+g.indexOf(x)*40,150,'#fff',1-d*2); layer(1);} } }},
-  {cam:'crash',extra:(t,k)=>{ puerta(t,{sombra:1}); ondas(t,540,1000); oscuro(t,.25); }},
-  {bg:'t01_pasillo',cam:'orbit',chars:[{p:'prota',x:540,s:1.6,cara:'o'}],extra:(t,k)=>{ oscuro(t,.4); lluvia(t,.2); }},
+  // sentado en el sofá, mirando el celular: el pulgar se mueve y parpadea
+  {bg:'t01_sala',cam:'orbit',extra:(t,k)=>{ sofa(); YO(t,{x:520,y:1640,face:{eyes:'m',mouth:'n'},armF:[1.15,1.3],armB:[.5,.55],hold:fono}); sofaFrente(); oscuro(t,.4); lluvia(t,.22); }},
+  // los golpes: se sobresalta, gira la cabeza hacia la puerta y baja el celular
+  {bg:'t01_sala',cam:'in',extra:(t,k)=>{ const g=G('s2',.55,1.0,1.45), on=t>=g[0]; sofa(); YO(t,{x:520,y:1640,salto:salto(t,g),look:on?-1:1,tiembla:on?.5:0,face:on?{eyes:'o',mouth:'o',brow:-.6}:{eyes:'m',mouth:'n'},armF:on?[.5,.6]:[1.15,1.3],armB:on?[-.7,-.6]:[.5,.55],hold:fono}); sofaFrente(); oscuro(t,.4); rayo(t+2); toc(t,g); }},
+  {cam:'crash',extra:(t,k)=>{ puerta(t,{sombra:1}); ondas(t,540,1000); oscuro(t,.25); hombro(t,{dy:lerp(160,0,eio(clamp(k*2,0,1)))}); }},
+  // camina despacio hacia la puerta; primero alivio, luego duda y se frena
+  {bg:'t01_pasillo',cam:'sigue',extra:(t,k)=>{ const q=clamp(k/.7,0,1), anda=k<.7; YO(t,{x:lerp(230,600,eio(q)),walk:anda?t*5.5:null,face:k<.45?{mouth:'s'}:{eyes:'o',mouth:'n',brow:-.5},armF:anda?null:[2.3,2.4],armB:[.2,.3]}); oscuro(t,.4); lluvia(t,.2); }},
   {bg:'t01_sala',cam:'detalle',extra:(t,k)=>{ oscuro(t,.6); celular(t,k,'2:18',[['¿Vienes a dormir?',-1],['No voy a volver esta noche. Quédate tranquilo.',.12]]); }},
-  {cam:'in',extra:(t,k)=>{ puerta(t,{sombra:1,golpes:G('s5',.5,1.0).concat([T('s6')+.05])}); ondas(t,540,1000); oscuro(t,.25); }},
-  {cam:'in',extra:(t,k)=>{ mirilla(t); }},
-  {bg:'t01_pasillo',cam:'whip',chars:[{p:'prota',x:540,s:1.6,cara:'o'}],extra:(t,k)=>{ oscuro(t,.45); const d=t-E('s8'); if(d>.3){ const v=d<1.2?1:0; celular(t,(d-.3)/2.4,'2:19',[['No voy a volver esta noche. Quédate tranquilo.',-1],['NO ABRAS. ESTOY VIENDO A ALGUIEN FRENTE A TU CASA.',.28,1]],v); } }},
-  {cam:'in',extra:(t,k)=>{ puerta(t,{sombra:1,ojo:1}); oscuro(t,.32); }},
-  {cam:'orbit',extra:(t,k)=>{ puerta(t,{sombra:1,pica:clamp((k-.25)*1.6,0,1)}); oscuro(t,.3); }},
+  {cam:'in',extra:(t,k)=>{ const g=G('s5',.45,.95).concat([T('s6')+.05]); puerta(t,{sombra:1,golpes:g}); ondas(t,540,1000); oscuro(t,.25); hombro(t,{salto:salto(t,g)*1.5,tiembla:.5}); }},
+  {cam:'in',extra:(t,k)=>{ mirilla(t); const q=1-eio(clamp(k*3.5,0,1)); if(q>0){ screen(); c.fillStyle='#000'; c.beginPath(); c.rect(0,0,1080,1920); c.arc(540,900,lerp(520,60,q),0,7,true); c.fill('evenodd'); layer(1); } }},
+  // retrocede temblando sin dejar de mirar la puerta
+  {bg:'t01_pasillo',cam:'whip',extra:(t,k)=>{ const d=t-E('s8'); YO(t,{x:lerp(640,400,eio(clamp(k*1.6,0,1))),walk:k<.6?-t*7:null,tiembla:1,face:{eyes:'o',mouth:'o',brow:-.8},armF:d>.2?[1.9,2.0]:[.3,.4],armB:[-.5,-.4],hold:d>.2?fono:null}); oscuro(t,.45); if(d>.3){ celular(t,(d-.3)/2.4,'2:19',[['No voy a volver esta noche. Quédate tranquilo.',-1],['NO ABRAS. ESTOY VIENDO A ALGUIEN FRENTE A TU CASA.',.28,1]],d<1.2?1:0); } }},
+  {cam:'in',extra:(t,k)=>{ puerta(t,{sombra:1,ojo:1}); oscuro(t,.2); hombro(t,{tiembla:1,dy:lerp(0,120,eio(k)),s:lerp(1,.9,k)}); }},
+  {cam:'orbit',extra:(t,k)=>{ puerta(t,{sombra:1,pica:clamp((k-.25)*1.6,0,1)}); oscuro(t,.3); hombro(t,{tiembla:1.6,dy:120,dx:lerp(0,90,k),s:.9}); }},
   {cam:'detalle',extra:(t,k)=>{ puerta(T('s11'),{sombra:1,pica:1}); oscuro(t,.55); opciones(t,k*2.2); }},
   {cam:'out',extra:(t,k)=>{ puerta(T('s11'),{sombra:1,pica:1}); oscuro(t,.6); }}]});
 })();

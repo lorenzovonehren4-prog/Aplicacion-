@@ -71,9 +71,34 @@ def bell(f=220):
     n = int(3 * SR); k = np.arange(n) / SR; x = sum(np.sin(2 * np.pi * f * m * k) * np.exp(-k / (1.6 / m)) * a for m, a in [(1, 1), (2.76, .5), (5.4, .25), (8.9, .12)]); return x * .25
 def heartbeat():
     n = int(.8 * SR); x = np.zeros(n); x[:int(.25 * SR)] += tom(45, .25, 0)[:int(.25 * SR)]; x[int(.22 * SR):int(.22 * SR) + int(.25 * SR)] += tom(42, .25, 0)[:int(.25 * SR)] * .7; return x * .6
+def knock():  # golpe seco en una puerta de madera
+    n = int(.5 * SR); k = np.arange(n) / SR
+    x = sum(np.sin(2 * np.pi * f * k) * np.exp(-k / dc) * g for f, dc, g in [(92, .09, 1), (185, .05, .6), (310, .03, .35), (540, .018, .2)])
+    x += bp(rng.standard_normal(n), 300, 2400) * np.exp(-k / .012) * .9; return np.tanh(x * 1.6) * .9
+def thunder(dd=4.5):
+    n = int(dd * SR); k = np.arange(n) / SR; m = lp(np.abs(rng.standard_normal(n)), 3); m = m / (m.max() + 1e-9)
+    x = lp(rng.standard_normal(n), 160) * 2.2 * (np.exp(-k / (dd * .3)) * (.5 + m)) + bp(rng.standard_normal(n), 400, 2500) * np.exp(-k / .08) * .5
+    return np.tanh(x * 1.5) * .7
+def vibra():  # celular vibrando sobre algo duro
+    n = int(.42 * SR); k = np.arange(n) / SR; x = signal.square(2 * np.pi * 172 * k) * .5 + np.sin(2 * np.pi * 86 * k)
+    return lp(x, 900) * (np.abs(np.sin(2 * np.pi * 31 * k)) * .4 + .6) * env(n, .02, .05) * .3
+def pica():  # picaporte que alguien prueba
+    n = int(.45 * SR); k = np.arange(n) / SR; x = np.zeros(n)
+    for at, g in [(0, 1), (.09, .6), (.2, .9), (.3, .5)]:
+        q = int(at * SR); m = n - q; kk = np.arange(m) / SR
+        x[q:] += (sum(np.sin(2 * np.pi * f * kk) * np.exp(-kk / .02) for f in (1900, 2750, 4100)) / 3 + hp(rng.standard_normal(m), 3000) * np.exp(-kk / .006)) * g
+    return x * .3
+def sting():  # golpe disonante de tensión
+    n = int(3.5 * SR); k = np.arange(n) / SR; x = sum(signal.sawtooth(2 * np.pi * f * k + rng.uniform(0, 6)) for f in (55, 58.3, 82.4, 116.5, 233, 247))
+    return (lp(x, 1800) / 6 * np.exp(-k / 1.1) + np.pad(boom(1.2), (0, n))[:n] * .9) * .7
+def breath():
+    n = int(1.3 * SR); k = np.linspace(0, 1, n); return bp(rng.standard_normal(n), 500, 2600) * np.sin(np.pi * k) ** 2 * .22
+def creak():  # crujido de madera
+    n = int(.9 * SR); k = np.linspace(0, 1, n); f = 180 + 140 * k + 30 * np.sin(2 * np.pi * 9 * k)
+    return bp(signal.sawtooth(2 * np.pi * np.cumsum(f) / SR) * (np.abs(np.sin(2 * np.pi * 37 * k)) ** 4), 400, 3000) * np.sin(np.pi * k) * .25
 SFX = dict(boom=lambda o: boom(o.get('size', 1)), whoosh=lambda o: whoosh(o.get('d', .5)), riser=lambda o: riser(o.get('d', 1.2)), clash=lambda o: clash(), trumpet=lambda o: trumpet(o.get('d', 1.2)),
            paper=lambda o: paper(), gunshot=lambda o: gunshot(), cannon=lambda o: cannon(), jet=lambda o: jet(o.get('d', 2.5)), rocket=lambda o: rocket(o.get('d', 1.6)),
-           beep=lambda o: beep(o.get('f', 880)), bell=lambda o: bell(o.get('f', 220)), heartbeat=lambda o: heartbeat(), tom=lambda o: tom(o.get('f', 60), o.get('d', .7)))
+           beep=lambda o: beep(o.get('f', 880)), bell=lambda o: bell(o.get('f', 220)), heartbeat=lambda o: heartbeat(), knock=lambda o: knock(), thunder=lambda o: thunder(o.get('d', 4.5)), vibra=lambda o: vibra(), pica=lambda o: pica(), sting=lambda o: sting(), breath=lambda o: breath(), creak=lambda o: creak(), tom=lambda o: tom(o.get('f', 60), o.get('d', .7)))
 # ---------- capas ----------
 def pad(dd, notes, amp=.06):
     n = int(dd * SR); k = np.arange(n) / SR; x = np.zeros(n)
@@ -109,6 +134,24 @@ def noise_bed(dd, kind):
         m = .55 + .45 * np.sin(2 * np.pi * k / 4.5) ** 2; return lp(rng.standard_normal(n), 900) * m * .4
     if kind == 'rain':
         return hp(rng.standard_normal(n), 2000) * .12 + lp(rng.standard_normal(n), 400) * .08
+    if kind == 'storm':  # lluvia con gotas sueltas, canalón y rachas de viento
+        m = lp(rng.standard_normal(n), .5); m = .75 + .25 * m / (np.abs(m).max() + 1e-9)
+        x = hp(rng.standard_normal(n), 2500) * .1 * m + bp(rng.standard_normal(n), 500, 1600) * .05 + lp(rng.standard_normal(n), 220) * .12
+        dr = (rng.random(n) > .9985) * rng.uniform(.2, 1, n); x += bp(signal.lfilter([1], [1, -.97], dr), 900, 5000) * .35
+        w = lp(rng.standard_normal(n), 1.0); w = (.5 + .5 * w / (np.abs(w).max() + 1e-9)) ** 2; x += bp(rng.standard_normal(n), 250, 700) * w * .12
+        return x
+    if kind == 'drone':  # tensión: grave desafinado, filtro que respira y un agudo inquietante que crece
+        cr = np.linspace(0, 1, n) ** 1.5; x = np.zeros(n)
+        for f in (36.7, 36.9, 55.2, 73.1, 77.6): x += signal.sawtooth(2 * np.pi * f * k + rng.uniform(0, 6))
+        lo = lp(x, 180) * .25 + lp(x, 600) * (.5 + .5 * np.sin(2 * np.pi * k / 9)) * .08
+        hi = sum(np.sin(2 * np.pi * f * k * (1 + .004 * np.sin(2 * np.pi * (.3 + j * .11) * k))) for j, f in enumerate((1244, 1318, 1865))) * .012
+        sub = np.sin(2 * np.pi * 41 * k) * (np.sin(2 * np.pi * k / 2.4) ** 8) * .25
+        return (lo + sub) * (.45 + .55 * cr) + hi * (.2 + .8 * cr)
+    if kind == 'tictac':
+        out = np.zeros(n); at = 0; j = 0
+        while at < dd - .1:
+            m = int(.03 * SR); kk = np.arange(m) / SR; b = np.sin(2 * np.pi * (2100 if j % 2 else 1700) * kk) * np.exp(-kk / .004) * .5; q = int(at * SR); out[q:q + m] += b[:n - q]; at += .5; j += 1
+        return out
     if kind == 'city':
         return lp(rng.standard_normal(n), 200) * .25 + bp(rng.standard_normal(n), 300, 900) * lp(np.abs(rng.standard_normal(n)), 2) * .4
     if kind == 'siren':
@@ -145,6 +188,9 @@ if os.path.exists(f'{d}/cortes.json') and P.get('cortes', True):
     for ct in json.load(open(f'{d}/cortes.json')): put(fx, whoosh(.32), ct - .2, .45); put(fx, tom(48, .35, .2), ct, .35)
 for s in g:
     v, sr = sf.read(f"{d}/voz/{s['id']}.wav"); v = signal.resample_poly(v, SR, sr); put(voice, v, s['start'])
+if P.get('reverb'):  # sala: cola corta sobre efectos y ambiente
+    rv = int(1.1 * SR); ir = rng.standard_normal(rv) * np.exp(-np.arange(rv) / SR / .28); ir = lp(ir, 3500); ir /= np.abs(ir).sum() ** .5 * 6
+    fx = fx + signal.fftconvolve(fx, ir)[:N] * P['reverb']; amb = amb + signal.fftconvolve(amb, ir)[:N] * P['reverb'] * .4
 voice = hp(voice, 80); lvl = np.sqrt(np.maximum(lp(voice ** 2, 8), 0) + 1e-8)
 voice = voice * lp(np.minimum(2.5, (0.1 / np.maximum(lvl, .02)) ** .5), 12); voice = voice / np.abs(voice).max() * .9
 voice = voice + .35 * bp(voice, 2200, 5000)  # presencia: consonantes más claras
