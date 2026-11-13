@@ -3,54 +3,54 @@
   "id": "s0",
   "t": "¿Sabías que una piedra encontrada durante la campaña de Napoleón ayudó a descifrar los jeroglíficos egipcios?",
   "gap": 0.25,
-  "dur": 5.211
+  "dur": 5.157
  },
  {
   "id": "s1",
   "t": "Durante más de mil años, nadie en el mundo supo leerlos.",
   "gap": 0.12,
-  "dur": 3.034
+  "dur": 3.164
  },
  {
   "id": "s2",
   "t": "1799. Soldados franceses reconstruyen un fuerte cerca de la ciudad de Rashid, o Rosetta.",
   "gap": 0.12,
-  "dur": 6.012
+  "dur": 5.745
  },
  {
   "id": "s3",
   "t": "Entre los escombros aparece una losa oscura, llena de inscripciones.",
   "gap": 0.12,
-  "dur": 3.636
+  "dur": 3.52
  },
  {
   "id": "s4",
   "t": "Tiene el mismo texto, escrito de tres formas: jeroglíficos, demótico... y griego antiguo.",
   "gap": 0.12,
-  "dur": 4.941
+  "dur": 5.266
  },
  {
   "id": "s5",
   "t": "Y el griego sí se podía leer. Era la pista que faltaba.",
   "gap": 0.12,
-  "dur": 2.989
+  "dur": 3.688
  },
  {
   "id": "s6",
   "t": "Jean-François Champollion pasa años comparando los nombres de los reyes.",
   "gap": 0.12,
-  "dur": 3.52
+  "dur": 3.492
  },
  {
   "id": "s7",
   "t": "En 1822 lo consigue: los signos también representan sonidos.",
   "gap": 0.12,
-  "dur": 4.215
+  "dur": 4.109
  },
  {
   "id": "s8",
   "t": "Una piedra ayudó a recuperar una lengua que llevaba siglos sin poder leerse.",
   "gap": 0.5,
-  "dur": 3.72
+  "dur": 3.678
  }
 ]

@@ -3,54 +3,54 @@
   "id": "s0",
   "t": "¿Sabías que la Torre Eiffel estaba destinada a desaparecer después de solamente veinte años?",
   "gap": 0.25,
-  "dur": 4.468
+  "dur": 4.502
  },
  {
   "id": "s1",
   "t": "París, 1889. Se construye como la gran atracción de la Exposición Universal.",
   "gap": 0.12,
-  "dur": 4.994
+  "dur": 5.857
  },
  {
   "id": "s2",
   "t": "A muchos artistas les parece un monstruo de hierro. Firman una carta de protesta.",
   "gap": 0.12,
-  "dur": 4.094
+  "dur": 4.742
  },
  {
   "id": "s3",
   "t": "Y el permiso tiene fecha de caducidad: veinte años. En 1909, la ciudad podría desmontarla.",
   "gap": 0.12,
-  "dur": 6.111
+  "dur": 6.528
  },
  {
   "id": "s4",
   "t": "Gustave Eiffel busca una razón para salvarla. Y la encuentra en la ciencia.",
   "gap": 0.12,
-  "dur": 3.945
+  "dur": 4.283
  },
  {
   "id": "s5",
   "t": "Instala un laboratorio del clima, hace experimentos... y ofrece la torre como antena.",
   "gap": 0.12,
-  "dur": 4.301
+  "dur": 4.571
  },
  {
   "id": "s6",
   "t": "La radio acaba de nacer. Y no hay nada más alto en París.",
   "gap": 0.12,
-  "dur": 3.163
+  "dur": 3.663
  },
  {
   "id": "s7",
   "t": "Los militares logran enviar mensajes a cientos de kilómetros. La torre ya es demasiado útil para derribarla.",
   "gap": 0.12,
-  "dur": 5.585
+  "dur": 6.284
  },
  {
   "id": "s8",
   "t": "La ciencia y las comunicaciones salvaron uno de los monumentos más famosos del mundo.",
   "gap": 0.5,
-  "dur": 4.305
+  "dur": 4.102
  }
 ]
