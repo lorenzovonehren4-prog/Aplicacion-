@@ -1,6 +1,6 @@
 AUTO({hot:/^(europeos|américa|colón|quinientos|sagas|vinland|leif|erikson|groenlandia|leyenda|1960|terranova|casas|vikingo|hierro|2021|madera|solar|anillos|1021|vikingos|primero)$/i,
  titulo:['¿SABÍAS QUE...?','LLEGARON 500 AÑOS ANTES QUE COLÓN'], final:['1021','VIKINGOS EN AMÉRICA','260px'],
- P:{L:{top:'#5a3a2a',top2:'#8a6a3a',hat:'casco',hatCol:'#9aa0a8',hair:'long',hairCol:'#c8962e',beard:'#c8962e',cape:'#8a1a1a',h:540},V:{top:'#4a5a3a',hat:'casco',hatCol:'#8a8a8a',beard:'#8a5a2a',h:500},E:{top:'#6a5a3a',top2:'#4a3a2a',hat:'boina',hatCol:'#3a3a2a',hair:'short',hairCol:'#d8d4cc',h:510},C:{top:'#f4f4f4',hair:'bob',hairCol:'#6a4a2a',h:490}},
+ P:{L:{top:'#5a3a2a',top2:'#8a6a3a',hat:'casco',hatCol:'#9aa0a8',hair:'short',hairCol:'#c8962e',beard:'#c8962e',cape:'#8a1a1a',h:540},V:{top:'#4a5a3a',hat:'casco',hatCol:'#8a8a8a',beard:'#8a5a2a',h:500},E:{top:'#6a5a3a',top2:'#4a3a2a',hat:'boina',hatCol:'#3a3a2a',hair:'short',hairCol:'#d8d4cc',h:510},C:{top:'#f4f4f4',hair:'bob',hairCol:'#6a4a2a',h:490}},
  fechas:[[4,5,'1960'],[6,7,'2021']], cifras:[[8,'471 AÑOS','ANTES QUE COLÓN']], nombres:[[2,'LEIF ERIKSON','NAVEGANTE NÓRDICO']], golpes:[4,8],
  escenas:[
   {bg:'vik_costa',cam:'out',chars:[{p:'L',x:340,cara:'s',brazos:'senala',s:1.5}]},
