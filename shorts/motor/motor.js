@@ -385,7 +385,7 @@ const MOTOR={ run(cfg){
     const cp=$('cap'); let cc=null; for(const s of TL.segs) if(!(C.noCaps||[]).includes(s.id)) for(const q of s.caps) if(t>=q.t0&&t<q.t1) cc=q;
     if(cc){ show(cp,1); const ws=cc.txt.split(' '), tot=ws.reduce((a,w)=>a+w.length+1,0); let acc=0, on=0; for(let i=0;i<ws.length;i++){ if(t>=cc.t0+(cc.t1-cc.t0)*acc/tot) on=i; acc+=ws[i].length+1; } const key=cc.txt+'|'+on; if(cp.dataset.c!==key){ cp.dataset.c=key; cp.innerHTML=hl(cc.txt,on); cp.style.fontSize=cc.txt.length>15?'68px':cc.txt.length>12?'76px':''; } pop(cp,t,cc.t0,1.25,.08); } else show(cp,0);
   };
-  window.ready=document.fonts.ready;
+  window.ready=Promise.all([document.fonts.ready,...Object.values(window.__IMGS||{}).map(im=>im.decode().catch(()=>{}))]);
 } };
 // ---------------- utilidades de la tanda 3 ----------------
 function txt(s,x,y,size=60,col='#fff8e6',a=1,align='center'){ if(a<=0) return; c.save(); c.globalAlpha=a; c.font=`900 ${size}px Inter`; c.textAlign=align; c.lineJoin='round'; c.lineWidth=size*.18; c.strokeStyle='#0b0806'; c.strokeText(s,x,y); c.fillStyle=col; c.fillText(s,x,y); c.restore(); }
@@ -555,3 +555,9 @@ function escPiedra(t,o={}){ grad('#14100c','#221a14','#0c0a08');
   layer(1); }
 
 if(typeof piramide==='undefined') var piramide=function(x,y,w,col='#d8b46a',old=0){ c.fillStyle=col; c.strokeStyle='#0b0806'; c.lineWidth=6; c.beginPath(); c.moveTo(x-w/2,y); c.lineTo(x,y-w*.64); c.lineTo(x+w/2,y); c.closePath(); c.fill(); c.stroke(); c.fillStyle='rgba(0,0,0,.18)'; c.beginPath(); c.moveTo(x,y-w*.64); c.lineTo(x+w/2,y); c.lineTo(x+w*.08,y); c.closePath(); c.fill(); };
+
+// ---------------- fondos pintados (imágenes) ----------------
+// En escenas.js: imgs({campo:'fondos/campo.jpg'}) al principio; luego fondoImg('campo',t,{z,dx,dy,blur}).
+function imgs(map){ window.__IMGS=window.__IMGS||{}; for(const k in map){ const im=new Image(); im.src=map[k]; window.__IMGS[k]=im; } }
+function fondoImg(k,t,o={}){ const im=(window.__IMGS||{})[k]; if(!im||!im.complete) return; screen(); const d=o.d??.3, z=Math.pow(CAM.z,d)*(o.z||1.08), cx=W/2-(CAM.x-W/2)*d*.5+(o.dx||0), cy=H/2-(CAM.y-H/2)*d*.5+(o.dy||0); const ar=im.width/im.height, h=H*z, w=Math.max(W*z,h*ar); const hh=w/ar;
+  c.save(); if(o.blur) c.filter=`blur(${o.blur}px)`; c.drawImage(im,cx-w/2,cy-hh/2,w,hh); c.restore(); if(o.tinte){ c.fillStyle=o.tinte; c.fillRect(0,0,W,H); } layer(1); }
