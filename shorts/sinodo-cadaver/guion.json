@@ -3,60 +3,60 @@
   "id": "h1",
   "t": "¿Sabías que un papa mandó juzgar el cadáver de otro papa?",
   "gap": 0.3,
-  "dur": 2.909
+  "dur": 2.544
  },
  {
   "id": "c1",
   "t": "Roma, año 897. La Iglesia está dividida en bandos enemigos.",
   "gap": 0.15,
-  "dur": 4.22
+  "dur": 5.168
  },
  {
   "id": "c2",
   "t": "El papa Formoso había muerto meses antes. Sus rivales no lo perdonaban.",
   "gap": 0.2,
-  "dur": 3.861
+  "dur": 4.401
  },
  {
   "id": "d1",
   "t": "El nuevo papa, Esteban sexto, tiene una idea macabra.",
   "gap": 0.25,
-  "dur": 3.342
+  "dur": 2.88
  },
  {
   "id": "d2",
   "t": "Sacan a Formoso de su tumba, lo visten de papa... y lo sientan en un trono.",
   "gap": 0.3,
-  "dur": 3.426
+  "dur": 3.619
  },
  {
   "id": "d3",
   "t": "Empieza el juicio. Un diácono responde por el muerto.",
   "gap": 0.2,
-  "dur": 2.561
+  "dur": 3.399
  },
  {
   "id": "r1",
   "t": "Lo acusan de llegar al papado de forma ilegal. Culpable.",
   "gap": 0.25,
-  "dur": 2.979
+  "dur": 3.473
  },
  {
   "id": "r2",
   "t": "Anulan sus decisiones, y tiran su cuerpo al río Tíber.",
   "gap": 0.25,
-  "dur": 2.832
+  "dur": 2.75
  },
  {
   "id": "f1",
   "t": "Meses después, Esteban sexto fue derrocado, encarcelado y estrangulado.",
   "gap": 0.25,
-  "dur": 4.338
+  "dur": 3.917
  },
  {
   "id": "f2",
   "t": "A ese juicio se le llamó el Sínodo del Cadáver.",
   "gap": 0.5,
-  "dur": 2.269
+  "dur": 2.121
  }
 ]

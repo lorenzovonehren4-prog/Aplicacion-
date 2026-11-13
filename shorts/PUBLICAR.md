@@ -138,12 +138,12 @@ Se programan después de la tanda «¿Sabías que…?», con las mismas reglas (
 
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
-| 1 | e01-colon-vikingos | ¿Sabías que Colón llegó a América casi 500 años tarde? | Los vikingos ya habían estado en Terranova… y tampoco fueron los primeros. | #historia #colon #vikingos #sabiasque #shorts | pendiente |
-| 2 | e02-machu-picchu | ¿Sabías que Machu Picchu nunca estuvo «perdida»? | Cuando Hiram Bingham llegó en 1911, allí ya vivían y sembraban familias. | #historia #machupicchu #peru #sabiasque #shorts | pendiente |
+| 1 | e01-colon-vikingos | ¿Sabías que Colón llegó a América casi 500 años tarde? | Los vikingos ya habían estado en Terranova… y tampoco fueron los primeros. | #historia #colon #vikingos #sabiasque #shorts | https://youtube.com/shorts/RsAVSUQKR-s (programado 13-nov 19:30, hora de Lima) |
+| 2 | e02-machu-picchu | ¿Sabías que Machu Picchu nunca estuvo «perdida»? | Cuando Hiram Bingham llegó en 1911, allí ya vivían y sembraban familias. | #historia #machupicchu #peru #sabiasque #shorts | https://youtube.com/shorts/Eq0Dt9pS7ZA (programado 14-nov 19:30, hora de Lima) |
 | 3 | e03-cascos-vikingos | ¿Sabías que los vikingos no llevaban cuernos en el casco? | La imagen viene de una ópera del siglo XIX, no de la arqueología. | #historia #vikingos #mitos #sabiasque #shorts | pendiente |
-| 4 | e04-tierra-redonda | ¿Sabías que en tiempos de Colón ya se sabía que la Tierra era redonda? | La discusión no era la forma: era el tamaño. Y Colón se equivocaba. | #historia #colon #mitos #sabiasque #shorts | pendiente |
-| 5 | e05-gran-muralla | ¿Sabías que la Gran Muralla China casi no se ve desde el espacio? | Es larguísima, pero muy estrecha. Lo dicen los propios astronautas. | #historia #china #granmuralla #sabiasque #shorts | pendiente |
-| 6 | e06-vomitorios | ¿Sabías que los vomitorios romanos no eran para vomitar? | Eran los pasillos por los que el público «salía a chorros» del anfiteatro. | #historia #roma #mitos #sabiasque #shorts | pendiente |
+| 4 | e04-tierra-redonda | ¿Sabías que en tiempos de Colón ya se sabía que la Tierra era redonda? | La discusión no era la forma: era el tamaño. Y Colón se equivocaba. | #historia #colon #mitos #sabiasque #shorts | https://youtube.com/shorts/z6FyKUyaMH8 (programado 15-nov 12:30, hora de Lima) |
+| 5 | e05-gran-muralla | ¿Sabías que la Gran Muralla China casi no se ve desde el espacio? | Es larguísima, pero muy estrecha. Lo dicen los propios astronautas. | #historia #china #granmuralla #sabiasque #shorts | https://youtube.com/shorts/wXBeKo7UZOg (programado 15-nov 19:30, hora de Lima) |
+| 6 | e06-vomitorios | ¿Sabías que los vomitorios romanos no eran para vomitar? | Eran los pasillos por los que el público «salía a chorros» del anfiteatro. | #historia #roma #mitos #sabiasque #shorts | https://youtube.com/shorts/ZbCY2Vji6NE (programado 16-nov 12:30, hora de Lima) |
 | 7 | e07-salem | ¿Sabías que en Salem no quemaron a ninguna bruja? | 1692: lo que de verdad pasó con los condenados. | #historia #salem #brujas #sabiasque #shorts | pendiente |
 | 8 | e08-gripe-espanola | ¿Sabías que la gripe española no empezó en España? | 1918: por qué la pandemia lleva el nombre de un país que solo la contó. | #historia #gripeespanola #1918 #sabiasque #shorts | pendiente |
 | 9 | e09-torre-salvada | ¿Sabías que la Torre Eiffel iba a ser desmontada a los 20 años? | La salvó una antena. | #historia #paris #torreeiffel #sabiasque #shorts | pendiente |
@@ -180,4 +180,4 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
-| 1 | t01-no-abras | No abras la puerta 🚪 ¿A o B? | Son las 2:17 de la madrugada y alguien toca la puerta con la voz de tu hermano. Tú decides: comenta A o B y la historia sigue con la opción que gane. Historia de ficción. | #terror #misterio #historiasdeterror #tudecides #shorts | pendiente |
+| 1 | t01-no-abras | No abras la puerta 🚪 ¿A o B? | Son las 2:17 de la madrugada y alguien toca la puerta con la voz de tu hermano. Tú decides: comenta A o B y la historia sigue con la opción que gane. Historia de ficción. | #terror #misterio #historiasdeterror #tudecides #shorts | https://youtube.com/shorts/NjXJER2iyAc (programado 14-nov 12:30, hora de Lima) |

@@ -3,60 +3,60 @@
   "id": "h1",
   "t": "¿Sabías que Mark Twain anunció que moriría con el cometa Halley... y acertó?",
   "gap": 0.3,
-  "dur": 3.388
+  "dur": 3.973
  },
  {
   "id": "c1",
   "t": "1835. Nace Mark Twain.",
   "gap": 0.15,
-  "dur": 2.504
+  "dur": 2.752
  },
  {
   "id": "c2",
   "t": "Ese mismo año, el cometa Halley cruza el cielo.",
   "gap": 0.2,
-  "dur": 2.7
+  "dur": 2.929
  },
  {
   "id": "d1",
   "t": "El cometa vuelve cada setenta y seis años, más o menos.",
   "gap": 0.15,
-  "dur": 2.931
+  "dur": 3.33
  },
  {
   "id": "d2",
   "t": "Twain se hace famoso con Tom Sawyer y Huckleberry Finn.",
   "gap": 0.2,
-  "dur": 2.826
+  "dur": 2.841
  },
  {
   "id": "d3",
   "t": "En 1909 dice: llegué con el cometa Halley, y espero irme con él.",
   "gap": 0.3,
-  "dur": 4.176
+  "dur": 4.618
  },
  {
   "id": "r1",
   "t": "Y bromea: vinimos juntos, tenemos que irnos juntos.",
   "gap": 0.25,
-  "dur": 3.039
+  "dur": 3.489
  },
  {
   "id": "r2",
   "t": "20 de abril de 1910. El cometa vuelve a su punto más cercano al Sol.",
   "gap": 0.3,
-  "dur": 4.248
+  "dur": 5.359
  },
  {
   "id": "f1",
   "t": "Al día siguiente, Mark Twain muere.",
   "gap": 0.25,
-  "dur": 2.133
+  "dur": 2.076
  },
  {
   "id": "f2",
   "t": "¿Casualidad? Seguramente. Pero qué casualidad.",
   "gap": 0.5,
-  "dur": 2.455
+  "dur": 4.308
  }
 ]

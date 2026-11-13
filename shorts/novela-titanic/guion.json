@@ -3,60 +3,60 @@
   "id": "h1",
   "t": "¿Sabías que un escritor contó el hundimiento del Titanic catorce años antes de que pasara?",
   "gap": 0.3,
-  "dur": 4.353
+  "dur": 3.82
  },
  {
   "id": "c1",
   "t": "1898. Morgan Robertson, un exmarinero, publica una novela.",
   "gap": 0.15,
-  "dur": 4.644
+  "dur": 4.458
  },
  {
   "id": "c2",
   "t": "Habla del barco más grande del mundo. Lo llaman insumergible. Su nombre: Titán.",
   "gap": 0.2,
-  "dur": 4.184
+  "dur": 5.845
  },
  {
   "id": "d1",
   "t": "En abril, cruzando el Atlántico Norte de noche...",
   "gap": 0.15,
-  "dur": 2.332
+  "dur": 2.291
  },
  {
   "id": "d2",
   "t": "choca contra un iceberg y se hunde. No hay botes para todos.",
   "gap": 0.25,
-  "dur": 3.148
+  "dur": 3.578
  },
  {
   "id": "d3",
   "t": "Catorce años después, en abril de 1912, el Titanic choca contra un iceberg, de noche, en el Atlántico Norte.",
   "gap": 0.3,
-  "dur": 6.891
+  "dur": 6.519
  },
  {
   "id": "r1",
   "t": "Tampoco había botes para todos. Titán... y Titanic.",
   "gap": 0.2,
-  "dur": 2.783
+  "dur": 3.512
  },
  {
   "id": "r2",
   "t": "No es idéntico: el Titán era más pequeño y navegaba en sentido contrario.",
   "gap": 0.25,
-  "dur": 4.388
+  "dur": 3.546
  },
  {
   "id": "f1",
   "t": "¿Profecía? Robertson dijo que no. Solo conocía muy bien el mar.",
   "gap": 0.2,
-  "dur": 3.515
+  "dur": 4.818
  },
  {
   "id": "f2",
   "t": "A veces el futuro no se adivina. Se deduce.",
   "gap": 0.5,
-  "dur": 2.364
+  "dur": 3.107
  }
 ]

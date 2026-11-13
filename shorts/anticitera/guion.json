@@ -3,60 +3,60 @@
   "id": "h1",
   "t": "¿Sabías que los griegos construyeron una computadora hace más de dos mil años?",
   "gap": 0.3,
-  "dur": 4.191
+  "dur": 3.341
  },
  {
   "id": "c1",
   "t": "1901. Unos buzos encuentran un barco hundido junto a la isla de Anticitera.",
   "gap": 0.15,
-  "dur": 4.63
+  "dur": 4.031
  },
  {
   "id": "c2",
   "t": "Sacan un bloque de bronce oxidado. Nadie le presta atención.",
   "gap": 0.2,
-  "dur": 3.284
+  "dur": 3.78
  },
  {
   "id": "d1",
   "t": "Un año después, un arqueólogo ve algo dentro: una rueda dentada.",
   "gap": 0.2,
-  "dur": 3.678
+  "dur": 3.286
  },
  {
   "id": "d2",
   "t": "Docenas de engranajes diminutos. Nadie sabe para qué sirven.",
   "gap": 0.2,
-  "dur": 3.339
+  "dur": 3.842
  },
  {
   "id": "d3",
   "t": "Un siglo después, los rayos X revelan el secreto.",
   "gap": 0.3,
-  "dur": 2.79
+  "dur": 2.705
  },
  {
   "id": "r1",
   "t": "Giras una manivela, y muestra el Sol, la Luna... y predice los eclipses.",
   "gap": 0.2,
-  "dur": 3.8
+  "dur": 3.923
  },
  {
   "id": "r2",
   "t": "Hasta marcaba los Juegos Olímpicos.",
   "gap": 0.25,
-  "dur": 1.883
+  "dur": 1.724
  },
  {
   "id": "f1",
   "t": "No se conoce nada igual en más de mil años.",
   "gap": 0.2,
-  "dur": 2.074
+  "dur": 2.037
  },
  {
   "id": "f2",
   "t": "Una computadora... de la Antigua Grecia.",
   "gap": 0.5,
-  "dur": 1.726
+  "dur": 1.902
  }
 ]
