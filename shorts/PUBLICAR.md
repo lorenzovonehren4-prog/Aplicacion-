@@ -174,3 +174,10 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 | 6 | f06-senal-wow | La señal del espacio que duró 72 segundos | 15 de agosto de 1977: la señal Wow!, todavía sin explicación definitiva. | #ciencia #espacio #misterio #shorts | pendiente |
 | 7 | f07-demara | El hombre que se hizo pasar por cirujano sin serlo | Ferdinand Demara, «el Gran Impostor». | #historia #impostor #curiosidades #shorts | pendiente |
 | 8 | f08-emus | ¿Sabías que Australia mandó al ejército contra los emús? | 1932: la Gran Guerra del Emú. | #historia #australia #emus #sabiasque #shorts | pendiente |
+
+
+# Serie de terror interactivo
+
+| # | Carpeta | Título | Descripción | Etiquetas | Enlace |
+| --- | --- | --- | --- | --- | --- |
+| 1 | t01-no-abras | No abras la puerta 🚪 ¿A o B? | Son las 2:17 de la madrugada y alguien toca la puerta con la voz de tu hermano. Tú decides: comenta A o B y la historia sigue con la opción que gane. Historia de ficción. | #terror #misterio #historiasdeterror #tudecides #shorts | pendiente |
