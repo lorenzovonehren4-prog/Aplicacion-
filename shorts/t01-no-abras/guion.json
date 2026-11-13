@@ -3,19 +3,19 @@
   "id": "s0",
   "t": "Son las 2:17 de la madrugada.",
   "gap": 0.2,
-  "dur": 1.934
+  "dur": 2.126
  },
  {
   "id": "s1",
   "t": "Estás solo en casa…",
   "gap": 0.25,
-  "dur": 1.044
+  "dur": 1.144
  },
  {
   "id": "s2",
   "t": "hasta que alguien toca la puerta.",
   "gap": 2.0,
-  "dur": 1.45
+  "dur": 1.617
  },
  {
   "id": "s3",
@@ -29,13 +29,13 @@
   "id": "s4",
   "t": "Reconoces la voz. Parece ser tu hermano.",
   "gap": 0.5,
-  "dur": 3.067
+  "dur": 3.203
  },
  {
   "id": "s5",
   "t": "Pero hay un problema… tu hermano te había dicho que no volvería esta noche.",
   "gap": 1.6,
-  "dur": 3.254
+  "dur": 3.656
  },
  {
   "id": "s6",
@@ -49,13 +49,13 @@
   "id": "s7",
   "t": "Miras por la mirilla. Está demasiado oscuro para ver quién es.",
   "gap": 0.5,
-  "dur": 4.008
+  "dur": 4.22
  },
  {
   "id": "s8",
   "t": "Entonces, tu celular vibra.",
   "gap": 2.8,
-  "dur": 1.73
+  "dur": 1.895
  },
  {
   "id": "s9",
@@ -69,18 +69,18 @@
   "id": "s10",
   "t": "Ahora tienes que decidir. ¿Qué harías?",
   "gap": 0.5,
-  "dur": 2.726
+  "dur": 3.131
  },
  {
   "id": "s11",
   "t": "A: apagar todas las luces y esconderte. B: llamar a emergencias y alejarte de la puerta.",
   "gap": 3.0,
-  "dur": 6.101
+  "dur": 6.22
  },
  {
   "id": "s12",
   "t": "¿A o B? Tu decisión cambia la historia.",
   "gap": 1.5,
-  "dur": 2.85
+  "dur": 3.052
  }
 ]
