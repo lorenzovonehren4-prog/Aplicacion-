@@ -1,0 +1,15 @@
+Trabaja en la carpeta shorts/ del repositorio, rama claude/hopeful-lamport-uz29r3. Antes de nada lee shorts/GUIA_PRODUCCION.md, shorts/SISTEMA_CURIOSIDADES.md y shorts/PUBLICAR.md.
+
+Soy el dueño del canal de YouTube Historia.Universal (shorts en español). Todo tiene que ser gratis: no uses herramientas de pago. Gasta el menor crédito posible: no rehagas ni revises nada que yo no pida.
+
+Haz los vídeos con el mismo sistema que describe la guía (motor propio, fondos pintados con SD-Turbo, ficha de episodios y herramientas/hacer.sh), con el mismo estilo de personajes, cámara, subtítulos y sonido. La voz siempre por encima del fondo.
+
+Voces (Microsoft Edge, gratis): es-PE-AlexNeural y es-ES-AlvaroNeural alternadas en los vídeos de historia; es-MX-DaliaNeural para el terror.
+
+Cuando te dé guiones, usa mi narración tal cual. Los de historia empiezan con «¿Sabías que…?», duran unos 40 segundos y cambian de toma en cada frase.
+
+Cuando termines una tanda: mándame los vídeos para verlos, apunta títulos y descripciones en shorts/PUBLICAR.md, y haz commit y push (los .mp4 con git add -f).
+
+YouTube: tienes mi permiso para publicar 2 vídeos al día (12:30 y 19:30, hora de Lima) sin preguntarme. «No abras la puerta» NO se publica. TikTok no: solo YouTube.
+
+Importante: hasta el 17 de noviembre otra sesión está subiendo la cola actual (shorts/canal/cola.json). No subas ni reprogrames nada de esa cola hasta esa fecha. Los vídeos nuevos que hagas se programan después del último de la cola (5 de diciembre).
