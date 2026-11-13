@@ -1,0 +1,56 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que hubo una guerra que terminó en aproximadamente 38 minutos?",
+  "gap": 0.25,
+  "dur": 4.4
+ },
+ {
+  "id": "s1",
+  "t": "Ocurrió en Zanzíbar, en 1896.",
+  "gap": 0.25,
+  "dur": 3.329
+ },
+ {
+  "id": "s2",
+  "t": "Después de la muerte del sultán, un nuevo aspirante tomó el poder sin contar con el apoyo británico.",
+  "gap": 0.25,
+  "dur": 5.571
+ },
+ {
+  "id": "s3",
+  "t": "Los británicos exigieron que abandonara el palacio.",
+  "gap": 0.25,
+  "dur": 2.807
+ },
+ {
+  "id": "s4",
+  "t": "Cuando venció el ultimátum, comenzó el enfrentamiento.",
+  "gap": 0.25,
+  "dur": 3.208
+ },
+ {
+  "id": "s5",
+  "t": "La flota británica atacó el palacio",
+  "gap": 0.25,
+  "dur": 2.096
+ },
+ {
+  "id": "s6",
+  "t": "y, después de unos 38 minutos, Zanzíbar se rindió.",
+  "gap": 0.25,
+  "dur": 3.779
+ },
+ {
+  "id": "s7",
+  "t": "Así terminó lo que suele conocerse como la guerra más corta de la historia.",
+  "gap": 0.25,
+  "dur": 3.839
+ },
+ {
+  "id": "s8",
+  "t": "¡Duró menos que un recreo!",
+  "gap": 0.5,
+  "dur": 1.488
+ }
+]

@@ -158,3 +158,19 @@ Se programan después de la tanda «¿Sabías que…?», con las mismas reglas (
 | 18 | e18-katherine-johnson | ¿Sabías que una matemática calculó a mano el camino a la Luna? | Katherine Johnson, NASA. | #historia #nasa #katherinejohnson #sabiasque #shorts | pendiente |
 | 19 | e19-mincemeat | ¿Sabías que un oficial que nunca existió engañó a Hitler? | 1943: la Operación Mincemeat. | #historia #segundaguerramundial #espias #sabiasque #shorts | pendiente |
 | 20 | e20-cable-atlantico | ¿Sabías que el primer cable entre América y Europa duró solo unas semanas? | 1858: el telégrafo transatlántico y su estreno fallido. | #historia #telegrafo #inventos #sabiasque #shorts | pendiente |
+
+
+# Tanda 5: f01–f08 (34–42 s, narración del dueño, personajes rediseñados)
+
+Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38min, yamaguchi, guerra-emus): publicar estas versiones nuevas en su lugar, no las dos.
+
+| # | Carpeta | Título | Descripción | Etiquetas | Enlace |
+| --- | --- | --- | --- | --- | --- |
+| 1 | f01-lustig | ¿Sabías que un hombre vendió la Torre Eiffel sin ser su dueño? | París, 1925: Victor Lustig y una subasta que nunca existió. | #historia #paris #torreeiffel #sabiasque #shorts | pendiente |
+| 2 | f02-mary-celeste | El barco que apareció sin nadie a bordo | 1872: el Mary Celeste, a la deriva cerca de las Azores. ¿Tú qué crees que pasó? | #historia #misterio #maryceleste #shorts | pendiente |
+| 3 | f03-zanzibar | ¿Sabías que hubo una guerra que duró unos 38 minutos? | Zanzíbar, 27 de agosto de 1896. | #historia #guerra #zanzibar #sabiasque #shorts | pendiente |
+| 4 | f04-yamaguchi | El hombre que sobrevivió a dos bombas atómicas | Tsutomu Yamaguchi: Hiroshima, 6 de agosto; Nagasaki, 9 de agosto de 1945. | #historia #hiroshima #nagasaki #shorts | pendiente |
+| 5 | f05-fortitude | El ejército que no existía y engañó a Hitler | 1944: tanques inflables y la Operación Fortitude antes de Normandía. | #historia #segundaguerramundial #diad #shorts | pendiente |
+| 6 | f06-senal-wow | La señal del espacio que duró 72 segundos | 15 de agosto de 1977: la señal Wow!, todavía sin explicación definitiva. | #ciencia #espacio #misterio #shorts | pendiente |
+| 7 | f07-demara | El hombre que se hizo pasar por cirujano sin serlo | Ferdinand Demara, «el Gran Impostor». | #historia #impostor #curiosidades #shorts | pendiente |
+| 8 | f08-emus | ¿Sabías que Australia mandó al ejército contra los emús? | 1932: la Gran Guerra del Emú. | #historia #australia #emus #sabiasque #shorts | pendiente |
