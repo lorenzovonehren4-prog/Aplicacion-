@@ -92,6 +92,6 @@ AUTO({tipo:2,P,titulo:['A LA PUERTA','EPISODIO 2','230px'],final:['NO ESTÁS SOL
   {bg:'t02_abajo',cam:'detalle',extra:(t,k)=>{ oscuro(t,.45); luzArriba(t,1); sombra(t,clamp(k*1.4,0,1),360,700); const s=sacudida(t,E('s10')+.9); if(s){ screen(); c.fillStyle='rgba(255,255,255,.08)'; c.beginPath(); c.rect(0,0,1080,1920); c.fill(); layer(1); } }},
   {cam:'detalle',extra:(t,k)=>{ oscuro(t,.8); chat(t,k,'2:27','Mamá',[['Y por favor, no enciendas la luz del pasillo.',-1],['Hijo, ya estoy en casa.',.08]],k<.12?1:0); }},
   {bg:'t02_sotano',cam:'in',extra:(t,k)=>{ YO(t,{x:540,s:1.7,look:-1,tiembla:1.3,face:{eyes:'o',mouth:'o',brow:-.9},armF:[1.8,1.9],hold:fono}); linterna(t,540,1150,620,.95); }},
-  {bg:'t02_abajo',cam:'in',extra:(t,k)=>{ oscuro(t,.5); luzArriba(t,1); }},
-  {bg:'t02_esquina',cam:'detalle',extra:(t,k)=>{ oscuro(t,.55); silueta(t,k); if(k>.88){ screen(); c.fillStyle='#000'; c.beginPath(); c.rect(0,0,1080,1920); c.fill(); layer(1); } }}]});
+  {bg:'t02_esquina',cam:'in',extra:(t,k)=>{ oscuro(t,.5); silueta(t,k); if(k>.95){ screen(); c.fillStyle='#000'; c.beginPath(); c.rect(0,0,1080,1920); c.fill(); layer(1); } }},
+  {cam:'out',extra:(t,k)=>{ screen(); c.fillStyle='#000'; c.beginPath(); c.rect(0,0,1080,1920); c.fill(); layer(1); }}]});
 })();
