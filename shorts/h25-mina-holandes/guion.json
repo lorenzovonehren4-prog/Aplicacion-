@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que en Arizona hay una mina de oro perdida que muchos buscaron… y algunos no volvieron?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.227
  },
  {
   "id": "s1",
   "t": "Se la conoce como la mina del Holandés Perdido.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.078
  },
  {
   "id": "s2",
   "t": "Su leyenda gira en torno a Jacob Waltz, un minero alemán del siglo XIX.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.796
  },
  {
   "id": "s3",
   "t": "Se decía que había encontrado una veta riquísima en las montañas Superstition.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.624
  },
  {
   "id": "s4",
   "t": "Murió en 1891 sin revelar dónde estaba.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.986
  },
  {
   "id": "s5",
   "t": "Desde entonces, miles de buscadores han recorrido esos cañones.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.14
  },
  {
   "id": "s6",
   "t": "Y hubo muertes nunca del todo aclaradas, como la de Adolph Ruth en 1931.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.367
  },
  {
   "id": "s7",
   "t": "Muchos excursionistas se pierden también por el calor extremo y el terreno.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.369
  },
  {
   "id": "s8",
   "t": "Nadie ha encontrado la mina. ¿Existe… o es solo una leyenda?",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 4.065
  }
 ]

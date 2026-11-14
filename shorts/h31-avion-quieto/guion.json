@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que hay pilotos que aseguran haber visto aviones completamente detenidos en el aire?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.969
  },
  {
   "id": "s1",
   "t": "Uno de los relatos más contados sitúa el caso en Alaska, en los años 70.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.839
  },
  {
   "id": "s2",
   "t": "Un piloto comercial vio una avioneta quieta sobre un desfiladero.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.991
  },
  {
   "id": "s3",
   "t": "Al acercarse, la hélice parecía no moverse.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.32
  },
  {
   "id": "s4",
   "t": "Y entonces, según contó, desapareció en un parpadeo.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.13
  },
  {
   "id": "s5",
   "t": "No existe ningún registro oficial de ese caso.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.344
  },
  {
   "id": "s6",
   "t": "Pero sí hay una explicación para los aviones que parecen quietos: un viento en contra muy fuerte.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.199
  },
  {
   "id": "s7",
   "t": "Una avioneta lenta, contra un viento casi igual de rápido, puede quedar casi inmóvil respecto al suelo.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.182
  },
  {
   "id": "s8",
   "t": "Y una hélice vista a cierta velocidad puede parecer detenida. ¿Qué crees que vio?",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 4.652
  }
 ]

@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que en una casa de España empezaron a aparecer caras en el suelo de la cocina?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.84
  },
  {
   "id": "s1",
   "t": "Ocurrió en Bélmez de la Moraleda, en Jaén, en 1971.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.698
  },
  {
   "id": "s2",
   "t": "María Gómez vio cómo una mancha del cemento tomaba la forma de un rostro.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.472
  },
  {
   "id": "s3",
   "t": "La familia rompió el suelo y puso cemento nuevo.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.287
  },
  {
   "id": "s4",
   "t": "Pero según contaron, la cara volvió a aparecer. Y luego, muchas más.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.606
  },
  {
   "id": "s5",
   "t": "Al excavar bajo la cocina se encontraron huesos humanos antiguos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.175
  },
  {
   "id": "s6",
   "t": "La casa se llenó de curiosos, periodistas e investigadores.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.923
  },
  {
   "id": "s7",
   "t": "Algunos estudios sostuvieron que las caras estaban pintadas; otros defendieron que no.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.001
  },
  {
   "id": "s8",
   "t": "El debate nunca se cerró. ¿Qué crees tú?",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.831
  }
 ]

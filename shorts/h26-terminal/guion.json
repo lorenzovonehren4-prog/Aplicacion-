@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que un hombre vivió 18 años dentro de un aeropuerto?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.587
  },
  {
   "id": "s1",
   "t": "Fue en la terminal 1 del aeropuerto Charles de Gaulle, en París.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.53
  },
  {
   "id": "s2",
   "t": "Se llamaba Mehran Karimi Nasseri. En 1988 llegó sin documentos: decía que se los habían robado.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 7.391
  },
  {
   "id": "s3",
   "t": "Francia no lo dejaba entrar, y tampoco podían enviarlo a otro país.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.06
  },
  {
   "id": "s4",
   "t": "Quedó atrapado en un limbo legal.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.69
  },
  {
   "id": "s5",
   "t": "Vivió en un banco de la terminal, rodeado de sus maletas, leyendo y escribiendo su diario.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.351
  },
  {
   "id": "s6",
   "t": "Los trabajadores le llevaban comida. Su historia inspiró la película «La terminal».",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.461
  },
  {
   "id": "s7",
   "t": "En 2006 lo hospitalizaron, y salió del aeropuerto.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.371
  },
  {
   "id": "s8",
   "t": "Semanas antes de morir, en 2022, volvió a vivir allí. Murió en esa misma terminal. ¿Imaginas una vida así?",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 8.851
  }
 ]

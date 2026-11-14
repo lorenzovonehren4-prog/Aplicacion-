@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que en un bosque de Estados Unidos desaparecieron cinco personas en pocos años, sin dejar rastro?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.897
  },
  {
   "id": "s1",
   "t": "Ocurrió entre 1945 y 1950, cerca de Bennington, en Vermont.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.032
  },
  {
   "id": "s2",
   "t": "A la zona la bautizaron después como el «triángulo de Bennington».",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.979
  },
  {
   "id": "s3",
   "t": "El caso más famoso es el de Paula Welden, una estudiante de 18 años.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.674
  },
  {
   "id": "s4",
   "t": "En diciembre de 1946 salió a caminar por un sendero. Varias personas la vieron allí.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.809
  },
  {
   "id": "s5",
   "t": "Nunca volvió.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 0.77
  },
  {
   "id": "s6",
   "t": "Cientos de voluntarios la buscaron. No apareció ni una prenda.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.872
  },
  {
   "id": "s7",
   "t": "Los otros casos tampoco se resolvieron, y nunca se demostró una relación entre ellos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.155
  },
  {
   "id": "s8",
   "t": "¿Qué pasó en esos bosques?",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 1.16
  }
 ]

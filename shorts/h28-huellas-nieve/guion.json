@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que se cuenta la historia de un hombre cuyas huellas en la nieve terminaban de golpe… en medio de un campo vacío?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 6.385
  },
  {
   "id": "s1",
   "t": "La versión más famosa sitúa el caso en una granja de Estados Unidos, en el siglo XIX.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.07
  },
  {
   "id": "s2",
   "t": "Un joven salió a buscar agua al pozo mientras su familia lo veía desde la casa.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.075
  },
  {
   "id": "s3",
   "t": "Como no volvía, siguieron sus huellas en la nieve.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.812
  },
  {
   "id": "s4",
   "t": "Y terminaban en mitad del campo. Sin nada alrededor.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.906
  },
  {
   "id": "s5",
   "t": "Los vecinos y los perros buscaron durante días.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.596
  },
  {
   "id": "s6",
   "t": "Pero cuando los investigadores buscaron registros, no encontraron nada: ni la granja, ni la familia, ni el desaparecido.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 7.196
  },
  {
   "id": "s7",
   "t": "La historia se había copiado de revista en revista, cambiando nombres y fechas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.33
  },
  {
   "id": "s8",
   "t": "¿Un caso real… o una leyenda que nunca ocurrió?",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.831
  }
 ]

@@ -5,8 +5,8 @@
 cd "$(dirname "$0")/.."; export NODE_PATH=$(npm root -g) HF_HUB_DISABLE_XET=1 SSL_CERT_FILE=${SSL_CERT_FILE:-/root/.ccr/ca-bundle.crt}
 F=$1; CACHE=${CACHE:-/tmp/fondos-shorts}; mkdir -p "$CACHE"
 EPS=$(GAP=${GAP:-.25} python3 herramientas/gen.py "$F" | sed 's/.*fondos: //')
-i=0; for d in $EPS; do v=es-PE-AlexNeural; [ $((i%2)) = 1 ] && v=es-ES-AlvaroNeural
-  for k in 1 2 3; do VOZ_EDGE=${VOZ_FIJA:-$v} RATE=${RATE:-+10%} python3 motor/voz.py $d x && break || sleep 5; done; i=$((i+1)); done
+[ -n "$SIN_VOZ" ] || { i=0; for d in $EPS; do v=es-PE-AlexNeural; [ $((i%2)) = 1 ] && v=es-ES-AlvaroNeural
+  for k in 1 2 3; do VOZ_EDGE=${VOZ_FIJA:-$v} RATE=${RATE:-+10%} python3 motor/voz.py $d x && break || sleep 5; done; i=$((i+1)); done; }
 python3 - "$CACHE/_tanda.json" $EPS <<'PY'
 import json,sys; a={}
 for d in sys.argv[2:]: a.update(json.load(open(d+'/fondos_prompts.json')))
