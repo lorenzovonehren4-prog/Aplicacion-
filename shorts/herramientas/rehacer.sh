@@ -4,7 +4,9 @@
 cd "$(dirname "$0")/.."; export NODE_PATH=$(npm root -g) HF_HUB_DISABLE_XET=1; CACHE=${CACHE:-/tmp/fondos-xl}; mkdir -p "$CACHE"
 python3 - "$CACHE/_rehacer.json" "$@" <<'PY'
 import json,sys; a={}
-for d in sys.argv[2:]: a.update(json.load(open(d+'/fondos_prompts.json')))
+import os
+for d in sys.argv[2:]:
+    if os.path.exists(d+'/fondos_prompts.json'): a.update(json.load(open(d+'/fondos_prompts.json')))
 json.dump(a,open(sys.argv[1],'w'))
 PY
 python3 motor/fondos.py "$CACHE" "$CACHE/_rehacer.json"
@@ -12,6 +14,7 @@ for d in "$@"; do python3 - $d "$CACHE" <<'PY'
 import json,os,sys
 from PIL import Image, ImageFilter
 d,G=sys.argv[1],sys.argv[2]; os.makedirs(d+'/fondos',exist_ok=True)
+if not os.path.exists(d+'/fondos_prompts.json'): sys.exit()
 for k in json.load(open(d+'/fondos_prompts.json')):
     if os.path.exists(f'{G}/{k}.jpg'): Image.open(f'{G}/{k}.jpg').filter(ImageFilter.GaussianBlur(1.2)).save(f'{d}/fondos/{k}.jpg',quality=90)
 PY
