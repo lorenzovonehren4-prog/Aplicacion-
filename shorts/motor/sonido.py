@@ -209,5 +209,8 @@ mix = voice + cama + fx * .6 * (1 - .45 * (1 - duck))
 dl = int(.012 * SR); wide = np.concatenate([np.zeros(dl), (amb * .2 * duck + fx * .12)[:-dl]])
 out = np.stack([mix + wide, mix - wide], 1); f = int(.4 * SR); out[-f:] *= np.linspace(1, 0, f)[:, None]
 pk = np.abs(out).max(); out = out / pk * .95 if pk > .95 else out
+# envolvente de la voz a 30 fps (0–9) para que las bocas se muevan al ritmo de lo que se dice
+ev = lp(np.abs(voice), 14)[::SR // 30]; ev = np.clip(ev / (np.percentile(ev[ev > 1e-4], 95) + 1e-9) * 9, 0, 9).round().astype(int) if (ev > 1e-4).any() else ev.astype(int)
+_tl = json.load(open(f'{d}/timeline.json')); _tl['env'] = ev.tolist(); json.dump(_tl, open(f'{d}/timeline.json', 'w'), ensure_ascii=False)
 db = lambda x: round(float(20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)), 1)
 sf.write(f'{d}/audio.wav', out, SR); print(d, 'total', TOTAL, '| voz', db(voice[habla]), 'fondo con voz', db(cama[habla]), 'fondo en pausas', db(cama[~habla]) if (~habla).any() else '-', 'efectos', db(fx[np.abs(fx) > 1e-4] * .6) if (np.abs(fx) > 1e-4).any() else '-')

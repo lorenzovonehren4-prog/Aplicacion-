@@ -32,6 +32,10 @@ for d,E in EPIS.items():
         if x[2]: e['cam']=x[2]
         if x[3]: e['chars']=[ch(c) for c in x[3]]
         if len(x)>4 and x[4]: e.update(x[4])
+        pr=E['fondos'].get(x[1],'').lower() if x[1] else ''
+        import re as _re
+        for k,rx in [('nieve',r'snow|blizzard|arctic'),('lluvia',r'rain|storm'),('brasas',r'fire|torch|candle|ember|lava'),('niebla',r'fog|mist|smoke'),('polvo',r'desert|sand|dust|canyon|dry'),('hojas',r'forest|jungle|rainforest|autumn|trees'),('luces',r'night|stars|starry|moon')]:
+            if _re.search(rx,pr): e.setdefault('aire',k); break
         i=len(esc)
         if 'texto' in e and (i==0 or any(f[0]<=i<=f[1] and f[2].replace(' ','').endswith(e['texto']['t'].replace(' ','')) for f in E.get('fechas',[]))): del e['texto']
         if 'texto' in e and any(f[0]<=i<=f[1] for f in E.get('fechas',[]))  and e['texto'].get('y',560)<700: e['texto']['y']=700

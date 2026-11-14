@@ -103,3 +103,11 @@ Se hace con el conector «Ytube» (Composio), en su banco de trabajo remoto:
 - Vídeos de «pausa en el momento exacto»: solo existe el prototipo `pausa-panqueque/`.
 - Episodio 2 de «No abras la puerta» según los comentarios.
 - Los 10 vídeos hechos a mano de la primera tanda (Cleopatra, Napoleón y los conejos, juicios a animales, Sínodo del Cadáver, Leonardo, Anticitera, Cannas, novela del Titanic, Yamaguchi, Twain) no tienen la actuación automática.
+
+## Mejoras de noviembre (versión actual)
+
+- **Fondos:** `motor/fondos.py` usa SDXL-Turbo en bfloat16 (unos 15 s por imagen en CPU, mucho mejor que SD-Turbo). La instrucción «no people, no text» va al principio del texto porque el modelo corta a los 77 tokens. `MODELO=sd` vuelve al modelo antiguo.
+- **Cámaras «3D»:** `pasa` (pasa por detrás de un objeto en primer plano), `espalda` (pasa por detrás del personaje) y `gira`.
+- **Animación:** las bocas se mueven con la envolvente real de la voz (`env` en `timeline.json`, lo escribe `sonido.py`), los personajes se miran entre sí, se llevan las manos a la cabeza en las escenas de `golpes`, se encogen de hombros, y hay gestos nuevos (`cabeza`, `encoge`, `cruza`, `camara`).
+- **Partículas en primer plano** (`aire`: nieve, lluvia, polvo, niebla, brasas, hojas, luces): `herramientas/gen.py` las elige según el texto del fondo.
+- **Tandas:** `herramientas/tanda.sh <ficha>` hace todo (voces Alex/Álvaro alternadas, fondos, audio y vídeo); `SIN_VOZ=1` para retomar sin regrabar. `herramientas/rehacer.sh <carpetas>` vuelve a pintar fondos y renderizar.
