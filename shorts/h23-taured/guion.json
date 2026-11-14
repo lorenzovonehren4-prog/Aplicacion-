@@ -1,0 +1,47 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que circula la historia de un viajero que llegó a Japón con un pasaporte… de un país que no existe?",
+  "gap": 0.25
+ },
+ {
+  "id": "s1",
+  "t": "Según el relato, ocurrió en 1954, en el aeropuerto de Tokio.",
+  "gap": 0.25
+ },
+ {
+  "id": "s2",
+  "t": "El hombre presentó un pasaporte de un país llamado Taured.",
+  "gap": 0.25
+ },
+ {
+  "id": "s3",
+  "t": "Le dijeron que ese país no existía. Él señaló un mapa, justo donde está Andorra.",
+  "gap": 0.25
+ },
+ {
+  "id": "s4",
+  "t": "Lo encerraron en un hotel vigilado mientras investigaban.",
+  "gap": 0.25
+ },
+ {
+  "id": "s5",
+  "t": "A la mañana siguiente, la habitación estaba vacía.",
+  "gap": 0.25
+ },
+ {
+  "id": "s6",
+  "t": "Y dicen que sus documentos también desaparecieron.",
+  "gap": 0.25
+ },
+ {
+  "id": "s7",
+  "t": "Pero no existe ningún registro oficial de este caso: ni de la policía japonesa, ni en los periódicos de la época.",
+  "gap": 0.25
+ },
+ {
+  "id": "s8",
+  "t": "¿Un viajero de otro mundo, o una leyenda urbana muy bien contada?",
+  "gap": 0.5
+ }
+]

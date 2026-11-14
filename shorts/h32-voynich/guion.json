@@ -1,0 +1,47 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que existe un libro medieval escrito en un idioma que nadie en el mundo ha podido leer?",
+  "gap": 0.25
+ },
+ {
+  "id": "s1",
+  "t": "Es el manuscrito Voynich.",
+  "gap": 0.25
+ },
+ {
+  "id": "s2",
+  "t": "Su pergamino se fechó con carbono 14 a principios del siglo XV.",
+  "gap": 0.25
+ },
+ {
+  "id": "s3",
+  "t": "Lleva el nombre de Wilfrid Voynich, un librero que lo compró en 1912, en Italia.",
+  "gap": 0.25
+ },
+ {
+  "id": "s4",
+  "t": "Está lleno de plantas que no se parecen a ninguna conocida, diagramas de estrellas y extrañas figuras humanas.",
+  "gap": 0.25
+ },
+ {
+  "id": "s5",
+  "t": "Criptógrafos de las dos guerras mundiales intentaron descifrarlo. Fracasaron.",
+  "gap": 0.25
+ },
+ {
+  "id": "s6",
+  "t": "Hoy también lo estudian con ordenadores, y tampoco hay una solución aceptada.",
+  "gap": 0.25
+ },
+ {
+  "id": "s7",
+  "t": "¿Un código brillante, una lengua perdida, o un engaño muy elaborado?",
+  "gap": 0.25
+ },
+ {
+  "id": "s8",
+  "t": "El libro sigue guardando su secreto. ¿Qué crees que dice?",
+  "gap": 0.5
+ }
+]

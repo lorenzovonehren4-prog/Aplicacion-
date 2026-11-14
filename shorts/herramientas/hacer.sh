@@ -13,7 +13,7 @@ for d in $EPS; do
 import json,os,sys
 from PIL import Image, ImageFilter
 d,G=sys.argv[1],sys.argv[2]; os.makedirs(d+'/fondos',exist_ok=True)
-for k in json.load(open(d+'/fondos_prompts.json')): Image.open(f'{G}/{k}.jpg').filter(ImageFilter.GaussianBlur(3.5)).save(f'{d}/fondos/{k}.jpg',quality=88)
+for k in json.load(open(d+'/fondos_prompts.json')): Image.open(f'{G}/{k}.jpg').filter(ImageFilter.GaussianBlur(1.5)).save(f'{d}/fondos/{k}.jpg',quality=88)
 PY
   python3 motor/ambientar.py $d                                          # ambiente por escena
   python3 motor/sonido.py $d; node motor/render.mjs $d --cortes; python3 motor/sonido.py $d   # audio, cortes de plano y audio definitivo

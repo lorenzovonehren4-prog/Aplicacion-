@@ -18,13 +18,13 @@ Narración del dueño del canal, usada tal cual (una toma por frase). Se genera 
 ## Storyboard
 | # | Fondo | Cámara | Personajes | Elementos |
 | --- | --- | --- | --- | --- |
-| 1 | `g01_bosque` | tracking lateral | — | iconos 🔥 |
+| 1 | `g01_bosque` | travelling que pasa por detrás de un objeto en primer plano | — | iconos 🔥 |
 | 2 | `g01_mapa` | plano general que se abre | — | texto «BOHEMIAN GROVE»; iconos 📍 |
 | 3 | `g01_entrada` | whip pan | guardia; guardia | texto «ACCESO PROHIBIDO»; iconos 📷 🚫 |
-| 4 | `g01_cabana` | órbita con giro suave | presidente; empresario; empresario2 | texto «PRESIDENTES • MAGNATES • BANQUEROS» |
+| 4 | `g01_cabana` | la cámara pasa por detrás del personaje | presidente; empresario; empresario2 | texto «PRESIDENTES • MAGNATES • BANQUEROS» |
 | 5 | `g01_cabana` | primer plano de detalle | empresario | iconos 🎭 🎻 |
-| 6 | `g01_buho` | pan vertical ascendente | encapuchado; encapuchado2; encapuchado | texto «LA CREMACIÓN DE LA PREOCUPACIÓN»; iconos 🔥 |
-| 7 | `g01_lago` | crash zoom | encapuchado2; encapuchado | texto «¿CLUB… O RITUAL DE PODER?» |
+| 6 | `g01_buho` | giro de cámara | encapuchado; encapuchado2; encapuchado | texto «LA CREMACIÓN DE LA PREOCUPACIÓN»; iconos 🔥 |
+| 7 | `g01_lago` | travelling que pasa por detrás de un objeto en primer plano | encapuchado2; encapuchado | texto «¿CLUB… O RITUAL DE PODER?» |
 | 8 | `g01_cabana` | dolly in lento | cientifico; empresario2 | texto «PROYECTO MANHATTAN»; iconos ⚛️ |
 | 9 | `g01_buho` | dolly out de cierre | — | texto ««WEAVING SPIDERS COME NOT HERE»»; iconos 🦉 🕸️ |
 
@@ -32,12 +32,12 @@ Título de entrada: ¿SABÍAS QUE...? / EL SECRETO DEL BOSQUE. Cierre: BOHEMIAN 
 Tipografía: Anton (títulos) y Montserrat ExtraBold (subtítulos, dos líneas como máximo, palabra activa en amarillo).
 
 ## Fondos (SD-Turbo, `motor/fondos.py`, sin personas ni texto)
-- `g01_bosque`: giant redwood forest at night, huge tree trunks, a distant orange campfire glow between the trees, deep blue darkness, mysterious mood
-- `g01_buho`: a huge stone owl statue standing at the edge of a dark lake at night in a redwood forest, lit from below by orange fire, reflections on the water
+- `g01_bosque`: dark night, giant redwood forest at night, deep blue shadows, huge tree trunks, a distant orange campfire glow between the trees, deep blue darkness, mysterious mood
+- `g01_buho`: dark night, deep blue sky, a huge stone owl statue standing at the edge of a dark lake at night in a redwood forest, lit from below by orange fire, reflections on the water
 - `g01_mapa`: antique illustrated map of the coast of northern California with forests and a small marked spot, sepia parchment, compass rose, no letters
 - `g01_entrada`: closed private road with a wooden gate and a small security booth inside a dark redwood forest at night, cold lamp light
 - `g01_cabana`: luxurious rustic wooden cabin interior at night with a long table, world maps, whiskey glasses, a fireplace, warm dim light
-- `g01_lago`: dark lake at night surrounded by giant redwoods, many torches reflected on the water, a stone altar with fire, smoke
+- `g01_lago`: dark night, deep blue darkness, dark lake at night surrounded by giant redwoods, many torches reflected on the water, a stone altar with fire, smoke
 
 ## Audio
 Voz Piper `es_MX-claude-high` (velocidad 0,86). Música y efectos en `pista.json` (colchón, ostinato, percusión, reloj final; golpes en cada giro).

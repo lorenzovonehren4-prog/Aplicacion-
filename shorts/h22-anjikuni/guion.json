@@ -1,0 +1,56 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que en 1930 se contó que un pueblo entero desapareció en Canadá, dejando la comida y la ropa en sus casas?",
+  "gap": 0.25,
+  "dur": 7.074
+ },
+ {
+  "id": "s1",
+  "t": "La historia apareció en los periódicos en noviembre de 1930.",
+  "gap": 0.25,
+  "dur": 3.874
+ },
+ {
+  "id": "s2",
+  "t": "Un trampero, Joe Labelle, dijo haber llegado a una aldea inuit junto al lago Anjikuni.",
+  "gap": 0.25,
+  "dur": 5.026
+ },
+ {
+  "id": "s3",
+  "t": "Según su relato, las ollas seguían al fuego y la ropa estaba en su sitio.",
+  "gap": 0.25,
+  "dur": 4.214
+ },
+ {
+  "id": "s4",
+  "t": "Y no había huellas en la nieve.",
+  "gap": 0.25,
+  "dur": 1.595
+ },
+ {
+  "id": "s5",
+  "t": "Los perros, decía, habían muerto junto a sus estacas.",
+  "gap": 0.25,
+  "dur": 3.567
+ },
+ {
+  "id": "s6",
+  "t": "Pero la Policía Montada de Canadá investigó.",
+  "gap": 0.25,
+  "dur": 2.369
+ },
+ {
+  "id": "s7",
+  "t": "Y concluyó que no había pruebas de que ese pueblo hubiera existido, ni de que nadie hubiera desaparecido.",
+  "gap": 0.25,
+  "dur": 5.606
+ },
+ {
+  "id": "s8",
+  "t": "¿Un misterio real, o un invento de periódico que se volvió leyenda?",
+  "gap": 0.5,
+  "dur": 3.783
+ }
+]

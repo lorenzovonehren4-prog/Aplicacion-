@@ -3,7 +3,7 @@ import json,sys
 import os
 SH=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','')
 exec(open(sys.argv[1]).read())
-CAM={'in':'dolly in lento','out':'dolly out de cierre','crash':'crash zoom','sube':'pan vertical ascendente','baja':'pan vertical descendente','whip':'whip pan','orbit':'órbita con giro suave','detalle':'primer plano de detalle','lejos':'plano general que se abre','sigue':'tracking lateral','izq':'pan a la izquierda','der':'pan a la derecha'}
+CAM={'in':'dolly in lento','out':'dolly out de cierre','crash':'crash zoom','sube':'pan vertical ascendente','baja':'pan vertical descendente','whip':'whip pan','orbit':'órbita con giro suave','detalle':'primer plano de detalle','lejos':'plano general que se abre','sigue':'tracking lateral','izq':'pan a la izquierda','der':'pan a la derecha','pasa':'travelling que pasa por detrás de un objeto en primer plano','gira':'giro de cámara','espalda':'la cámara pasa por detrás del personaje'}
 for d,E in EPIS.items():
     g=json.load(open(SH+d+'/guion.json')); t=0; rows=[]; sb=[]
     for i,(x,s) in enumerate(zip(E['esc'],g)):
