@@ -1,0 +1,100 @@
+[
+ {
+  "id": "s0",
+  "t": "La manija dejó de moverse.",
+  "gap": 0.4,
+  "dur": 1.471
+ },
+ {
+  "id": "s1",
+  "t": "Hay alguien afuera intentando entrar. Dice que es mi hermano, pero sé que no es él.",
+  "gap": 0.4,
+  "voz": "es-PE-AlexNeural",
+  "dur": 5.329
+ },
+ {
+  "id": "s2",
+  "t": "Una patrulla ya está en camino. Llegará en unos quince minutos. Aléjese de la entrada y quédese en un lugar seguro.",
+  "gap": 0.6,
+  "voz": "es-CO-SalomeNeural",
+  "fx": "puerta",
+  "dur": 7.775
+ },
+ {
+  "id": "s3",
+  "t": "Quince minutos. Solo tenía que aguantar quince minutos.",
+  "gap": 0.4,
+  "dur": 3.834
+ },
+ {
+  "id": "s4",
+  "t": "Bajó al sótano: el lugar más lejos de la puerta.",
+  "gap": 1.0,
+  "dur": 2.757
+ },
+ {
+  "id": "s5",
+  "t": "¿Hola…?",
+  "gap": 1.6,
+  "voz": "es-PE-AlexNeural",
+  "dur": 0.405
+ },
+ {
+  "id": "s6",
+  "t": "Entonces, el celular vibró. Era su madre.",
+  "gap": 4.2,
+  "dur": 3.273
+ },
+ {
+  "id": "s7",
+  "t": "Pero llegó otro mensaje.",
+  "gap": 2.0,
+  "dur": 1.294
+ },
+ {
+  "id": "s8",
+  "t": "Arriba, alguien acababa de encender la luz.",
+  "gap": 0.8,
+  "dur": 2.423
+ },
+ {
+  "id": "s9",
+  "t": "Apagó la linterna. Y escuchó pasos.",
+  "gap": 2.6,
+  "dur": 3.004
+ },
+ {
+  "id": "s10",
+  "t": "¿Hay alguien ahí abajo?",
+  "gap": 2.2,
+  "voz": "es-ES-AlvaroNeural",
+  "fx": "puerta",
+  "dur": 1.107
+ },
+ {
+  "id": "s11",
+  "t": "El celular volvió a vibrar.",
+  "gap": 2.8,
+  "dur": 1.463
+ },
+ {
+  "id": "s12",
+  "t": "Abre. Soy yo.",
+  "gap": 1.0,
+  "voz": "es-ES-AlvaroNeural",
+  "fx": "puerta",
+  "dur": 1.883
+ },
+ {
+  "id": "s13",
+  "t": "Si su madre acababa de llegar a casa… ¿quién estaba caminando en el piso de arriba?",
+  "gap": 1.4,
+  "dur": 3.841
+ },
+ {
+  "id": "s14",
+  "t": "No estás solo.",
+  "gap": 2.0,
+  "dur": 0.874
+ }
+]
