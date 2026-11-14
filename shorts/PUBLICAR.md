@@ -188,3 +188,28 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
 | 1 | g01-bohemian-grove | ¿Sabías que los más poderosos se reúnen en secreto frente a un búho gigante? | Bohemian Grove: el club privado de California donde cada julio se juntan presidentes, banqueros y magnates. ¿Club social o algo más? | #historia #bohemiangrove #misterio #sabiasque #shorts | pendiente |
+
+
+# Tanda 7: h20–h38 (misterios, cámaras 3D)
+
+| # | Carpeta | Título | Descripción | Etiquetas | Enlace |
+| --- | --- | --- | --- | --- | --- |
+| 1 | h20-vuelo-739 | ¿Sabías que en 1962 un avión con más de cien personas desapareció sobre el Pacífico… y nunca se… | El vuelo 739. ¿Explotó en pleno vuelo? La investigación oficial nunca pudo confirmarlo. El vuelo 739 sigue sin respuesta. | #misterio #historia #sabiasque #shorts | pendiente |
+| 2 | h21-isla-munecas | ¿Sabías que en México hay una isla donde cientos de muñecas viejas cuelgan de los árboles… y… | La isla de las muñecas. Nadie ha podido confirmar la historia de la niña. ¿Leyenda o algo más? ¿Te atreverías a pasar una noche ahí? | #misterio #historia #sabiasque #shorts | pendiente |
+| 3 | h22-anjikuni | ¿Sabías que en 1930 se contó que un pueblo entero desapareció en Canadá, dejando la comida y la… | El pueblo fantasma. ¿Un misterio real, o un invento de periódico que se volvió leyenda? | #misterio #historia #sabiasque #shorts | pendiente |
+| 4 | h23-taured | ¿Sabías que circula la historia de un viajero que llegó a Japón con un pasaporte… de un país que… | El hombre de taured. ¿Un viajero de otro mundo, o una leyenda urbana muy bien contada? | #misterio #historia #sabiasque #shorts | pendiente |
+| 5 | h24-ruedas-luz | ¿Sabías que hay marineros que juran haber visto enormes ruedas de luz girando bajo el mar? | Ruedas de luz bajo el mar. ¿Qué más esconde el fondo del océano? | #misterio #historia #sabiasque #shorts | pendiente |
+| 6 | h25-mina-holandes | ¿Sabías que en Arizona hay una mina de oro perdida que muchos buscaron… y algunos no volvieron? | La mina maldita. Nadie ha encontrado la mina. ¿Existe… o es solo una leyenda? | #misterio #historia #sabiasque #shorts | pendiente |
+| 7 | h26-terminal | ¿Sabías que un hombre vivió 18 años dentro de un aeropuerto? | 18 años en un aeropuerto. Semanas antes de morir, en 2022, volvió a vivir allí. Murió en esa misma terminal. ¿Imaginas una vida así? | #misterio #historia #sabiasque #shorts | pendiente |
+| 8 | h27-belmez | ¿Sabías que en una casa de España empezaron a aparecer caras en el suelo de la cocina? | Las caras de bélmez. El debate nunca se cerró. ¿Qué crees tú? | #misterio #historia #sabiasque #shorts | pendiente |
+| 9 | h28-huellas-nieve | ¿Sabías que se cuenta la historia de un hombre cuyas huellas en la nieve terminaban de golpe… en… | Huellas en la nada. ¿Un caso real… o una leyenda que nunca ocurrió? | #misterio #historia #sabiasque #shorts | pendiente |
+| 10 | h29-hessdalen | ¿Sabías que en un valle de Noruega aparecen esferas de luz flotantes que la ciencia estudia… | Las luces de hessdalen. Pero nadie lo ha demostrado del todo. ¿Qué causa ese brillo? | #misterio #historia #sabiasque #shorts | pendiente |
+| 11 | h30-somerton | ¿Sabías que un hombre apareció muerto en una playa de Australia con un papel misterioso… | El hombre de somerton. Pero el código y la causa de su muerte siguen sin resolverse. ¿Qué quería decir? | #misterio #historia #sabiasque #shorts | pendiente |
+| 12 | h31-avion-quieto | ¿Sabías que hay pilotos que aseguran haber visto aviones completamente detenidos en el aire? | El avión congelado. Y una hélice vista a cierta velocidad puede parecer detenida. ¿Qué crees que vio? | #misterio #historia #sabiasque #shorts | pendiente |
+| 13 | h32-voynich | ¿Sabías que existe un libro medieval escrito en un idioma que nadie en el mundo ha podido leer? | El libro que nadie puede leer. El libro sigue guardando su secreto. ¿Qué crees que dice? | #misterio #historia #sabiasque #shorts | pendiente |
+| 14 | h33-naga | ¿Sabías que en un río de Asia salen del agua bolas de luz roja que suben al cielo… delante de… | Las bolas de fuego del naga. ¿Qué sale realmente del agua? | #misterio #historia #sabiasque #shorts | pendiente |
+| 15 | h34-clipperton | ¿Sabías que unos soldados mexicanos y sus familias quedaron olvidados en una isla perdida en… | La isla olvidada. Una de las historias más duras y olvidadas del Pacífico. | #misterio #historia #sabiasque #shorts | pendiente |
+| 16 | h35-gemelas | ¿Sabías que dos gemelas decidieron hablar solo entre ellas, y con nadie más en el mundo? | Las gemelas silenciosas. Después, June empezó a hablar con los demás. ¿Coincidencia… o algo más? | #misterio #historia #sabiasque #shorts | pendiente |
+| 17 | h36-zumbido | ¿Sabías que algunas personas oyen un zumbido constante… que nadie más a su alrededor escucha? | El zumbido. ¿Lo has oído tú alguna vez, cuando todo está en silencio? | #misterio #historia #sabiasque #shorts | pendiente |
+| 18 | h37-bennington | ¿Sabías que en un bosque de Estados Unidos desaparecieron cinco personas en pocos años, sin… | El triángulo de bennington. ¿Qué pasó en esos bosques? | #misterio #historia #sabiasque #shorts | pendiente |
+| 19 | h38-tayos | ¿Sabías que se cuenta que bajo la selva de Ecuador hay una biblioteca secreta de placas de metal? | La cueva de los tayos. Aun así, la leyenda sigue viva. ¿Qué crees que esconde la cueva? | #misterio #historia #sabiasque #shorts | pendiente |
