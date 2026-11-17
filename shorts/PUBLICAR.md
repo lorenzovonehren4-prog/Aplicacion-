@@ -121,15 +121,15 @@ Permiso del dueño (13-nov-2026): publicar 2 por día sin preguntar, 12:30 y 19:
 | 9 | leonardo-paracaidas | ¿Sabías que Leonardo da Vinci dibujó un paracaídas hace 500 años? | Lo dibujó hacia 1485. En el año 2000, alguien saltó con una réplica. | #historia #leonardodavinci #inventos #sabiasque #shorts | https://youtube.com/shorts/Q_iLu-qN7MA (programado 24-nov 12:30, hora de Lima) |
 | 10 | ketchup | ¿Sabías que el kétchup se vendía como medicina? | Estados Unidos, década de 1830: pastillas de tomate para curarlo todo. | #historia #ketchup #curiosidades #sabiasque #shorts | https://youtube.com/shorts/GGX4A-w3ygc (programado 25-nov 19:30, hora de Lima) |
 | 11 | anticitera | ¿Sabías que los griegos construyeron una computadora hace 2.000 años? | El mecanismo de Anticitera: engranajes de bronce que predecían eclipses. | #historia #grecia #anticitera #sabiasque #shorts | https://youtube.com/shorts/YGV1SVL-CM4 (programado 27-nov 12:30, hora de Lima) |
-| 12 | vikingos | ¿Sabías que los vikingos llegaron a América casi 500 años antes que Colón? | L’Anse aux Meadows, Terranova: año 1021. | #historia #vikingos #america #sabiasque #shorts | pendiente |
+| 12 | vikingos | ¿Sabías que los vikingos llegaron a América casi 500 años antes que Colón? | L’Anse aux Meadows, Terranova: año 1021. | #historia #vikingos #america #sabiasque #shorts | https://youtube.com/shorts/1D3roo3cpJ0 (programado 04-dec 12:30, hora de Lima) |
 | 13 | cannas | ¿Sabías que una batalla de hace 2.000 años se sigue estudiando hoy? | Cannas, 216 a. C.: la trampa perfecta de Aníbal. | #historia #anibal #roma #sabiasque #shorts | https://youtube.com/shorts/q6eA-vX1PtY (programado 28-nov 12:30, hora de Lima) |
 | 14 | nintendo | ¿Sabías que Nintendo existe desde antes del avión? | Kioto, 1889: una tienda de cartas pintadas a mano. | #historia #nintendo #videojuegos #sabiasque #shorts | https://youtube.com/shorts/BzSzkbuuDoo (programado 29-nov 12:30, hora de Lima) |
 | 15 | novela-titanic | ¿Sabías que una novela contó el hundimiento del Titanic 14 años antes? | «Futility» (1898), de Morgan Robertson: lo que coincide y lo que no. | #historia #titanic #coincidencias #sabiasque #shorts | https://youtube.com/shorts/KhSIJq5cmmo (programado 30-nov 12:30, hora de Lima) |
-| 16 | carne-picada | ¿Sabías que un muerto ayudó a ganar la Segunda Guerra Mundial? | 1943: la Operación Carne Picada y el engaño de Sicilia. | #historia #segundaguerramundial #espias #sabiasque #shorts | pendiente |
+| 16 | carne-picada | ¿Sabías que un muerto ayudó a ganar la Segunda Guerra Mundial? | 1943: la Operación Carne Picada y el engaño de Sicilia. | #historia #segundaguerramundial #espias #sabiasque #shorts | https://youtube.com/shorts/bES3jdTzrIY (programado 05-dec 12:30, hora de Lima) |
 | 17 | yamaguchi | ¿Sabías que un hombre sobrevivió a Hiroshima y a Nagasaki? | Tsutomu Yamaguchi, reconocido oficialmente por Japón en 2009. | #historia #hiroshima #nagasaki #sabiasque #shorts | pendiente |
 | 18 | wojtek | ¿Sabías que un oso fue soldado en la Segunda Guerra Mundial? | Wojtek, el oso del ejército polaco que cargó munición en Montecassino. | #historia #wojtek #segundaguerramundial #sabiasque #shorts | https://youtube.com/shorts/9Vhm4QqmpnY (programado 01-dec 12:30, hora de Lima) |
 | 19 | twain-halley | ¿Sabías que Mark Twain anunció que moriría con el cometa Halley? | Nació en 1835 y murió en 1910: los dos años del cometa. | #historia #marktwain #cometahalley #sabiasque #shorts | https://youtube.com/shorts/iykAkEvQTVk (programado 02-dec 12:30, hora de Lima) |
-| 20 | oxford-aztecas | ¿Sabías que Oxford es más antigua que el Imperio azteca? | En Oxford ya se enseñaba en 1096; Tenochtitlan se fundó en 1325. | #historia #oxford #aztecas #sabiasque #shorts | pendiente |
+| 20 | oxford-aztecas | ¿Sabías que Oxford es más antigua que el Imperio azteca? | En Oxford ya se enseñaba en 1096; Tenochtitlan se fundó en 1325. | #historia #oxford #aztecas #sabiasque #shorts | https://youtube.com/shorts/87k9FoOpaIo (programado 03-dec 12:30, hora de Lima) |
 
 
 # Tanda 4: episodios e01–e20 (34–47 s, tipografía Anton + Montserrat)
@@ -140,7 +140,7 @@ Se programan después de la tanda «¿Sabías que…?», con las mismas reglas (
 | --- | --- | --- | --- | --- | --- |
 | 1 | e01-colon-vikingos | ¿Sabías que Colón llegó a América casi 500 años tarde? | Los vikingos ya habían estado en Terranova… y tampoco fueron los primeros. | #historia #colon #vikingos #sabiasque #shorts | https://youtube.com/shorts/RsAVSUQKR-s (programado 13-nov 19:30, hora de Lima) |
 | 2 | e02-machu-picchu | ¿Sabías que Machu Picchu nunca estuvo «perdida»? | Cuando Hiram Bingham llegó en 1911, allí ya vivían y sembraban familias. | #historia #machupicchu #peru #sabiasque #shorts | https://youtube.com/shorts/Eq0Dt9pS7ZA (programado 14-nov 19:30, hora de Lima) |
-| 3 | e03-cascos-vikingos | ¿Sabías que los vikingos no llevaban cuernos en el casco? | La imagen viene de una ópera del siglo XIX, no de la arqueología. | #historia #vikingos #mitos #sabiasque #shorts | pendiente |
+| 3 | e03-cascos-vikingos | ¿Sabías que los vikingos no llevaban cuernos en el casco? | La imagen viene de una ópera del siglo XIX, no de la arqueología. | #historia #vikingos #mitos #sabiasque #shorts | https://youtube.com/shorts/13FK0vFI6YE (programado 04-dec 19:30, hora de Lima) |
 | 4 | e04-tierra-redonda | ¿Sabías que en tiempos de Colón ya se sabía que la Tierra era redonda? | La discusión no era la forma: era el tamaño. Y Colón se equivocaba. | #historia #colon #mitos #sabiasque #shorts | https://youtube.com/shorts/z6FyKUyaMH8 (programado 15-nov 12:30, hora de Lima) |
 | 5 | e05-gran-muralla | ¿Sabías que la Gran Muralla China casi no se ve desde el espacio? | Es larguísima, pero muy estrecha. Lo dicen los propios astronautas. | #historia #china #granmuralla #sabiasque #shorts | https://youtube.com/shorts/wXBeKo7UZOg (programado 15-nov 19:30, hora de Lima) |
 | 6 | e06-vomitorios | ¿Sabías que los vomitorios romanos no eran para vomitar? | Eran los pasillos por los que el público «salía a chorros» del anfiteatro. | #historia #roma #mitos #sabiasque #shorts | https://youtube.com/shorts/ZbCY2Vji6NE (programado 16-nov 12:30, hora de Lima) |
@@ -157,7 +157,7 @@ Se programan después de la tanda «¿Sabías que…?», con las mismas reglas (
 | 17 | e17-hedy-lamarr | ¿Sabías que una estrella de Hollywood ayudó a inventar la base del wifi? | Hedy Lamarr y el salto de frecuencia, patentado en 1942. | #historia #hedylamarr #inventos #sabiasque #shorts | https://youtube.com/shorts/GzmMtKWBxk0 (programado 30-nov 19:30, hora de Lima) |
 | 18 | e18-katherine-johnson | ¿Sabías que una matemática calculó a mano el camino a la Luna? | Katherine Johnson, NASA. | #historia #nasa #katherinejohnson #sabiasque #shorts | https://youtube.com/shorts/S_jXhdVwo-o (programado 01-dec 19:30, hora de Lima) |
 | 19 | e19-mincemeat | ¿Sabías que un oficial que nunca existió engañó a Hitler? | 1943: la Operación Mincemeat. | #historia #segundaguerramundial #espias #sabiasque #shorts | https://youtube.com/shorts/Zy1mMdZ8Ci4 (programado 02-dec 19:30, hora de Lima) |
-| 20 | e20-cable-atlantico | ¿Sabías que el primer cable entre América y Europa duró solo unas semanas? | 1858: el telégrafo transatlántico y su estreno fallido. | #historia #telegrafo #inventos #sabiasque #shorts | pendiente |
+| 20 | e20-cable-atlantico | ¿Sabías que el primer cable entre América y Europa duró solo unas semanas? | 1858: el telégrafo transatlántico y su estreno fallido. | #historia #telegrafo #inventos #sabiasque #shorts | https://youtube.com/shorts/WGtANNAukbI (programado 03-dec 19:30, hora de Lima) |
 
 
 # Tanda 5: f01–f08 (34–42 s, narración del dueño, personajes rediseñados)
@@ -187,7 +187,7 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 
 | # | Carpeta | Título | Descripción | Etiquetas | Enlace |
 | --- | --- | --- | --- | --- | --- |
-| 1 | g01-bohemian-grove | ¿Sabías que los más poderosos se reúnen en secreto frente a un búho gigante? | Bohemian Grove: el club privado de California donde cada julio se juntan presidentes, banqueros y magnates. ¿Club social o algo más? | #historia #bohemiangrove #misterio #sabiasque #shorts | pendiente |
+| 1 | g01-bohemian-grove | ¿Sabías que los más poderosos se reúnen en secreto frente a un búho gigante? | Bohemian Grove: el club privado de California donde cada julio se juntan presidentes, banqueros y magnates. ¿Club social o algo más? | #historia #bohemiangrove #misterio #sabiasque #shorts | https://youtube.com/shorts/qMlOBs8hVZU (programado 05-dec 19:30, hora de Lima) |
 
 
 # Tanda 7: h20–h38 (misterios, cámaras 3D)
