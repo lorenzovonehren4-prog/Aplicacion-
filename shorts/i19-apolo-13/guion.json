@@ -1,0 +1,47 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que tres astronautas volvieron del espacio gracias a un invento hecho con cinta, cartón y bolsas?",
+  "gap": 0.25
+ },
+ {
+  "id": "s1",
+  "t": "Fue en abril de 1970, en la misión Apolo 13.",
+  "gap": 0.25
+ },
+ {
+  "id": "s2",
+  "t": "A mitad de camino a la Luna, explotó un tanque de oxígeno.",
+  "gap": 0.25
+ },
+ {
+  "id": "s3",
+  "t": "«Houston, hemos tenido un problema».",
+  "gap": 0.25
+ },
+ {
+  "id": "s4",
+  "t": "Tuvieron que abandonar el alunizaje y usar el módulo lunar como bote salvavidas.",
+  "gap": 0.25
+ },
+ {
+  "id": "s5",
+  "t": "Pero el aire empezó a llenarse de dióxido de carbono.",
+  "gap": 0.25
+ },
+ {
+  "id": "s6",
+  "t": "Los filtros de la nave eran cuadrados, y los del módulo, redondos.",
+  "gap": 0.25
+ },
+ {
+  "id": "s7",
+  "t": "En la Tierra, los ingenieros inventaron un adaptador con lo que había a bordo. Y funcionó.",
+  "gap": 0.25
+ },
+ {
+  "id": "s8",
+  "t": "El 17 de abril, los tres volvieron a casa con vida.",
+  "gap": 0.5
+ }
+]
