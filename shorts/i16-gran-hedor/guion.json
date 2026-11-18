@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que Londres olió tan mal un verano que obligó a construir sus alcantarillas?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.6
  },
  {
   "id": "s1",
   "t": "Fue en el verano de 1858.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.277
  },
  {
   "id": "s2",
   "t": "Las aguas sucias de toda la ciudad iban directo al río Támesis.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.048
  },
  {
   "id": "s3",
   "t": "Con el calor, el olor se volvió insoportable. Lo llamaron «el Gran Hedor».",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.587
  },
  {
   "id": "s4",
   "t": "En el Parlamento, junto al río, colgaron cortinas empapadas en productos químicos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.421
  },
  {
   "id": "s5",
   "t": "Los políticos no aguantaron más y aprobaron una gran obra.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.663
  },
  {
   "id": "s6",
   "t": "El ingeniero Joseph Bazalgette construyó cientos de kilómetros de alcantarillas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.602
  },
  {
   "id": "s7",
   "t": "Además, ayudaron a acabar con las epidemias de cólera.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.772
  },
  {
   "id": "s8",
   "t": "Muchas de esas alcantarillas siguen funcionando hoy.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.411
  }
 ]

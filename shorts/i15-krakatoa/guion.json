@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que el sonido más fuerte jamás registrado se escuchó a casi cinco mil kilómetros de distancia?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.669
  },
  {
   "id": "s1",
   "t": "Fue el 27 de agosto de 1883, en el volcán Krakatoa, en Indonesia.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.575
  },
  {
   "id": "s2",
   "t": "La isla explotó.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.105
  },
  {
   "id": "s3",
   "t": "En la isla Rodrigues, en el océano Índico, alguien creyó oír cañones lejanos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.063
  },
  {
   "id": "s4",
   "t": "Estaba a unos 4.800 kilómetros.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.185
  },
  {
   "id": "s5",
   "t": "Los barómetros de todo el mundo registraron la onda de presión.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.212
  },
  {
   "id": "s6",
   "t": "Dio varias vueltas al planeta.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.661
  },
  {
   "id": "s7",
   "t": "Durante meses, los atardeceres se vieron rojos en muchos países, por la ceniza.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.943
  },
  {
   "id": "s8",
   "t": "Algunos investigadores creen que el cielo rojo de «El grito», de Munch, se inspiró en ellos.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 5.733
  }
 ]

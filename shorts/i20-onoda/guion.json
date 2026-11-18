@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que un soldado japonés siguió en guerra casi treinta años después de que terminara?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.927
  },
  {
   "id": "s1",
   "t": "Se llamaba Hiroo Onoda.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.164
  },
  {
   "id": "s2",
   "t": "En 1944 lo enviaron a la isla de Lubang, en Filipinas, con una orden: no rendirse nunca.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.832
  },
  {
   "id": "s3",
   "t": "En 1945 la guerra terminó. Pero él no lo creyó.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.143
  },
  {
   "id": "s4",
   "t": "Pensaba que los folletos que anunciaban la paz eran trucos del enemigo.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.081
  },
  {
   "id": "s5",
   "t": "Siguió escondido en la selva, durante años.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.321
  },
  {
   "id": "s6",
   "t": "En 1974, un joven explorador japonés lo encontró.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.668
  },
  {
   "id": "s7",
   "t": "Onoda solo aceptó rendirse si se lo ordenaba su antiguo superior. Y el superior viajó hasta la isla para hacerlo.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 6.189
  },
  {
   "id": "s8",
   "t": "Había pasado 29 años en la selva.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 1.972
  }
 ]

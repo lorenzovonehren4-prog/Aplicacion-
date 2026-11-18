@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que un perro esperó a su dueño en una estación de tren durante casi diez años?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.672
  },
  {
   "id": "s1",
   "t": "Se llamaba Hachiko, y vivía en Tokio con un profesor universitario.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.269
  },
  {
   "id": "s2",
   "t": "Cada tarde, lo esperaba en la estación de Shibuya.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.362
  },
  {
   "id": "s3",
   "t": "En 1925, el profesor murió de repente en el trabajo. Nunca volvió.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.243
  },
  {
   "id": "s4",
   "t": "Pero Hachiko siguió yendo a la estación. Todos los días.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.549
  },
  {
   "id": "s5",
   "t": "Los viajeros empezaron a llevarle comida.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.918
  },
  {
   "id": "s6",
   "t": "En 1934 le hicieron una estatua… y él estuvo en la inauguración.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.995
  },
  {
   "id": "s7",
   "t": "Murió en 1935, cerca de la estación.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.005
  },
  {
   "id": "s8",
   "t": "Hoy, su estatua es uno de los puntos de encuentro más famosos de Tokio.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 3.342
  }
 ]

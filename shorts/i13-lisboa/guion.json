@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que un terremoto en Lisboa cambió la forma de construir las ciudades?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.998
  },
  {
   "id": "s1",
   "t": "Fue el 1 de noviembre de 1755, día de Todos los Santos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.706
  },
  {
   "id": "s2",
   "t": "Por la mañana, un terremoto enorme sacudió la ciudad.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.158
  },
  {
   "id": "s3",
   "t": "Después llegó un tsunami desde el río… y luego incendios durante días.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.057
  },
  {
   "id": "s4",
   "t": "Gran parte de Lisboa quedó destruida.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.119
  },
  {
   "id": "s5",
   "t": "El marqués de Pombal dirigió la reconstrucción.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.426
  },
  {
   "id": "s6",
   "t": "Probaron estructuras de madera haciendo marchar soldados alrededor de maquetas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.092
  },
  {
   "id": "s7",
   "t": "Así nació la «gaiola pombalina», uno de los primeros diseños antisísmicos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.833
  },
  {
   "id": "s8",
   "t": "Y las preguntas que envió a las parroquias ayudaron a nacer la sismología moderna.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 4.296
  }
 ]

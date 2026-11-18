@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que el primer ser vivo en orbitar la Tierra fue una perra callejera de Moscú?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.322
  },
  {
   "id": "s1",
   "t": "Se llamaba Laika.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.064
  },
  {
   "id": "s2",
   "t": "Los científicos soviéticos eligieron perros de la calle, porque soportaban bien el frío y el hambre.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.382
  },
  {
   "id": "s3",
   "t": "El 3 de noviembre de 1957, despegó a bordo del Sputnik 2.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.985
  },
  {
   "id": "s4",
   "t": "Dio vueltas a la Tierra a cientos de kilómetros de altura.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.995
  },
  {
   "id": "s5",
   "t": "Pero la nave no estaba preparada para volver.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.21
  },
  {
   "id": "s6",
   "t": "Durante décadas se dijo que había vivido varios días. En 2002 se supo que murió a las pocas horas, por el calor.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 7.215
  },
  {
   "id": "s7",
   "t": "Su viaje demostró que un ser vivo podía soportar el lanzamiento.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.553
  },
  {
   "id": "s8",
   "t": "Hoy tiene un monumento en Moscú.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 1.689
  }
 ]

@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que antes de la bomba atómica, la mayor explosión causada por el ser humano ocurrió en un puerto de Canadá?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.456
  },
  {
   "id": "s1",
   "t": "Fue el 6 de diciembre de 1917, en Halifax.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.261
  },
  {
   "id": "s2",
   "t": "Un barco francés, el Mont-Blanc, iba cargado de explosivos para la guerra.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.768
  },
  {
   "id": "s3",
   "t": "En el puerto chocó con otro barco, el Imo, y empezó a arder.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.162
  },
  {
   "id": "s4",
   "t": "La gente se acercó a mirar el incendio.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.844
  },
  {
   "id": "s5",
   "t": "Unos veinte minutos después, el barco explotó.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.402
  },
  {
   "id": "s6",
   "t": "La onda destruyó barrios enteros. Murieron unas dos mil personas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.107
  },
  {
   "id": "s7",
   "t": "Llegó ayuda desde Boston, en plena tormenta de nieve.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.664
  },
  {
   "id": "s8",
   "t": "Desde entonces, Halifax regala cada año un árbol de Navidad a Boston, en agradecimiento.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 4.561
  }
 ]

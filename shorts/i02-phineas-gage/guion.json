@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que un hombre sobrevivió a una barra de hierro que le atravesó la cabeza?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.431
  },
  {
   "id": "s1",
   "t": "Fue en 1848, en Vermont, Estados Unidos. Phineas Gage dirigía obras del ferrocarril.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 6.34
  },
  {
   "id": "s2",
   "t": "Usaba una barra de más de un metro para apretar la pólvora dentro de la roca.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.376
  },
  {
   "id": "s3",
   "t": "Una chispa provocó la explosión, y la barra salió disparada.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.02
  },
  {
   "id": "s4",
   "t": "Le entró por la mejilla izquierda y le salió por la parte de arriba de la cabeza.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.389
  },
  {
   "id": "s5",
   "t": "Minutos después, Gage estaba consciente… y hablando.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.937
  },
  {
   "id": "s6",
   "t": "Sobrevivió. Pero su médico contó que su carácter había cambiado.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.949
  },
  {
   "id": "s7",
   "t": "Su caso ayudó a entender que partes del cerebro influyen en la personalidad.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.262
  },
  {
   "id": "s8",
   "t": "La barra y su cráneo todavía se conservan en un museo de Harvard.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 3.088
  }
 ]

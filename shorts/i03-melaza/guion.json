@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que una ola gigante de melaza arrasó un barrio de Boston?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.577
  },
  {
   "id": "s1",
   "t": "Fue el 15 de enero de 1919.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.779
  },
  {
   "id": "s2",
   "t": "En el puerto había un tanque enorme, con más de ocho millones de litros de melaza.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.449
  },
  {
   "id": "s3",
   "t": "A mediodía, el tanque reventó.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.097
  },
  {
   "id": "s4",
   "t": "Una ola marrón de varios metros de alto salió a unos cincuenta kilómetros por hora.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.269
  },
  {
   "id": "s5",
   "t": "Arrastró casas, vagones y personas. Murieron 21 personas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.011
  },
  {
   "id": "s6",
   "t": "La melaza era tan espesa que los rescatistas apenas podían moverse.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.879
  },
  {
   "id": "s7",
   "t": "Un juicio concluyó que el tanque estaba mal construido y nunca se había probado bien.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.454
  },
  {
   "id": "s8",
   "t": "Según los vecinos, en días de calor el barrio olió a melaza durante décadas.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 4.493
  }
 ]
