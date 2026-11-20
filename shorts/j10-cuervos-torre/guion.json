@@ -1,0 +1,47 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que en la Torre de Londres siempre tiene que haber cuervos… por una leyenda?",
+  "gap": 0.25
+ },
+ {
+  "id": "s1",
+  "t": "Se dice que si los cuervos abandonan la torre, el reino caerá.",
+  "gap": 0.25
+ },
+ {
+  "id": "s2",
+  "t": "Por eso, allí viven al menos seis cuervos.",
+  "gap": 0.25
+ },
+ {
+  "id": "s3",
+  "t": "Los cuida un guardián con un cargo especial: el maestro de cuervos.",
+  "gap": 0.25
+ },
+ {
+  "id": "s4",
+  "t": "Les recortan un poco las plumas de un ala, para que no se alejen volando.",
+  "gap": 0.25
+ },
+ {
+  "id": "s5",
+  "t": "Cada uno tiene nombre, y comen carne todos los días.",
+  "gap": 0.25
+ },
+ {
+  "id": "s6",
+  "t": "Algunos, aun así, se han escapado alguna vez.",
+  "gap": 0.25
+ },
+ {
+  "id": "s7",
+  "t": "Nadie sabe con certeza de dónde viene la leyenda.",
+  "gap": 0.25
+ },
+ {
+  "id": "s8",
+  "t": "Pero nadie quiere comprobar si es verdad.",
+  "gap": 0.5
+ }
+]

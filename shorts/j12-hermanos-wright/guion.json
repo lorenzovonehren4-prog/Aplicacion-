@@ -1,0 +1,47 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que el primer vuelo en avión duró solo 12 segundos?",
+  "gap": 0.25
+ },
+ {
+  "id": "s1",
+  "t": "Lo lograron dos hermanos que tenían una tienda de bicicletas: Orville y Wilbur Wright.",
+  "gap": 0.25
+ },
+ {
+  "id": "s2",
+  "t": "Fue el 17 de diciembre de 1903, en las dunas de Kitty Hawk, en Estados Unidos.",
+  "gap": 0.25
+ },
+ {
+  "id": "s3",
+  "t": "Orville se tumbó en el avión, y despegó.",
+  "gap": 0.25
+ },
+ {
+  "id": "s4",
+  "t": "Recorrió unos 36 metros en 12 segundos.",
+  "gap": 0.25
+ },
+ {
+  "id": "s5",
+  "t": "Ese día hicieron cuatro vuelos. El más largo duró 59 segundos.",
+  "gap": 0.25
+ },
+ {
+  "id": "s6",
+  "t": "Poca gente les creyó al principio.",
+  "gap": 0.25
+ },
+ {
+  "id": "s7",
+  "t": "Solo 66 años después, Neil Armstrong llevó a la Luna un trocito de la tela de aquel avión.",
+  "gap": 0.25
+ },
+ {
+  "id": "s8",
+  "t": "De doce segundos… a la Luna.",
+  "gap": 0.5
+ }
+]

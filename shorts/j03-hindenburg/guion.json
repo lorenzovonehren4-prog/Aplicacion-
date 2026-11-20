@@ -1,0 +1,47 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que un accidente de 34 segundos acabó con la era de los zepelines?",
+  "gap": 0.25
+ },
+ {
+  "id": "s1",
+  "t": "El Hindenburg era el aparato volador más grande jamás construido.",
+  "gap": 0.25
+ },
+ {
+  "id": "s2",
+  "t": "El 6 de mayo de 1937 llegaba desde Alemania a Nueva Jersey, en Estados Unidos.",
+  "gap": 0.25
+ },
+ {
+  "id": "s3",
+  "t": "Estaba lleno de hidrógeno, un gas muy inflamable.",
+  "gap": 0.25
+ },
+ {
+  "id": "s4",
+  "t": "Al aterrizar, se incendió. En unos treinta segundos quedó envuelto en llamas.",
+  "gap": 0.25
+ },
+ {
+  "id": "s5",
+  "t": "Murieron 36 personas. Pero 62 sobrevivieron.",
+  "gap": 0.25
+ },
+ {
+  "id": "s6",
+  "t": "Un locutor de radio narró la tragedia en directo: «¡Oh, la humanidad!».",
+  "gap": 0.25
+ },
+ {
+  "id": "s7",
+  "t": "Las imágenes dieron la vuelta al mundo.",
+  "gap": 0.25
+ },
+ {
+  "id": "s8",
+  "t": "Y los viajes en zepelín nunca se recuperaron.",
+  "gap": 0.5
+ }
+]

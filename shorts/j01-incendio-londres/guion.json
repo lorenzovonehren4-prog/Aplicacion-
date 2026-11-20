@@ -1,0 +1,56 @@
+[
+ {
+  "id": "s0",
+  "t": "¿Sabías que una panadería provocó el incendio que destruyó casi todo Londres?",
+  "gap": 0.25,
+  "dur": 4.237
+ },
+ {
+  "id": "s1",
+  "t": "Fue el 2 de septiembre de 1666, en la madrugada.",
+  "gap": 0.25,
+  "dur": 3.919
+ },
+ {
+  "id": "s2",
+  "t": "El fuego empezó en la panadería de Thomas Farriner, en Pudding Lane.",
+  "gap": 0.25,
+  "dur": 3.494
+ },
+ {
+  "id": "s3",
+  "t": "Las casas eran de madera, y un viento fuerte empujó las llamas.",
+  "gap": 0.25,
+  "dur": 3.629
+ },
+ {
+  "id": "s4",
+  "t": "Ardió durante cuatro días.",
+  "gap": 0.25,
+  "dur": 1.546
+ },
+ {
+  "id": "s5",
+  "t": "La gente huyó en barcas por el río Támesis, cargando lo que podía.",
+  "gap": 0.25,
+  "dur": 3.89
+ },
+ {
+  "id": "s6",
+  "t": "Quemó unas trece mil casas y 87 iglesias, incluida la antigua catedral de San Pablo.",
+  "gap": 0.25,
+  "dur": 5.425
+ },
+ {
+  "id": "s7",
+  "t": "Oficialmente solo se registraron seis muertes, aunque probablemente fueron muchas más.",
+  "gap": 0.25,
+  "dur": 5.064
+ },
+ {
+  "id": "s8",
+  "t": "Hoy, un monumento de 61 metros recuerda el lugar donde empezó.",
+  "gap": 0.5,
+  "dur": 3.991
+ }
+]
