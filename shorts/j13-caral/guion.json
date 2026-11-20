@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que en Perú hay una ciudad tan antigua como las pirámides de Egipto?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.957
  },
  {
   "id": "s1",
   "t": "Se llama Caral, y está en el valle de Supe, al norte de Lima.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.871
  },
  {
   "id": "s2",
   "t": "Tiene unos 5.000 años.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.482
  },
  {
   "id": "s3",
   "t": "Es considerada la ciudad más antigua de América.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.655
  },
  {
   "id": "s4",
   "t": "Tenía pirámides, templos y grandes plazas circulares.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.316
  },
  {
   "id": "s5",
   "t": "Y algo curioso: no se han encontrado señales de guerra ni armas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.922
  },
  {
   "id": "s6",
   "t": "La arqueóloga Ruth Shady dirige su investigación desde los años 90.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.799
  },
  {
   "id": "s7",
   "t": "Allí se encontró, incluso, uno de los quipus más antiguos conocidos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.467
  },
  {
   "id": "s8",
   "t": "Desde 2009 es Patrimonio de la Humanidad.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.666
  }
 ]

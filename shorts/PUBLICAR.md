@@ -239,3 +239,28 @@ Cuatro repiten tema con la tanda «¿Sabías que…?» (torre-eiffel, guerra-38m
 | 18 | i18-juliane | ¿Sabías que una joven cayó de un avión en la selva peruana… y sobrevivió sola once días? | Sola en la selva. Fue la única sobreviviente. Hoy es bióloga, y protege esa misma selva. | #historia #sabiasque #curiosidades #shorts | pendiente |
 | 19 | i19-apolo-13 | ¿Sabías que tres astronautas volvieron del espacio gracias a un invento hecho con cinta, cartón… | Apolo 13. El 17 de abril, los tres volvieron a casa con vida. | #historia #sabiasque #curiosidades #shorts | pendiente |
 | 20 | i20-onoda | ¿Sabías que un soldado japonés siguió en guerra casi treinta años después de que terminara? | 29 años en la selva. Había pasado 29 años en la selva. | #historia #sabiasque #curiosidades #shorts | pendiente |
+
+# Tanda 9: j01–j20 (edición mejorada)
+
+| # | Carpeta | Título | Descripción | Etiquetas | Enlace |
+| --- | --- | --- | --- | --- | --- |
+| 1 | j01-incendio-londres | ¿Sabías que una panadería provocó el incendio que destruyó casi todo Londres? | El gran incendio de londres. Hoy, un monumento de 61 metros recuerda el lugar donde empezó. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 2 | j02-eclipse-colon | ¿Sabías que Cristóbal Colón usó un eclipse para conseguir comida? | El truco del eclipse. Lo cuenta Hernando Colón, su hijo, que estaba allí. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 3 | j03-hindenburg | ¿Sabías que un accidente de 34 segundos acabó con la era de los zepelines? | El fin de los zepelines. Y los viajes en zepelín nunca se recuperaron. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 4 | j04-lucy | ¿Sabías que uno de los esqueletos más famosos de la historia lleva el nombre de una canción… | Lucy. Cambió lo que sabemos sobre nuestros antepasados. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 5 | j05-penicilina | ¿Sabías que un descuido en un laboratorio salvó millones de vidas? | Un descuido que salvó millones. Fue el primer antibiótico de la historia. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 6 | j06-otzi | ¿Sabías que unos excursionistas encontraron en los Alpes a un hombre muerto hace 5.300 años? | El hombre de hielo. Hoy se conserva a temperatura de glaciar, en un museo de Italia. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 7 | j07-juana-arco | ¿Sabías que una campesina de 17 años llegó a dirigir un ejército? | La chica que guió un ejército. Y en 1920, la Iglesia la declaró santa. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 8 | j08-mineros-chile | ¿Sabías que 33 mineros sobrevivieron 69 días atrapados a unos 700 metros bajo tierra? | Los 33. Los 33 fueron rescatados con vida. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 9 | j09-napoleon-altura | ¿Sabías que Napoleón no era bajito? | ¿napoleón era bajito?. Un mito de más de doscientos años. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 10 | j10-cuervos-torre | ¿Sabías que en la Torre de Londres siempre tiene que haber cuervos… por una leyenda? | Los cuervos de la torre. Pero nadie quiere comprobar si es verdad. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 11 | j11-alejandria | ¿Sabías que la gran Biblioteca de Alejandría probablemente no desapareció en un solo incendio? | La biblioteca perdida. Hoy, una biblioteca moderna en Alejandría recuerda a la antigua. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 12 | j12-hermanos-wright | ¿Sabías que el primer vuelo en avión duró solo 12 segundos? | 12 segundos. De doce segundos… a la Luna. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 13 | j13-caral | ¿Sabías que en Perú hay una ciudad tan antigua como las pirámides de Egipto? | La ciudad más antigua de américa. Desde 2009 es Patrimonio de la Humanidad. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 14 | j14-sipan | ¿Sabías que en Perú se encontró una de las tumbas más ricas de América… intacta? | El señor de sipán. Hoy, el tesoro se puede ver en el Museo Tumbas Reales de Sipán. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 15 | j15-quipus | ¿Sabías que los incas gobernaron un enorme imperio sin escritura… usando nudos? | Los nudos de los incas. Un imperio entero… atado en cuerdas. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 16 | j16-vasa | ¿Sabías que un barco de guerra se hundió a los 20 minutos de su primer viaje? | El barco que se hundió en 20 minutos. Hoy es uno de los museos más visitados de Escandinavia. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 17 | j17-tulipanes | ¿Sabías que en el siglo XVII un solo bulbo de tulipán llegó a costar más que una casa? | La locura de los tulipanes. Pero se recuerda como una de las primeras burbujas económicas. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 18 | j18-ada-lovelace | ¿Sabías que el primer programa de computadora lo escribió una mujer… en 1843? | La primera programadora. Hoy, un lenguaje de programación lleva su nombre: Ada. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 19 | j19-curie | ¿Sabías que los cuadernos de Marie Curie siguen siendo radiactivos más de cien años después? | Los cuadernos radiactivos. Su trabajo sigue… literalmente, brillando. | #historia #sabiasque #curiosidades #shorts | pendiente |
+| 20 | j20-cerebro-einstein | ¿Sabías que el cerebro de Albert Einstein fue robado después de su muerte? | El cerebro robado. Hoy, algunos trozos se exhiben en museos. | #historia #sabiasque #curiosidades #shorts | pendiente |

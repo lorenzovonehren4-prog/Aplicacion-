@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que un barco de guerra se hundió a los 20 minutos de su primer viaje?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.417
  },
  {
   "id": "s1",
   "t": "Era el Vasa, el orgullo de la marina de Suecia.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.3
  },
  {
   "id": "s2",
   "t": "El 10 de agosto de 1628 zarpó en Estocolmo, ante una multitud.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.102
  },
  {
   "id": "s3",
   "t": "Tenía 64 cañones y estaba lleno de esculturas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.725
  },
  {
   "id": "s4",
   "t": "Pero era demasiado alto y pesado arriba.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.933
  },
  {
   "id": "s5",
   "t": "Una ráfaga de viento lo inclinó, entró agua por las troneras… y se hundió.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.67
  },
  {
   "id": "s6",
   "t": "Pasó 333 años en el fondo del puerto.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.622
  },
  {
   "id": "s7",
   "t": "En 1961 lo reflotaron. Casi todo era original.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.387
  },
  {
   "id": "s8",
   "t": "Hoy es uno de los museos más visitados de Escandinavia.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.644
  }
 ]

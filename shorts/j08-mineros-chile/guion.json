@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que 33 mineros sobrevivieron 69 días atrapados a unos 700 metros bajo tierra?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.083
  },
  {
   "id": "s1",
   "t": "Fue en Chile, en agosto de 2010. La mina San José se derrumbó.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.384
  },
  {
   "id": "s2",
   "t": "Los 33 quedaron encerrados en un refugio, sin contacto con el exterior.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.884
  },
  {
   "id": "s3",
   "t": "Durante 17 días, nadie sabía si estaban vivos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.899
  },
  {
   "id": "s4",
   "t": "Entonces, una sonda llegó hasta ellos… y volvió con un papel pegado.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.586
  },
  {
   "id": "s5",
   "t": "Decía: «Estamos bien en el refugio los 33».",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.633
  },
  {
   "id": "s6",
   "t": "Durante semanas les enviaron comida y medicinas por pequeños tubos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.085
  },
  {
   "id": "s7",
   "t": "El 13 de octubre, uno a uno, subieron en una cápsula llamada Fénix.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.568
  },
  {
   "id": "s8",
   "t": "Los 33 fueron rescatados con vida.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.111
  }
 ]

@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que los cuadernos de Marie Curie siguen siendo radiactivos más de cien años después?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.84
  },
  {
   "id": "s1",
   "t": "Marie Curie descubrió el polonio y el radio, junto a su esposo Pierre.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.776
  },
  {
   "id": "s2",
   "t": "Fue la primera persona en ganar dos premios Nobel… en dos ciencias distintas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.269
  },
  {
   "id": "s3",
   "t": "Trabajaba con el radio sin protección, y lo llevaba incluso en los bolsillos.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.054
  },
  {
   "id": "s4",
   "t": "Murió en 1934 por una enfermedad causada, probablemente, por la radiación.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.511
  },
  {
   "id": "s5",
   "t": "Sus cuadernos quedaron contaminados de radio, que tarda unos 1.600 años en perder la mitad de su radiactividad.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 7.287
  },
  {
   "id": "s6",
   "t": "Hoy se guardan en cajas forradas de plomo, en la Biblioteca Nacional de Francia.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.315
  },
  {
   "id": "s7",
   "t": "Quien quiera consultarlos debe usar protección y firmar un documento.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.483
  },
  {
   "id": "s8",
   "t": "Su trabajo sigue… literalmente, brillando.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.973
  }
 ]

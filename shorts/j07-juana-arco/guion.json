@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que una campesina de 17 años llegó a dirigir un ejército?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.001
  },
  {
   "id": "s1",
   "t": "Se llamaba Juana de Arco, y vivía en Francia durante la guerra de los Cien Años.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.462
  },
  {
   "id": "s2",
   "t": "Decía que oía voces que le pedían salvar a su país.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.957
  },
  {
   "id": "s3",
   "t": "Convenció al heredero del trono de que la dejara ir con el ejército.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.499
  },
  {
   "id": "s4",
   "t": "En 1429 ayudó a romper el asedio de Orléans. Fue una victoria clave.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.861
  },
  {
   "id": "s5",
   "t": "Poco después, el heredero fue coronado rey en Reims.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.302
  },
  {
   "id": "s6",
   "t": "En 1430 la capturaron, y la condenaron. Murió en 1431, con solo 19 años.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 7.92
  },
  {
   "id": "s7",
   "t": "En 1456, un nuevo juicio la declaró inocente.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.077
  },
  {
   "id": "s8",
   "t": "Y en 1920, la Iglesia la declaró santa.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 3.295
  }
 ]

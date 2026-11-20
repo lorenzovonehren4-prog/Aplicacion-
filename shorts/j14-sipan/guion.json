@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que en Perú se encontró una de las tumbas más ricas de América… intacta?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.656
  },
  {
   "id": "s1",
   "t": "Fue en 1987, en Lambayeque, en el norte del Perú.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.691
  },
  {
   "id": "s2",
   "t": "Todo empezó cuando unos saqueadores de tumbas encontraron piezas de oro.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.198
  },
  {
   "id": "s3",
   "t": "La policía avisó al arqueólogo Walter Alva.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.176
  },
  {
   "id": "s4",
   "t": "Al excavar, encontró la tumba de un gobernante moche, sin tocar desde hacía unos 1.700 años.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.058
  },
  {
   "id": "s5",
   "t": "Lo llamaron el Señor de Sipán.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.363
  },
  {
   "id": "s6",
   "t": "Estaba rodeado de oro, plata, cerámicas y acompañantes.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.395
  },
  {
   "id": "s7",
   "t": "Se la comparó con el hallazgo de Tutankamón.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.932
  },
  {
   "id": "s8",
   "t": "Hoy, el tesoro se puede ver en el Museo Tumbas Reales de Sipán.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 3.087
  }
 ]

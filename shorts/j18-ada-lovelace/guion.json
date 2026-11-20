@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que el primer programa de computadora lo escribió una mujer… en 1843?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.652
  },
  {
   "id": "s1",
   "t": "Se llamaba Ada Lovelace, y era hija del poeta Lord Byron.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.998
  },
  {
   "id": "s2",
   "t": "Su madre la hizo estudiar matemáticas desde niña.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.374
  },
  {
   "id": "s3",
   "t": "Conoció a Charles Babbage, que diseñaba una máquina para calcular: la máquina analítica.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.343
  },
  {
   "id": "s4",
   "t": "Esa máquina nunca llegó a construirse.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.9
  },
  {
   "id": "s5",
   "t": "Pero en 1843, Ada publicó unas notas sobre ella.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.484
  },
  {
   "id": "s6",
   "t": "Incluían un método para que la máquina calculara una serie de números: el primer programa publicado.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.75
  },
  {
   "id": "s7",
   "t": "Y algo más: imaginó que esas máquinas podrían hacer más que cuentas, como componer música.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.557
  },
  {
   "id": "s8",
   "t": "Hoy, un lenguaje de programación lleva su nombre: Ada.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.844
  }
 ]

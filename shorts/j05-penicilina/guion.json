@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que un descuido en un laboratorio salvó millones de vidas?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.391
  },
  {
   "id": "s1",
   "t": "Fue en 1928, en Londres. Alexander Fleming volvió de vacaciones.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.945
  },
  {
   "id": "s2",
   "t": "Había dejado placas con bacterias sin limpiar.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 2.478
  },
  {
   "id": "s3",
   "t": "En una había crecido moho. Y alrededor, las bacterias habían muerto.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.864
  },
  {
   "id": "s4",
   "t": "Fleming lo llamó penicilina.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 1.553
  },
  {
   "id": "s5",
   "t": "Años después, otros científicos lograron fabricarla en grandes cantidades.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.411
  },
  {
   "id": "s6",
   "t": "Durante la Segunda Guerra Mundial salvó a miles de soldados de infecciones.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.981
  },
  {
   "id": "s7",
   "t": "En 1945, Fleming y dos colegas recibieron el Premio Nobel.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.742
  },
  {
   "id": "s8",
   "t": "Fue el primer antibiótico de la historia.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.032
  }
 ]

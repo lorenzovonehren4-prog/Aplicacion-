@@ -2,46 +2,55 @@
  {
   "id": "s0",
   "t": "¿Sabías que los incas gobernaron un enorme imperio sin escritura… usando nudos?",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.58
  },
  {
   "id": "s1",
   "t": "Su imperio iba desde el sur de Colombia hasta Chile y Argentina.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.499
  },
  {
   "id": "s2",
   "t": "Para llevar las cuentas, usaban cuerdas con nudos: los quipus.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.748
  },
  {
   "id": "s3",
   "t": "Cada color y cada posición del nudo tenía un significado.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.259
  },
  {
   "id": "s4",
   "t": "Así registraban unidades, decenas y centenas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.096
  },
  {
   "id": "s5",
   "t": "Con ellos contaban la población, los tributos y lo que había en los almacenes.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 4.159
  },
  {
   "id": "s6",
   "t": "Había especialistas que sabían leerlos: los quipucamayoc.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 3.467
  },
  {
   "id": "s7",
   "t": "Algunos investigadores creen que también guardaban historias, pero nadie ha podido descifrarlas.",
-  "gap": 0.25
+  "gap": 0.25,
+  "dur": 5.165
  },
  {
   "id": "s8",
   "t": "Un imperio entero… atado en cuerdas.",
-  "gap": 0.5
+  "gap": 0.5,
+  "dur": 2.245
  }
 ]
