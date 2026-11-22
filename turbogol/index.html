@@ -245,7 +245,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 <section id="s-boot" class="scr">
   <div class="logo"><div class="bolt"></div><div class="l1">TURBO</div><div class="l2">GOL</div><span class="sub">ARENA LATERAL</span></div>
   <div class="tap">TOCA O PULSA UNA TECLA PARA EMPEZAR</div>
-  <div class="ctrlhelp"><kbd>←</kbd> <kbd>→</kbd> conducir / retroceder · <kbd>↓</kbd> frenar · en el aire las flechas apuntan el auto (<kbd>↑</kbd> + <kbd>Shift</kbd> = volar)<br><kbd>Espacio</kbd> saltar · 2º salto sin flechas = recto arriba · con flecha = volantín · <kbd>Shift</kbd> turbo (se recarga en el suelo)</div>
+  <div class="ctrlhelp"><kbd>←</kbd> <kbd>→</kbd> conducir · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar (en el aire las flechas apuntan el auto)<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto con flecha = volantín, no vence · doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire</div>
 </section>
 
 <section id="s-menu" class="scr">
@@ -305,7 +305,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <div class="opt">Vibración (móvil) <div class="tog" data-set="vib"></div></div>
     <div class="opt">Calidad gráfica <div class="seg" id="setQ"><button data-q="alta">ALTA</button><button data-q="baja">BAJA</button></div></div>
     <div class="opt">Controles táctiles <div class="seg" id="setT"><button data-t="auto">AUTO</button><button data-t="si">SÍ</button><button data-t="no">NO</button></div></div>
-    <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · en el aire las flechas (y diagonales) apuntan el auto<br><kbd>Espacio</kbd> saltar · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín<br><kbd>Shift</kbd> turbo (se recarga tocando el suelo) · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Tiros de color: volantín de frente = <b style="color:#ff5a8a">rojo</b> · con los bajos = <b style="color:#d97bff">morado</b> · con la cola = <b style="color:#ffd21a">dorado</b><br>Mando: stick izq., A salto, B/RT turbo · Ratón: clic izq. salto, der. turbo</div></div>
+    <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar; en el aire las flechas apuntan el auto<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín (no vence)<br>Doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire: el auto rueda y queda con las ruedas del otro lado<br>Tocar la pelota con las ruedas en el aire te devuelve el volantín (anillo amarillo)<br><kbd>Shift</kbd> turbo (se recarga en el suelo): vas más rápido y le pegas más fuerte · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Tiros de color: volantín de frente = <b style="color:#ff5a8a">rojo</b> · con los bajos = <b style="color:#d97bff">morado</b> · con la cola = <b style="color:#ffd21a">dorado</b><br>Celular: joystick, botón de salto y de turbo; dos movidas rápidas del joystick a un lado = giro · Mando: stick, A salto, B/RT turbo, X giro</div></div>
     <div class="opt"><span>Progreso</span><button class="btn gr" id="resetBtn"><span>Reiniciar progreso</span></button></div>
   </div>
 </section>
@@ -336,10 +336,10 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 // Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
 // Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
 const W=3200,H=1300,GD=230,GH=440,RB=340,RT=340,RAMP=Math.PI/2,GOAL_UP=450;
-const BALL_R=54,G_CAR=1300,G_BALL=1150,BALL_MAX=1300,BALL_E=0.5;
+const BALL_R=54,G_CAR=1300,G_BALL=1150,BALL_MAX=1100,BALL_E=0.42,BALL_DRAG=0.1,BALL_MASS=0.45; // masa relativa al auto
 const CAR_HL=46,CAR_HH=24,HC=25,CAR_I=900;
 const MAX_DRIVE=580,MAX_BOOST=1100,ACC=1100,BRAKE=3000,COAST=500,BOOST_ACC=1500,AIR_BOOST=2050;
-const JUMP_V=560,JUMP_HOLD=1100,DJUMP_V=500,FLIP_V=560,AIR_ROT=5;
+const JUMP_V=560,JUMP_HOLD=1100,DJUMP_V=500,FLIP_V=560,AIR_ROT=5,ROLL_T=0.38; // ROLL_T: duración del giro en el aire
 const STEP=1/240,TAU=Math.PI*2;
 const GY=H-GOAL_UP,GT=GY-GH,LX=0;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,rand=(a,b)=>a+Math.random()*(b-a);
@@ -414,11 +414,15 @@ const Store={key:'turbogol_v1',data:null,
 };
 
 /* ---------- Entrada ---------- */
-const Input={k:{},touch:{x:0,y:0,jump:false,boost:false},mouse:{jump:false,boost:false},pad:{x:0,y:0,jump:false,boost:false,start:false},
+const Input={rollReq:false,lastTap:{code:'',t:0},k:{},touch:{x:0,y:0,jump:false,boost:false},mouse:{jump:false,boost:false},pad:{x:0,y:0,jump:false,boost:false,start:false},
   init(cv){
     const block=['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'];
     addEventListener('keydown',e=>{
       if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+      if(!e.repeat&&!this.k[e.code]){
+        if(e.code==='KeyQ')this.rollReq=true;
+        if(['ArrowLeft','ArrowRight','KeyA','KeyD'].includes(e.code)){const now=performance.now();
+          if(this.lastTap.code===e.code&&now-this.lastTap.t<280){this.rollReq=true;this.lastTap.t=0;}else this.lastTap={code:e.code,t:now};}}
       this.k[e.code]=true;
       if(Game.inPlay()&&block.includes(e.code))e.preventDefault();
       if(!e.repeat&&(e.code==='Escape'||e.code==='KeyP'))UI.togglePause();
@@ -436,13 +440,15 @@ const Input={k:{},touch:{x:0,y:0,jump:false,boost:false},mouse:{jump:false,boost
     const pitch=(k.ArrowUp?1:0)-(k.ArrowDown?1:0)-this.pad.y-this.touch.y;
     const jump=!!(k.Space||k.KeyW||k.KeyJ||k.KeyZ||this.touch.jump||this.mouse.jump||this.pad.jump);
     const boost=!!(k.ShiftLeft||k.ShiftRight||k.KeyK||k.KeyX||this.touch.boost||this.mouse.boost||this.pad.boost);
-    return{th:clamp(th,-1,1),pitch:clamp(pitch,-1,1),jump,boost};},
+    const roll=this.rollReq;this.rollReq=false;
+    return{th:clamp(th,-1,1),pitch:clamp(pitch,-1,1),jump,boost,roll};},
   pollPad(){let p=null;try{const ps=navigator.getGamepads?navigator.getGamepads():[];for(const g of ps)if(g){p=g;break;}}catch(e){}
     if(!p){this.pad.x=this.pad.y=0;this.pad.jump=this.pad.boost=false;return;}
     const ax=p.axes[0]||0,ay=p.axes[1]||0;this.pad.x=Math.abs(ax)>0.2?ax:0;this.pad.y=Math.abs(ay)>0.35?ay:0;
     if(p.buttons[14]&&p.buttons[14].pressed)this.pad.x=-1;if(p.buttons[15]&&p.buttons[15].pressed)this.pad.x=1;
     this.pad.jump=!!(p.buttons[0]&&p.buttons[0].pressed);
     this.pad.boost=!!((p.buttons[1]&&p.buttons[1].pressed)||(p.buttons[7]&&p.buttons[7].pressed)||(p.buttons[5]&&p.buttons[5].pressed));
+    const rb=!!(p.buttons[2]&&p.buttons[2].pressed);if(rb&&!this.pad.roll)this.rollReq=true;this.pad.roll=rb;
     const st=!!(p.buttons[9]&&p.buttons[9].pressed);if(st&&!this.pad.start)UI.togglePause();this.pad.start=st;}
 };
 
@@ -535,7 +541,7 @@ class Ball{
     if(this.disabled)return 0;
     if(this.fxT>0){this.fxT-=dt;if(this.fxT<=0)this.fxType=null;}
     this.vy+=G_BALL*dt;
-    const dr=1-0.03*dt;this.vx*=dr;this.vy*=dr;
+    const dr=1-BALL_DRAG*dt;this.vx*=dr;this.vy*=dr;
     // la red "atrae" una pelota que quedó quieta dentro de la boca de la portería
     if(this.y>GT&&this.y<GY&&Math.abs(this.vx)<120){if(this.x<10)this.vx-=260*dt;else if(this.x>W-10)this.vx+=260*dt;}
     this.x+=this.vx*dt;this.y+=this.vy*dt;
@@ -555,7 +561,7 @@ function ballArena(b,dt){
       // rebote: choques directos rebotan (e=0.6); roces suaves (rodar por curvas) no
       const e=imp<110?0:imp<360?BALL_E*(imp-110)/250:BALL_E,vn2=imp*e;
       if(imp>300)vt*=0.94;
-      const dec=140*dt;vt=Math.abs(vt)<dec?0:vt-Math.sign(vt)*dec;
+      const dec=200*dt;vt=Math.abs(vt)<dec?0:vt-Math.sign(vt)*dec;
       b.vx=nx*vn2+tx*vt;b.vy=ny*vn2+ty*vt;
       if(b.spin!==undefined)b.spin=lerp(b.spin,vt/BALL_R,0.5);
       return imp;
@@ -563,14 +569,14 @@ function ballArena(b,dt){
   }
   return 0;
 }
-function clampBall(b){const m=b.fxType?1750:BALL_MAX,s=Math.hypot(b.vx,b.vy);if(s>m){b.vx*=m/s;b.vy*=m/s;}}
+function clampBall(b){const m=b.fxType?1500:BALL_MAX,s=Math.hypot(b.vx,b.vy);if(s>m){b.vx*=m/s;b.vy*=m/s;}}
 /* predicción balística de la pelota (para IA y estadísticas) */
 const _pb={x:0,y:0,vx:0,vy:0};
 function predictBall(b,dur,dt=1/60){
   const out=[];_pb.x=b.x;_pb.y=b.y;_pb.vx=b.vx;_pb.vy=b.vy;
   const n=Math.round(dur/dt);
   for(let i=1;i<=n;i++){
-    _pb.vy+=G_BALL*dt;_pb.vx*=(1-0.03*dt);_pb.vy*=(1-0.03*dt);_pb.x+=_pb.vx*dt;_pb.y+=_pb.vy*dt;ballArena(_pb,dt);
+    _pb.vy+=G_BALL*dt;_pb.vx*=(1-BALL_DRAG*dt);_pb.vy*=(1-BALL_DRAG*dt);_pb.x+=_pb.vx*dt;_pb.y+=_pb.vy*dt;ballArena(_pb,dt);
     if(i%2===0)out.push({t:i*dt,x:_pb.x,y:_pb.y,vx:_pb.vx,vy:_pb.vy});
     if(_pb.x<-BALL_R||_pb.x>W+BALL_R){out.push({t:i*dt,x:_pb.x,y:_pb.y,vx:_pb.vx,vy:_pb.vy,goal:_pb.x<0?0:1});break;}
   }
@@ -591,11 +597,11 @@ class Car{
   }
   place(x,s){this.x=x;this.y=H-HC;this.vx=this.vy=0;this.vt=0;this.a=0;this.w=0;this.s=s;this.grounded=true;this.nx=0;this.ny=-1;
     this.boost=34;this.jumps=0;this.airT=0;this.jumpHoldT=0;this.flipT=0;this.recoverT=0;this.stuckT=0;this.hitCd=0;this.turnT=0;
-    this.boosting=false;this.prevJump=false;this.wheel=0;this.lastBoostT=9;this.flipDir=0;this.squash=0;}
+    this.boosting=false;this.prevJump=false;this.wheel=0;this.lastBoostT=9;this.flipDir=0;this.squash=0;this.rollT=0;this.resetT=0;}
   get fx(){return this.s*Math.cos(this.a);}get fy(){return this.s*Math.sin(this.a);}
   update(dt,frozen){
     const inp=this.input,jp=inp.jump&&!this.prevJump;this.prevJump=inp.jump;
-    this.hitCd-=dt;this.turnT=Math.max(0,this.turnT-dt*6);this.squash*=Math.pow(0.001,dt);
+    this.hitCd-=dt;this.turnT=Math.max(0,this.turnT-dt*6);this.resetT=Math.max(0,this.resetT-dt);this.squash*=Math.pow(0.001,dt);
     if(frozen){this.boosting=false;if(this.grounded){this.vt=0;this.vx=this.vy=0;}this.boost=Math.max(this.boost,34);return;}
     this.boosting=inp.boost&&this.boost>0;
     if(this.grounded)this.ground(dt,inp,jp);else this.air(dt,inp,jp);
@@ -645,7 +651,7 @@ class Car{
     this.airT+=dt;
     if(this.jumpHoldT>0){if(inp.jump){this.vx+=Math.sin(this.a)*JUMP_HOLD*dt;this.vy+=-Math.cos(this.a)*JUMP_HOLD*dt;}
       this.jumpHoldT-=dt;if(!inp.jump)this.jumpHoldT=0;}
-    if(jp&&this.jumps<2&&this.airT<1.6&&this.recoverT<=0){
+    if(jp&&this.jumps<2&&this.recoverT<=0&&!this.rollT){
       // dodge/flip en 8 direcciones según las flechas
       const ix=Math.abs(inp.th)>0.35?Math.sign(inp.th):0,iy=Math.abs(inp.pitch||0)>0.35?-Math.sign(inp.pitch):0;
       if(ix||iy){const l=Math.hypot(ix,iy),dx=ix/l,dy=iy/l;
@@ -654,6 +660,9 @@ class Car{
       else{this.vx*=0.45;this.vy=Math.min(this.vy,0)-DJUMP_V;this.dblT=0.35;Fx.jump(this,true);} // recto hacia arriba
       this.jumps=2;this.jumpHoldT=0;
     }
+    // giro en el aire: el auto rueda sobre su eje largo y queda dado vuelta, con la nariz hacia el mismo lado
+    if(inp.roll&&!this.rollT&&this.flipT<=0&&this.recoverT<=0){this.rollT=1e-4;Fx.roll(this);}
+    if(this.rollT){this.rollT+=dt;if(this.rollT>=ROLL_T){this.s=-this.s;this.a+=Math.PI;this.rollT=0;}}
     if(this.flipT>0){this.flipT-=dt;if(this.flipT<=0)this.w*=0.2;}
     else if(this.recoverT>0)this.recoverT-=dt;
     else{
@@ -681,7 +690,7 @@ class Car{
         const tx=-ny,ty=nx,vt=this.vx*tx+this.vy*ty;
         if(!(ny>-0.45&&Math.abs(vt)<260)){
           this.grounded=true;this.vt=vt;this.x+=nx*(HC-d);this.y+=ny*(HC-d);this.nx=nx;this.ny=ny;
-          this.w=0;this.flipT=0;this.recoverT=0;this.jumps=0;this.squash=clamp(-vn/900,0,0.6);Fx.land(this,-vn);return;
+          this.w=0;this.flipT=0;this.recoverT=0;this.jumps=0;this.rollT=0;this.squash=clamp(-vn/900,0,0.6);Fx.land(this,-vn);return;
         }
       }else if(al<0.3){
         if(spd<260){this.stuckT+=dt;if(this.stuckT>0.35||jp)this.recover(nx,ny);}
@@ -731,23 +740,25 @@ function carBall(car,ball){
   ball.x+=nx*pen*0.85;ball.y+=ny*pen*0.85;
   if(!car.grounded){car.x-=nx*pen*0.15;car.y-=ny*pen*0.15;}
   const cvx=car.vx-car.w*ry,cvy=car.vy+car.w*rx,rvx=ball.vx-cvx,rvy=ball.vy-cvy,vn=rvx*nx+rvy*ny;
+  if(!car.grounded&&nly>0.6&&car.jumps>=2&&car.flipT<=0){car.jumps=1;car.resetT=0.8;Fx.reset&&Fx.reset(car);} // ruedas sobre la pelota: vuelve el volantín
   if(vn>=0)return 0;
-  const j=-(1.2)*vn/(1+1/5);
-  ball.vx+=j*nx;ball.vy+=j*ny;car.addVel(-j*nx/5,-j*ny/5);
+  // pelota pesada: recibe menos impulso y el auto siente el choque
+  const j=-(1.0)*vn/(1+BALL_MASS);
+  ball.vx+=j*nx;ball.vy+=j*ny;car.addVel(-j*nx*BALL_MASS,-j*ny*BALL_MASS);
   let power=0;
   if(car.hitCd<=0){
     let ex=dx,ey=dy*0.55;const el=Math.hypot(ex,ey)||1;ex/=el;ey/=el;
     const rel=Math.min(2300,Math.hypot(rvx,rvy)),sc=rel<500?0.65:0.65-0.1*(rel-500)/1800;
     const bst=car.boosting?1.25:1; // con turbo le pegas más fuerte
-    ball.vx+=ex*rel*sc*0.3*bst;ball.vy+=ey*rel*sc*0.3*bst;
-    if(car.flipT>0){ball.vx+=nx*320+car.flipDir*140;ball.vy+=ny*320;}
+    ball.vx+=ex*rel*sc*0.24*bst;ball.vy+=ey*rel*sc*0.24*bst;
+    if(car.flipT>0){ball.vx+=nx*280+car.flipDir*120;ball.vy+=ny*280;}
     car.hitCd=0.1;power=rel+(car.flipT>0?500:0);
     // golpes especiales: con los bajos (morado) o con la cola (amarillo), en el aire y con fuerza
     car.special=null;
     if(!car.grounded&&rel>300){
-      if(nly>0.62){ball.vx+=nx*480;ball.vy+=ny*480;car.special='morado';car.vy=Math.max(car.vy,500);} // te devuelve al suelo
-      else if(nlx*car.s<-0.62&&(car.flipT>0||rel>500)){ball.vx+=nx*620;ball.vy+=ny*620;car.special='amarillo';}
-      else if(nlx*car.s>0.62&&car.flipT>0){ball.vx+=nx*420;ball.vy+=ny*420;car.special='rojo';}
+      if(nly>0.62){ball.vx+=nx*400;ball.vy+=ny*400;car.special='morado';car.vy=Math.max(car.vy,500);} // te devuelve al suelo
+      else if(nlx*car.s<-0.62&&(car.flipT>0||rel>500)){ball.vx+=nx*520;ball.vy+=ny*520;car.special='amarillo';}
+      else if(nlx*car.s>0.62&&car.flipT>0){ball.vx+=nx*360;ball.vy+=ny*360;car.special='rojo';}
       if(car.special){ball.fxType=car.special;ball.fxT=1.6;power+=700;}
     }
   }
@@ -1095,6 +1106,9 @@ const Fx={
   bounce(x,y,p){Sfx.bounce(p);if(p>500)for(let i=0;i<4;i++)addP({x,y,vx:rand(-90,90),vy:rand(-90,90),size:rand(5,9),color:'rgba(220,230,240,0.35)',max:0.35,drag:3,type:'smoke'});},
   bump(x,y,p){Sfx.bump();for(let i=0;i<10;i++){const a=rand(0,TAU);addP({x,y,vx:Math.cos(a)*300,vy:Math.sin(a)*300,size:3,color:'#ffd27a',max:0.3,drag:4,type:'spark',add:true});}Render.shake=Math.max(Render.shake,5);},
   scrape(x,y,p){if(Math.random()<0.5)for(let i=0;i<3;i++)addP({x,y,vx:rand(-200,200),vy:rand(-200,0),size:2.5,color:'#ffcf70',max:0.25,drag:3,type:'spark',add:true});},
+  roll(car){Sfx.flip();addP({x:car.x,y:car.y,size:20,size2:80,color:'rgba(200,230,255,0.6)',max:0.3,type:'ring'});},
+  reset(car){Sfx.ring();addP({x:car.x,y:car.y,size:30,size2:120,color:'rgba(255,230,90,0.9)',max:0.4,type:'ring'});
+    if(car.isPlayer&&Game.cfg&&!BGM(Game.cfg.type))UI.pop('¡VOLANTÍN RECUPERADO!','','amarillo');},
   pad(x,y){Sfx.pad();for(let i=0;i<14;i++)addP({x:x+rand(-30,30),y,vx:rand(-40,40),vy:rand(-320,-120),size:rand(3,5),color:'#ffd84a',max:0.6,drag:1,type:'spark',add:true});},
   ring(x,y){Sfx.ring();addP({x,y,size:60,size2:160,color:'rgba(120,255,200,0.9)',max:0.45,type:'ring'});
     for(let i=0;i<20;i++){const a=rand(0,TAU);addP({x:x+Math.cos(a)*60,y:y+Math.sin(a)*60,vx:Math.cos(a)*220,vy:Math.sin(a)*220,size:3,color:'#9dffd8',max:0.5,drag:2,type:'spark',add:true});}},
@@ -1159,7 +1173,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
   _s:1,_cx:0,_cy:0,_vp:0,
   init(cv){this.cv=cv;this.ctx=cv.getContext('2d');this.hiQ=Store.data.settings.quality!=='baja';
     this.buildArenaPaths();this.buildStands();this.buildTex();addEventListener('resize',()=>this.resize());this.resize();},
-  resize(){this.dpr=Math.min(window.devicePixelRatio||1,this.hiQ?2:1.25);this.cw=innerWidth;this.ch=innerHeight;
+  resize(){this.dpr=Math.min(window.devicePixelRatio||1,this.hiQ?2:1.25)*(this.autoScale||1);this.cw=innerWidth;this.ch=innerHeight;
     this.cv.width=Math.round(this.cw*this.dpr);this.cv.height=Math.round(this.ch*this.dpr);},
   setQuality(q){this.hiQ=q!=='baja';this.resize();},
   buildArenaPaths(){
@@ -1188,6 +1202,14 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     b.fillStyle='#151b24';b.beginPath();b.arc(0,0,34,0,TAU);b.fill();b.strokeStyle='#5b6573';b.lineWidth=4;b.stroke();
     b.fillStyle='#ff8a1f';b.beginPath();b.arc(0,0,15,0,TAU);b.fill();b.fillStyle='#fff';b.beginPath();b.arc(-4,-4,5,0,TAU);b.fill();
     this.ballTex=bc;
+    // textura de pasto: hojitas claras y oscuras sobre fondo transparente (se dibuja en perspectiva sobre la cancha)
+    const gc=document.createElement('canvas');gc.width=gc.height=256;const gx=gc.getContext('2d');
+    for(let i=0;i<3200;i++){const x=Math.random()*256,y=Math.random()*256,l=2+Math.random()*5,dark=Math.random()<0.5;
+      gx.strokeStyle=dark?`rgba(16,52,14,${0.18+Math.random()*0.25})`:`rgba(170,230,120,${0.12+Math.random()*0.2})`;gx.lineWidth=1+Math.random();
+      gx.beginPath();gx.moveTo(x,y);gx.lineTo(x+(Math.random()-0.5)*2,y-l);gx.stroke();}
+    for(let i=0;i<40;i++){const x=Math.random()*256,y=Math.random()*256,r=8+Math.random()*24,g=gx.createRadialGradient(x,y,0,x,y,r);
+      g.addColorStop(0,Math.random()<0.5?'rgba(10,40,10,0.10)':'rgba(190,240,140,0.07)');g.addColorStop(1,'rgba(0,0,0,0)');gx.fillStyle=g;gx.fillRect(x-r,y-r,r*2,r*2);}
+    try{this.grassPat=this.ctx.createPattern(gc,'repeat');if(!this.grassPat.setTransform)this.grassPat=null;}catch(e){this.grassPat=null;}
   },
   buildStands(){
     // plano de tribunas (detrás de la cancha) a media/baja resolución: se ve desenfocado
@@ -1325,11 +1347,15 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
   drawFloor(){
     const ctx=this.ctx,P=(x,y,z)=>this.P(x,y,z),zf=-1000,zb=DB-RW,xa=-GD-900,xb=W+GD+900;
     const fa=P(0,H,zb),fb=P(0,H,zf);
-    const gg=ctx.createLinearGradient(0,fa[1],0,Math.min(fb[1],this.ch*3));gg.addColorStop(0,'#2e5a24');gg.addColorStop(0.35,'#3d7a2e');gg.addColorStop(1,'#5aa646');
+    const gg=ctx.createLinearGradient(0,fa[1],0,Math.min(fb[1],this.ch*3));gg.addColorStop(0,'#2a5424');gg.addColorStop(0.35,'#3b772d');gg.addColorStop(1,'#55a042');
     ctx.fillStyle=gg;this.quad([P(xa,H,zb),P(xb,H,zb),P(xb,H,zf),P(xa,H,zf)]);ctx.fill();
+    // pasto en perspectiva: por franjas de profundidad, cada una con la escala que le toca (queda pegado a la cancha al mover la cámara)
+    if(this.grassPat&&this.hiQ){const N=9;for(let i=0;i<N;i++){const z0=zb+(zf-zb)*i/N,z1=zb+(zf-zb)*(i+1)/N,zm=(z0+z1)/2,k=ZC/(ZC+zm)*this._s*0.8,pm=P(0,H,zm);
+        try{this.grassPat.setTransform(new DOMMatrix([k,0,0,k*0.4,pm[0],pm[1]]));}catch(e){break;}
+        ctx.fillStyle=this.grassPat;this.quad([P(xa,H,z0),P(xb,H,z0),P(xb,H,z1),P(xa,H,z1)]);ctx.fill();}}
     // franjas de corte de césped
-    ctx.fillStyle='rgba(255,255,255,0.055)';for(let i=-4;i<20;i+=2){this.quad([P(i*200,H,zb),P(i*200+200,H,zb),P(i*200+200,H,zf),P(i*200,H,zf)]);ctx.fill();}
-    ctx.fillStyle='rgba(0,0,0,0.06)';for(let z=zb;z>zf;z-=160){this.quad([P(xa,H,z),P(xb,H,z),P(xb,H,z-80),P(xa,H,z-80)]);ctx.fill();}
+    ctx.fillStyle='rgba(255,255,255,0.075)';for(let i=-4;i<20;i+=2){this.quad([P(i*200,H,zb),P(i*200+200,H,zb),P(i*200+200,H,zf),P(i*200,H,zf)]);ctx.fill();}
+    ctx.fillStyle='rgba(0,0,0,0.075)';for(let z=zb;z>zf;z-=160){this.quad([P(xa,H,z),P(xb,H,z),P(xb,H,z-80),P(xa,H,z-80)]);ctx.fill();}
     const kAt=z=>ZC/(ZC+z)*this._s;
     const line=(pts,w)=>{ctx.beginPath();pts.forEach((q,i)=>{const p=P(q[0],H,q[1]);i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);});ctx.lineWidth=w;ctx.stroke();};
     const circ=(cx,cz,r,a0=0,a1=TAU,n=48)=>{const pts=[];for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;pts.push([cx+Math.cos(a)*r,cz+Math.sin(a)*r]);}return pts;};
@@ -1349,6 +1375,12 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     line(circ(W/2,0,300),6*kAt(0));line(circ(W/2,0,120),5*kAt(0));
     line(circ(0,0,460,-Math.PI/2,Math.PI/2),6*kAt(0));line(circ(W,0,460,Math.PI/2,Math.PI*1.5),6*kAt(0));
     line(circ(0,0,250,-Math.PI/2,Math.PI/2),5*kAt(0));line(circ(W,0,250,Math.PI/2,Math.PI*1.5),5*kAt(0));
+    // luz de los focos sobre el centro de la cancha y bordes más oscuros
+    {const c=P(W/2,H,-150),r=1700*kAt(-150),g=ctx.createRadialGradient(c[0],c[1],r*0.05,c[0],c[1],r);
+      g.addColorStop(0,'rgba(255,252,230,0.14)');g.addColorStop(0.5,'rgba(255,252,230,0.05)');g.addColorStop(1,'rgba(255,252,230,0)');
+      ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;this.quad([P(xa,H,zb),P(xb,H,zb),P(xb,H,zf),P(xa,H,zf)]);ctx.fill();ctx.globalCompositeOperation='source-over';
+      const fa2=P(0,H,zb),gd=ctx.createLinearGradient(0,fa2[1],0,fa2[1]+60*kAt(zb)*3);gd.addColorStop(0,'rgba(0,0,0,0.35)');gd.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gd;this.quad([P(xa,H,zb),P(xb,H,zb),P(xb,H,zb-180),P(xa,H,zb-180)]);ctx.fill();}
     // almohadillas de turbo
     for(const p of Game.pads){const on=p.t<=0,pts=circ(p.x,0,52,0,TAU,20);ctx.fillStyle=on?'rgba(255,205,50,0.95)':'rgba(110,110,110,0.6)';
       this.quad(pts.map(q=>P(q[0],H,q[1])));ctx.fill();
@@ -1421,12 +1453,20 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
       if(next){ctx.globalAlpha=0.25;ctx.lineWidth=28;ctx.stroke();ctx.globalAlpha=1;}ctx.globalCompositeOperation='source-over';}
     drawParts(ctx,true);
     const show=g.cfg&&g.cfg.type==='showcase';
-    for(const c of g.cars){if((c.boosting&&!g.frozen())||(show&&(t%5)<0.9))Fx.boostTrail(c,t);this.drawCar(c);}
+    for(const c of g.cars){if((c.boosting&&!g.frozen())||(show&&(t%5)<0.9))Fx.boostTrail(c,t);
+      const sp=c.grounded?Math.abs(c.vt):Math.hypot(c.vx,c.vy);
+      if(sp>1000&&!show){ // supersónico: rayas blancas detrás del auto
+        const dx=c.grounded?-c.ny*Math.sign(c.vt):c.vx/sp,dy=c.grounded?c.nx*Math.sign(c.vt):c.vy/sp,al=Math.min(0.5,(sp-1000)/300);
+        ctx.strokeStyle=`rgba(255,255,255,${al})`;ctx.lineCap='round';
+        for(const o of[-16,0,16]){const px=-dy*o,py=dx*o,L=70+Math.abs(o)*-1.5;ctx.lineWidth=o?2:3;ctx.beginPath();ctx.moveTo(c.x-dx*40+px,c.y-dy*40+py);ctx.lineTo(c.x-dx*(40+L)+px,c.y-dy*(40+L)+py);ctx.stroke();}}
+      this.drawCar(c);}
     if(!b.hidden&&!b.disabled)this.drawBall(b);
     const pc=g.player;
-    if(pc&&!pc.grounded&&pc.jumps<2&&pc.airT<1.6&&pc.recoverT<=0&&g.state!=='replay'&&!show){const k=1-pc.airT/1.6;
-      ctx.lineCap='round';ctx.lineWidth=7;ctx.strokeStyle='rgba(0,0,0,0.35)';ctx.beginPath();ctx.arc(pc.x,pc.y,66,0,TAU);ctx.stroke();
-      ctx.strokeStyle=k>0.3?'#3dff7a':'#ff4a4a';ctx.lineWidth=5;ctx.beginPath();ctx.arc(pc.x,pc.y,66,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();}
+    // anillo: tienes el volantín (segundo salto) disponible; se pone amarillo cuando lo recuperas tocando la pelota con las ruedas
+    if(pc&&!pc.grounded&&pc.jumps<2&&pc.recoverT<=0&&g.state!=='replay'&&!show){
+      ctx.lineCap='round';ctx.lineWidth=8;ctx.strokeStyle='rgba(0,0,0,0.35)';ctx.beginPath();ctx.arc(pc.x,pc.y,66,0,TAU);ctx.stroke();
+      ctx.strokeStyle=pc.resetT>0?'#ffe14a':'#3dff7a';ctx.lineWidth=pc.resetT>0?7:5;ctx.globalAlpha=0.85+0.15*Math.sin(t*10);
+      ctx.beginPath();ctx.arc(pc.x,pc.y,66,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
     drawParts(ctx,false);
     ctx.textAlign='center';ctx.textBaseline='middle';
     if(g.cfg&&g.cfg.type!=='demo'&&!show)for(const c of g.cars){
@@ -1437,7 +1477,8 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     const ctx=this.ctx,s=this._s,n=this.P(c.x,c.y,-15),f=this.P(c.x,c.y,15),ox=(f[0]-n[0])/s,oy=(f[1]-n[1])/s;
     const sx=c.s*(1-2*c.turnT),scx=Math.abs(sx)<0.08?0.08*Math.sign(sx||1):sx;
     // capas desde el lado lejano al cercano: el auto se ve con cuerpo (techo y costado), no plano
-    for(const k of [1,0.66,0.33,0]){ctx.save();ctx.translate(c.x+ox*k,c.y+oy*k);ctx.rotate(c.a);ctx.scale(scx*(1-0.03*k),(1-c.squash*0.25)*(1-0.03*k));ctx.translate(0,c.squash*4);
+    const roll=c.rollT?Math.cos(Math.PI*c.rollT/ROLL_T):1,ry=Math.abs(roll)<0.06?0.06*Math.sign(roll||1):roll;
+    for(const k of [1,0.66,0.33,0]){ctx.save();ctx.translate(c.x+ox*k,c.y+oy*k);ctx.rotate(c.a);ctx.scale(scx*(1-0.03*k),ry*(1-c.squash*0.25)*(1-0.03*k));ctx.translate(0,c.squash*4);
       drawCarShape(ctx,c.look,c.team,c.wheel,this.t,c.boosting,k>0?k:false);ctx.restore();}
   },
   drawBall(b){
@@ -1803,7 +1844,7 @@ const UI={
     $('#sbmode').textContent=cfg.type==='tournament'?ROUND_NAMES[cfg.round]:m;
     $('#sb').classList.toggle('hidden',cfg.type==='training');this.hudCache={};
     if(cfg.type==='training')this.trainHud();
-    if(cfg.type!=='training'&&IS_TOUCH===false&&!Store.data.seenHelp){this.hint('← → conducir · Espacio saltar · ↑ + Shift volar · el turbo se recarga en el suelo');Store.data.seenHelp=true;Store.save();setTimeout(()=>{if(Game.cfg===cfg)this.hint('');},7000);}
+    if(cfg.type!=='training'&&IS_TOUCH===false&&!Store.data.seenHelp){this.hint('← → conducir · Espacio saltar · ↑ + Shift volar · doble toque ← → o Q = giro en el aire');Store.data.seenHelp=true;Store.save();setTimeout(()=>{if(Game.cfg===cfg)this.hint('');},7000);}
   },
   frame(dt){
     const g=Game;
@@ -1943,11 +1984,15 @@ const UI={
       <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:24px">${cell('Partidos',T.matches)}${cell('Victorias',`${T.wins} (${wr}%)`)}${cell('Goles',T.goals)}${cell('Tiros',T.shots)}${cell('Atajadas',T.saves)}${cell('Asistencias',T.assists)}${cell('Mejor puntuación',T.best)}${cell('Trofeos',S.trophies)}</div>`;},
   /* ---------- Controles táctiles ---------- */
   initTouch(){
-    const zone=$('#tzone'),joy=$('#joy'),knob=$('#knob');let jid=null,cx=0,cy=0;
+    const zone=$('#tzone'),joy=$('#joy'),knob=$('#knob');let jid=null,cx=0,cy=0;const flick={side:0,t:0,on:false};
     const home=()=>{joy.style.left='15%';joy.style.top='78%';};
     const upd=e=>{let dx=e.clientX-cx,dy=e.clientY-cy;const r=joy.offsetWidth/2,l=Math.hypot(dx,dy);if(l>r){dx*=r/l;dy*=r/l;}
       knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
-      Input.touch.x=Math.abs(dx/r)>0.15?clamp(dx/r*1.4,-1,1):0;Input.touch.y=Math.abs(dy/r)>0.35?clamp(dy/r*1.3,-1,1):0;};
+      Input.touch.x=Math.abs(dx/r)>0.15?clamp(dx/r*1.4,-1,1):0;Input.touch.y=Math.abs(dy/r)>0.35?clamp(dy/r*1.3,-1,1):0;
+      // doble movida rápida del joystick hacia un lado = giro en el aire
+      const side=Input.touch.x>0.75?1:Input.touch.x<-0.75?-1:0,now=performance.now();
+      if(side&&!flick.on){if(flick.side===side&&now-flick.t<350){Input.rollReq=true;flick.t=0;}else{flick.side=side;flick.t=now;}}
+      flick.on=!!side||Math.abs(Input.touch.x)>0.3;};
     zone.addEventListener('pointerdown',e=>{if(jid!==null)return;jid=e.pointerId;try{zone.setPointerCapture(e.pointerId);}catch(_){}cx=e.clientX;cy=e.clientY;
       joy.style.left=cx+'px';joy.style.top=cy+'px';upd(e);e.preventDefault();});
     zone.addEventListener('pointermove',e=>{if(e.pointerId===jid)upd(e);});
@@ -1964,11 +2009,16 @@ const UI={
   Store.load();
   const cv=$('#cv');Render.init(cv);Input.init(cv);UI.init();
   Game.start({type:'showcase'});
-  let last=performance.now();
+  let last=performance.now();const perf={ema:1/60,t:0};
   function frame(ts){
     requestAnimationFrame(frame);
     let dt=(ts-last)/1000;last=ts;if(!(dt>0))dt=0;if(dt>0.1)dt=0.1;
     try{Input.pollPad();Game.frame(dt);Render.draw(dt);UI.frame(dt);}catch(e){console.error(e);}
+    // resolución automática: si va a menos de ~45 cuadros por segundo, baja los píxeles (y sube de nuevo si sobra)
+    if(dt>0&&!document.hidden){perf.ema+=(Math.min(dt,0.1)-perf.ema)*0.05;perf.t+=dt;
+      if(perf.t>2){perf.t=0;const prev=Render.autoScale||1;
+        if(perf.ema>1/45&&prev>0.55)Render.autoScale=Math.max(0.55,prev-0.15);else if(perf.ema<1/57&&prev<1)Render.autoScale=Math.min(1,prev+0.05);
+        if(Render.autoScale!==prev)Render.resize();}}
   }
   requestAnimationFrame(frame);
   window.__tg={Game,Render,UI,Store,Input};
