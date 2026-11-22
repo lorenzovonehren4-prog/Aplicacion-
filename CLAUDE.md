@@ -11,6 +11,8 @@ Portal que junta los juegos del repositorio. Todo el texto en español. Sin comp
 - Nada de `alert()`/`confirm()`: avisos con `toast()`, confirmaciones con doble toque.
 - No tocar los juegos para integrarlos: el portal sólo los enmarca y lee su guardado.
 
+- `turbogol/index.html`: TURBO GOL (fútbol con autos en arena lateral, un solo archivo). No está en el portal: se publica aparte como Artifact (https://claude.ai/artifact/SV7aS98r8NAeseM7cumzhQ); al cambiarlo, volver a publicar ese archivo en esa misma URL.
+
 Se publica como Artifact de Claude (no GitHub Pages): `node portal/tools/artifact.mjs <carpeta>` arma la página y el mapa de archivos.
 
 - Mientras se juega, `body.playing` apaga el fondo animado y el desenfoque de la cabecera para dejarle la máquina al juego.
