@@ -245,7 +245,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 <section id="s-boot" class="scr">
   <div class="logo"><div class="bolt"></div><div class="l1">TURBO</div><div class="l2">GOL</div><span class="sub">ARENA LATERAL</span></div>
   <div class="tap">TOCA O PULSA UNA TECLA PARA EMPEZAR</div>
-  <div class="ctrlhelp"><kbd>←</kbd> <kbd>→</kbd> conducir · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar (en el aire las flechas apuntan el auto)<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto con flecha = volantín, no vence · doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire</div>
+  <div class="ctrlhelp"><kbd>←</kbd> <kbd>→</kbd> conducir · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar (con turbo vas directo hacia donde apuntas)<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto con flecha = volantín, no vence · doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire</div>
 </section>
 
 <section id="s-menu" class="scr">
@@ -305,7 +305,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <div class="opt">Vibración (móvil) <div class="tog" data-set="vib"></div></div>
     <div class="opt">Calidad gráfica <div class="seg" id="setQ"><button data-q="alta">ALTA</button><button data-q="baja">BAJA</button></div></div>
     <div class="opt">Controles táctiles <div class="seg" id="setT"><button data-t="auto">AUTO</button><button data-t="si">SÍ</button><button data-t="no">NO</button></div></div>
-    <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar; en el aire las flechas apuntan el auto<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín (no vence)<br>Doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire: el auto rueda y queda con las ruedas del otro lado<br>Tocar la pelota con las ruedas en el aire te devuelve el volantín (anillo amarillo); tocar el techo te devuelve los saltos y recarga el turbo<br>Si vas recto por la rampa sigues recto al salir · al caer, el auto siempre queda sobre las ruedas<br>Toque suave = la levantas un poquito (más rápido = más alto) · si cae en el capó y aceleras, se queda ahí y puedes despegar con ella<br>Jugada de pared: empuja la pelota hasta la L, sube por la pared con ella, salta de la pared y remata volando<br><kbd>Shift</kbd> turbo (se recarga en el suelo): vas más rápido y le pegas más fuerte · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Tiros de color: volantín de frente = <b style="color:#ff5a8a">rojo</b> · con los bajos = <b style="color:#d97bff">morado</b> · con la cola = <b style="color:#ffd21a">dorado</b><br>Celular: joystick, botón de salto y de turbo; dos movidas rápidas del joystick a un lado = giro · Mando: stick, A salto, B/RT turbo, X giro</div></div>
+    <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar; en el aire, con turbo vas directo hacia donde apuntas (y si apuntas cerca de la pelota te ayuda a pegarle hacia el arco)<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín (no vence)<br>Doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire: el auto rueda y queda con las ruedas del otro lado<br>Tocar la pelota con las ruedas en el aire te devuelve el volantín (anillo amarillo); tocar el techo te devuelve los saltos y recarga el turbo<br>Si vas recto por la rampa sigues recto al salir · al caer, el auto siempre queda sobre las ruedas<br>Toque suave = la levantas un poquito (más rápido = más alto) · si cae en el capó y aceleras, se queda ahí y puedes despegar con ella<br>Jugada de pared: empuja la pelota hasta la L, sube por la pared con ella, salta de la pared y remata volando<br><kbd>Shift</kbd> turbo (se recarga en el suelo): vas más rápido y le pegas más fuerte · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Tiros de color: volantín de frente = <b style="color:#ff5a8a">rojo</b> · con los bajos = <b style="color:#d97bff">morado</b> · con la cola = <b style="color:#ffd21a">dorado</b><br>Celular: joystick, botón de salto y de turbo; dos movidas rápidas del joystick a un lado = giro · Mando: stick, A salto, B/RT turbo, X giro</div></div>
     <div class="opt"><span>Progreso</span><button class="btn gr" id="resetBtn"><span>Reiniciar progreso</span></button></div>
   </div>
 </section>
@@ -336,7 +336,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 // Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
 // Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
 const W=3200,H=1300,GD=230,GH=440,RB=190,RT=220,RAMP=Math.PI/2,GOAL_UP=450,CEIL=150; // CEIL: el techo baja 150
-const BALL_R=54,G_CAR=1150,G_BALL=450,BALL_MAX=850,BALL_E=0.62,BALL_DRAG=0.15,BALL_MASS=0.55; // masa relativa al auto
+const BALL_R=54,G_CAR=1150,G_BALL=450,BALL_MAX=850,BALL_E=0.75,BALL_DRAG=0.15,BALL_MASS=0.55; // masa relativa al auto
 const CAR_HL=46,CAR_HH=24,HC=25,CAR_I=900;
 const MAX_DRIVE=580,MAX_BOOST=720,ACC=1100,BRAKE=3000,COAST=500,BOOST_ACC=650,AIR_BOOST=1700,AIR_MAX=600;
 const JUMP_V=560,JUMP_HOLD=1100,DJUMP_V=500,FLIP_V=560,AIR_ROT=10,ROLL_T=0.38; // ROLL_T: duración del giro en el aire
@@ -670,7 +670,11 @@ class Car{
     // caer de pie: cerca del piso y cayendo, el auto se endereza solo (si viene de cabeza, rueda para quedar sobre las ruedas)
     query(this.x,this.y);const fl=Q.ny<-0.6&&this.vy>60&&this.airT>0.15,flD=Q.d,flAt=Math.atan2(Q.nx,-Q.ny);
     // dirección a la pelota si está cerca pero no apoyada en el auto (con la pelota encima no se corrige: se maneja a mano)
-    let aimBall=null;{const B=Game.ball,dx=B.x-this.x,dy=B.y-this.y,dd=Math.hypot(dx,dy);if(!B.hidden&&!B.disabled&&dd<650&&dd>BALL_R+CAR_HL+30)aimBall=Math.atan2(dy,dx);}
+    let aimBall=null;{const B=Game.ball,dd=Math.hypot(B.x-this.x,B.y-this.y);
+      if(!B.hidden&&!B.disabled&&dd<650&&dd>BALL_R+CAR_HL+50&&!(this.carryT>0)){
+        // apuntar al lado de la pelota que la manda hacia el arco rival (no al centro): la ayuda piensa como jugador
+        const gx=this.team===0?W+60:-60,gy=GY-GH*0.5,ax=gx-B.x,ay=gy-B.y,al=Math.hypot(ax,ay)||1,px=B.x-ax/al*45,py=B.y-ay/al*45;
+        aimBall=Math.atan2(py-this.y,px-this.x);}}
     if(fl&&flD<300&&!this.rollT&&this.flipT<=0&&Math.abs(angDiff(this.a,flAt))>2.1){this.rollT=1e-4;}
     if(this.flipT>0){this.flipT-=dt;if(this.flipT<=0)this.w*=0.2;}
     else if(this.recoverT>0)this.recoverT-=dt;
@@ -680,14 +684,19 @@ class Car{
       if(fl&&flD<190){tw=clamp(angDiff(this.a,flAt)*12,-12,12);rate=30;} // pegado al piso manda el enderezado
       else if(il>0.2){let angF=Math.atan2(iy,ix);
         // ayuda: si apuntas más o menos hacia la pelota, el auto corrige solo para pegarle justo
-        if(aimBall!==null&&Math.abs(angDiff(angF,aimBall))<0.9)angF=aimBall;
-        const at=this.s>0?angF:angF+Math.PI;tw=clamp(angDiff(this.a,at)*16,-AIR_ROT,AIR_ROT)*Math.min(1,il);rate=26;}
+        if(aimBall!==null&&Math.abs(angDiff(angF,aimBall))<0.6)angF+=angDiff(angF,aimBall)*0.7;
+        const at=this.s>0?angF:angF+Math.PI,mr=this.carryT>0?6:AIR_ROT;tw=clamp(angDiff(this.a,at)*16,-mr,mr)*Math.min(1,il);rate=26;} // con la pelota encima gira despacio para no tirarla
       else if(fl&&flD<320){tw=clamp(angDiff(this.a,flAt)*6,-7,7);rate=14;}
       else if(aimBall!==null&&!this.latch&&!this.ai){const at=this.s>0?aimBall:aimBall+Math.PI;tw=clamp(angDiff(this.a,at)*7,-6,6);rate=12;} // sin tocar nada: la nariz busca la pelota
       this.w+=(tw-this.w)*Math.min(1,dt*rate);
     }
     // con turbo la velocidad se limita a AIR_MAX; sin turbo el auto cae libre (sin "paracaídas")
-    if(this.boosting){this.vx+=this.fx*AIR_BOOST*dt;this.vy+=this.fy*AIR_BOOST*dt;}
+    // vuelo directo: con turbo vas hacia donde apuntas con las flechas/joystick (no hace falta girar el auto primero);
+    // si apuntas más o menos a la pelota, te lleva justo a ella. Sin flechas, el turbo empuja hacia donde mira la nariz.
+    if(this.boosting){let bx=this.fx,by=this.fy;
+      if(!this.ai&&!this.latch){const ix=inp.th,iy=-(inp.pitch||0),il=Math.hypot(ix,iy);
+        if(il>0.3){let ang=Math.atan2(iy,ix);if(aimBall!==null&&Math.abs(angDiff(ang,aimBall))<0.6)ang+=angDiff(ang,aimBall)*0.7;bx=Math.cos(ang);by=Math.sin(ang);}}
+      this.vx+=bx*AIR_BOOST*dt;this.vy+=by*AIR_BOOST*dt;}
     this.vy+=G_CAR*dt;
     const sp=Math.hypot(this.vx,this.vy),cap=this.boosting?AIR_MAX:1500;if(sp>cap){this.vx*=cap/sp;this.vy*=cap/sp;}
     this.x+=this.vx*dt;this.y+=this.vy*dt;this.a+=this.w*dt;
@@ -946,6 +955,8 @@ class AI{
       if(!th&&(this.mode==='shadow'||this.mode==='defend'||this.mode==='keep')){const fb=Math.sign(b.x-c.x);if(fb&&fb!==c.s&&Math.abs(c.vt)<100)th=fb;}
       {const gs=(b.x-c.x)*dir>0,near=Math.abs(b.x-c.x)<300&&(c.y-b.y)<170;
         if(!gs&&near&&Math.sign(b.x-c.x)===th&&this.jcd>0&&!this.seq)th=0;} // no empujar la pelota hacia la propia portería
+      this.stallT=(th&&Math.abs(c.vt)<50)?(this.stallT||0)+dt:0;
+      if(this.stallT>0.7&&!this.seq&&this.jcd<=0){this.stallT=0;this.startSeq('jump');this.runSeq(dt,g);return;} // trabado empujando: saltar
       inp.th=th*d.speed/1.2;
       inp.boost=this.wantBoost&&th!==0&&th===c.s&&Math.abs(proj)>(this.mode==='keep'?900:350)&&c.boost>8&&c.ny<-0.6;
       if(this.mode==='kickoff'){inp.boost=this.wantBoost&&c.boost>0;inp.th=Math.sign(b.x-c.x);
