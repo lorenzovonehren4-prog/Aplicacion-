@@ -333,13 +333,15 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 <script>
 'use strict';
 /* ================= TURBO GOL — núcleo ================= */
-const W=3200,H=1300,GD=230,GH=430,RB=420,RT=380,RAMP=65*Math.PI/180;
-const BALL_R=54,G_CAR=1300,G_BALL=1450,BALL_MAX=1750;
+// Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
+// Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
+const W=3200,H=1300,GD=230,GH=440,RB=340,RT=340,RAMP=Math.PI/2,GOAL_UP=450;
+const BALL_R=54,G_CAR=1300,G_BALL=1150,BALL_MAX=1300,BALL_E=0.5;
 const CAR_HL=46,CAR_HH=24,HC=25,CAR_I=900;
-const MAX_DRIVE=700,MAX_BOOST=1150,ACC=1300,BRAKE=3000,COAST=500,BOOST_ACC=1500;
+const MAX_DRIVE=580,MAX_BOOST=1100,ACC=1100,BRAKE=3000,COAST=500,BOOST_ACC=1500,AIR_BOOST=2050;
 const JUMP_V=560,JUMP_HOLD=1100,DJUMP_V=500,FLIP_V=560,AIR_ROT=5;
 const STEP=1/240,TAU=Math.PI*2;
-const GY=H-RB+RB*Math.sin(Math.PI/2+RAMP),GT=GY-GH,LX=RB+RB*Math.cos(Math.PI/2+RAMP);
+const GY=H-GOAL_UP,GT=GY-GH,LX=0;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,rand=(a,b)=>a+Math.random()*(b-a);
 const angDiff=(a,b)=>{let d=(b-a)%TAU;if(d>Math.PI)d-=TAU;else if(d<-Math.PI)d+=TAU;return d;};
 const pick=a=>a[Math.random()*a.length|0];
@@ -353,6 +355,7 @@ const ARENA_PTS=(()=>{
   const h=Math.PI/2,cr=46,kr=30;
   arc(RB,H-RB,RB,h+RAMP,h,14);            // rampa izquierda
   arc(W-RB,H-RB,RB,h,h-RAMP,14);          // rampa derecha
+  add(W,GY);                              // pared vertical bajo el arco derecho
   add(W+GD-cr,GY);arc(W+GD-cr,GY-cr,cr,h,0,6);
   arc(W+GD-cr,GT+cr,cr,0,-h,6);
   add(W+kr,GT);arc(W+kr,GT-kr,kr,h,Math.PI,5);
@@ -361,6 +364,7 @@ const ARENA_PTS=(()=>{
   arc(-kr,GT-kr,kr,0,h,5);
   arc(-GD+cr,GT+cr,cr,-h,-Math.PI,6);
   arc(-GD+cr,GY-cr,cr,Math.PI,h,6);
+  add(0,GY);                              // pared vertical bajo el arco izquierdo
   const f=P[0],l=P[P.length-1];if(Math.hypot(f[0]-l[0],f[1]-l[1])<0.5)P.pop();
   return P;
 })();
@@ -549,7 +553,7 @@ function ballArena(b,dt){
     if(vn<0){
       const tx=-ny,ty=nx;let vt=b.vx*tx+b.vy*ty;const imp=-vn;
       // rebote: choques directos rebotan (e=0.6); roces suaves (rodar por curvas) no
-      const e=imp<110?0:imp<360?0.72*(imp-110)/250:0.72,vn2=imp*e;
+      const e=imp<110?0:imp<360?BALL_E*(imp-110)/250:BALL_E,vn2=imp*e;
       if(imp>300)vt*=0.94;
       const dec=140*dt;vt=Math.abs(vt)<dec?0:vt-Math.sign(vt)*dec;
       b.vx=nx*vn2+tx*vt;b.vy=ny*vn2+ty*vt;
@@ -559,7 +563,7 @@ function ballArena(b,dt){
   }
   return 0;
 }
-function clampBall(b){const m=b.fxType?2300:BALL_MAX,s=Math.hypot(b.vx,b.vy);if(s>m){b.vx*=m/s;b.vy*=m/s;}}
+function clampBall(b){const m=b.fxType?1750:BALL_MAX,s=Math.hypot(b.vx,b.vy);if(s>m){b.vx*=m/s;b.vy*=m/s;}}
 /* predicción balística de la pelota (para IA y estadísticas) */
 const _pb={x:0,y:0,vx:0,vy:0};
 function predictBall(b,dur,dt=1/60){
@@ -607,6 +611,8 @@ class Car{
     if(Q.d>HC+14){this.toAir();this.vx=-this.ny*this.vt;this.vy=this.nx*this.vt;return this.air(dt,inp,jp);}
     let nx=Q.nx,ny=Q.ny,tx=-ny,ty=nx;
     if(jp){this.toAir();this.vx=tx*this.vt+nx*JUMP_V;this.vy=ty*this.vt+ny*JUMP_V;this.jumps=1;this.jumpHoldT=0.2;Fx.jump(this);return;}
+    if(this.boosting&&(inp.pitch||0)>0.5&&ny<-0.6){ // ↑ + turbo: despega y vuela (en el aire se dirige con las flechas)
+      this.toAir();this.vx=tx*this.vt+nx*420;this.vy=ty*this.vt+ny*420;this.jumps=1;this.w=-this.s*4;Fx.jump(this);return;}
     let vt=this.vt;const th=Math.abs(inp.th)>0.2?inp.th:0;
     const brake=(inp.pitch||0)<-0.5&&!th; // flecha abajo = freno
     if(th){const dir=th>0?1:-1;
@@ -659,7 +665,7 @@ class Car{
       }
       this.w+=(tw-this.w)*Math.min(1,dt*(il>0.2?12:6));
     }
-    if(this.boosting){this.vx+=this.fx*BOOST_ACC*dt;this.vy+=this.fy*BOOST_ACC*dt;}
+    if(this.boosting){this.vx+=this.fx*AIR_BOOST*dt;this.vy+=this.fy*AIR_BOOST*dt;}
     this.vy+=G_CAR*dt;
     const sp=Math.hypot(this.vx,this.vy);if(sp>1500){this.vx*=1500/sp;this.vy*=1500/sp;}
     this.x+=this.vx*dt;this.y+=this.vy*dt;this.a+=this.w*dt;
@@ -726,14 +732,15 @@ function carBall(car,ball){
   if(!car.grounded){car.x-=nx*pen*0.15;car.y-=ny*pen*0.15;}
   const cvx=car.vx-car.w*ry,cvy=car.vy+car.w*rx,rvx=ball.vx-cvx,rvy=ball.vy-cvy,vn=rvx*nx+rvy*ny;
   if(vn>=0)return 0;
-  const j=-(1.3)*vn/(1+1/5);
+  const j=-(1.2)*vn/(1+1/5);
   ball.vx+=j*nx;ball.vy+=j*ny;car.addVel(-j*nx/5,-j*ny/5);
   let power=0;
   if(car.hitCd<=0){
     let ex=dx,ey=dy*0.55;const el=Math.hypot(ex,ey)||1;ex/=el;ey/=el;
     const rel=Math.min(2300,Math.hypot(rvx,rvy)),sc=rel<500?0.65:0.65-0.1*(rel-500)/1800;
-    ball.vx+=ex*rel*sc*0.4;ball.vy+=ey*rel*sc*0.4;
-    if(car.flipT>0){ball.vx+=nx*380+car.flipDir*160;ball.vy+=ny*380;}
+    const bst=car.boosting?1.25:1; // con turbo le pegas más fuerte
+    ball.vx+=ex*rel*sc*0.3*bst;ball.vy+=ey*rel*sc*0.3*bst;
+    if(car.flipT>0){ball.vx+=nx*320+car.flipDir*140;ball.vy+=ny*320;}
     car.hitCd=0.1;power=rel+(car.flipT>0?500:0);
     // golpes especiales: con los bajos (morado) o con la cola (amarillo), en el aire y con fuerza
     car.special=null;
@@ -763,12 +770,12 @@ function carCar(A,B){
 }
 
 /* ================= Inteligencia artificial (reglas de comportamiento) ================= */
-const KEEP_X=250; // distancia del puesto de arquero a la línea de gol
+const KEEP_X=480; // distancia del puesto de arquero a la línea de gol
 const DIFF=[
-  {name:'Fácil',  react:0.38,speed:0.74,boost:0.2,reach:180,aerial:0,   flip:0.15,err:220,think:0.24,dbl:0.15,smart:0.1,jumpT:0.2},
-  {name:'Normal', react:0.24,speed:0.86,boost:0.45,reach:300,aerial:0.1,flip:0.45,err:110,think:0.14,dbl:0.6,smart:0.4,jumpT:0.6},
-  {name:'Difícil',react:0.13,speed:0.91,boost:0.7,reach:420,aerial:0.25,flip:0.6, err:55, think:0.09,dbl:0.8,smart:0.7,jumpT:0.9},
-  {name:'Experto',react:0.06,speed:0.95,boost:0.8, reach:500,aerial:0.3, flip:0.7, err:18, think:0.05,dbl:0.8,smart:0.9,jumpT:1}
+  {name:'Fácil',  react:0.38,speed:0.74,boost:0.2,reach:180,aerial:0.2,   flip:0.15,err:220,think:0.24,dbl:0.15,smart:0.1,jumpT:0.2},
+  {name:'Normal', react:0.24,speed:0.86,boost:0.45,reach:300,aerial:0.55,flip:0.45,err:110,think:0.14,dbl:0.6,smart:0.4,jumpT:0.6},
+  {name:'Difícil',react:0.13,speed:0.91,boost:0.7,reach:420,aerial:0.8,flip:0.6, err:55, think:0.09,dbl:0.8,smart:0.7,jumpT:0.9},
+  {name:'Experto',react:0.06,speed:0.95,boost:0.8, reach:500,aerial:0.95, flip:0.7, err:18, think:0.05,dbl:0.8,smart:0.9,jumpT:1}
 ];
 class AI{
   constructor(car,lvl){this.car=car;this.lvl=lvl;this.d=DIFF[lvl];this.tk=Math.random()*0.1;this.react=0;this.seq=null;
@@ -820,7 +827,7 @@ class AI{
       const opps=g.cars.filter(o=>o.team!==c.team),odir=-dir;
       const tt=(o,dd,sp)=>Math.abs(o.x-b.x)/sp+((b.x-o.x)*dd>-20?0:1.2)+(o.grounded?0:0.3);
       const my=tt(c,dir,spd),op=Math.min(...opps.map(o=>tt(o,odir,MAX_DRIVE*1.1)));
-      oppFirst=op<my-0.3&&(b.x-ownX)*dir<W*0.75;
+      oppFirst=op<my-0.3&&(b.x-ownX)*dir<W*0.75&&(b.x-ownX)*dir>800; // cerca del arco propio no se espera: se despeja
     }
     if(danger&&(attacker||mates.length===1||Math.abs(b.x-ownX)<700)){
       this.mode='defend';
@@ -836,10 +843,27 @@ class AI{
       this.mode='keep';this.tx=keepX;this.ty=H;this.arr=0;this.wantBoost=c.boost>5;
     }else if(!ip.behind){
       this.mode='rotate';this.tx=clamp(ip.x-dir*450,120,W-120);this.ty=H;this.arr=0;this.wantBoost=Math.random()<d.boost;
+    }else if(Math.abs(b.x-ownX)<280&&(c.x-b.x)*dir>0&&b.y>H-260){
+      // pelota pegada a la pared propia y yo del lado de afuera: no meterse a empujarla contra la rampa, esperar a que baje
+      this.mode='keep';this.tx=keepX;this.ty=H;this.arr=0;this.wantBoost=false;
+    }else if(Math.abs(b.x-oppX)<280&&b.y>H-260&&Math.hypot(b.vx,b.vy)<350){
+      // pelota quieta al pie de la L rival: retroceder y esperar a que salga o suba para rematar volando
+      this.mode='rotate';this.tx=oppX-dir*760;this.ty=H;this.arr=0;this.wantBoost=false;
     }else{
       this.mode='attack';this.tx=ip.hx+this.err;this.ty=ip.y;this.arr=ip.t;this.wantBoost=Math.random()<d.boost;
       if(ip.h>360&&d.aerial>0&&c.grounded&&c.ny<-0.8&&c.boost>30&&ip.t>0.55&&ip.t<1.8&&Math.abs(ip.hx-c.x)<ip.t*650&&Math.random()<d.aerial)
         this.startSeq('aerial');
+    }
+    // pelota quieta detrás del arquero (entre él y su pared): ir a despejarla en vez de quedarse mirando
+    if(this.mode==='keep'&&(b.x-keepX)*dir<0&&Math.abs(b.x-ownX)>=280&&b.y>H-300&&Math.hypot(b.vx,b.vy)<450){
+      this.mode='clear';this.tx=b.x;this.ty=H;this.arr=0;this.wantBoost=false;}
+    // vuelo: pelota alta a la que se llega volando (sobre todo junto al arco rival, donde hay que rematar en el aire)
+    if(!this.seq&&c.grounded&&c.ny<-0.8&&c.boost>25&&d.aerial>0&&this.mode!=='kickoff'){
+      for(const p of pred){const h=(H-HC)-p.y;if(p.t<0.45)continue;if(p.t>2.2)break;if(h<230)continue;
+        const goalSide=(p.x-c.x)*dir>-40,dist=Math.hypot(p.x-c.x,h),tNeed=0.35+dist/820;
+        const nearOpp=Math.abs(p.x-oppX)<1100,nearOwn=Math.abs(p.x-ownX)<900&&danger;
+        if(goalSide&&tNeed<=p.t&&(nearOpp||nearOwn)&&Math.random()<d.aerial){this.mode=nearOwn?'defend':'attack';this.startSeq('aerial');break;}
+        if(tNeed<=p.t)break;}
     }
   }
   startSeq(type,dir=0){if(this.seq)return;this.seq={type,t:0,dir};this.jcd=type==='aerial'?2:0.9;}
@@ -851,9 +875,15 @@ class AI{
       case 'flip':inp.jump=s.t<0.06||(s.t>0.13&&s.t<0.17);inp.th=s.t>0.11?s.dir:0;if(s.t>0.2)end=true;break;
       case 'aerial':{
         inp.jump=s.t<0.2||(s.t>0.26&&s.t<0.3);
-        if(s.t>0.3){const lead=0.25,px=b.x+b.vx*lead,py=b.y+b.vy*lead,dx=px-c.x,dy=py-c.y,l=Math.hypot(dx,dy)||1;
-          inp.th=dx/l;inp.pitch=-dy/l;const err=Math.abs(angDiff(Math.atan2(c.fy,c.fx),Math.atan2(dy,dx)));inp.boost=err<0.6&&c.boost>0;}
-        if((s.t>0.35&&c.grounded)||s.t>2.2)end=true;break;}
+        if(s.t>0.3){const d0=Math.hypot(b.x-c.x,b.y-c.y),lead=clamp(d0/(Math.hypot(c.vx,c.vy)+450),0.05,0.7);
+          let px=b.x+b.vx*lead,py=b.y+b.vy*lead+0.5*G_BALL*lead*lead;
+          // apuntar detrás de la pelota (lado de la cancha) para mandarla hacia la boca del arco
+          const gx=c.team===0?W+40:-40,gy=GY-GH*0.5,ax=gx-px,ay=gy-py,al=Math.hypot(ax,ay)||1,back=d0>260?BALL_R*0.9:BALL_R*0.4;
+          px-=ax/al*back;py-=ay/al*back-18; // un poco por debajo: la pelota sale hacia arriba, no contra la rampa
+          const dx=px-c.x,dy=py-c.y,l=Math.hypot(dx,dy)||1;
+          inp.th=dx/l;inp.pitch=-dy/l;const err=Math.abs(angDiff(Math.atan2(c.fy,c.fx),Math.atan2(dy,dx)));inp.boost=err<0.7&&c.boost>0;
+          if(d0<BALL_R+70&&s.t>0.5&&!s.hit){s.hit=1;s.hitT=s.t;}}
+        if((s.t>0.35&&c.grounded)||s.t>2.6||(s.hit&&s.t-s.hitT>0.35))end=true;break;}
     }
     if(end)this.seq=null;
   }
@@ -1224,15 +1254,20 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     else if(g.state==='replay'){fx=b.x;fy=b.y;needW=1350;maxVW=1700;}
     else if(g.focusCar){fx=g.focusCar.x;fy=g.focusCar.y-110;needW=760;maxVW=900;}
     else if(p&&!b.disabled&&g.kickoff&&g.cfg.type!=='training'&&(g.state==='countdown'||g.time<1.2)){const xs=g.cars.map(c=>c.x);fx=W/2;fy=H-260;needW=Math.max(...xs)-Math.min(...xs)+700;maxVW=3400;}
-    else if(p&&!b.disabled){fx=p.x*0.42+b.x*0.58;fy=p.y*0.42+b.y*0.58;needW=Math.abs(p.x-b.x)+640;needH=Math.abs(p.y-b.y)+480;}
+    else if(p&&!b.disabled){fx=p.x*0.42+b.x*0.58;fy=p.y*0.42+b.y*0.58;needW=Math.abs(p.x-b.x)+640;needH=Math.abs(p.y-b.y)+480;maxVW=needH>900?2900:maxVW;}
     else if(p){fx=p.x;fy=p.y;needW=1300;}
     if(!(g.cfg&&g.cfg.type==='showcase'))fx+=clamp(b.vx*0.12,-150,150)*(p?0.5:1);
     let vw=clamp(Math.max(minVW,needW,needH*asp),minVW,maxVW);const vh=vw/asp;
     let cx=fx+offX,cy=fy;
+    // tu auto siempre en pantalla (al volar alto la cámara lo sigue aunque la pelota quede abajo)
+    if(p&&!g.focusCar&&g.state!=='replay'&&!(g.cfg&&g.cfg.type==='showcase')){const mY=Math.min(110,vh*0.2),mX=Math.min(140,vw*0.15);
+      cy=clamp(cy,p.y-vh/2+mY,p.y+vh/2-mY);cx=clamp(cx,p.x-vw/2+mX,p.x+vw/2-mX);}
     const yMax=H-vh*0.17,yMin=-150+vh/2;cy=yMax<yMin?yMax:clamp(cy,yMin,yMax);
     if(!(g.cfg&&g.cfg.type==='showcase')){const xMin=-GD-150+vw/2,xMax=W+GD+150-vw/2;cx=xMax<xMin?W/2:clamp(cx,xMin,xMax);}
     if(snap){cam.x=cx;cam.y=cy;cam.vw=vw;return;}
     const kk=1-Math.exp(-5*dt);cam.x+=(cx-cam.x)*kk;cam.y+=(cy-cam.y)*kk;cam.vw+=(vw-cam.vw)*(1-Math.exp(-2.5*dt));
+    if(p&&!g.focusCar&&g.state!=='replay'&&!(g.cfg&&g.cfg.type==='showcase')){const vh2=cam.vw/asp,mY=Math.min(90,vh2*0.15),mX=Math.min(120,cam.vw*0.12);
+      cam.y=clamp(cam.y,p.y-vh2/2+mY,p.y+vh2/2-mY);cam.x=clamp(cam.x,p.x-cam.vw/2+mX,p.x+cam.vw/2-mX);}
   },
   draw(dt){
     this.t+=dt;const ctx=this.ctx,cam=this.cam,dpr=this.dpr;
@@ -1441,17 +1476,17 @@ const fmt=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%6
 function randomLook(){return{body:pick(['rayo','furia','escarabajo','titan','vortex']),color:pick(COLORS),color2:pick(['#ffffff','#111111','#ffd400','#00e5ff']),
   decal:pick(['none','rayas','puntos','zigzag','llamas','carbono','numero']),boost:pick(Object.keys(BOOST_FX)),topper:pick(['none','none','antena','cono','cuernos','aureola','corona','cresta'])};}
 const SHOTS=[
-  {bx:2300,by:H-BALL_R,vx:0,vy:0,px:1700,tip:'Pelota quieta: acelera y empújala a la portería naranja'},
-  {bx:2550,by:H-520,vx:-150,vy:0,px:1800,tip:'Pelota cayendo: calcula el bote y salta para golpearla'},
-  {bx:2850,by:H-BALL_R,vx:-650,vy:0,px:1650,tip:'Pelota rodando hacia ti: recíbela de frente'},
-  {bx:2050,by:H-260,vx:320,vy:-520,px:1550,tip:'Globo: persíguela con turbo'},
-  {bx:2600,by:H-640,vx:0,vy:-100,px:2050,tip:'Pelota alta: doble salto (Espacio dos veces) o vuelo con turbo'},
-  {bx:2350,by:H-BALL_R,vx:350,vy:-950,px:1850,tip:'Rebote alto: flip (Espacio + flecha) para rematar'}
+  {bx:W-420,by:H-600,vx:50,vy:-560,px:W-1000,tip:'Pelota alta frente al arco: ↑ + Shift para despegar y vuela hacia ella para meterla'},
+  {bx:W-BALL_R-4,by:H-560,vx:0,vy:-800,px:W-750,tip:'La pelota sube por la pared: vuela (↑ + Shift) y tócala hacia adentro del arco'},
+  {bx:W-900,by:H-BALL_R,vx:900,vy:0,px:W-1500,tip:'La pelota va contra la L: síguela, espera a que suba y remata en el aire'},
+  {bx:W-750,by:H-BALL_R,vx:0,vy:0,px:W-1500,tip:'Pelota quieta: pégale fuerte con turbo contra la pared para que suba y luego vuela a rematar'},
+  {bx:2600,by:H-620,vx:200,vy:-650,px:2250,tip:'Globo alto: salta, apunta con las flechas y vuela con Shift'},
+  {bx:2350,by:H-BALL_R,vx:350,vy:-950,px:1850,tip:'Rebote alto: persíguela volando y empújala hacia la boca del arco'}
 ];
 const TRAIN_INFO={
   saltos:{name:'SALTOS',desc:'Atraviesa 6 aros usando salto, salto largo (mantén Espacio) y doble salto.'},
-  turbo:{name:'TURBO',desc:'Aros en lo alto: salta, apunta con las flechas y vuela con Shift. El turbo es limitado.'},
-  tiros:{name:'TIROS',desc:'6 situaciones de remate. Mete la pelota en la portería naranja.'},
+  turbo:{name:'TURBO',desc:'Aros en lo alto: ↑ + Shift para despegar, apunta con las flechas y vuela. El turbo es limitado.'},
+  tiros:{name:'TIROS',desc:'6 remates para los arcos en L: levanta la pelota con la pared y métela volando.'},
   libre:{name:'PRÁCTICA LIBRE',desc:'Tú, la pelota y turbo infinito. R reinicia la pelota.'}
 };
 const Game={
