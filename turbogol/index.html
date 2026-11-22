@@ -1199,7 +1199,10 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     // La versión sin público se usa sólo cuando la gente salta en un gol.
     const bake=crowd=>{const cv=document.createElement('canvas');cv.width=base.width;cv.height=base.height;const b=cv.getContext('2d');b.drawImage(base,0,0);
       if(crowd)this.tiers.forEach(tr=>b.drawImage(tr.cv,0,tr.y*k));
-      b.fillStyle='rgba(6,9,16,0.28)';b.fillRect(0,0,cv.width,cv.height);
+      b.globalCompositeOperation='saturation';b.fillStyle='rgba(128,128,128,0.55)';b.fillRect(0,0,cv.width,cv.height);b.globalCompositeOperation='source-over';
+      b.fillStyle='rgba(6,9,16,0.6)';b.fillRect(0,0,cv.width,cv.height);
+      const fog=b.createLinearGradient(0,0,0,cv.height);fog.addColorStop(0,'rgba(3,5,10,0.55)');fog.addColorStop(0.55,'rgba(3,5,10,0.1)');fog.addColorStop(1,'rgba(3,5,10,0.35)');
+      b.fillStyle=fog;b.fillRect(0,0,cv.width,cv.height);
       b.save();b.scale(k,k);b.globalCompositeOperation='lighter';
       for(const [ux,team] of [[2300,0],[2900,0],[3900,1],[4500,1]]){const y0=340,y1=1600,wd=140,col=team?'255,140,40':'60,140,255';
         const g=b.createLinearGradient(0,y0,0,y1);g.addColorStop(0,`rgba(${col},0)`);g.addColorStop(0.6,`rgba(${col},0.16)`);g.addColorStop(1,`rgba(${col},0.28)`);
@@ -1217,9 +1220,10 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     let fx=b.x,fy=b.y,needW=1500,needH=0,offX=0,minVW=asp<1.3?950:(this.cw<900?1080:1200),maxVW=2400;
     const p=g.player;
     if(g.cfg&&g.cfg.type==='showcase'){const c=g.cars[0];fx=c.x;fy=c.y-50;needW=UI.cur==='garage'?600:470;minVW=needW;maxVW=needW;offX=UI.cur==='garage'?needW*0.2:0;}
+    else if(g.state==='goal'&&g.lastBall){const gx=g.lastBall[0]<W/2?0:W;fx=gx+(gx?-120:120);fy=GY-170;needW=980;maxVW=980;minVW=Math.min(minVW,980);}
     else if(g.state==='replay'){fx=b.x;fy=b.y;needW=1350;maxVW=1700;}
     else if(g.focusCar){fx=g.focusCar.x;fy=g.focusCar.y-110;needW=760;maxVW=900;}
-    else if(p&&!b.disabled&&g.kickoff&&g.cfg.type!=='training'&&(g.state==='countdown'||g.time<1.2)){const xs=g.cars.map(c=>c.x);fx=W/2;fy=H-200;needW=Math.max(...xs)-Math.min(...xs)+520;}
+    else if(p&&!b.disabled&&g.kickoff&&g.cfg.type!=='training'&&(g.state==='countdown'||g.time<1.2)){const xs=g.cars.map(c=>c.x);fx=W/2;fy=H-260;needW=Math.max(...xs)-Math.min(...xs)+700;maxVW=3400;}
     else if(p&&!b.disabled){fx=p.x*0.42+b.x*0.58;fy=p.y*0.42+b.y*0.58;needW=Math.abs(p.x-b.x)+640;needH=Math.abs(p.y-b.y)+480;}
     else if(p){fx=p.x;fy=p.y;needW=1300;}
     if(!(g.cfg&&g.cfg.type==='showcase'))fx+=clamp(b.vx*0.12,-150,150)*(p?0.5:1);
@@ -1250,6 +1254,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     ctx.drawImage(this.standsBare,a[0],a[1],b[0]-a[0],b[1]-a[1]);
     this.tiers.forEach((tr,i)=>{for(let k=0;k<6;k++){const u0=k*st.UW/6,uw=st.UW/6,off=-Math.abs(Math.sin(t*(5+hype*7)+i*1.7+k*2.3))*amp;
       ctx.drawImage(tr.cv,u0*st.k,0,uw*st.k,tr.h*st.k,a[0]+u0*sx,a[1]+(tr.y+off)*sy,uw*sx+1,tr.h*sy);}});
+    ctx.fillStyle=`rgba(6,9,16,${0.45-hype*0.25})`;ctx.fillRect(a[0],a[1],b[0]-a[0],b[1]-a[1]);
   },
   drawBackWall(){
     // pared del fondo en forma de ola: baja en el centro y sube hacia las porterías (como el juego de referencia)
@@ -1481,7 +1486,7 @@ const Game={
   },
   resetKickoff(){
     const t0=this.cars.filter(c=>c.team===0),t1=this.cars.filter(c=>c.team===1);
-    const pos=[[W/2-650],[W/2-650,W/2-1100]];
+    const pos=[[W/2-1150],[W/2-700,W/2-1150]];
     t0.forEach((c,i)=>c.place((pos[t0.length-1]||pos[1])[i]||W/2-800,1));
     t1.forEach((c,i)=>c.place(W-((pos[t1.length-1]||pos[1])[i]||W/2-800),-1));
     for(const c of this.cars)if(c.ai){c.ai.seq=null;c.ai.tk=0;c.ai.react=0;}
