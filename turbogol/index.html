@@ -305,7 +305,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <div class="opt">Vibración (móvil) <div class="tog" data-set="vib"></div></div>
     <div class="opt">Calidad gráfica <div class="seg" id="setQ"><button data-q="alta">ALTA</button><button data-q="baja">BAJA</button></div></div>
     <div class="opt">Controles táctiles <div class="seg" id="setT"><button data-t="auto">AUTO</button><button data-t="si">SÍ</button><button data-t="no">NO</button></div></div>
-    <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar; en el aire las flechas apuntan el auto<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín (no vence)<br>Doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire: el auto rueda y queda con las ruedas del otro lado<br>Tocar la pelota con las ruedas en el aire te devuelve el volantín (anillo amarillo); tocar el techo te devuelve los saltos y recarga el turbo<br>Si vas recto por la rampa sigues recto al salir · al caer, el auto siempre queda sobre las ruedas<br><kbd>Shift</kbd> turbo (se recarga en el suelo): vas más rápido y le pegas más fuerte · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Tiros de color: volantín de frente = <b style="color:#ff5a8a">rojo</b> · con los bajos = <b style="color:#d97bff">morado</b> · con la cola = <b style="color:#ffd21a">dorado</b><br>Celular: joystick, botón de salto y de turbo; dos movidas rápidas del joystick a un lado = giro · Mando: stick, A salto, B/RT turbo, X giro</div></div>
+    <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar; en el aire las flechas apuntan el auto<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín (no vence)<br>Doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire: el auto rueda y queda con las ruedas del otro lado<br>Tocar la pelota con las ruedas en el aire te devuelve el volantín (anillo amarillo); tocar el techo te devuelve los saltos y recarga el turbo<br>Si vas recto por la rampa sigues recto al salir · al caer, el auto siempre queda sobre las ruedas<br>Toque suave = la levantas un poquito (más rápido = más alto) · si cae en el capó y aceleras, se queda ahí y puedes despegar con ella<br>Jugada de pared: empuja la pelota hasta la L, sube por la pared con ella, salta de la pared y remata volando<br><kbd>Shift</kbd> turbo (se recarga en el suelo): vas más rápido y le pegas más fuerte · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Tiros de color: volantín de frente = <b style="color:#ff5a8a">rojo</b> · con los bajos = <b style="color:#d97bff">morado</b> · con la cola = <b style="color:#ffd21a">dorado</b><br>Celular: joystick, botón de salto y de turbo; dos movidas rápidas del joystick a un lado = giro · Mando: stick, A salto, B/RT turbo, X giro</div></div>
     <div class="opt"><span>Progreso</span><button class="btn gr" id="resetBtn"><span>Reiniciar progreso</span></button></div>
   </div>
 </section>
@@ -335,10 +335,10 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 /* ================= TURBO GOL — núcleo ================= */
 // Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
 // Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
-const W=3200,H=1300,GD=230,GH=440,RB=190,RT=340,RAMP=Math.PI/2,GOAL_UP=450;
-const BALL_R=54,G_CAR=1150,G_BALL=950,BALL_MAX=850,BALL_E=0.62,BALL_DRAG=0.15,BALL_MASS=0.55; // masa relativa al auto
+const W=3200,H=1300,GD=230,GH=440,RB=190,RT=220,RAMP=Math.PI/2,GOAL_UP=450,CEIL=150; // CEIL: el techo baja 150
+const BALL_R=54,G_CAR=1150,G_BALL=450,BALL_MAX=850,BALL_E=0.62,BALL_DRAG=0.15,BALL_MASS=0.55; // masa relativa al auto
 const CAR_HL=46,CAR_HH=24,HC=25,CAR_I=900;
-const MAX_DRIVE=580,MAX_BOOST=720,ACC=1100,BRAKE=3000,COAST=500,BOOST_ACC=650,AIR_BOOST=1850,AIR_MAX=820;
+const MAX_DRIVE=580,MAX_BOOST=720,ACC=1100,BRAKE=3000,COAST=500,BOOST_ACC=650,AIR_BOOST=1700,AIR_MAX=600;
 const JUMP_V=560,JUMP_HOLD=1100,DJUMP_V=500,FLIP_V=560,AIR_ROT=10,ROLL_T=0.38; // ROLL_T: duración del giro en el aire
 const STEP=1/240,TAU=Math.PI*2;
 const GY=H-GOAL_UP,GT=GY-GH,LX=0;
@@ -359,8 +359,8 @@ const ARENA_PTS=(()=>{
   add(W+GD-cr,GY);arc(W+GD-cr,GY-cr,cr,h,0,6);
   arc(W+GD-cr,GT+cr,cr,0,-h,6);
   add(W+kr,GT);arc(W+kr,GT-kr,kr,h,Math.PI,5);
-  arc(W-RT,RT,RT,0,-h,18);
-  arc(RT,RT,RT,-h,-Math.PI,18);
+  arc(W-RT,CEIL+RT,RT,0,-h,18);
+  arc(RT,CEIL+RT,RT,-h,-Math.PI,18);
   arc(-kr,GT-kr,kr,0,h,5);
   arc(-GD+cr,GT+cr,cr,-h,-Math.PI,6);
   arc(-GD+cr,GY-cr,cr,Math.PI,h,6);
@@ -601,7 +601,7 @@ class Car{
   get fx(){return this.s*Math.cos(this.a);}get fy(){return this.s*Math.sin(this.a);}
   update(dt,frozen){
     const inp=this.input,jp=inp.jump&&!this.prevJump;this.prevJump=inp.jump;
-    this.hitCd-=dt;this.softCd=(this.softCd||0)-dt;this.ceilT=Math.max(0,(this.ceilT||0)-dt);this.turnT=Math.max(0,this.turnT-dt*6);this.resetT=Math.max(0,this.resetT-dt);this.squash*=Math.pow(0.001,dt);
+    this.hitCd-=dt;this.softCd=(this.softCd||0)-dt;this.popCd=(this.popCd||0)-dt;this.carryT=Math.max(0,(this.carryT||0)-dt);this.ceilT=Math.max(0,(this.ceilT||0)-dt);this.turnT=Math.max(0,this.turnT-dt*6);this.resetT=Math.max(0,this.resetT-dt);this.squash*=Math.pow(0.001,dt);
     if(frozen){this.boosting=false;if(this.grounded){this.vt=0;this.vx=this.vy=0;}this.boost=Math.max(this.boost,34);return;}
     this.boosting=inp.boost&&this.boost>0;
     if(this.grounded)this.ground(dt,inp,jp);else this.air(dt,inp,jp);
@@ -619,7 +619,9 @@ class Car{
     let nx=Q.nx,ny=Q.ny,tx=-ny,ty=nx;
     if(jp){this.toAir();this.vx=tx*this.vt+nx*JUMP_V;this.vy=ty*this.vt+ny*JUMP_V;this.jumps=1;this.jumpHoldT=0.2;Fx.jump(this);return;}
     if(this.boosting&&(inp.pitch||0)>0.5&&ny<-0.6){ // ↑ + turbo: despega y vuela (en el aire se dirige con las flechas)
-      this.toAir();this.vx=tx*this.vt+nx*420;this.vy=ty*this.vt+ny*420;this.jumps=1;this.w=-this.s*4;Fx.jump(this);return;}
+      this.toAir();this.vx=tx*this.vt+nx*420;this.vy=ty*this.vt+ny*420;this.jumps=1;this.w=-this.s*(this.carryT>0?2.2:4);Fx.jump(this);
+      const B=Game.ball;if(this.carryT>0&&!B.hidden&&Math.hypot(B.x-this.x,B.y-this.y)<BALL_R+CAR_HL+30){B.vx=this.vx;B.vy=this.vy-30;}
+      return;}
     let vt=this.vt;const th=Math.abs(inp.th)>0.2?inp.th:0;
     const brake=(inp.pitch||0)<-0.5&&!th; // flecha abajo = freno
     if(th){const dir=th>0?1:-1;
@@ -631,7 +633,7 @@ class Car{
           this.revT=(this.revT||0)+dt;if(this.revT>0.18&&ny<-0.6){this.s=dir;this.turnT=1;this.revT=0;}}}
     }else{this.revT=0;const dec=(brake?BRAKE:COAST)*dt;vt=Math.abs(vt)<=dec?0:vt-Math.sign(vt)*dec;}
     if(this.boosting)vt+=this.s*BOOST_ACC*dt;
-    vt+=G_CAR*ty*0.62*dt;
+    vt+=G_CAR*ty*0.3*dt; // pegado a la superficie: se puede subir la rampa y la pared (también con la pelota)
     const lim=this.boosting?MAX_BOOST:MAX_DRIVE,av=Math.abs(vt);
     if(av>MAX_BOOST)vt=Math.sign(vt)*MAX_BOOST;else if(av>lim)vt-=Math.sign(vt)*Math.min(av-lim,700*dt);
     const ox=nx,oy=ny;
@@ -643,7 +645,7 @@ class Car{
       if(need>avail||d>HC+14){this.toAir();this.setLatch(inp);this.vx=tx*vt;this.vy=ty*vt;this.vt=0;return;}
     }
     this.x+=nx*(HC-d);this.y+=ny*(HC-d);tx=-ny;ty=nx;
-    if(ny>-0.45&&Math.abs(vt)<260){this.toAir();this.setLatch(inp);this.vx=tx*vt+nx*90;this.vy=ty*vt+ny*90;return;}
+    if(ny>-0.45&&Math.abs(vt)<170){this.toAir();this.setLatch(inp);this.vx=tx*vt+nx*90;this.vy=ty*vt+ny*90;return;}
     this.vt=vt;this.nx=nx;this.ny=ny;this.vx=tx*vt;this.vy=ty*vt;
     this.a+=angDiff(this.a,Math.atan2(ty,tx))*Math.min(1,dt*30);this.w=0;
     this.airT=0;this.jumps=0;this.flipT=0;this.recoverT=0;this.stuckT=0;
@@ -667,6 +669,8 @@ class Car{
     if(this.latch){const cur=Math.abs(inp.th)>0.35?Math.sign(inp.th):0;if(cur!==this.latch.th||Math.abs(inp.pitch||0)>0.5)this.latch=null;}
     // caer de pie: cerca del piso y cayendo, el auto se endereza solo (si viene de cabeza, rueda para quedar sobre las ruedas)
     query(this.x,this.y);const fl=Q.ny<-0.6&&this.vy>60&&this.airT>0.15,flD=Q.d,flAt=Math.atan2(Q.nx,-Q.ny);
+    // dirección a la pelota si está cerca pero no apoyada en el auto (con la pelota encima no se corrige: se maneja a mano)
+    let aimBall=null;{const B=Game.ball,dx=B.x-this.x,dy=B.y-this.y,dd=Math.hypot(dx,dy);if(!B.hidden&&!B.disabled&&dd<650&&dd>BALL_R+CAR_HL+30)aimBall=Math.atan2(dy,dx);}
     if(fl&&flD<300&&!this.rollT&&this.flipT<=0&&Math.abs(angDiff(this.a,flAt))>2.1){this.rollT=1e-4;}
     if(this.flipT>0){this.flipT-=dt;if(this.flipT<=0)this.w*=0.2;}
     else if(this.recoverT>0)this.recoverT-=dt;
@@ -674,13 +678,18 @@ class Car{
       // control aéreo tipo joystick: la nariz apunta hacia la dirección pulsada
       const ix=inp.th,iy=-(inp.pitch||0),il=this.latch?0:Math.hypot(ix,iy);let tw=0,rate=8;
       if(fl&&flD<190){tw=clamp(angDiff(this.a,flAt)*12,-12,12);rate=30;} // pegado al piso manda el enderezado
-      else if(il>0.2){const angF=Math.atan2(iy,ix),at=this.s>0?angF:angF+Math.PI;tw=clamp(angDiff(this.a,at)*16,-AIR_ROT,AIR_ROT)*Math.min(1,il);rate=26;}
+      else if(il>0.2){let angF=Math.atan2(iy,ix);
+        // ayuda: si apuntas más o menos hacia la pelota, el auto corrige solo para pegarle justo
+        if(aimBall!==null&&Math.abs(angDiff(angF,aimBall))<0.9)angF=aimBall;
+        const at=this.s>0?angF:angF+Math.PI;tw=clamp(angDiff(this.a,at)*16,-AIR_ROT,AIR_ROT)*Math.min(1,il);rate=26;}
       else if(fl&&flD<320){tw=clamp(angDiff(this.a,flAt)*6,-7,7);rate=14;}
+      else if(aimBall!==null&&!this.latch&&!this.ai){const at=this.s>0?aimBall:aimBall+Math.PI;tw=clamp(angDiff(this.a,at)*7,-6,6);rate=12;} // sin tocar nada: la nariz busca la pelota
       this.w+=(tw-this.w)*Math.min(1,dt*rate);
     }
+    // con turbo la velocidad se limita a AIR_MAX; sin turbo el auto cae libre (sin "paracaídas")
     if(this.boosting){this.vx+=this.fx*AIR_BOOST*dt;this.vy+=this.fy*AIR_BOOST*dt;}
     this.vy+=G_CAR*dt;
-    const sp=Math.hypot(this.vx,this.vy);if(sp>AIR_MAX){this.vx*=AIR_MAX/sp;this.vy*=AIR_MAX/sp;}
+    const sp=Math.hypot(this.vx,this.vy),cap=this.boosting?AIR_MAX:1500;if(sp>cap){this.vx*=cap/sp;this.vy*=cap/sp;}
     this.x+=this.vx*dt;this.y+=this.vy*dt;this.a+=this.w*dt;
     {query(this.x,this.y);if(Q.ny<-0.6&&Q.d<HC+24&&this.vx*Q.nx+this.vy*Q.ny<0&&this.airT>0.08&&this.jumpHoldT<=0){const at=Math.atan2(Q.nx,-Q.ny);
       if(Math.abs(angDiff(this.a,at))>Math.PI/2){this.s=-this.s;}this.a=at;this.w=0;this.rollT=0;this.flipT=0;}}
@@ -743,11 +752,13 @@ function carBall(car,ball){
   let nlx,nly,pen;
   if(d2>1e-6){const d=Math.sqrt(d2);nlx=ddx/d;nly=ddy/d;pen=BALL_R-d;}
   else{const px=CAR_HL-Math.abs(lx),py=CAR_HH-Math.abs(ly);if(px<py){nlx=Math.sign(lx)||1;nly=0;pen=px+BALL_R;}else{nlx=0;nly=Math.sign(ly)||1;pen=py+BALL_R;}}
-  const nx=nlx*ca-nly*sa,ny=nlx*sa+nly*ca;
+  let nx=nlx*ca-nly*sa,ny=nlx*sa+nly*ca;
   const rx=cx*ca-cy*sa,ry=cx*sa+cy*ca;
   ball.x+=nx*pen*0.85;ball.y+=ny*pen*0.85;
   if(!car.grounded){car.x-=nx*pen*0.15;car.y-=ny*pen*0.15;}
-  const cvx=car.vx-car.w*ry,cvy=car.vy+car.w*rx,rvx=ball.vx-cvx,rvy=ball.vy-cvy,vn=rvx*nx+rvy*ny;
+  const cvx=car.vx-car.w*ry,cvy=car.vy+car.w*rx,rvx=ball.vx-cvx,rvy=ball.vy-cvy;let vn=rvx*nx+rvy*ny;
+  // subiendo por la rampa o la pared con la pelota en la nariz: el empujón va en la dirección del auto (la pelota sube pegada a la pared)
+  if(car.grounded&&car.ny>-0.6&&Math.hypot(rvx,rvy)<420){const fx=car.fx,fy=car.fy;if(nx*fx+ny*fy>0.3){nx=fx;ny=fy;vn=rvx*nx+rvy*ny;}}
   if(!car.grounded&&nly>0.6&&car.jumps>=2&&car.flipT<=0){car.jumps=1;car.resetT=0.8;Fx.reset&&Fx.reset(car);} // ruedas sobre la pelota: vuelve el volantín
   if(vn>=0)return 0;
   // pelota pesada: recibe menos impulso y el auto siente el choque
@@ -771,6 +782,17 @@ function carBall(car,ball){
       if(car.special){ball.fxType=car.special;ball.fxT=1.6;power+=700;}
     }
   }else if(soft&&(car.softCd||0)<=0){car.softCd=0.35;power=2;} // toque suave: cuenta como toque, sin golpe
+  // toque con la trompa en el suelo: la pelota se levanta según la velocidad (toquecito = poquito, rápido = más)
+  {const relSp=Math.hypot(rvx,rvy);
+    if(car.grounded&&nlx*car.s>0.35&&nly<0.4&&car.ny<-0.6&&(car.popCd||0)<=0&&-vn>90){ // sólo un toque de verdad (empujarla parejo la lleva rodando)
+      const up=Math.min(420,-vn*0.5);ball.vx+=car.nx*up;ball.vy+=car.ny*up;car.popCd=0.25;}}
+  if(soft&&!car.grounded&&nly>0.5&&car.y<ball.y){ // auto apoyado encima de la pelota: se resbala hacia un lado y cae
+    const side=Math.abs(car.x-ball.x)>2?Math.sign(car.x-ball.x):car.s;car.vx+=side*900*STEP*4;}
+  if(soft){
+    // pelota apoyada encima (capó/techo) o llevada en el aire con turbo: roce para que viaje con el auto
+    if(nly<-0.55||(!car.grounded&&car.boosting)){const tx=-ny,ty=nx,vt=(ball.vx-cvx)*tx+(ball.vy-cvy)*ty,k=Math.min(1,10*STEP*4);ball.vx-=tx*vt*k;ball.vy-=ty*vt*k;}
+    car.carryT=0.25;
+  }
   const tx=-ny,ty=nx;ball.spin+=(rvx*tx+rvy*ty)/BALL_R*0.3;
   clampBall(ball);
   return power||1;
@@ -880,7 +902,7 @@ class AI{
     // vuelo: pelota alta a la que se llega volando (sobre todo junto al arco rival, donde hay que rematar en el aire)
     if(!this.seq&&c.grounded&&c.ny<-0.8&&c.boost>25&&d.aerial>0&&this.mode!=='kickoff'){
       for(const p of pred){const h=(H-HC)-p.y;if(p.t<0.45)continue;if(p.t>2.2)break;if(h<230)continue;
-        const goalSide=(p.x-c.x)*dir>-40,dist=Math.hypot(p.x-c.x,h),tNeed=0.35+dist/600;
+        const goalSide=(p.x-c.x)*dir>-40,dist=Math.hypot(p.x-c.x,h),tNeed=0.35+dist/480;
         const nearOpp=Math.abs(p.x-oppX)<1100,nearOwn=Math.abs(p.x-ownX)<900&&danger;
         if(goalSide&&tNeed<=p.t&&(nearOpp||nearOwn)&&Math.random()<d.aerial){this.mode=nearOwn?'defend':'attack';this.startSeq('aerial');break;}
         if(tNeed<=p.t)break;}
@@ -909,9 +931,13 @@ class AI{
   }
   drive(dt,g){
     const c=this.car,inp=c.input,b=g.ball,d=this.d,dir=c.team===0?1:-1;
+    if(c.grounded&&c.ny>-0.35&&!this.seq&&this.jcd<=0&&d.aerial>0){
+      const oppX=c.team===0?W:0,ownX=W-oppX,hb=c.y-b.y,onOpp=Math.abs(c.x-oppX)<200,onOwn=Math.abs(c.x-ownX)<200&&this.danger;
+      if((onOpp||onOwn)&&hb>30&&hb<340&&Math.abs(b.x-c.x)<170&&Math.random()<0.35+d.aerial*0.65){this.startSeq('aerial');this.runSeq(dt,g);return;}}
     if(c.grounded){
       const tx=-c.ny,ty=c.nx,proj=(this.tx-c.x)*tx+(this.ty-c.y)*ty;
       let th=Math.abs(proj)>30?Math.sign(proj):0;
+      if(!th&&this.mode==='attack'&&Math.abs(b.x-c.x)<BALL_R+CAR_HL+60)th=Math.sign(b.x-c.x)||c.s; // ya en posición: empujar la pelota, no quedarse parado
       if(this.arr>0&&th){const rem=Math.max(0.05,this.arr-(g.time-this.thinkAt)),want=Math.abs(proj)/rem;
         if(Math.abs(c.vt)>want*1.25&&Math.sign(c.vt)===th)th=0;}
       // llegar frenando a un puesto: no pasarse ni salir volando por la rampa
@@ -937,7 +963,7 @@ class AI{
         const dxb=b.x-c.x,h=c.y-b.y,close=Math.abs(dxb)<BALL_R+CAR_HL+40+Math.abs(c.vt)*0.22,app=Math.sign(dxb)===c.s||Math.abs(dxb)<60;
         const goalSide=(b.x-c.x)*dir>0;
         if(!goalSide){ // del lado equivocado: saltar por encima de la pelota para no meter autogol
-          if(Math.abs(dxb)<230+Math.abs(c.vt)*0.28&&h<120&&Math.sign(dxb)===c.s&&Math.abs(c.vt)>200&&Math.random()<0.5+d.dbl*0.5)this.startSeq(h>60&&d.dbl>0.5?'double':'jump');}
+          if(Math.abs(dxb)<200+Math.abs(c.vt)*0.22&&h<110&&Math.sign(dxb)===c.s&&Math.abs(c.vt)>260&&Math.random()<0.5+d.dbl*0.5)this.startSeq(h>60&&d.dbl>0.5?'double':'jump');}
         else if(goalSide&&app){
           // salto sincronizado: tiempo hasta el contacto vs tiempo de subida
           const relV=(c.vx-b.vx)*Math.sign(dxb),dist=Math.max(0,Math.abs(dxb)-(BALL_R+CAR_HL*0.5)),tc=dist/Math.max(150,relV);
@@ -955,7 +981,7 @@ class AI{
       if(l<280&&d.aerial>0.1&&c.y-b.y>-20&&(b.x-c.x)*dir>-30&&this.mode!=='rotate'){inp.th=dxb/l;inp.pitch=-dyb/l;}
       else{query(c.x,c.y);
         if(Q.d<220&&Q.ny>-0.7){inp.th=-Q.ny*c.s;inp.pitch=Q.nx*c.s*-1;}
-        else if(Q.d>=260&&c.airT>0.3&&c.boost>15&&!this.seq&&Math.abs(this.tx-c.x)>350){
+        else if(Q.d>=150&&c.airT>0.25&&c.boost>8&&!this.seq&&Math.hypot(b.x-c.x,b.y-c.y)>320){
           // recuperación: apuntar al objetivo en el suelo y bajar con turbo en vez de flotar
           const gx=this.tx-c.x,gy=(H-HC)-c.y,gl=Math.hypot(gx,gy)||1;inp.th=gx/gl;inp.pitch=-gy/gl;
           inp.boost=Math.abs(angDiff(Math.atan2(c.fy,c.fx),Math.atan2(gy,gx)))<0.45;}
@@ -1293,7 +1319,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     // tu auto siempre en pantalla (al volar alto la cámara lo sigue aunque la pelota quede abajo)
     if(p&&!g.focusCar&&g.state!=='replay'&&!(g.cfg&&g.cfg.type==='showcase')){const mY=Math.min(110,vh*0.2),mX=Math.min(140,vw*0.15);
       cy=clamp(cy,p.y-vh/2+mY,p.y+vh/2-mY);cx=clamp(cx,p.x-vw/2+mX,p.x+vw/2-mX);}
-    const yMax=H-vh*0.17,yMin=-150+vh/2;cy=yMax<yMin?yMax:clamp(cy,yMin,yMax);
+    const yMax=H-vh*0.17,yMin=CEIL-150+vh/2;cy=yMax<yMin?yMax:clamp(cy,yMin,yMax);
     if(!(g.cfg&&g.cfg.type==='showcase')){const xMin=-GD-150+vw/2,xMax=W+GD+150-vw/2;cx=xMax<xMin?W/2:clamp(cx,xMin,xMax);}
     if(snap){cam.x=cx;cam.y=cy;cam.vw=vw;return;}
     const kk=1-Math.exp(-5*dt);cam.x+=(cx-cam.x)*kk;cam.y+=(cy-cam.y)*kk;cam.vw+=(vw-cam.vw)*(1-Math.exp(-2.5*dt));
@@ -1409,9 +1435,9 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
       if(sg.goal<0&&sg.ny<=0.5){ctx.strokeStyle='rgba(0,0,0,0.12)';ctx.lineWidth=1;ctx.stroke();}
     }
     // panal del techo (cuando la cámara sube)
-    if(this._cy-this.cam.vw/(this.cw/this.ch)/2<500){ctx.lineWidth=1.5;
+    if(this._cy-this.cam.vw/(this.cw/this.ch)/2<500+CEIL){ctx.lineWidth=1.5;
       for(let x=RT;x<W-RT;x+=90)for(let z=40;z<DB;z+=120){const left=x<W/2;ctx.strokeStyle=left?'rgba(90,170,255,0.45)':'rgba(255,170,90,0.45)';
-        const hx=[];for(let k=0;k<6;k++){const a=k*Math.PI/3;hx.push(P(x+Math.cos(a)*42+((z/120|0)%2)*45,0,z+Math.sin(a)*50));}this.quad(hx);ctx.stroke();}}
+        const hx=[];for(let k=0;k<6;k++){const a=k*Math.PI/3;hx.push(P(x+Math.cos(a)*42+((z/120|0)%2)*45,CEIL,z+Math.sin(a)*50));}this.quad(hx);ctx.stroke();}}
   },
   drawGoals(){
     const ctx=this.ctx,P=(x,y,z)=>this.P(x,y,z),t=this.t;
@@ -1532,17 +1558,17 @@ const fmt=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%6
 function randomLook(){return{body:pick(['rayo','furia','escarabajo','titan','vortex']),color:pick(COLORS),color2:pick(['#ffffff','#111111','#ffd400','#00e5ff']),
   decal:pick(['none','rayas','puntos','zigzag','llamas','carbono','numero']),boost:pick(Object.keys(BOOST_FX)),topper:pick(['none','none','antena','cono','cuernos','aureola','corona','cresta'])};}
 const SHOTS=[
-  {bx:W-320,by:H-300,vx:0,vy:-800,px:W-720,tip:'Pelota alta frente al arco: ↑ + Shift para despegar y vuela hacia ella para meterla'},
-  {bx:W-BALL_R-4,by:H-560,vx:0,vy:-800,px:W-750,tip:'La pelota sube por la pared: vuela (↑ + Shift) y tócala hacia adentro del arco'},
-  {bx:W-900,by:H-BALL_R,vx:900,vy:0,px:W-1500,tip:'La pelota va contra la L: síguela, espera a que suba y remata en el aire'},
-  {bx:W-650,by:H-BALL_R,vx:0,vy:0,px:W-1250,tip:'Pelota quieta: pégale fuerte con turbo contra la pared para que suba y luego vuela a rematar'},
-  {bx:2600,by:H-620,vx:200,vy:-650,px:2250,tip:'Globo alto: salta, apunta con las flechas y vuela con Shift'},
-  {bx:2500,by:H-BALL_R,vx:200,vy:-860,px:2250,tip:'Rebote alto: persíguela volando y empújala hacia la boca del arco'}
+  {bx:W-170,by:H-560,vx:0,vy:-120,px:W-640,tip:'Pelota flotando frente al arco: ↑ + Shift para despegar y empújala hacia adentro'},
+  {bx:W-BALL_R-4,by:H-500,vx:0,vy:-500,px:W-750,tip:'La pelota sube por la pared: vuela (↑ + Shift) y tócala hacia adentro del arco'},
+  {bx:W-850,by:H-BALL_R,vx:360,vy:0,px:W-1150,tip:'La pelota va contra la L: síguela por la pared, salta de la pared y remátala volando'},
+  {bx:W-650,by:H-BALL_R,vx:0,vy:0,px:W-1250,tip:'Pelota quieta: llévala en la trompa hasta la pared, sube con ella y salta para rematar'},
+  {bx:2600,by:H-500,vx:150,vy:-300,px:2150,tip:'Globo alto: despega, apunta con las flechas y vuela hacia la pelota'},
+  {bx:W-1400,by:H-HC-CAR_HH-BALL_R-2,vx:0,vy:0,px:W-1400,tip:'La pelota está en tu capó: acelera, ↑ + Shift para despegar con ella y llévala volando al arco'}
 ];
 const TRAIN_INFO={
   saltos:{name:'SALTOS',desc:'Atraviesa 6 aros usando salto, salto largo (mantén Espacio) y doble salto.'},
   turbo:{name:'TURBO',desc:'Aros en lo alto: ↑ + Shift para despegar, apunta con las flechas y vuela. El turbo es limitado.'},
-  tiros:{name:'TIROS',desc:'6 remates para los arcos en L: levanta la pelota con la pared y métela volando.'},
+  tiros:{name:'TIROS',desc:'6 remates para los arcos en L: vuela, sube por la pared con la pelota y llévala en el capó.'},
   libre:{name:'PRÁCTICA LIBRE',desc:'Tú, la pelota y turbo infinito. R reinicia la pelota.'}
 };
 const Game={
