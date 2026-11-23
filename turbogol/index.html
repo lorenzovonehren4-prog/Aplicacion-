@@ -812,7 +812,7 @@ function carBall(car,ball){
   let power=0;
   const soft=Math.hypot(rvx,rvy)<380;
   if(car.hitCd<=0&&!soft){
-    let ex=dx,ey=dy*0.55;const el=Math.hypot(ex,ey)||1;ex/=el;ey/=el;
+    const ex=nx,ey=ny; // el empujón sigue la superficie del auto que toca la pelota (nariz, techo, cola o ruedas)
     const rel=Math.min(2300,Math.hypot(rvx,rvy)),sc=rel<500?0.65:0.65-0.1*(rel-500)/1800;
     const bst=car.boosting?1.25:1; // con turbo le pegas más fuerte
     ball.vx+=ex*rel*sc*0.2*bst;ball.vy+=ey*rel*sc*0.2*bst;
