@@ -27,7 +27,7 @@ const PREFER_ALT = ['futbol', 'tower-defense', 'mind-escape'];
 const FRAME = {
   'apice-gp': ['50% 62%', 1.12], karting: ['62% 40%', 1.12], 'codigo-rojo': ['62% 50%', 1.18], cornisa: ['46% 50%', 1.08], 'ultimo-disparo': ['55% 45%', 1.05],
   'combi-rush': ['62% 46%', 1.15], 'fuga-urbana': ['50% 50%', 1.02], sazon: ['56% 46%', 1.12], futbol: ['20% 100%', 1.3],
-  'tower-defense': ['50% 50%', 1.03], escalada: ['50% 30%', 1.04], 'mind-escape': ['50% 30%', 1.02], 'brujula-politica': ['50% 40%', 1.08],
+  'rocket-crombook': ['55% 40%', 1.05], 'tower-defense': ['50% 50%', 1.03], escalada: ['50% 30%', 1.04], 'mind-escape': ['50% 30%', 1.02], 'brujula-politica': ['50% 40%', 1.08],
 };
 const foto = id => { const f = `portal/tools/fotos/${id}.webp`; return fs.existsSync(path.join(root, f)) ? f : null; };
 const pick = g => (PREFER_ALT.includes(g.id) ? [g.alt] : [g.hero, g.cover, g.alt]).find(f => f && !f.endsWith('.svg'));

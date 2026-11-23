@@ -1978,7 +1978,9 @@ const Online={
   guests:[],gIn:{},roster:null,gone:{},
   rollSeq:0,sendT:0,inSent:'',snaps:[],lastSt:'',lastScore:[0,0],lastCount:0,shownEnd:false,_lobKey:'',
   maxOf(m){return m==='2v2'?4:2;},
-  async getRoom(){if(this.room)return this.room;try{if(window.claude&&window.claude.use)this.room=await window.claude.use('room');}catch(e){this.room=null;}return this.room;},
+  // dentro del portal (en un marco) la sala la da la página del portal; abierto solo, la propia página
+  async getRoom(){if(this.room)return this.room;const ws=[];try{if(window.parent&&window.parent!==window)ws.push(window.parent);}catch(e){}ws.push(window);
+    for(const w of ws){try{if(w.claude&&typeof w.claude.use==='function'){const r=await w.claude.use('room');if(r){this.room=r;return r;}}}catch(e){}}return null;},
   newCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<4;i++)s+=a[Math.random()*a.length|0];return s;},
   cleanName(n){n=String(n||'').replace(/[^\p{L}\p{N} _.\-]/gu,'').trim().slice(0,14);return n||'Rival';},
   cleanLook(l){l=l&&typeof l==='object'?l:{};const pickId=(k,v,d)=>CATALOG[k].some(i=>i.id===v)?v:d,col=(v,d)=>/^#[0-9a-f]{6}$/i.test(v||'')?v:d;
@@ -1989,14 +1991,16 @@ const Online={
   // vestíbulo: la sala común donde cada anfitrión anuncia su partido (lo ven todos los que abren la página)
   async lobbyOpen(){const room=await this.getRoom();if(!room)return false;if(this.lobUnsub)return true;
     try{this.lobUnsub=room.onPeers(ch=>{
-      this.lobby=ch.peers.filter(p=>!p.sameTab&&p.presence&&p.presence.lob&&typeof p.presence.lob==='object').map(p=>{const l=p.presence.lob,m=l.m==='2v2'?'2v2':'1v1';
+      this.lobby=ch.peers.filter(p=>!p.sameTab&&p.presence&&p.presence.rcLob&&typeof p.presence.rcLob==='object').map(p=>{const l=p.presence.rcLob,m=l.m==='2v2'?'2v2':'1v1';
         return{c:String(l.c||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,4),n:this.cleanName(l.n),m,p:clamp(l.p|0,1,this.maxOf(m)),x:this.maxOf(m),st:l.st==='jugando'?'jugando':'esperando'};})
         .filter(l=>l.c.length===4&&l.c!==this.code);
       if(UI.renderLobby)UI.renderLobby();},()=>{});}catch(e){return false;}
     return true;},
   lobbyPub(){const room=this.room;if(!room)return;
     const lob=this.role==='host'?{c:this.code,n:this.cleanName(Store.data.name),m:this.mode,p:1+this.guests.length,st:this.active?'jugando':'esperando'}:null,key=JSON.stringify(lob);
-    if(key===this._lobKey)return;this._lobKey=key;try{room.presence({lob}).catch(()=>{});}catch(e){}},
+    if(key===this._lobKey)return;this._lobKey=key;try{room.presence({rcLob:lob}).catch(()=>{});}catch(e){}},
+  // al cerrar el juego (o salir del portal): fuera de la sala y del vestíbulo, para no quedar como sala abierta
+  bye(){try{this.leave();}catch(e){}try{if(this.lobUnsub)this.lobUnsub();}catch(e){}this.lobUnsub=null;try{if(this.room)this.room.presence({rcLob:null}).catch(()=>{});}catch(e){}},
   async open(code,asHost,mode){
     const room=await this.getRoom();if(!room)return 'sin_sala';
     this.leave();
@@ -2080,6 +2084,7 @@ const Online={
   }
 };
 
+addEventListener('pagehide',()=>Online.bye());
 const Game={
   cfg:null,running:false,paused:false,cars:[],ball:new Ball(),score:[0,0],timeLeft:120,ot:false,otT:0,state:'idle',stateT:0,kickoff:false,pred:[],
   acc:0,time:0,slowT:0,player:null,pads:[],rings:[],train:null,touchLog:[],lastTouchTeam:-1,goalFlash:[0,0],focusCar:null,countShown:0,shotBy:null,

@@ -39,6 +39,44 @@ function loadApice(done) {
 
 const GAMES = [
   {
+    id: 'rocket-crombook',
+    title: 'Rocket Crombook',
+    tagline: 'Fútbol de autos de costado, en línea con tus amigos',
+    desc: 'Fútbol con autos visto de lado: maneja, párate en dos ruedas, salta, haz volantines y vuela con el turbo para meter la pelota en los arcos elevados en L. Sube por la pared con la pelota, haz drible aéreo y suelta el golpe morado pegándole con la cola del auto. Se juega sólo con amigos, 1 contra 1 o 2 contra 2: mira las salas abiertas y únete con un toque, o busca partido. Cuatro estadios (Clásico, Neón, Atardecer y Marino), garaje con autos, pinturas, calcos, turbos y sombreros, entrenamiento con aros y tiros, y controles táctiles iguales a los del celular.',
+    url: 'turbogol/index.html',
+    cover: 'portal/img/rocket-crombook-cover.webp',
+    box: 'portal/img/rocket-crombook-box.webp',
+    alt: 'portal/img/rocket-crombook-alt.webp',
+    hero: 'portal/img/rocket-crombook-hero.webp',
+    color: '#ff8a1f',
+    color2: '#22d6ff',
+    cats: ['deportes', 'multi'],
+    tags: ['Fútbol con autos', 'En línea', 'Con amigos'],
+    online: true,
+    badge: 'NUEVO',
+    added: '2026-11-23',
+    controls: [
+      [['←', '→'], 'Manejar (en el aire, apuntar la trompa)'],
+      [['↑'], 'En el piso: dos ruedas · con Shift: despegar y volar'],
+      [['Espacio'], 'Saltar (otra vez con flecha: volantín)'],
+      [['Shift'], 'Turbo'],
+      [['Q'], 'Giro en el aire'],
+      [['Esc'], 'Pausa'],
+    ],
+    tip: 'Para volar: ↑ + Shift desde el piso, la rampa o la pared. El golpe fuerte es el morado: haz un volantín y pégale con la cola del auto. En pantalla táctil, activa en el menú los controles táctiles (iguales a los del celular).',
+    progress() {
+      const s = readJSON('turbogol_v1');
+      if (!s || !s.stats || (!s.stats.matches && !s.xp)) return null;
+      const st = s.stats, lv = s.level || 1;
+      return {
+        label: `Nivel ${lv} · ${st.wins || 0} victorias`,
+        pct: Math.min(1, lv / 30),
+        stats: [['Partidos', st.matches || 0], ['Victorias', st.wins || 0], ['Goles', st.goals || 0], ['Nivel', lv]],
+        flags: { wins: st.wins || 0, goals: st.goals || 0 },
+      };
+    },
+  },
+  {
     id: 'apice-gp',
     title: 'Ápice GP',
     tagline: 'Monoplazas estilo Fórmula 1 en 3D',
@@ -524,6 +562,7 @@ const GAMES = [
 
 // Novedades que se muestran en el inicio (la más nueva primero).
 const NEWS = [
+  { game: 'rocket-crombook', date: '23 nov', title: 'Juego nuevo: Rocket Crombook', items: ['Fútbol de autos de costado con arcos en L, vuelo con turbo, drible aéreo y golpe morado', 'Sólo con amigos: salas abiertas para unirte con un toque, 1 contra 1 y 2 contra 2', 'Cuatro estadios: Clásico, Neón, Atardecer y Marino', 'Controles táctiles iguales a los del celular'] },
   { game: 'ultimo-disparo', date: '11 oct', title: 'Juego nuevo: Último Disparo', items: ['Francotirador de rescate: mira con zoom, temblor y contener la respiración', 'Cámara de bala en cámara lenta, sin sangre', '30 misiones en la ciudad, el puerto, la noche y el desierto', '4 rifles y mejoras de zoom, estabilidad, aliento y tiempo'] },
   { game: 'brujula-politica', date: '11 oct', title: 'Juego nuevo: Brújula Política', items: ['60 preguntas sobre economía, libertad, delitos y castigos, sociedad, el mundo, el planeta y la guerra', '16 ideologías y tu lado, de extrema izquierda a extrema derecha', 'Tarjeta de resultado con tu brújula, tus 6 ejes y lo que más te define'] },
   { game: 'codigo-rojo', date: '11 oct', title: 'Código Rojo: cabina, nitro y estrellas', items: ['Cabina por dentro con relojes, volante y mapa', 'Nitro, marcas de llantas, humo y fuego', 'Garaje en vitrina, 3 estrellas por misión y patrulleros más listos'] },

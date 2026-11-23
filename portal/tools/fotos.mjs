@@ -141,6 +141,24 @@ const SHOTS = {
     });
     await onlyCanvas(page, 'canvas');
   },
+  // Rocket Crombook (turbogol/): auto volando con turbo hacia la pelota en el estadio Neón
+  async 'rocket-crombook'(page) {
+    await page.goto(url('turbogol/index.html'));
+    await page.waitForTimeout(1200);
+    await page.mouse.click(700, 450);
+    await page.waitForTimeout(600);
+    await page.evaluate(a => {
+      Store.data.settings.arena = a; Game.start({ type: 'training', drill: 'libre' }); Game.state = 'play';
+      const c = Game.player; c.place(W / 2 - 300, 1); c.toAir(); c.y = H - 430; c.a = -0.55; c.vx = 0; c.vy = 0; c.airT = 1; c.jumps = 1; c.calcPose();
+      Game.ball.reset(W / 2 - 60, H - 560, 0, 0); Game.ball.rot = 0.5; Game.lastTouchTeam = 0;
+      Input.player = () => ({ th: 0.8, pitch: 0.6, jump: false, boost: true });
+      Render.camUpdate = function () { this.cam.x = W / 2 - 170; this.cam.y = H - 420; this.cam.vw = 720; };
+    }, process.env.ESTADIO || 'neon');
+    await page.waitForTimeout(450);
+    // sin marcas del jugador (anillo y flecha): foto limpia
+    await page.evaluate(() => { const c = Game.player; Game.player = null; c.isPlayer = false; Game.cfg = Object.assign({}, Game.cfg, { type: 'demo' }); Game.paused = true; });
+    await onlyCanvas(page, '#cv');
+  },
   async escalada(page) {
     await page.goto(url('escalada/index.html'));
     await page.waitForTimeout(2500);
