@@ -561,7 +561,7 @@ function vibrate(ms){try{if(Store.data.settings.vib&&navigator.vibrate)navigator
 /* ================= Físicas: pelota y autos ================= */
 class Ball{
   constructor(){this.reset(W/2,H-BALL_R);}
-  reset(x,y,vx=0,vy=0){this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.rot=0;this.spin=0;this.hidden=false;this.disabled=false;this.trail=[];this.fxType=null;this.fxT=0;}
+  reset(x,y,vx=0,vy=0){this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.rot=0;this.spin=0;this.hidden=false;this.disabled=false;this.trail=[];this.fxType=null;this.fxT=0;this.sq=0;this.sqA=0;}
   step(dt){
     if(this.disabled)return 0;
     if(this.fxT>0){this.fxT-=dt;if(this.fxT<=0)this.fxType=null;}
@@ -572,6 +572,7 @@ class Ball{
     this.x+=this.vx*dt;this.y+=this.vy*dt;
     this.rot+=this.spin*dt;this.spin*=(1-0.4*dt);
     const imp=ballArena(this,dt);
+    if(imp>220){this.sq=Math.max(this.sq||0,Math.min(0.2,imp/3600));this.sqA=Math.atan2(Q.ny,Q.nx);}this.sq=Math.max(0,(this.sq||0)-dt*1.5);
     if(!(isFinite(this.x)&&isFinite(this.y))||this.x<-GD-200||this.x>W+GD+200||this.y<-300||this.y>H+300)this.reset(W/2,H/2);
     return imp;
   }
@@ -859,6 +860,7 @@ function carBall(car,ball){
     car.carryT=0.25;
   }
   const tx=-ny,ty=nx;ball.spin+=(rvx*tx+rvy*ty)/BALL_R*0.3;
+  if(-vn>250){ball.sq=Math.max(ball.sq||0,Math.min(0.22,-vn/3200));ball.sqA=Math.atan2(ny,nx);}
   clampBall(ball);
   return power||1;
 }
@@ -1096,7 +1098,9 @@ function shade(hex,amt){let c=hex.replace('#','');if(c.length===3)c=c.split('').
   let r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
   if(amt>0){r+=(255-r)*amt;g+=(255-g)*amt;b+=(255-b)*amt;}else{r*=1+amt;g*=1+amt;b*=1+amt;}
   return`rgb(${r|0},${g|0},${b|0})`;}
-function polyPath(ctx,pts){ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();}
+// contorno con las esquinas redondeadas (carrocería más suave, no de bloques)
+function polyPath(ctx,pts,r=3.2){const n=pts.length,m=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2],s=m(pts[n-1],pts[0]);ctx.beginPath();ctx.moveTo(s[0],s[1]);
+  for(let i=0;i<n;i++){const p=pts[i],q=pts[(i+1)%n],e=m(p,q);ctx.arcTo(p[0],p[1],e[0],e[1],Math.min(r,Math.hypot(q[0]-p[0],q[1]-p[1])/2));}ctx.closePath();}
 
 /* ---------- Dibujo del auto (coordenadas locales, mirando a la derecha) ---------- */
 function drawCarShape(ctx,look,team,wheelRot,t,boosting,far){
@@ -1118,9 +1122,13 @@ function drawCarShape(ctx,look,team,wheelRot,t,boosting,far){
   ctx.fillStyle=gr;ctx.fillRect(-60,-40,120,60);
   drawDecal(ctx,look.decal,c2,col,t);
   if(B.gold){ctx.fillStyle='rgba(255,210,60,0.9)';ctx.fillRect(-60,4,120,3);ctx.fillRect(-60,-6,120,1.5);}
-  // reflejo superior
-  ctx.fillStyle='rgba(255,255,255,0.22)';ctx.fillRect(-60,-12,120,2.2);
-  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(-60,-9,120,4);
+  // laca: reflejo del cielo arriba, del piso abajo, una línea de horizonte y una veta diagonal
+  {const rf=ctx.createLinearGradient(0,-34,0,12);rf.addColorStop(0,'rgba(255,255,255,0.3)');rf.addColorStop(0.3,'rgba(255,255,255,0.04)');rf.addColorStop(0.55,'rgba(0,0,0,0)');rf.addColorStop(1,'rgba(0,0,0,0.28)');
+    ctx.fillStyle=rf;ctx.fillRect(-60,-40,120,60);}
+  ctx.fillStyle='rgba(255,255,255,0.32)';ctx.fillRect(-60,-12,120,1.8);
+  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(-60,-9.5,120,4);
+  ctx.fillStyle='rgba(255,255,255,0.12)';ctx.beginPath();ctx.moveTo(10,-40);ctx.lineTo(19,-40);ctx.lineTo(1,20);ctx.lineTo(-8,20);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.07)';ctx.beginPath();ctx.moveTo(23,-40);ctx.lineTo(26,-40);ctx.lineTo(8,20);ctx.lineTo(5,20);ctx.fill();
   // faldón inferior
   ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(-60,5,120,10);
   // huecos de rueda recortados
@@ -1134,6 +1142,9 @@ function drawCarShape(ctx,look,team,wheelRot,t,boosting,far){
   ctx.fillStyle=wg;polyPath(ctx,B.win);ctx.fill();ctx.strokeStyle='rgba(220,230,240,0.7)';ctx.lineWidth=1.2;ctx.stroke();
   ctx.strokeStyle='rgba(255,255,255,0.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(B.win[0][0]+4,B.win[0][1]+2.5);ctx.lineTo(B.win[0][0]+12,B.win[0][1]+2.5);ctx.stroke();
   ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=1.4;polyPath(ctx,B.pts);ctx.stroke();
+  // borde de luz en la parte de arriba de la carrocería (luz de los focos)
+  ctx.save();ctx.beginPath();ctx.rect(-60,-45,120,33);ctx.clip();polyPath(ctx,B.pts);ctx.clip();ctx.translate(0,1.3);
+  ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=1.3;polyPath(ctx,B.pts);ctx.stroke();ctx.restore();
   // franja de equipo
   ctx.strokeStyle=tc;ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(-44,7);ctx.lineTo(46,7);ctx.stroke();
   // luces
@@ -1145,8 +1156,10 @@ function drawCarShape(ctx,look,team,wheelRot,t,boosting,far){
   // ruedas con llanta de 6 rayos y freno
   for(const w of B.wheels){
     ctx.save();ctx.translate(w[0],w[1]);
-    ctx.fillStyle='#14161b';ctx.beginPath();ctx.arc(0,0,B.wr,0,TAU);ctx.fill();
-    ctx.strokeStyle='#2e333d';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(0,0,B.wr-1.5,0,TAU);ctx.stroke();
+    {const tg=ctx.createRadialGradient(-1.5,-1.5,B.wr*0.55,0,0,B.wr);tg.addColorStop(0,'#2b3039');tg.addColorStop(0.7,'#16181d');tg.addColorStop(1,'#08090c');
+      ctx.fillStyle=tg;ctx.beginPath();ctx.arc(0,0,B.wr,0,TAU);ctx.fill();}
+    ctx.save();ctx.rotate(wheelRot);ctx.fillStyle='#2f343e';for(let k=0;k<12;k++){ctx.rotate(TAU/12);ctx.fillRect(B.wr-2.4,-1.3,2.4,2.6);}ctx.restore(); // dibujo del neumático
+    ctx.strokeStyle='#353b46';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,0,B.wr-3.2,0,TAU);ctx.stroke();
     const rg=ctx.createRadialGradient(-2,-2,1,0,0,B.wr*0.66);rg.addColorStop(0,B.gold?'#fff0a0':'#f2f5f9');rg.addColorStop(1,B.gold?'#b88a10':'#7d8794');
     ctx.fillStyle=rg;ctx.beginPath();ctx.arc(0,0,B.wr*0.64,0,TAU);ctx.fill();
     ctx.fillStyle=team>=0?tc:'#e33';ctx.fillRect(-B.wr*0.5,-2,3,4);
@@ -1413,7 +1426,9 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
       r.fillStyle=gh;r.fillRect(0,0,32,256);this.raySpr=rc;
       const cc=document.createElement('canvas');cc.width=cc.height=128;const q=cc.getContext('2d'),gr=q.createRadialGradient(64,64,10,64,64,64);
       gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(0.55,'rgba(255,255,255,0.9)');gr.addColorStop(0.75,'rgba(255,255,255,0.35)');gr.addColorStop(1,'rgba(255,255,255,0)');
-      q.fillStyle=gr;q.fillRect(0,0,128,128);this.causSpr=cc;}
+      q.fillStyle=gr;q.fillRect(0,0,128,128);this.causSpr=cc;
+      const gc2=document.createElement('canvas');gc2.width=gc2.height=64;const g2=gc2.getContext('2d'),gg2=g2.createRadialGradient(32,32,0,32,32,32);
+      gg2.addColorStop(0,'rgba(255,255,255,1)');gg2.addColorStop(0.2,'rgba(255,250,235,0.7)');gg2.addColorStop(1,'rgba(255,240,220,0)');g2.fillStyle=gg2;g2.fillRect(0,0,64,64);this.glowSpr=gc2;}
     // textura de pasto: hojitas claras y oscuras sobre fondo transparente (se dibuja en perspectiva sobre la cancha)
     const gc=document.createElement('canvas');gc.width=gc.height=256;const gx=gc.getContext('2d');
     for(let i=0;i<3200;i++){const x=Math.random()*256,y=Math.random()*256,l=2+Math.random()*5,dark=Math.random()<0.5;
@@ -1521,7 +1536,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     const s=this.cw/cam.vw;this._s=s;this._cx=cam.x+(Math.random()-0.5)*this.shake;this._cy=cam.y+(Math.random()-0.5)*this.shake;
     this._eye=cam.vw*0.2;this._vp=this.ch/2-this._eye*s;
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=this.th.bg;ctx.fillRect(0,0,this.cw,this.ch);
-    this.drawFar();this.drawStands();this.drawAmb(dt);this.drawBackWall();this.drawFloor();this.drawEnds();this.drawGoals();
+    this.drawFar();this.drawStands();this.drawCrowdFx(dt);this.drawAmb(dt);this.drawBackWall();this.drawFloor();this.drawEnds();this.drawGoals();
     ctx.setTransform(s*dpr,0,0,s*dpr,(this.cw/2-this._cx*s)*dpr,(this.ch/2-this._cy*s)*dpr);
     this.drawRim();this.drawWorld(s);
     ctx.setTransform(dpr,0,0,dpr,0,0);this.drawScreenFx(s);
@@ -1540,6 +1555,18 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
       ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
   },
   newBub(init){return{x:rand(-1500,W+1500),y:init?rand(-700,1250):rand(1150,1300),z:rand(500,660),r:rand(4,14),v:rand(60,140),ph:rand(0,TAU)};},
+  drawCrowdFx(dt){
+    // flashes de cámaras en la tribuna (muchos más cuando hay gol) y, en el estadio clásico, dos focos que barren el público
+    const ctx=this.ctx,st=this.st,t=this.t;if(!this.flashes)this.flashes=[];
+    const rate=(4+this.crowdHype*60)*dt;if(this.flashes.length<40&&Math.random()<rate)this.flashes.push({x:st.x0+rand(300,st.UW-300),y:st.y0+rand(st.top?1000:400,1550),t:0});
+    ctx.globalCompositeOperation='lighter';
+    for(let i=this.flashes.length-1;i>=0;i--){const f=this.flashes[i];f.t+=dt;if(f.t>0.18){this.flashes.splice(i,1);continue;}
+      const p=this.P(f.x,f.y,ZS),r=Math.max(2,26*this._s*ZC/(ZC+ZS))*(1-f.t/0.18);if(p[0]<-20||p[0]>this.cw+20||p[1]<-20||p[1]>this.ch+20)continue;
+      ctx.globalAlpha=0.9*(1-f.t/0.18);ctx.drawImage(this.glowSpr,p[0]-r,p[1]-r,r*2,r*2);}
+    if(this.themeId==='clasico'&&this.hiQ)for(let i=0;i<2;i++){const k=ZC/(ZC+ZS)*this._s,p0=this.P(W*(i?0.78:0.22),st.y0+300,ZS),an=Math.sin(t*0.4+i*2.6)*0.6,len=1300*k,w=260*k;
+      ctx.globalAlpha=0.07;ctx.save();ctx.translate(p0[0],p0[1]);ctx.rotate(an);ctx.drawImage(this.raySpr,-w/2,0,w,len);ctx.restore();}
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  },
   drawAmb(dt){
     // efectos delante de la tribuna (estadio marino: burbujas que suben)
     if(this.th.fx!=='mar')return;const ctx=this.ctx,t=this.t;
@@ -1573,7 +1600,11 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     const a=P(x0,0,zb),b=P(x1,0,zb),bg=ctx.createLinearGradient(a[0],0,b[0],0);
     const bd=this.th.boards;bg.addColorStop(0,bd[0]);bg.addColorStop(0.48,bd[1]);bg.addColorStop(0.52,bd[2]);bg.addColorStop(1,bd[3]);ctx.fillStyle=bg;ctx.fill();
     ctx.save();ctx.font=`italic 900 ${Math.max(7,36*kb)}px Arial Black, Arial`;ctx.textBaseline='middle';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.3)';
-    for(let x=300;x<W;x+=650){const p=P(x,rail(x)-34,zb);ctx.fillText(x%1300<650?'TURBO GOL':'¡A JUGAR!',p[0],p[1]);}ctx.restore();
+    {const gf=Math.max(Game.goalFlash[0]||0,Game.goalFlash[1]||0),gt=(Game.goalFlash[0]||0)>(Game.goalFlash[1]||0)?0:1,off=(this.t*70)%650;
+      if(gf>0.05){ctx.fillStyle=TEAM_GLOW[gt];ctx.globalAlpha=0.55+0.45*Math.abs(Math.sin(this.t*9));}
+      for(let x=300-650+off;x<W+650;x+=650){const k=Math.round((x-off)/650),p=P(x,rail(x)-34,zb);ctx.fillText(gf>0.05?'¡GOL!':(k%2?'¡A JUGAR!':'TURBO GOL'),p[0],p[1]);}
+      ctx.globalAlpha=1;}
+    ctx.restore();
     // cuarto de tubo: del suelo hasta la baranda
     const prof=[];for(let i=0;i<=7;i++){const an=Math.PI/2*i/7;prof.push([RW*(1-Math.sin(an)),DB-RW*Math.cos(an)]);}
     const wc=this.th.wall,wa=this.th.wallAdd;
@@ -1685,7 +1716,31 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
         tube([...cb,0],[...cb,DB],w*k0);tube([...lip,0],[...lip,DB],w*k0);tube([...cb,DB],[...lip,DB],w*k0*0.8);
         tube([...cb,0],[...bk,0],w*k0*0.7);tube([...bk,0],[...bf,0],w*k0*0.7);}
       ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+      // plano de la línea de gol (la boca del arco): una cortina que brilla más cuando la pelota se acerca
+      {const B=Game.ball,near=B.hidden||B.disabled?0:clamp(1-(Math.abs(B.x-bx)-BALL_R)/500,0,1)*(B.y>GT-BALL_R&&B.y<GY+BALL_R?1:0.3),a=0.07+0.2*near+fl*0.25;
+        const q=[P(bx,GT,0),P(bx,GT,DB),P(bx,GY,DB),P(bx,GY,0)],g=ctx.createLinearGradient(q[0][0],q[0][1],q[3][0],q[3][1]);
+        const rgb=team?'255,170,80':'110,190,255';g.addColorStop(0,`rgba(${rgb},${a})`);g.addColorStop(0.5,`rgba(${rgb},${a*0.45})`);g.addColorStop(1,`rgba(${rgb},${a})`);
+        ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;this.quad(q);ctx.fill();
+        ctx.strokeStyle=`rgba(255,255,255,${0.25+0.5*near})`;ctx.lineWidth=Math.max(1,2*this._s);
+        for(let z=0;z<=DB;z+=DB/4){const u=P(bx,GT,z),d=P(bx,GY,z);ctx.globalAlpha=0.35+0.65*(1-z/DB);ctx.beginPath();ctx.moveTo(u[0],u[1]);ctx.lineTo(d[0],d[1]);ctx.stroke();}
+        ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
     }
+  },
+  drawGoalLine(after){
+    // línea de gol en el plano de juego: sombra + línea blanca; con la pelota encima, lo que ya cruzó se ve del color del arco
+    const ctx=this.ctx,B=Game.ball,t=this.t;
+    for(const team of [0,1]){const bx=team?W:0,s=team?1:-1,col=TEAM_GLOW[team];
+      if(!after){
+        ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(bx+(team?2:-12),GT,10,GY-GT); // sombra hacia adentro del arco
+        ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(bx+s*3,GT);ctx.lineTo(bx+s*3,GY);ctx.stroke();
+        continue;}
+      const over=!B.hidden&&!B.disabled&&Math.abs(B.x-bx)<BALL_R+2&&B.y>GT-BALL_R&&B.y<GY+BALL_R;
+      if(over){ctx.save();ctx.beginPath();ctx.rect(team?bx:bx-400,GT-200,400,GY-GT+400);ctx.clip();
+        ctx.globalCompositeOperation='lighter';ctx.fillStyle=team?'rgba(255,150,40,0.38)':'rgba(70,150,255,0.38)';ctx.beginPath();ctx.arc(B.x,B.y,BALL_R,0,TAU);ctx.fill();ctx.restore();
+        ctx.globalCompositeOperation='source-over';}
+      ctx.lineCap='butt';ctx.setLineDash([22,12]);ctx.lineDashOffset=-t*40;
+      ctx.strokeStyle=over?col:'rgba(255,255,255,0.85)';ctx.lineWidth=over?6:4;ctx.beginPath();ctx.moveTo(bx,GT);ctx.lineTo(bx,GY);ctx.stroke();ctx.setLineDash([]);
+      if(over){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.35;ctx.lineWidth=18;ctx.stroke();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}}
   },
   drawRim(){
     const ctx=this.ctx;
@@ -1720,7 +1775,9 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
         ctx.strokeStyle=`rgba(255,255,255,${al})`;ctx.lineCap='round';
         for(const o of[-16,0,16]){const px=-dy*o,py=dx*o,L=70+Math.abs(o)*-1.5;ctx.lineWidth=o?2:3;ctx.beginPath();ctx.moveTo(c.x-dx*40+px,c.y-dy*40+py);ctx.lineTo(c.x-dx*(40+L)+px,c.y-dy*(40+L)+py);ctx.stroke();}}
       this.drawCar(c);}
+    if(!show)this.drawGoalLine(false);
     if(!b.hidden&&!b.disabled)this.drawBall(b);
+    if(!show)this.drawGoalLine(true);
     const pc=g.player;
     // anillo: tienes el volantín (segundo salto) disponible; se pone amarillo cuando lo recuperas tocando la pelota con las ruedas
     if(pc&&!pc.grounded&&pc.jumps<2&&pc.recoverT<=0&&g.state!=='replay'&&!show){
@@ -1760,7 +1817,11 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     if(!b.fxType&&sp>480){const k=clamp((sp-480)/300,0,1),rgb=sp>720?'255,200,60':'90,210,255';ctx.globalCompositeOperation='lighter';
       const gl=ctx.createRadialGradient(0,0,BALL_R*0.7,0,0,BALL_R*1.9);gl.addColorStop(0,`rgba(${rgb},${0.55*k})`);gl.addColorStop(1,`rgba(${rgb},0)`);
       ctx.fillStyle=gl;ctx.beginPath();ctx.arc(0,0,BALL_R*1.9,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}
-    const R2=BALL_R*2;ctx.rotate(b.rot);ctx.drawImage(this.ballTex,-BALL_R,-BALL_R,R2,R2);ctx.rotate(-b.rot);
+    if(b.sq>0.004){ctx.rotate(b.sqA);ctx.scale(1-b.sq,1+b.sq*0.55);ctx.rotate(-b.sqA);} // se aplasta contra lo que golpea
+    const R2=BALL_R*2;ctx.rotate(b.rot);ctx.drawImage(this.ballTex,-BALL_R,-BALL_R,R2,R2);
+    {const gk=0.35+0.4*clamp(sp/800,0,1);ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(60,230,255,${0.22*gk})`;ctx.lineCap='butt';
+      ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(-BALL_R*0.97,0);ctx.lineTo(-BALL_R*0.25,0);ctx.moveTo(BALL_R*0.25,0);ctx.lineTo(BALL_R*0.97,0);ctx.stroke();ctx.globalCompositeOperation='source-over';}
+    ctx.rotate(-b.rot);
     ctx.globalCompositeOperation='multiply';ctx.drawImage(this.ballShade,-BALL_R,-BALL_R,R2,R2);
     ctx.globalCompositeOperation='lighter';ctx.drawImage(this.ballLight,-BALL_R,-BALL_R,R2,R2);ctx.globalCompositeOperation='source-over';
     ctx.strokeStyle='rgba(8,12,20,0.6)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,0,BALL_R,0,TAU);ctx.stroke();ctx.restore();
@@ -1982,7 +2043,7 @@ const Game={
       if(this.cfg.type!=='training'&&!BGM(this.cfg.type)){this.recT=(this.recT||0)+dt;if(this.recT>=1/60){this.recT-=1/60;(this.rec||(this.rec=[])).push(this.snap());if(this.rec.length>140)this.rec.shift();}}
       if(this.cfg.type==='training')this.trainStep(dt);
       else{
-        if(!b.hidden){if(b.x<-BALL_R*0.6)this.scoreGoal(1);else if(b.x>W+BALL_R*0.6)this.scoreGoal(0);}
+        if(!b.hidden){if(b.x<-BALL_R)this.scoreGoal(1);else if(b.x>W+BALL_R)this.scoreGoal(0);} // la pelota entera pasó la línea
         if(this.kickoff&&this.time>0&&this.cars.every(c=>!c.ai||c.ai.mode!=='kickoff')&&Math.abs(b.x-W/2)>5)this.kickoff=false;
         if(this.ot)this.otT+=dt;
         else if(this.cfg.timed!==false&&this.state==='play'){this.timeLeft-=dt;if(this.timeLeft<=0){this.timeLeft=0;this.timeUp();}}
@@ -2071,10 +2132,10 @@ const Game={
       if(this.rings.every(r=>r.done))this.trainFinish();
     }else if(tr.drill==='tiros'){
       tr.attemptT+=dt;
-      if(b.x>W+BALL_R*0.9){tr.made++;Fx.goal(W+60,b.y,0);Sfx.goal();b.hidden=true;UI.pop('¡GOL!','','goal');this.state='trainwait';this.stateT=1.6;UI.trainHud();}
-      else if(b.x<-BALL_R*0.9||tr.attemptT>9){Sfx.fail();UI.pop('FALLASTE','','miss');b.hidden=b.x<0;this.state='trainwait';this.stateT=1.1;}
+      if(b.x>W+BALL_R){tr.made++;Fx.goal(W+60,b.y,0);Sfx.goal();b.hidden=true;UI.pop('¡GOL!','','goal');this.state='trainwait';this.stateT=1.6;UI.trainHud();}
+      else if(b.x<-BALL_R||tr.attemptT>9){Sfx.fail();UI.pop('FALLASTE','','miss');b.hidden=b.x<0;this.state='trainwait';this.stateT=1.1;}
     }else if(tr.drill==='libre'){
-      if(b.x>W+BALL_R*0.9||b.x<-BALL_R*0.9){Fx.goal(clamp(b.x,-GD+60,W+GD-60),b.y,b.x>0?0:1);Sfx.goal();b.hidden=true;this.state='trainwait';this.stateT=1.5;}
+      if(b.x>W+BALL_R||b.x<-BALL_R){Fx.goal(clamp(b.x,-GD+60,W+GD-60),b.y,b.x>0?0:1);Sfx.goal();b.hidden=true;this.state='trainwait';this.stateT=1.5;}
     }
   },
   trainReset(){if(!this.inPlay()||!this.train)return;const d=this.train.drill;
