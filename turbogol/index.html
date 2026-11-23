@@ -1980,7 +1980,9 @@ const Online={
   maxOf(m){return m==='2v2'?4:2;},
   // dentro del portal (en un marco) la sala la da la página del portal; abierto solo, la propia página
   async getRoom(){if(this.room)return this.room;const ws=[];try{if(window.parent&&window.parent!==window)ws.push(window.parent);}catch(e){}ws.push(window);
-    for(const w of ws){try{if(w.claude&&typeof w.claude.use==='function'){const r=await w.claude.use('room');if(r){this.room=r;return r;}}}catch(e){}}return null;},
+    for(const w of ws){try{if(w.claude&&typeof w.claude.use==='function'){const r=await w.claude.use('room');if(r){this.room=r;this.hw=w;return r;}}}catch(e){}}return null;},
+  // claude.ai rechaza objetos creados en otra ventana: dentro del portal, cada mensaje se rearma con el JSON de la página del portal
+  plain(o){const W=this.hw||window;try{return W.JSON.parse(JSON.stringify(o));}catch(e){return o;}},
   newCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<4;i++)s+=a[Math.random()*a.length|0];return s;},
   cleanName(n){n=String(n||'').replace(/[^\p{L}\p{N} _.\-]/gu,'').trim().slice(0,14);return n||'Rival';},
   cleanLook(l){l=l&&typeof l==='object'?l:{};const pickId=(k,v,d)=>CATALOG[k].some(i=>i.id===v)?v:d,col=(v,d)=>/^#[0-9a-f]{6}$/i.test(v||'')?v:d;
@@ -1998,16 +2000,16 @@ const Online={
     return true;},
   lobbyPub(){const room=this.room;if(!room)return;
     const lob=this.role==='host'?{c:this.code,n:this.cleanName(Store.data.name),m:this.mode,p:1+this.guests.length,st:this.active?'jugando':'esperando'}:null,key=JSON.stringify(lob);
-    if(key===this._lobKey)return;this._lobKey=key;try{room.presence({rcLob:lob}).catch(()=>{});}catch(e){}},
+    if(key===this._lobKey)return;this._lobKey=key;try{room.presence(this.plain({rcLob:lob})).catch(()=>{});}catch(e){}},
   // al cerrar el juego (o salir del portal): fuera de la sala y del vestíbulo, para no quedar como sala abierta
-  bye(){try{this.leave();}catch(e){}try{if(this.lobUnsub)this.lobUnsub();}catch(e){}this.lobUnsub=null;try{if(this.room)this.room.presence({rcLob:null}).catch(()=>{});}catch(e){}},
+  bye(){try{this.leave();}catch(e){}try{if(this.lobUnsub)this.lobUnsub();}catch(e){}this.lobUnsub=null;try{if(this.room)this.room.presence(this.plain({rcLob:null})).catch(()=>{});}catch(e){}},
   async open(code,asHost,mode){
     const room=await this.getRoom();if(!room)return 'sin_sala';
     this.leave();
     try{this.nr=await room.join('tg-'+code);}catch(e){return 'no_entra';}
     this.role=asHost?'host':'guest';this.code=code;this.mode=mode==='2v2'?'2v2':'1v1';this.arena=asHost?arenaFor({type:'online'}):null;
     this.active=false;this.snaps=[];this.match=0;this.shownEnd=false;this.guests=[];this.gIn={};this.roster=null;this.gone={};
-    try{await this.nr.presence(this.myInfo());}catch(e){}
+    try{await this.nr.presence(this.plain(this.myInfo()));}catch(e){}
     this.unsub=this.nr.onPeers(ch=>this.onPeers(ch),()=>{if(this.active)this.lost();});
     this.lobbyPub();if(UI.renderRoom)UI.renderRoom();
     return 'ok';},
@@ -2031,7 +2033,7 @@ const Online={
   // quiénes juegan y en qué equipo: anfitrión en azul y los demás alternando naranja, azul, naranja
   startRoster(){const R=[['H',this.cleanName(Store.data.name),this.myLook(),0]];
     this.guests.slice(0,this.maxOf(this.mode)-1).forEach((g,i)=>R.push([g.peer,g.name,g.look,(i+1)%2]));this.roster=R;this.gone={};
-    try{this.nr&&this.nr.presence({r:R,md:this.mode}).catch(()=>{});}catch(e){}return R;},
+    try{this.nr&&this.nr.presence(this.plain({r:R,md:this.mode})).catch(()=>{});}catch(e){}return R;},
   onPeersGuest(ch){
     const h=ch.peers.find(p=>!p.sameTab&&p.presence&&p.presence.tg===2&&p.presence.role==='host');
     if(!h){if(this.active)this.lost();else UI.onlineStatus('Buscando la sala <b>'+this.code.toUpperCase()+'</b>…');return;}
@@ -2054,12 +2056,12 @@ const Online={
       b:[r1(b.x),r1(b.y),r3(b.rot),b.hidden?1:0,b.fxType?['morado','amarillo','rojo'].indexOf(b.fxType):-1],
       c:g.cars.map(c=>[r1(c.px),r1(c.py),r3(c.pa),c.s,(c.boosting?1:0)|(c.grounded?2:0),r3(c.turnT),r3(c.rollT||0),Math.round(c.boost),Math.round(c.grounded?Math.abs(c.vt):Math.hypot(c.vx,c.vy))]),
       k:g.cars.map(c=>[c.stats.goals,c.stats.shots,c.stats.assists,c.stats.saves,c.stats.score])};
-    this.nr.presence({s}).catch(()=>{});},
+    this.nr.presence(this.plain({s})).catch(()=>{});},
   // invitado: mandar controles y dibujar las fotos
   guestFrame(dt){
     const p=Game.player,inp=Input.player();if(inp.roll)this.rollSeq++;
     const msg={th:Math.round(inp.th*100)/100,p:Math.round(inp.pitch*100)/100,j:inp.jump?1:0,b:inp.boost?1:0,r:this.rollSeq},key=JSON.stringify(msg);
-    this.sendT+=dt;if(this.nr&&(key!==this.inSent||this.sendT>0.15)){this.inSent=key;this.sendT=0;this.nr.presence({i:msg}).catch(()=>{});}
+    this.sendT+=dt;if(this.nr&&(key!==this.inSent||this.sendT>0.15)){this.inSent=key;this.sendT=0;this.nr.presence(this.plain({i:msg})).catch(()=>{});}
     if(!this.snaps.length)return;
     // dibujar ~100 ms atrás, interpolando entre dos fotos
     const now=performance.now()-100;let A=this.snaps[0],B=this.snaps[this.snaps.length-1];
