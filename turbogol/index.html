@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#05070d">
-<title>TURBO GOL</title>
+<title>Rocket Crombook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -247,7 +247,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 </div>
 
 <section id="s-boot" class="scr">
-  <div class="logo"><div class="bolt"></div><div class="l1">TURBO</div><div class="l2">GOL</div><span class="sub">ARENA LATERAL</span></div>
+  <div class="logo"><div class="bolt"></div><div class="l1">ROCKET</div><div class="l2">CROMBOOK</div><span class="sub">ARENA LATERAL</span></div>
   <div class="tap">TOCA O PULSA UNA TECLA PARA EMPEZAR</div>
   <div class="ctrlhelp"><kbd>←</kbd> <kbd>→</kbd> conducir · <kbd>↓</kbd> frenar · <kbd>↑</kbd> en el piso = trompa arriba (en dos ruedas) · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar (con turbo vas directo hacia donde apuntas)<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto con flecha = volantín, no vence · doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire</div>
 </section>
@@ -260,7 +260,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <button class="icbtn" id="fsBtn" title="Pantalla completa">⛶</button>
     <button class="icbtn" id="setBtn" title="Configuración">⚙</button>
   </div>
-  <div class="menuMid"><div class="logo mini"><div class="bolt"></div><div class="l1">TURBO</div><div class="l2">GOL</div></div></div>
+  <div class="menuMid"><div class="logo mini"><div class="bolt"></div><div class="l1">ROCKET</div><div class="l2">CROMBOOK</div></div></div>
   <div class="bar">
     <button class="bb bl" data-go="training">Entrenamiento</button>
     <button class="bb bl" data-go="garage">Garaje</button>
@@ -343,11 +343,11 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 <section id="s-result" class="scr"><div id="resBody" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%"></div></section>
 
 <div id="modal"><div class="panel list" id="modalBody" style="align-items:center;text-align:center"></div></div>
-<div id="rotate"><div class="ph"></div><div style="font-weight:900;font-size:20px;font-style:italic">GIRA TU TELÉFONO</div><div style="opacity:.8">TURBO GOL se juega en horizontal</div><button class="btn" id="rotOk"><span>Jugar igual</span></button></div>
+<div id="rotate"><div class="ph"></div><div style="font-weight:900;font-size:20px;font-style:italic">GIRA TU TELÉFONO</div><div style="opacity:.8">ROCKET CROMBOOK se juega en horizontal</div><button class="btn" id="rotOk"><span>Jugar igual</span></button></div>
 <div id="toast"></div>
 <script>
 'use strict';
-/* ================= TURBO GOL — núcleo ================= */
+/* ================= ROCKET CROMBOOK (antes TURBO GOL) — núcleo ================= */
 // Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
 // Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
 let W=3200;const H=1300,GD=230,GH=330,RB=150,RT=150,RAMP=Math.PI/2,GOAL_UP=340,CEIL=438; // alto de juego: 3/4 del de antes (techo en 438)
@@ -1477,7 +1477,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     const by=open?922:800;
     for(let i=0;i<7;i++){const x=480+i*980,team=x<UW/2?0:1;c.fillStyle=team?'#3d1d0a':'#0c1d3d';c.fillRect(x-240,by,480,58);
       c.fillStyle=team?'#ff8a1f':'#2f8bff';c.fillRect(x-240,by,480,5);c.fillRect(x-240,by+53,480,5);
-      c.font='italic 900 38px Arial Black, Arial';c.textAlign='center';c.textBaseline='middle';c.fillStyle='rgba(255,255,255,0.85)';c.fillText('TURBO GOL',x,by+30);}
+      c.font='italic 900 38px Arial Black, Arial';c.textAlign='center';c.textBaseline='middle';c.fillStyle='rgba(255,255,255,0.85)';c.fillText('ROCKET CROMBOOK',x,by+30);}
     const towers=[700,1900,4900,6100];
     if(!open){c.fillStyle='#0c111c';for(const x of towers)c.fillRect(x-40,330,80,UH);}
     else{c.fillStyle=th.tower;for(const x of towers){c.beginPath();c.moveTo(x-26,140);c.lineTo(x+26,140);c.lineTo(x+60,UH);c.lineTo(x-60,UH);c.fill();c.fillRect(x-170,70,340,80);}}
@@ -1604,7 +1604,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     ctx.save();ctx.font=`italic 900 ${Math.max(7,36*kb)}px Arial Black, Arial`;ctx.textBaseline='middle';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.3)';
     {const gf=Math.max(Game.goalFlash[0]||0,Game.goalFlash[1]||0),gt=(Game.goalFlash[0]||0)>(Game.goalFlash[1]||0)?0:1,off=(this.t*70)%650;
       if(gf>0.05){ctx.fillStyle=TEAM_GLOW[gt];ctx.globalAlpha=0.55+0.45*Math.abs(Math.sin(this.t*9));}
-      for(let x=300-650+off;x<W+650;x+=650){const k=Math.round((x-off)/650),p=P(x,rail(x)-34,zb);ctx.fillText(gf>0.05?'¡GOL!':(k%2?'¡A JUGAR!':'TURBO GOL'),p[0],p[1]);}
+      for(let x=300-650+off;x<W+650;x+=650){const k=Math.round((x-off)/650),p=P(x,rail(x)-34,zb);ctx.fillText(gf>0.05?'¡GOL!':(k%2?'¡A JUGAR!':'ROCKET CROMBOOK'),p[0],p[1]);}
       ctx.globalAlpha=1;}
     ctx.restore();
     // cuarto de tubo: del suelo hasta la baranda
@@ -2361,10 +2361,10 @@ const UI={
         if(code.length!==4){this.toast('Escribe el código de 4 letras');return;}this.onlineStatus('Entrando a la sala…');const r=await Online.open(code,false);this.onlineMsg(r,code);};
       $('#onCode').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')$('#onJoin').click();});}
     const room=await Online.getRoom();
-    if(!room){this.onlineStatus('El modo en línea funciona cuando abres TURBO GOL en Claude con tu cuenta. Aquí no hay conexión para jugar en línea.');$('#onCreate').disabled=true;$('#onJoin').disabled=true;}
+    if(!room){this.onlineStatus('El modo en línea funciona cuando abres ROCKET CROMBOOK en Claude con tu cuenta. Aquí no hay conexión para jugar en línea.');$('#onCreate').disabled=true;$('#onJoin').disabled=true;}
     else{$('#onCreate').disabled=false;$('#onJoin').disabled=false;}},
   onlineMsg(r,code){
-    if(r==='sin_sala')this.onlineStatus('El modo en línea funciona cuando abres TURBO GOL en Claude con tu cuenta.');
+    if(r==='sin_sala')this.onlineStatus('El modo en línea funciona cuando abres ROCKET CROMBOOK en Claude con tu cuenta.');
     else if(r==='no_entra')this.onlineStatus('No se pudo entrar a la sala. Prueba de nuevo en un momento.');
     else if(Online.role==='host')this.onlineStatus('Sala <b>'+code.toUpperCase()+'</b> creada. Pásale el código a tu amigo. Esperando rival…');
     else this.onlineStatus('Buscando la sala <b>'+code.toUpperCase()+'</b>…');},
