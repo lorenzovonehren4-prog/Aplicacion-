@@ -10,11 +10,13 @@ const fs=require('fs');
   const open=async()=>{const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
     await p.goto('http://tg.test/turbogol/index.html');await p.waitForTimeout(700);await p.mouse.click(400,200);await p.waitForTimeout(300);return p;};
   const H=await open(),G=await open();
+  // cada uno eligió un estadio distinto: manda el del anfitrión
+  await H.evaluate(()=>{Store.data.settings.arena='marino';});await G.evaluate(()=>{Store.data.settings.arena='neon';});
   await H.click('[data-go=online]');await H.waitForTimeout(400);await H.click('#onCreate');await H.waitForTimeout(500);
   const status=await H.textContent('#onStatus');const code=(status.match(/Sala ([A-Z0-9]{4})/)||[])[1];console.log('estado anfitrión:',status.trim(),'| código',code);
   await G.click('[data-go=online]');await G.waitForTimeout(400);await G.fill('#onCode',code||'');await G.click('#onJoin');
   await G.waitForTimeout(2500);
-  const st=async p=>p.evaluate(()=>({tipo:Game.cfg&&Game.cfg.type,rol:Online.role,estado:Game.state,activo:Online.active,W,autos:Game.cars.map(c=>[c.team,c.name,Math.round(c.x),c.isPlayer?'yo':''])}));
+  const st=async p=>p.evaluate(()=>({tipo:Game.cfg&&Game.cfg.type,rol:Online.role,estado:Game.state,activo:Online.active,W,estadio:Render.themeId,autos:Game.cars.map(c=>[c.team,c.name,Math.round(c.x),c.isPlayer?'yo':''])}));
   console.log('anfitrión',JSON.stringify(await st(H)));console.log('invitado',JSON.stringify(await st(G)));
   // el invitado acelera a la izquierda (ataca a la izquierda): su auto debe moverse en el anfitrión
   await G.waitForTimeout(3000);const x0=await H.evaluate(()=>Game.cars[1].x);
