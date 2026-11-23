@@ -9,5 +9,6 @@
     peers:list,onPeers:(f)=>{ls.push(f);setTimeout(()=>f({peers:list(),joined:list(),left:[],updated:[]}),0);return()=>{const i=ls.indexOf(f);if(i>=0)ls.splice(i,1);};},
     emit:async()=>{},on:()=>()=>{},connected:()=>true,onConnection:f=>{setTimeout(()=>f(true),0);return()=>{};},
     leave:async()=>{alive=false;ch.postMessage({t:'bye',peer:me});ch.close();}};};
-  const rooms={};const room={join:async n=>rooms[n]||(rooms[n]=mk(n)),presence:async()=>{},peers:()=>[],onPeers:()=>()=>{},emit:async()=>{},on:()=>()=>{},connected:()=>true};
+  // la sala raíz es el vestíbulo que comparten todos; join(nombre) abre una sala aparte
+  const rooms={};const lobby=mk('__vestibulo');const room=Object.assign({},lobby,{join:async n=>rooms[n]||(rooms[n]=mk(n))});
   window.claude={use:async n=>n==='room'?room:null};})();

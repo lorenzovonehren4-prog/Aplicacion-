@@ -93,7 +93,14 @@ kbd{display:inline-block;padding:1px 7px;border-radius:5px;background:#1b2a48;bo
 .seg{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
 .seg button{padding:8px 14px;border-radius:8px;font-weight:900;font-style:italic;background:rgba(20,35,65,.85);border:2px solid #34507f;font-size:clamp(12px,2.2vh,15px)}
 .seg button.on{background:linear-gradient(180deg,#ffd21a,#ff8a1a);color:#2a1100;border-color:#fff1a0}
+.icbtn.ctlbtn{width:auto;padding:0 12px;font-size:clamp(11px,2.2vh,14px);font-style:italic;letter-spacing:.03em;white-space:nowrap;gap:6px}
+.icbtn.ctlbtn.on{border-color:#5dff9a;color:#bfffd8}
 .seg.arena{margin-top:.8vh}.seg.arena button{padding:6px 11px}
+.onlist{display:flex;flex-direction:column;gap:6px;max-height:30vh;overflow:auto}
+.onrow{display:flex;align-items:center;gap:10px;background:#0f1d38;border:2px solid #22385f;border-radius:10px;padding:5px 6px 5px 12px;font-weight:800}
+.onrow .grow{flex:1;min-width:0}.onrow small{display:block;opacity:.75;font-weight:700}.onrow .btn{padding:6px 12px}
+.onplayers{display:grid;grid-template-columns:1fr 1fr;gap:6px}.onp{padding:7px 10px;border-radius:8px;font-weight:800;background:#0f1d38;border-left:5px solid #2f8bff}
+.onp.t1{border-left-color:#ff8a1f}.onp.empty{opacity:.4;font-style:italic}
 .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 /* garaje */
 .garage{display:flex;gap:2vw;flex:1;min-height:0;padding-top:1.5vh}
@@ -257,6 +264,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <div class="prof" id="profBtn"><div class="avatar" id="avatar">J</div><div><div class="pname" id="pname">Jugador</div><div class="lvl">NV <span id="plvl">1</span><div class="xpbar"><i id="pxp"></i></div></div></div></div>
     <div class="grow"></div>
     <div class="coins"><span class="coin"></span><span id="pcoins">0</span></div>
+    <button class="icbtn ctlbtn" id="ctlBtn" title="Controles"></button>
     <button class="icbtn" id="fsBtn" title="Pantalla completa">⛶</button>
     <button class="icbtn" id="setBtn" title="Configuración">⚙</button>
   </div>
@@ -281,13 +289,24 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 </section>
 
 <section id="s-online" class="scr center">
-  <div class="panel list" style="align-items:stretch;gap:1.4vh;max-width:520px">
-    <div class="top"><button class="back" data-back>←</button><h2>JUGAR CON AMIGOS · 1 VS 1</h2></div>
-    <div id="onStatus" class="ctrlhelp" style="text-align:left;min-height:2.6em">Crea una sala y pásale el código a tu amigo, o escribe el código de su sala.</div>
-    <button class="btn cy" id="onCreate"><span>Crear sala</span></button>
-    <div style="display:flex;gap:10px;align-items:center;justify-content:center"><input type="text" id="onCode" maxlength="4" placeholder="CÓDIGO" autocomplete="off" style="text-transform:uppercase;letter-spacing:.3em;text-align:center;width:150px"><button class="btn" id="onJoin"><span>Unirse</span></button></div>
-    <div class="seg arena" id="arenaSegO"></div>
-    <div class="tag" style="line-height:1.5;letter-spacing:.04em">El estadio lo elige quien crea la sala. Los dos tienen que abrir esta misma página de Claude con su cuenta (tu amigo debe ser de tu organización o estar invitado a la página).</div>
+  <div class="panel list" style="align-items:stretch;gap:1vh;max-width:660px;width:94vw;max-height:94vh;overflow:auto">
+    <div class="top"><button class="back" data-back>←</button><h2>JUGAR CON AMIGOS</h2></div>
+    <div id="onStatus" class="ctrlhelp" style="text-align:left">Únete a una sala abierta, busca partido o crea tu sala.</div>
+    <div id="onRoom" style="display:none;flex-direction:column;gap:1vh">
+      <div id="onPlayers" class="onplayers"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn cy" id="onStart"><span>Empezar ya</span></button><button class="btn gr" id="onLeave"><span>Salir de la sala</span></button></div>
+    </div>
+    <div id="onMain" style="display:flex;flex-direction:column;gap:1vh">
+      <div class="tag">SALAS ABIERTAS</div>
+      <div id="onList" class="onlist"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <button class="btn cy" data-quick="1v1"><span>Buscar 1 vs 1</span></button><button class="btn cy" data-quick="2v2"><span>Buscar 2 vs 2</span></button>
+        <button class="btn" data-create="1v1"><span>Crear 1 vs 1</span></button><button class="btn" data-create="2v2"><span>Crear 2 vs 2</span></button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;justify-content:center"><input type="text" id="onCode" maxlength="4" placeholder="CÓDIGO" autocomplete="off" style="text-transform:uppercase;letter-spacing:.3em;text-align:center;width:150px"><button class="btn" id="onJoin"><span>Unirse con código</span></button></div>
+      <div class="seg arena" id="arenaSegO"></div>
+      <div class="tag" style="line-height:1.5;letter-spacing:.04em">El estadio lo elige quien crea la sala. Todos tienen que abrir esta misma página de Claude con su cuenta (tus amigos deben ser de tu organización o estar invitados a la página).</div>
+    </div>
   </div>
 </section>
 
@@ -655,7 +674,8 @@ class Car{
       const B=Game.ball;if(this.carryT>0&&!B.hidden&&Math.hypot(B.x-this.x,B.y-this.y)<BALL_R+CAR_HL+30){B.vx=this.vx;B.vy=this.vy-30;}
       return;}
     let vt=this.vt,thIn=inp.th;
-    if(!this.ai&&ny>-0.85){const ix=inp.th,iy=-(inp.pitch||0);if(Math.hypot(ix,iy)>0.3)thIn=clamp((ix*tx+iy*ty)*1.4,-1,1);} // en rampa/pared: ↑ sube, ↓ baja
+    if(!this.ai&&ny>-0.85){const ix=inp.th,iy=-(inp.pitch||0);if(Math.hypot(ix,iy)>0.3){const proj=ix*tx+iy*ty,into=-(ix*nx+iy*ny);
+      thIn=clamp(proj*1.4,-1,1);if(into>0.3&&Math.abs(proj)<0.5)thIn=this.s*clamp(into*1.3,0,1);}} // en rampa/pared: ↑ sube, ↓ baja; empujar hacia la pared = seguir trepando
     const th=Math.abs(thIn)>0.2?thIn:0;
     const brake=(inp.pitch||0)<-0.5&&!th; // flecha abajo = freno
     if(th){const dir=th>0?1:-1;
@@ -668,7 +688,7 @@ class Car{
           this.revT=(this.revT||0)+dt;if(this.revT>0.18&&ny<-0.6){this.s=dir;this.turnT=1;this.revT=0;}}}
     }else{this.revT=0;const dec=(brake?BRAKE:COAST)*dt;vt=Math.abs(vt)<=dec?0:vt-Math.sign(vt)*dec;}
     if(this.boosting)vt+=this.s*BOOST_ACC*dt;
-    vt+=G_CAR*ty*(ny>-0.85?0.3:0.15)*dt; // pegado a la superficie: se puede subir la rampa y la pared (también con la pelota), y subir cuesta
+    vt+=G_CAR*ty*(ny>-0.85?0.2:0.15)*dt; // pegado a la superficie: se puede subir la rampa y la pared (también con la pelota), y subir cuesta
     const onWall=ny>-0.85,lim=this.boosting?(onWall?620:MAX_BOOST):MAX_DRIVE,av=Math.abs(vt); // en rampa y pared, más tranquilo (para despegar con control)
     if(av>MAX_BOOST)vt=Math.sign(vt)*MAX_BOOST;else if(av>lim)vt-=Math.sign(vt)*Math.min(av-lim,(onWall?1800:700)*dt);
     const ox=nx,oy=ny;
@@ -680,7 +700,7 @@ class Car{
       if(need>avail||d>HC+14){this.toAir();this.setLatch(inp);this.vx=tx*vt;this.vy=ty*vt;this.vt=0;return;}
     }
     this.x+=nx*(HC-d);this.y+=ny*(HC-d);tx=-ny;ty=nx;
-    if(ny>-0.45&&Math.abs(vt)<170){this.toAir();this.setLatch(inp);this.vx=tx*vt+nx*90;this.vy=ty*vt+ny*90;return;}
+    if(ny>-0.45&&Math.abs(vt)<120){this.toAir();this.setLatch(inp);this.vx=tx*vt+nx*90;this.vy=ty*vt+ny*90;return;}
     this.vt=vt;this.nx=nx;this.ny=ny;this.vx=tx*vt;this.vy=ty*vt;
     this.a+=angDiff(this.a,Math.atan2(ty,tx))*Math.min(1,dt*30);this.w=0;
     {const pu=inp.pitch||0,want=(!this.ai&&ny<-0.85&&pu>0.35)?TILT_MAX*Math.min(1,(pu-0.35)/0.45):0,old=this.tilt;
@@ -712,13 +732,14 @@ class Car{
         // apuntar al lado de la pelota que la manda hacia el arco rival (no al centro): la ayuda piensa como jugador
         const gx=this.team===0?W+60:-60,gy=GY-GH*0.5,ax=gx-B.x,ay=gy-B.y,al=Math.hypot(ax,ay)||1,px=B.x-ax/al*45,py=B.y-ay/al*45;
         aimBall=Math.atan2(py-this.y,px-this.x);}}
-    if(fl&&flD<300&&!this.rollT&&this.flipT<=0&&Math.abs(angDiff(this.a,flAt))>2.1){this.rollT=1e-4;}
+    const stickOn=Math.hypot(inp.th,inp.pitch||0)>0.2;
+    if(fl&&flD<220&&!stickOn&&!this.rollT&&this.flipT<=0&&Math.abs(angDiff(this.a,flAt))>2.1){this.rollT=1e-4;} // de cabeza y sin tocar nada: rueda para caer de pie
     if(this.flipT>0){this.flipT-=dt;if(this.flipT<=0)this.w*=0.2;}
     else if(this.recoverT>0)this.recoverT-=dt;
     else{
       // control aéreo tipo joystick: la nariz apunta hacia la dirección pulsada
       const ix=inp.th,iy=-(inp.pitch||0),il=this.latch?0:Math.hypot(ix,iy);let tw=0,rate=8;
-      if(fl&&flD<190){tw=clamp(angDiff(this.a,flAt)*12,-12,12);rate=30;} // pegado al piso manda el enderezado
+      if(fl&&flD<(stickOn?100:190)){tw=clamp(angDiff(this.a,flAt)*12,-12,12);rate=30;} // justo antes de tocar el piso manda el enderezado (antes manda tu flecha)
       else if(il>0.2){let angF=Math.atan2(iy,ix);
         // ayuda: si apuntas más o menos hacia la pelota, el auto corrige solo para pegarle justo
         if(aimBall!==null&&Math.abs(angDiff(angF,aimBall))<0.6)angF+=angDiff(angF,aimBall)*0.5;
@@ -1877,42 +1898,75 @@ const TRAIN_INFO={
    el invitado publica sus controles y dibuja las fotos que recibe (suavizadas). Todo lo que llega del
    otro jugador se revisa antes de usarlo. Sin sala (fuera de Claude) el juego funciona igual, sin esta opción. */
 const Online={
-  room:null,nr:null,role:null,code:'',active:false,peer:null,other:null,match:0,unsub:null,
-  remote:{th:0,pitch:0,jump:false,boost:false,roll:false},rollSeen:0,rollSeq:0,sendT:0,inSent:'',
-  snaps:[],lastSt:'',lastScore:[0,0],lastCount:0,shownEnd:false,
+  room:null,nr:null,role:null,code:'',mode:'1v1',active:false,match:0,unsub:null,lobUnsub:null,lobby:[],myPeer:null,arena:null,
+  guests:[],gIn:{},roster:null,gone:{},
+  rollSeq:0,sendT:0,inSent:'',snaps:[],lastSt:'',lastScore:[0,0],lastCount:0,shownEnd:false,_lobKey:'',
+  maxOf(m){return m==='2v2'?4:2;},
   async getRoom(){if(this.room)return this.room;try{if(window.claude&&window.claude.use)this.room=await window.claude.use('room');}catch(e){this.room=null;}return this.room;},
   newCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<4;i++)s+=a[Math.random()*a.length|0];return s;},
   cleanName(n){n=String(n||'').replace(/[^\p{L}\p{N} _.\-]/gu,'').trim().slice(0,14);return n||'Rival';},
   cleanLook(l){l=l&&typeof l==='object'?l:{};const pickId=(k,v,d)=>CATALOG[k].some(i=>i.id===v)?v:d,col=(v,d)=>/^#[0-9a-f]{6}$/i.test(v||'')?v:d;
     return{body:pickId('body',l.body,'rayo'),color:col(l.color,'#ff6a1a'),color2:col(l.color2,'#ffffff'),decal:pickId('decal',l.decal,'rayas'),boost:pickId('boost',l.boost,'clasico'),topper:pickId('topper',l.topper,'none')};},
-  myInfo(){const S=Store.data,E=S.equip,o={tg:1,role:this.role,name:this.cleanName(S.name),look:{body:E.body,color:E.color,color2:E.color2,decal:E.decal,boost:E.boost,topper:E.topper}};
-    if(this.role==='host'&&this.arena)o.ar=this.arena;return o;},
-  async open(code,asHost){
+  myLook(){const E=Store.data.equip;return{body:E.body,color:E.color,color2:E.color2,decal:E.decal,boost:E.boost,topper:E.topper};},
+  myInfo(){const o={tg:2,role:this.role,name:this.cleanName(Store.data.name),look:this.myLook()};
+    if(this.role==='host'){o.ar=this.arena||'clasico';o.md=this.mode;o.r=this.roster||null;}return o;},
+  // vestíbulo: la sala común donde cada anfitrión anuncia su partido (lo ven todos los que abren la página)
+  async lobbyOpen(){const room=await this.getRoom();if(!room)return false;if(this.lobUnsub)return true;
+    try{this.lobUnsub=room.onPeers(ch=>{
+      this.lobby=ch.peers.filter(p=>!p.sameTab&&p.presence&&p.presence.lob&&typeof p.presence.lob==='object').map(p=>{const l=p.presence.lob,m=l.m==='2v2'?'2v2':'1v1';
+        return{c:String(l.c||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,4),n:this.cleanName(l.n),m,p:clamp(l.p|0,1,this.maxOf(m)),x:this.maxOf(m),st:l.st==='jugando'?'jugando':'esperando'};})
+        .filter(l=>l.c.length===4&&l.c!==this.code);
+      if(UI.renderLobby)UI.renderLobby();},()=>{});}catch(e){return false;}
+    return true;},
+  lobbyPub(){const room=this.room;if(!room)return;
+    const lob=this.role==='host'?{c:this.code,n:this.cleanName(Store.data.name),m:this.mode,p:1+this.guests.length,st:this.active?'jugando':'esperando'}:null,key=JSON.stringify(lob);
+    if(key===this._lobKey)return;this._lobKey=key;try{room.presence({lob}).catch(()=>{});}catch(e){}},
+  async open(code,asHost,mode){
     const room=await this.getRoom();if(!room)return 'sin_sala';
     this.leave();
     try{this.nr=await room.join('tg-'+code);}catch(e){return 'no_entra';}
-    this.role=asHost?'host':'guest';this.code=code;this.arena=asHost?arenaFor({type:'online'}):null;this.active=false;this.peer=null;this.other=null;this.snaps=[];this.match=0;this.shownEnd=false;
+    this.role=asHost?'host':'guest';this.code=code;this.mode=mode==='2v2'?'2v2':'1v1';this.arena=asHost?arenaFor({type:'online'}):null;
+    this.active=false;this.snaps=[];this.match=0;this.shownEnd=false;this.guests=[];this.gIn={};this.roster=null;this.gone={};
     try{await this.nr.presence(this.myInfo());}catch(e){}
     this.unsub=this.nr.onPeers(ch=>this.onPeers(ch),()=>{if(this.active)this.lost();});
+    this.lobbyPub();if(UI.renderRoom)UI.renderRoom();
     return 'ok';},
-  leave(){try{if(this.unsub)this.unsub();}catch(e){}try{if(this.nr)this.nr.leave();}catch(e){}this.nr=null;this.unsub=null;this.role=null;this.active=false;this.peer=null;this.other=null;},
-  onPeers(ch){
-    const want=this.role==='host'?'guest':'host';
-    const o=ch.peers.find(p=>!p.sameTab&&p.presence&&p.presence.tg===1&&p.presence.role===want&&(!this.peer||p.peer===this.peer));
-    if(!o){if(this.active&&this.peer&&!ch.peers.some(p=>p.peer===this.peer))this.lost();else if(!this.active)UI.onlineStatus(this.role==='host'?'Sala <b>'+this.code.toUpperCase()+'</b> creada. Esperando a tu rival…':'Buscando la sala…');return;}
-    this.other=o;
-    if(this.role==='host'){
-      const i=o.presence.i;if(i&&typeof i==='object'){this.remote.th=clamp(+i.th||0,-1,1);this.remote.pitch=clamp(+i.p||0,-1,1);this.remote.jump=!!i.j;this.remote.boost=!!i.b;
-        const r=i.r|0;if(r!==this.rollSeen){this.rollSeen=r;this.remote.roll=true;}}
-      if(!this.active){this.active=true;this.peer=o.peer;
-        Game.start({type:'online',teamSize:1,role:'host',timed:true,arena:this.arena,oppName:o.presence.name,oppLook:o.presence.look});}
-    }else{
-      const sn=o.presence.s;if(sn&&typeof sn==='object'&&Array.isArray(sn.c)&&Array.isArray(sn.b)){this.snaps.push({at:performance.now(),s:sn});if(this.snaps.length>12)this.snaps.shift();
-        if(!this.active||(sn.m!==this.match&&sn.st!=='end')){this.active=true;this.peer=o.peer;this.match=sn.m;this.shownEnd=false;this.lastScore=[0,0];this.lastSt='';
-          Game.start({type:'online',teamSize:1,role:'guest',timed:true,arena:ARENAS[o.presence.ar]?o.presence.ar:undefined,oppName:o.presence.name,oppLook:o.presence.look});}}
-    }},
-  lost(){const was=this.active;this.leave();if(was){UI.toast('Tu rival se desconectó');UI.toMenu();}},
-  takeInput(){const r=this.remote,o={th:r.th,pitch:r.pitch,jump:r.jump,boost:r.boost,roll:r.roll};r.roll=false;return o;},
+  leave(){try{if(this.unsub)this.unsub();}catch(e){}try{if(this.nr)this.nr.leave();}catch(e){}
+    this.nr=null;this.unsub=null;this.role=null;this.active=false;this.guests=[];this.roster=null;this.code='';this.lobbyPub();if(UI.renderRoom)UI.renderRoom();},
+  onPeers(ch){const me=ch.peers.find(p=>p.isMe&&p.sameTab);if(me)this.myPeer=me.peer;
+    if(this.role==='host')this.onPeersHost(ch);else this.onPeersGuest(ch);},
+  onPeersHost(ch){
+    const gs=ch.peers.filter(p=>!p.sameTab&&p.presence&&p.presence.tg===2&&p.presence.role==='guest');
+    const ids=gs.map(p=>p.peer);this.guests=this.guests.filter(g=>ids.includes(g.peer));
+    for(const p of gs){let g=this.guests.find(x=>x.peer===p.peer);if(!g){g={peer:p.peer};this.guests.push(g);}g.name=this.cleanName(p.presence.name);g.look=this.cleanLook(p.presence.look);
+      const i=p.presence.i,G=this.gIn[p.peer]||(this.gIn[p.peer]={th:0,pitch:0,jump:false,boost:false,roll:false,rs:0});
+      if(i&&typeof i==='object'){G.th=clamp(+i.th||0,-1,1);G.pitch=clamp(+i.p||0,-1,1);G.jump=!!i.j;G.boost=!!i.b;const r=i.r|0;if(r!==G.rs){G.rs=r;G.roll=true;}}}
+    if(this.active){const inGame=(this.roster||[]).filter(e=>e[0]!=='H');
+      for(const e of inGame)if(!ids.includes(e[0])&&!this.gone[e[0]]){this.gone[e[0]]=1;UI.toast(this.cleanName(e[1])+' salió del partido');}
+      if(inGame.length&&inGame.every(e=>!ids.includes(e[0])))this.lost();}
+    else if(this.guests.length>=this.maxOf(this.mode)-1)this.startMatch(); // sala llena: empieza solo
+    this.lobbyPub();if(UI.renderRoom)UI.renderRoom();},
+  startMatch(){if(this.role!=='host'||!this.guests.length)return;this.active=true;const n=Math.min(this.maxOf(this.mode),1+this.guests.length);
+    Game.start({type:'online',role:'host',teamSize:Math.ceil(n/2),timed:true,arena:this.arena});this.lobbyPub();},
+  // quiénes juegan y en qué equipo: anfitrión en azul y los demás alternando naranja, azul, naranja
+  startRoster(){const R=[['H',this.cleanName(Store.data.name),this.myLook(),0]];
+    this.guests.slice(0,this.maxOf(this.mode)-1).forEach((g,i)=>R.push([g.peer,g.name,g.look,(i+1)%2]));this.roster=R;this.gone={};
+    try{this.nr&&this.nr.presence({r:R,md:this.mode}).catch(()=>{});}catch(e){}return R;},
+  onPeersGuest(ch){
+    const h=ch.peers.find(p=>!p.sameTab&&p.presence&&p.presence.tg===2&&p.presence.role==='host');
+    if(!h){if(this.active)this.lost();else UI.onlineStatus('Buscando la sala <b>'+this.code.toUpperCase()+'</b>…');return;}
+    this.mode=h.presence.md==='2v2'?'2v2':'1v1';
+    const others=ch.peers.filter(p=>!p.sameTab&&p.presence&&p.presence.tg===2&&p.presence.role==='guest');this.guestCount=others.length+1;this.hostName=this.cleanName(h.presence.name);
+    const r=Array.isArray(h.presence.r)?h.presence.r.slice(0,4).filter(e=>Array.isArray(e)&&e.length>=4):null,sn=h.presence.s;
+    const mine=r&&r.some(e=>e[0]===this.myPeer);
+    if(sn&&typeof sn==='object'&&Array.isArray(sn.c)&&Array.isArray(sn.b)&&mine&&sn.c.length===r.length){this.snaps.push({at:performance.now(),s:sn});if(this.snaps.length>12)this.snaps.shift();
+      if(!this.active||(sn.m!==this.match&&sn.st!=='end')){this.active=true;this.match=sn.m;this.shownEnd=false;this.lastScore=[0,0];this.lastSt='';this.snaps=[{at:performance.now(),s:sn}];
+        Game.start({type:'online',role:'guest',teamSize:Math.ceil(r.length/2),timed:true,arena:ARENAS[h.presence.ar]?h.presence.ar:undefined,
+          roster:r.map(e=>[String(e[0]),this.cleanName(e[1]),this.cleanLook(e[2]),e[3]===1?1:0])});}}
+    else if(!this.active&&UI.renderRoom)UI.renderRoom();},
+  lost(){const was=this.active,host=this.role==='host';this.leave();if(was){UI.toast(host?'Tus amigos se fueron de la sala':'La sala se cerró');UI.toMenu();}},
+  takeInput(peer){const r=this.gIn[peer];if(!r)return{th:0,pitch:0,jump:false,boost:false,roll:false};const o={th:r.th,pitch:r.pitch,jump:r.jump,boost:r.boost,roll:r.roll};r.roll=false;
+    if(this.gone[peer]){o.th=0;o.pitch=0;o.jump=false;o.boost=false;}return o;},
   // anfitrión: publicar la foto del juego
   hostSend(dt){if(!this.nr||!this.active)return;this.sendT+=dt;if(this.sendT<0.05)return;this.sendT=0;
     const g=Game,b=g.ball,r1=v=>Math.round(v*10)/10,r3=v=>Math.round(v*1000)/1000;
@@ -1944,7 +1998,7 @@ const Online={
     if(st==='otbanner'&&this.lastSt!=='otbanner'){UI.banner('¡TIEMPO EXTRA!','GOL DE ORO · el próximo gol gana');Sfx.whistle();}
     if(st==='replay'&&this.lastSt!=='replay')UI.replay(true,s.rp===1?1:0);if(st!=='replay'&&this.lastSt==='replay')UI.replay(false);
     g.state=st==='end'?'end':st;this.lastSt=st;
-    if(st==='end'&&!this.shownEnd){this.shownEnd=true;Sfx.whistle();const me=p,them=g.cars.find(c=>c!==p),mine=g.score[me.team],their=g.score[them.team];
+    if(st==='end'&&!this.shownEnd){this.shownEnd=true;Sfx.whistle();const me=p,mine=g.score[me.team],their=g.score[1-me.team];
       UI.showResult({win:mine>their,draw:mine===their,score:g.score.slice(),stats:me.stats,cfg:g.cfg,
         table:g.cars.map(c=>({name:c.name,team:c.team,isPlayer:c===me,st:c.stats}))});}
   }
@@ -1967,10 +2021,11 @@ const Game={
     const S=Store.data,names=AI_NAMES.slice().sort(()=>Math.random()-0.5);
     if(cfg.type==='showcase'){const c=new Car(0,S.name,S.equip,false);c.place(W/2,1);this.cars.push(c);}
     else if(cfg.type==='online'){
-      const host=cfg.role==='host',me=new Car(host?0:1,S.name||'Jugador',Object.assign({},S.equip),true),op=new Car(host?1:0,Online.cleanName(cfg.oppName),Online.cleanLook(cfg.oppLook),false);
-      op.remote=host;this.cars=host?[me,op]:[op,me];this.player=me;
-      {const c0=this.cars[0],c1=this.cars[1];if(c0.look.color===c1.look.color)c1.look=Object.assign({},c1.look,{color:'#ff6a1a'});} /* mismo color: el naranja va de naranja */
-      if(host){Online.match++;Online.remote={th:0,pitch:0,jump:false,boost:false,roll:false};}}
+      const host=cfg.role==='host',R=host?Online.startRoster():(cfg.roster||[]),myId=host?'H':Online.myPeer;
+      this.cars=R.map(e=>{const mine=e[0]===myId,c=new Car(e[3],mine?(S.name||'Jugador'):e[1],mine?Object.assign({},S.equip):e[2],mine);
+        if(host&&!mine){c.remote=true;c.remotePeer=e[0];}if(mine)this.player=c;return c;});
+      if(this.cars.length===2&&this.cars[0].look.color===this.cars[1].look.color)this.cars[1].look=Object.assign({},this.cars[1].look,{color:'#ff6a1a'}); /* mismo color: el naranja va de naranja */
+      if(host)Online.match++;}
     else if(cfg.type==='demo'){this.cars.push(this.makeCar(0,names[0],randomLook(),false,2),this.makeCar(1,names[1],randomLook(),false,2));}
     else{
       this.player=this.makeCar(0,S.name||'Jugador',Object.assign({},S.equip),true);this.cars.push(this.player);
@@ -2036,7 +2091,7 @@ const Game={
     else if(st==='trainwait'){this.stateT-=dt;if(this.stateT<=0)this.trainNext();}
     const frozen=this.frozen();
     if(this.player){const inp=Input.player();if(frozen||this.paused){inp.th=0;inp.jump=false;inp.boost=false;}this.player.input=inp;}
-    for(const c of this.cars)if(c.remote){const ri=Online.takeInput();if(frozen){ri.th=0;ri.jump=false;ri.boost=false;}c.input=ri;}
+    for(const c of this.cars)if(c.remote){const ri=Online.takeInput(c.remotePeer);if(frozen){ri.th=0;ri.jump=false;ri.boost=false;}c.input=ri;}
     if(!frozen)for(const c of this.cars)if(c.ai)c.ai.update(dt,this);
     for(const c of this.cars)c.update(dt,frozen&&this.state!=='end'?true:this.state==='end');
     for(let i=0;i<this.cars.length;i++)for(let j=i+1;j<this.cars.length;j++)carCar(this.cars[i],this.cars[j]);
@@ -2198,6 +2253,9 @@ const UI={
     $$('[data-set]').forEach(t=>t.onclick=()=>{const k=t.dataset.set,S=Store.data.settings;S[k]=!S[k];this.applySettings();Store.save();this.renderSettings();Sfx.click();});
     $('#setVol').oninput=e=>{Store.data.settings.vol=+e.target.value;this.applySettings();Store.save();};
     $$('#setQ button').forEach(b=>b.onclick=()=>{Store.data.settings.quality=b.dataset.q;Render.setQuality(b.dataset.q);Store.save();this.renderSettings();Sfx.click();});
+    $('#ctlBtn').onclick=()=>{const S=Store.data.settings,on=document.body.classList.contains('touchmode');S.touch=on?'no':'si';Store.save();this.applySettings();this.renderSettings();Sfx.click();
+      this.toast(on?'Controles: teclado o mando':'Controles táctiles activados: joystick a la izquierda, salto, turbo y giro a la derecha (como en el celular)');};
+    addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!this.sawTouch){this.sawTouch=true;if(Store.data.settings.touch==='auto')this.applySettings();}},true);
     $$('#setT button').forEach(b=>b.onclick=()=>{Store.data.settings.touch=b.dataset.t;Store.save();this.applySettings();this.renderSettings();Sfx.click();});
     $('#setName').onchange=e=>{Store.data.name=(e.target.value||'Jugador').trim().slice(0,14)||'Jugador';Store.save();this.renderMenu();};
     $('#setName').addEventListener('keydown',e=>e.stopPropagation());
@@ -2207,7 +2265,10 @@ const UI={
   },
   boot(){if(this.cur!=='boot')return;Sfx.init();this.applySettings();Sfx.startMusic();this.show('menu');this.renderMenu();},
   applySettings(){const S=Store.data.settings;Sfx.on.music=S.music;Sfx.on.sfx=S.sfx;Sfx.vol=S.vol;Sfx.apply();
-    document.body.classList.toggle('touchmode',S.touch==='si'||(S.touch==='auto'&&IS_TOUCH));this.syncTouch();},
+    document.body.classList.toggle('touchmode',S.touch==='si'||(S.touch==='auto'&&(IS_TOUCH||this.sawTouch)));this.syncTouch();this.renderCtl();},
+  // botón del menú: controles táctiles (iguales a los del celular: joystick, salto, turbo y giro) o teclado/mando
+  renderCtl(){const b=$('#ctlBtn');if(!b)return;const on=document.body.classList.contains('touchmode');b.classList.toggle('on',on);
+    b.innerHTML=on?'✋ TÁCTIL <small style="opacity:.7">(como el celular)</small>':'⌨ TECLADO / MANDO';b.title=on?'Controles táctiles, iguales a los del celular. Toca para usar teclado o mando.':'Toca para usar los controles táctiles del celular (pantalla táctil).';},
   syncTouch(){const on=document.body.classList.contains('touchmode')&&Game.inPlay()&&this.cur===null;$('#touch').classList.toggle('hidden',!on);},
   show(id){$$('.scr').forEach(s=>s.classList.remove('on'));if(id)$('#s-'+id).classList.add('on');this.cur=id;
     $('#shade').classList.toggle('off',!id||id==='result');$('#shade').classList.toggle('light',id==='menu'||id==='garage');
@@ -2215,7 +2276,7 @@ const UI={
     $('#hud').classList.toggle('hidden',!(inGame&&(id===null||id==='pause')));
     document.body.classList.toggle('ingame',inGame&&id===null);this.syncTouch();},
   go(id){this.stack.push(this.cur);this.show(id);this.renderScreen(id);},
-  back(){if(this.cur==='settings'&&Game.paused){this.stack.pop();this.show('pause');return;}const p=this.stack.pop()||'menu';this.show(p);this.renderScreen(p);},
+  back(){if(this.cur==='settings'&&Game.paused){this.stack.pop();this.show('pause');return;}if(this.cur==='online'&&Online.role&&!Online.active)Online.leave();const p=this.stack.pop()||'menu';this.show(p);this.renderScreen(p);},
   renderScreen(id){({menu:()=>this.renderMenu(),play:()=>this.renderPlay(),garage:()=>this.renderGarage(),training:()=>this.renderTraining(),
     tournament:()=>this.renderTour(),settings:()=>this.renderSettings(),profile:()=>this.renderProfile()}[id]||(()=>{}))();},
   menuGo(k){
@@ -2356,18 +2417,38 @@ const UI={
   onlineStatus(h){const el=$('#onStatus');if(el)el.innerHTML=h;},
   async initOnline(){this.arenaSeg('arenaSegO');
     if(!this._onBound){this._onBound=true;
-      $('#onCreate').onclick=async()=>{Sfx.click();const code=Online.newCode();this.onlineStatus('Creando sala…');const r=await Online.open(code,true);this.onlineMsg(r,code);};
-      $('#onJoin').onclick=async()=>{Sfx.click();const code=($('#onCode').value||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,4);
-        if(code.length!==4){this.toast('Escribe el código de 4 letras');return;}this.onlineStatus('Entrando a la sala…');const r=await Online.open(code,false);this.onlineMsg(r,code);};
-      $('#onCode').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')$('#onJoin').click();});}
-    const room=await Online.getRoom();
-    if(!room){this.onlineStatus('El modo en línea funciona cuando abres ROCKET CROMBOOK en Claude con tu cuenta. Aquí no hay conexión para jugar en línea.');$('#onCreate').disabled=true;$('#onJoin').disabled=true;}
-    else{$('#onCreate').disabled=false;$('#onJoin').disabled=false;}},
-  onlineMsg(r,code){
-    if(r==='sin_sala')this.onlineStatus('El modo en línea funciona cuando abres ROCKET CROMBOOK en Claude con tu cuenta.');
+      $$('[data-create]').forEach(b=>b.onclick=async()=>{Sfx.click();const code=Online.newCode();this.onlineStatus('Creando sala…');const r=await Online.open(code,true,b.dataset.create);this.onlineMsg(r);});
+      $$('[data-quick]').forEach(b=>b.onclick=async()=>{Sfx.click();const m=b.dataset.quick,l=Online.lobby.find(x=>x.m===m&&x.st==='esperando'&&x.p<x.x);
+        if(l)return this.joinCode(l.c);const code=Online.newCode();this.onlineStatus('No había salas libres: creamos una y te avisamos cuando entre alguien…');const r=await Online.open(code,true,m);this.onlineMsg(r);});
+      $('#onJoin').onclick=()=>{Sfx.click();const code=($('#onCode').value||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,4);if(code.length!==4){this.toast('Escribe el código de 4 letras');return;}this.joinCode(code);};
+      $('#onCode').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')$('#onJoin').click();});
+      $('#onStart').onclick=()=>{Sfx.click();Online.startMatch();};
+      $('#onLeave').onclick=()=>{Sfx.click();Online.leave();this.onlineStatus('Saliste de la sala.');};}
+    const ok=await Online.lobbyOpen();
+    $$('[data-create],[data-quick],#onJoin').forEach(b=>b.disabled=!ok);
+    if(!ok)this.onlineStatus('Jugar con amigos funciona cuando abres ROCKET CROMBOOK en Claude con tu cuenta. Aquí no hay conexión para jugar en línea.');
+    this.renderLobby();this.renderRoom();},
+  async joinCode(code){this.onlineStatus('Entrando a la sala…');const r=await Online.open(code,false);this.onlineMsg(r);},
+  onlineMsg(r){
+    if(r==='sin_sala')this.onlineStatus('Jugar con amigos funciona cuando abres ROCKET CROMBOOK en Claude con tu cuenta.');
     else if(r==='no_entra')this.onlineStatus('No se pudo entrar a la sala. Prueba de nuevo en un momento.');
-    else if(Online.role==='host')this.onlineStatus('Sala <b>'+code.toUpperCase()+'</b> creada. Pásale el código a tu amigo. Esperando rival…');
-    else this.onlineStatus('Buscando la sala <b>'+code.toUpperCase()+'</b>…');},
+    this.renderRoom();},
+  renderLobby(){const el=$('#onList');if(!el)return;const L=Online.lobby,E=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    el.innerHTML=L.length?L.map(l=>{const full=l.p>=l.x;return `<div class="onrow"><div class="grow">${E(l.n)}<small>${l.st==='jugando'?'está jugando':'te está esperando'} · ${l.m==='2v2'?'2 vs 2':'1 vs 1'} · ${l.p}/${l.x} jugadores</small></div><button class="btn" data-join="${E(l.c)}" ${full?'disabled':''}><span>${full?'Llena':l.st==='jugando'?'Entrar (revancha)':'Unirse'}</span></button></div>`;}).join('')
+      :'<div class="ctrlhelp" style="text-align:left">No hay salas abiertas ahora. Busca partido o crea una sala y espera a que entren tus amigos.</div>';
+    el.querySelectorAll('[data-join]').forEach(b=>b.onclick=()=>{Sfx.click();this.joinCode(b.dataset.join);});},
+  renderRoom(){const inR=!!Online.role&&!Online.active,room=$('#onRoom'),main=$('#onMain');if(!room||!main)return;
+    room.style.display=inR?'flex':'none';main.style.display=inR?'none':'flex';if(!inR)return;
+    const max=Online.maxOf(Online.mode),E=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    let names;if(Online.role==='host')names=[Online.cleanName(Store.data.name)+' (tú)',...Online.guests.map(g=>g.name)];
+    else names=[Online.hostName||'Anfitrión',...Array(Math.max(0,(Online.guestCount||1)-1)).fill('Jugador'),].slice(0,max);
+    if(Online.role==='guest'){names=names.slice(0,Math.max(1,(Online.guestCount||1)));names.push('Tú');names=names.slice(0,max);}
+    const slots=[];for(let i=0;i<max;i++)slots.push(i<names.length?`<div class="onp t${i%2}">${E(names[i])}</div>`:`<div class="onp t${i%2} empty">esperando…</div>`);
+    $('#onPlayers').innerHTML=slots.join('');
+    const n=Online.role==='host'?1+Online.guests.length:Math.min(max,(Online.guestCount||1)+1);
+    $('#onStart').style.display=Online.role==='host'&&Online.mode==='2v2'&&Online.guests.length>=1?'':'none';
+    this.onlineStatus(Online.role==='host'?`Sala <b>${E(Online.code.toUpperCase())}</b> (${Online.mode==='2v2'?'2 vs 2':'1 vs 1'}) · ${n}/${max} jugadores. Tus amigos la ven en "Salas abiertas" o entran con el código.${Online.mode==='2v2'?' Empieza sola cuando se llena, o toca "Empezar ya".':' Empieza apenas entre tu rival.'}`
+      :`En la sala de <b>${E(Online.hostName||'tu amigo')}</b> · ${n}/${max} jugadores. Esperando que empiece…`);},
   /* ---------- Torneo ---------- */
   newTour(base){const S=Store.data,t=TOUR_TEAMS.slice().sort(()=>Math.random()-0.5).slice(0,7),teams=[S.name,...t],w=(a,b)=>Math.random()<0.5?a:b;
     const q=[0,w(2,3),w(4,5),w(6,7)];S.tour={base,round:0,teams,q,f:w(q[2],q[3]),out:false,done:false,champion:false};Store.save();},
