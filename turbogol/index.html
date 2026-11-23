@@ -265,10 +265,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <button class="bb bl" data-go="training">Entrenamiento</button>
     <button class="bb bl" data-go="garage">Garaje</button>
     <button class="bb og" data-go="custom">Personalizar</button>
-    <button class="bb og" data-go="tournament">Torneo</button>
-    <button class="bb og" data-go="free">Modo libre</button>
-    <button class="bb og" data-go="online">En línea</button>
-    <button class="bb play" data-go="play">JUGAR</button>
+    <button class="bb play" data-go="online">JUGAR</button>
   </div>
 </section>
 
@@ -285,7 +282,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 
 <section id="s-online" class="scr center">
   <div class="panel list" style="align-items:stretch;gap:1.4vh;max-width:520px">
-    <div class="top"><button class="back" data-back>←</button><h2>EN LÍNEA · 1 VS 1</h2></div>
+    <div class="top"><button class="back" data-back>←</button><h2>JUGAR CON AMIGOS · 1 VS 1</h2></div>
     <div id="onStatus" class="ctrlhelp" style="text-align:left;min-height:2.6em">Crea una sala y pásale el código a tu amigo, o escribe el código de su sala.</div>
     <button class="btn cy" id="onCreate"><span>Crear sala</span></button>
     <div style="display:flex;gap:10px;align-items:center;justify-content:center"><input type="text" id="onCode" maxlength="4" placeholder="CÓDIGO" autocomplete="off" style="text-transform:uppercase;letter-spacing:.3em;text-align:center;width:150px"><button class="btn" id="onJoin"><span>Unirse</span></button></div>
@@ -354,11 +351,11 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 // Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
 // Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
 let W=3200;const H=1300,GD=230,GH=330,RB=150,RT=150,RAMP=Math.PI/2,GOAL_UP=340,CEIL=438; // alto de juego: 3/4 del de antes (techo en 438)
-const BALL_R=42,G_CAR=1150,G_BALL=400,BALL_MAX=850,BALL_E=0.75,BALL_DRAG=0.15,BALL_MASS=0.55; // masa relativa al auto
-const CAR_HL=42,CAR_HH=22,HC=23,CAR_I=900,CAR_SC=CAR_HL/46; // CAR_SC: escala del dibujo del auto
-const BOOST_USE=14,BOOST_START=50; // turbo: gasto por segundo y cuánto tienes en cada saque
-const MAX_DRIVE=580,MAX_BOOST=920,ACC=1100,BRAKE=3000,COAST=1300,BOOST_ACC=1150,AIR_BOOST=1050,AIR_MAX=800;
-const TILT_MAX=0.8,TILT_RW=38,CAR_E=0.6,CAR_E_TOP=0.3; // ↑ en el piso: el auto se para en las ruedas traseras · rebote de la pelota contra el auto
+const BALL_R=46,G_CAR=1150,G_BALL=328,BALL_MAX=850,BALL_E=0.75,BALL_DRAG=0.15,BALL_MASS=0.55; // masa relativa al auto
+const CAR_HL=45,CAR_HH=23,HC=24,CAR_I=900,CAR_SC=CAR_HL/46; // CAR_SC: escala del dibujo del auto
+const BOOST_USE=22,BOOST_START=50; // turbo: gasto por segundo y cuánto tienes en cada saque
+const MAX_DRIVE=500,MAX_BOOST=800,ACC=1100,BRAKE=3000,COAST=1300,BOOST_ACC=1150,AIR_BOOST=1050,AIR_MAX=800;
+const TILT_MAX=0.8,TILT_RW=41,CAR_E=0.6,CAR_E_TOP=0.3; // ↑ en el piso: el auto se para en las ruedas traseras · rebote de la pelota contra el auto
 const JUMP_V=440,JUMP_HOLD=750,DJUMP_V=420,FLIP_V=480,AIR_ROT=10,ROLL_T=0.38; // ROLL_T: duración del giro en el aire
 const STEP=1/240,TAU=Math.PI*2;
 const GY=H-GOAL_UP,GT=GY-GH,LX=0;
@@ -671,9 +668,9 @@ class Car{
           this.revT=(this.revT||0)+dt;if(this.revT>0.18&&ny<-0.6){this.s=dir;this.turnT=1;this.revT=0;}}}
     }else{this.revT=0;const dec=(brake?BRAKE:COAST)*dt;vt=Math.abs(vt)<=dec?0:vt-Math.sign(vt)*dec;}
     if(this.boosting)vt+=this.s*BOOST_ACC*dt;
-    vt+=G_CAR*ty*0.15*dt; // pegado a la superficie: se puede subir la rampa y la pared (también con la pelota)
-    const lim=this.boosting?MAX_BOOST:MAX_DRIVE,av=Math.abs(vt);
-    if(av>MAX_BOOST)vt=Math.sign(vt)*MAX_BOOST;else if(av>lim)vt-=Math.sign(vt)*Math.min(av-lim,700*dt);
+    vt+=G_CAR*ty*(ny>-0.85?0.3:0.15)*dt; // pegado a la superficie: se puede subir la rampa y la pared (también con la pelota), y subir cuesta
+    const onWall=ny>-0.85,lim=this.boosting?(onWall?620:MAX_BOOST):MAX_DRIVE,av=Math.abs(vt); // en rampa y pared, más tranquilo (para despegar con control)
+    if(av>MAX_BOOST)vt=Math.sign(vt)*MAX_BOOST;else if(av>lim)vt-=Math.sign(vt)*Math.min(av-lim,(onWall?1800:700)*dt);
     const ox=nx,oy=ny;
     this.x+=tx*vt*dt;this.y+=ty*vt*dt;
     query(this.x,this.y);const d=Q.d;nx=Q.nx;ny=Q.ny;
@@ -727,7 +724,7 @@ class Car{
         if(aimBall!==null&&Math.abs(angDiff(angF,aimBall))<0.6)angF+=angDiff(angF,aimBall)*0.5;
         const at=this.s>0?angF:angF+Math.PI;
         if(this.ai){tw=clamp(angDiff(this.a,at)*16,-AIR_ROT,AIR_ROT)*Math.min(1,il);rate=26;}
-        else{const mr=this.carryT>0?7:12;tw=clamp(angDiff(this.a,at)*11,-mr,mr);rate=16;}} // giro suave y rápido, sin saltos de robot // jugador: la nariz apunta al instante (con la pelota encima, más suave para no tirarla)
+        else{const cr=this.carryT>0;const mr=cr?5:22;tw=clamp(angDiff(this.a,at)*(cr?8:22),-mr,mr);rate=cr?14:36;}} // con la pelota encima gira suave para no tirarla // giro suave y rápido, sin saltos de robot // jugador: la nariz apunta al instante (con la pelota encima, más suave para no tirarla)
       else if(fl&&flD<320){tw=clamp(angDiff(this.a,flAt)*6,-7,7);rate=14;}
       this.w+=(tw-this.w)*Math.min(1,dt*rate);
     }
@@ -737,11 +734,15 @@ class Car{
     // llevando la pelota al lado (drible aéreo) el auto no pierde velocidad respecto de ella
     const nearB=!this.ai&&Game.ball&&!Game.ball.hidden&&!Game.ball.disabled&&Math.hypot(Game.ball.x-this.x,Game.ball.y-this.y)<CAR_HL+BALL_R+80;
     if(this.boosting){let bx=this.fx,by=this.fy;
+      // jugador: con el joystick, el turbo te lleva hacia donde apuntas (la trompa gira suave hacia allá); sin joystick, hacia la trompa
       let ax=bx*AIR_BOOST,ay=by*AIR_BOOST;const s0=Math.hypot(this.vx,this.vy);
       if(s0>AIR_MAX*0.98&&!nearB){const ux=this.vx/s0,uy=this.vy/s0,al=ax*ux+ay*uy;if(al>0){ax-=ux*al;ay-=uy*al;}}
       this.vx+=ax*dt;this.vy+=ay*dt;
-      if(!this.ai&&Math.hypot(inp.th,inp.pitch||0)>0.3){const qx=-by,qy=bx,vq=this.vx*qx+this.vy*qy,kq=1-Math.exp(-1.6*dt);this.vx-=qx*vq*kq;this.vy-=qy*vq*kq;}}
-    this.vy+=G_CAR*(this.boosting?0.62:1)*dt; // con turbo se puede volar casi horizontal
+      // drible aéreo fácil: con la pelota pegada al auto, la pelota acompaña el movimiento del auto (suben y avanzan juntos)
+      if(nearB){const B=Game.ball;if(Math.hypot(B.x-this.x,B.y-this.y)<CAR_HL+BALL_R+22){const k=Math.min(1,4*dt);B.vx+=(this.vx-B.vx)*k;B.vy+=(this.vy-B.vy)*k;}}
+      if(!this.ai&&Math.hypot(inp.th,inp.pitch||0)>0.3){const qx=-by,qy=bx,vq=this.vx*qx+this.vy*qy,kq=1-Math.exp(-4*dt);this.vx-=qx*vq*kq;this.vy-=qy*vq*kq;
+        const vb=this.vx*bx+this.vy*by;if(vb<0){const kb=1-Math.exp(-4*dt);this.vx-=bx*vb*kb;this.vy-=by*vb*kb;}}} /* agarre: el auto va hacia donde mira, sin seguir de largo para el otro lado */
+    this.vy+=G_CAR*(this.boosting?0.66:1)*dt; // con turbo se puede volar casi horizontal
     {const kx=Math.exp(-(nearB?BALL_DRAG:0.9)*dt);this.vx*=kx;if(this.boosting)this.vy*=kx;} // freno del aire
     {const sp=Math.hypot(this.vx,this.vy);if(sp>1500){this.vx*=1500/sp;this.vy*=1500/sp;}
       else if(this.boosting&&sp>AIR_MAX&&this.carryT<=0&&!nearB){const ns=AIR_MAX+(sp-AIR_MAX)*Math.exp(-2*dt);this.vx*=ns/sp;this.vy*=ns/sp;}}
