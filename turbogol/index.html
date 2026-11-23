@@ -734,15 +734,17 @@ class Car{
     // con turbo la velocidad se limita a AIR_MAX; sin turbo el auto cae libre (sin "paracaídas")
     // vuelo directo: con turbo vas hacia donde apuntas con las flechas/joystick (no hace falta girar el auto primero);
     // si apuntas más o menos a la pelota, te lleva justo a ella. Sin flechas, el turbo empuja hacia donde mira la nariz.
+    // llevando la pelota al lado (drible aéreo) el auto no pierde velocidad respecto de ella
+    const nearB=!this.ai&&Game.ball&&!Game.ball.hidden&&!Game.ball.disabled&&Math.hypot(Game.ball.x-this.x,Game.ball.y-this.y)<CAR_HL+BALL_R+80;
     if(this.boosting){let bx=this.fx,by=this.fy;
       let ax=bx*AIR_BOOST,ay=by*AIR_BOOST;const s0=Math.hypot(this.vx,this.vy);
-      if(s0>AIR_MAX*0.98){const ux=this.vx/s0,uy=this.vy/s0,al=ax*ux+ay*uy;if(al>0){ax-=ux*al;ay-=uy*al;}}
+      if(s0>AIR_MAX*0.98&&!nearB){const ux=this.vx/s0,uy=this.vy/s0,al=ax*ux+ay*uy;if(al>0){ax-=ux*al;ay-=uy*al;}}
       this.vx+=ax*dt;this.vy+=ay*dt;
       if(!this.ai&&Math.hypot(inp.th,inp.pitch||0)>0.3){const qx=-by,qy=bx,vq=this.vx*qx+this.vy*qy,kq=1-Math.exp(-1.6*dt);this.vx-=qx*vq*kq;this.vy-=qy*vq*kq;}}
     this.vy+=G_CAR*(this.boosting?0.62:1)*dt; // con turbo se puede volar casi horizontal
-    {const kx=Math.exp(-0.9*dt);this.vx*=kx;if(this.boosting)this.vy*=kx;} // freno del aire
+    {const kx=Math.exp(-(nearB?BALL_DRAG:0.9)*dt);this.vx*=kx;if(this.boosting)this.vy*=kx;} // freno del aire
     {const sp=Math.hypot(this.vx,this.vy);if(sp>1500){this.vx*=1500/sp;this.vy*=1500/sp;}
-      else if(this.boosting&&sp>AIR_MAX&&this.carryT<=0){const ns=AIR_MAX+(sp-AIR_MAX)*Math.exp(-2*dt);this.vx*=ns/sp;this.vy*=ns/sp;}}
+      else if(this.boosting&&sp>AIR_MAX&&this.carryT<=0&&!nearB){const ns=AIR_MAX+(sp-AIR_MAX)*Math.exp(-2*dt);this.vx*=ns/sp;this.vy*=ns/sp;}}
     this.x+=this.vx*dt;this.y+=this.vy*dt;this.a+=this.w*dt;
     {query(this.x,this.y);if(Q.ny<-0.6&&Q.d<HC+24&&this.vx*Q.nx+this.vy*Q.ny<0&&this.airT>0.08&&this.jumpHoldT<=0){const at=Math.atan2(Q.nx,-Q.ny);
       if(Math.abs(angDiff(this.a,at))>Math.PI/2){this.s=-this.s;}this.a=at;this.w=0;this.rollT=0;this.flipT=0;}}
@@ -873,6 +875,8 @@ function carCar(A,B){
     if(vn<0){const j=-1.25*vn/2;A.addVel(-j*dx,-j*dy);B.addVel(j*dx,j*dy);if(-vn>250)hit=Math.max(hit,-vn);}
   }
   if(hit>400)Fx.bump((A.x+B.x)/2,(A.y+B.y)/2,hit);
+  // un auto apoyado encima de otro se resbala hacia un lado (no se quedan trabados uno arriba del otro)
+  for(const [U,L] of [[A,B],[B,A]])if(!U.grounded&&U.y<L.y-15&&Math.abs(U.x-L.x)<CAR_HL*1.6&&Math.abs(U.vy)<160){const side=Math.abs(U.x-L.x)>2?Math.sign(U.x-L.x):U.s;U.vx+=side*900*STEP*4;}
 }
 
 /* ================= Inteligencia artificial (reglas de comportamiento) ================= */
