@@ -49,7 +49,33 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 .back{width:clamp(40px,8vh,52px);height:clamp(40px,8vh,52px);border-radius:50%;background:rgba(20,40,80,.7);border:2px solid #4c8fff;font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:center}
 .grow{flex:1}
 /* boot */
-#s-boot{align-items:center;justify-content:center;gap:4vh;background:radial-gradient(circle at 50% 45%,rgba(20,40,90,.55),rgba(0,0,0,.92))}
+#s-boot{align-items:center;justify-content:center;gap:4vh;background:radial-gradient(ellipse at 50% 42%,rgba(20,50,110,.35),rgba(2,4,10,.82) 70%);overflow:hidden}
+#s-boot>*{position:relative;z-index:2}
+#s-boot .bootRays{position:absolute;z-index:0;left:50%;top:42%;width:170vmax;height:170vmax;margin:-85vmax 0 0 -85vmax;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(90,180,255,.07) 0 5deg,transparent 5deg 16deg);animation:spin 50s linear infinite;
+  -webkit-mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 25%,transparent 55%);mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 25%,transparent 55%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bootSparks{position:absolute!important;inset:0;z-index:1!important;pointer-events:none;overflow:hidden}
+.bootSparks i{position:absolute;bottom:-10px;width:3px;height:3px;border-radius:50%;background:#ffd36a;box-shadow:0 0 8px 2px rgba(255,180,60,.8);animation:spark 6s linear infinite}
+.bootSparks i:nth-child(3n){background:#7fe6ff;box-shadow:0 0 8px 2px rgba(80,200,255,.8)}
+@keyframes spark{0%{transform:translate(0,0);opacity:0}10%{opacity:1}100%{transform:translate(var(--dx,0),-110vh);opacity:0}}
+.lbox{position:absolute!important;left:0;right:0;height:7vh;background:#000;z-index:3!important;animation:lbox .9s cubic-bezier(.2,.8,.2,1) backwards}
+.lbox.t{top:0}.lbox.b{bottom:0}
+@keyframes lbox{from{height:50vh}}
+.logo.intro .l1{animation:slam .7s .35s cubic-bezier(.2,1.4,.4,1) backwards}
+.logo.intro .l2{animation:slam .7s .55s cubic-bezier(.2,1.4,.4,1) backwards}
+.logo.intro .bolt{animation:bolt .5s .95s ease-out backwards,flick 4s 2s infinite}
+.logo.intro .sub{animation:fadeup .6s 1.2s backwards}
+.logo .shine{position:absolute;inset:-6% -4%;pointer-events:none;mix-blend-mode:overlay;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.75) 50%,transparent 62%);background-size:250% 100%;animation:shine 3.4s 1.6s infinite}
+@keyframes slam{0%{transform:skewX(-10deg) scale(2.6);opacity:0;filter:blur(10px)}55%{transform:skewX(-10deg) scale(.94);opacity:1;filter:none}100%{transform:skewX(-10deg) scale(1)}}
+@keyframes bolt{from{clip-path:polygon(0 60%,0 60%,0 90%,0 90%);opacity:0}}
+@keyframes flick{0%,92%,100%{opacity:.9}94%{opacity:.3}96%{opacity:1}}
+@keyframes shine{0%{background-position:120% 0}45%,100%{background-position:-60% 0}}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px)}}
+#s-boot .tap{animation:fadeup .6s 1.5s backwards,pulse 1.2s 2.1s infinite;display:flex;align-items:center;gap:10px}
+.tapKey{display:inline-flex;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;background:#ffd36a;color:#2a1100;font-size:12px;font-style:normal}
+#s-boot .ctrlhelp{animation:fadeup .6s 1.7s backwards}
+@media (prefers-reduced-motion:reduce){#s-boot *,.bar .bb{animation:none!important}}
 .tap{font-weight:900;font-style:italic;letter-spacing:.2em;font-size:clamp(14px,2.8vh,20px);color:#ffd36a;animation:pulse 1.2s infinite}
 @keyframes pulse{50%{opacity:.35}}
 .ctrlhelp{font-size:clamp(11px,2vh,14px);color:#a9c4e8;text-align:center;line-height:1.7}
@@ -72,6 +98,24 @@ kbd{display:inline-block;padding:1px 7px;border-radius:5px;background:#1b2a48;bo
 .bb:hover{filter:brightness(1.15)}.bb:active{transform:skewX(-14deg) translateY(2px)}
 .bb.bl{background:linear-gradient(180deg,#1f5fbf,#0d2f72);border:2px solid #4b8cf0}.bb.og{background:linear-gradient(180deg,#ff9a2a,#d9580d);border:2px solid #ffc070}
 .bb.play{flex:1.25;height:clamp(64px,15vh,100px);background:linear-gradient(180deg,#ffa22e,#e0560a);border:2px solid #ffd08a;font-size:clamp(26px,6vh,46px);font-weight:700;margin-right:-14px;padding-right:14px}
+.bb{display:flex;align-items:center;justify-content:center;gap:8px;position:relative;overflow:hidden}
+.bb>*{transform:skewX(14deg)}
+.bb::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);background-size:300% 100%;background-position:150% 0;transition:background-position .6s;pointer-events:none}
+.bb:hover::after{background-position:-50% 0}
+.bi{width:clamp(16px,3.2vh,24px);height:clamp(16px,3.2vh,24px);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.bi.big{width:clamp(22px,5vh,38px);height:clamp(22px,5vh,38px);stroke:none}
+.bb.play{flex-direction:row;text-shadow:0 3px 0 rgba(120,30,0,.45)}
+.bb.play .playSub{position:absolute;bottom:clamp(4px,1.2vh,9px);left:0;right:14px;text-align:center;font-size:clamp(9px,1.7vh,12px);letter-spacing:.3em;opacity:.85;text-shadow:none}
+.bar .bb{animation:barIn .5s cubic-bezier(.2,.9,.3,1.2) backwards}
+.bar .bb:nth-child(2){animation-delay:.06s}.bar .bb:nth-child(3){animation-delay:.12s}
+.bar .bb.play{animation:barIn .5s .18s cubic-bezier(.2,.9,.3,1.2) backwards,playGlow 2.4s 1s ease-in-out infinite}
+@keyframes barIn{from{transform:skewX(-14deg) translateY(120%);opacity:0}}
+@keyframes playGlow{50%{box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 0 26px 4px rgba(255,150,40,.55),0 4px 12px rgba(0,0,0,.5)}}
+.panel{position:relative}
+.panel::before{content:'';position:absolute;left:18px;right:18px;top:-2px;height:3px;border-radius:3px;background:linear-gradient(90deg,#22d6ff,#7d6bff 50%,#ffb000)}
+.top h2{position:relative;padding-bottom:4px}
+.top h2::after{content:'';position:absolute;left:2px;bottom:-2px;width:46px;height:4px;border-radius:2px;background:linear-gradient(90deg,#ffb000,#ff5a0a);transform:skewX(-20deg)}
+.btn::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 48%)}
 .logo.mini .l1{font-size:clamp(26px,6vh,46px)}.logo.mini .l2{font-size:clamp(32px,7.5vh,58px)}
 .tag{font-size:11px;font-weight:800;color:#9fd8ff;letter-spacing:.15em}
 /* tarjetas de modo */
@@ -254,8 +298,9 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 </div>
 
 <section id="s-boot" class="scr">
-  <div class="logo"><div class="bolt"></div><div class="l1">ROCKET</div><div class="l2">CROMBOOK</div><span class="sub">ARENA LATERAL</span></div>
-  <div class="tap">TOCA O PULSA UNA TECLA PARA EMPEZAR</div>
+  <div class="bootRays"></div><div id="bootSparks" class="bootSparks"></div><div class="lbox t"></div><div class="lbox b"></div>
+  <div class="logo intro"><div class="bolt"></div><div class="l1">ROCKET</div><div class="l2">CROMBOOK</div><span class="sub">FÚTBOL DE AUTOS · CON AMIGOS</span><i class="shine"></i></div>
+  <div class="tap"><span class="tapKey">▶</span> TOCA O PULSA UNA TECLA PARA EMPEZAR</div>
   <div class="ctrlhelp"><kbd>←</kbd> <kbd>→</kbd> conducir · <kbd>↓</kbd> frenar · <kbd>↑</kbd> en el piso = trompa arriba (en dos ruedas) · <kbd>↑</kbd> + <kbd>Shift</kbd> despegar y volar (con turbo vas directo hacia donde apuntas)<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto con flecha = volantín, no vence · doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire</div>
 </section>
 
@@ -270,10 +315,10 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
   </div>
   <div class="menuMid"><div class="logo mini"><div class="bolt"></div><div class="l1">ROCKET</div><div class="l2">CROMBOOK</div></div></div>
   <div class="bar">
-    <button class="bb bl" data-go="training">Entrenamiento</button>
-    <button class="bb bl" data-go="garage">Garaje</button>
-    <button class="bb og" data-go="custom">Personalizar</button>
-    <button class="bb play" data-go="online">JUGAR</button>
+    <button class="bb bl" data-go="training"><svg class="bi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span>Entrenamiento</span></button>
+    <button class="bb bl" data-go="garage"><svg class="bi" viewBox="0 0 24 24"><path d="M14.5 5.5a4 4 0 00-5 5L4 16l4 4 5.5-5.5a4 4 0 005-5l-2.5 2.5-2.5-.5-.5-2.5z"/></svg><span>Garaje</span></button>
+    <button class="bb og" data-go="custom"><svg class="bi" viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18c1.3 0 1.8-1 1.4-2-.5-1.2.3-2.5 1.6-2.5H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1.3" fill="currentColor"/><circle cx="10.5" cy="7" r="1.3" fill="currentColor"/><circle cx="15" cy="7.5" r="1.3" fill="currentColor"/></svg><span>Personalizar</span></button>
+    <button class="bb play" data-go="online"><svg class="bi big" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg><span>JUGAR</span><small class="playSub">CON AMIGOS</small></button>
   </div>
 </section>
 
@@ -367,6 +412,8 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 <script>
 'use strict';
 /* ================= ROCKET CROMBOOK (antes TURBO GOL) — núcleo ================= */
+(()=>{const sp=document.getElementById('bootSparks');if(sp)for(let i=0;i<24;i++){const e=document.createElement('i');e.style.left=(Math.random()*100)+'%';
+  e.style.animationDelay=(-Math.random()*7)+'s';e.style.animationDuration=(4.5+Math.random()*4)+'s';e.style.setProperty('--dx',(Math.random()*120-60)+'px');sp.appendChild(e);}})();
 // Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
 // Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
 let W=3200;const H=1300,GD=230,GH=330,RB=150,RT=150,RAMP=Math.PI/2,GOAL_UP=340,CEIL=438; // alto de juego: 3/4 del de antes (techo en 438)
@@ -1163,6 +1210,9 @@ function drawCarShape(ctx,look,team,wheelRot,t,boosting,far){
   // ventanas con marco cromado
   const wg=ctx.createLinearGradient(0,-28,0,-10);wg.addColorStop(0,'#5b7fa6');wg.addColorStop(0.4,'#1a2c44');wg.addColorStop(1,'#060b14');
   ctx.fillStyle=wg;polyPath(ctx,B.win);ctx.fill();ctx.strokeStyle='rgba(220,230,240,0.7)';ctx.lineWidth=1.2;ctx.stroke();
+  // brillo del vidrio (dos vetas en diagonal)
+  ctx.save();polyPath(ctx,B.win);ctx.clip();ctx.fillStyle='rgba(255,255,255,0.2)';ctx.beginPath();ctx.moveTo(-6,-40);ctx.lineTo(3,-40);ctx.lineTo(-12,0);ctx.lineTo(-21,0);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.beginPath();ctx.moveTo(6,-40);ctx.lineTo(9,-40);ctx.lineTo(-6,0);ctx.lineTo(-9,0);ctx.fill();ctx.restore();
   ctx.strokeStyle='rgba(255,255,255,0.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(B.win[0][0]+4,B.win[0][1]+2.5);ctx.lineTo(B.win[0][0]+12,B.win[0][1]+2.5);ctx.stroke();
   ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=1.4;polyPath(ctx,B.pts);ctx.stroke();
   // borde de luz en la parte de arriba de la carrocería (luz de los focos)
@@ -1176,19 +1226,29 @@ function drawCarShape(ctx,look,team,wheelRot,t,boosting,far){
   ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,240,180,0.22)';ctx.beginPath();ctx.moveTo(nose[0],-5);ctx.lineTo(nose[0]+38,-12);ctx.lineTo(nose[0]+38,7);ctx.lineTo(nose[0],0);ctx.fill();
   ctx.globalCompositeOperation='source-over';
   ctx.fillStyle=boosting?'#ff4040':'#b0101e';ctx.fillRect(-48,-6,4,5);
+  {ctx.globalCompositeOperation='lighter';ctx.fillStyle=boosting?'rgba(255,60,60,0.45)':'rgba(255,40,40,0.18)';ctx.beginPath();ctx.ellipse(-48,-3.5,7,5,0,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}
+  // escape: caño cromado; con turbo, brasa naranja
+  {const tail=B.pts.reduce((a,p)=>p[0]<a[0]?p:a,[99,0]);ctx.fillStyle='#9aa3af';ctx.fillRect(tail[0]-3,4,7,3.4);ctx.fillStyle='#1a1d22';ctx.fillRect(tail[0]-3,4.6,2.2,2.2);
+    if(boosting){ctx.globalCompositeOperation='lighter';const eg=ctx.createRadialGradient(tail[0]-3,5.7,0,tail[0]-3,5.7,9);eg.addColorStop(0,'rgba(255,220,120,0.95)');eg.addColorStop(1,'rgba(255,90,20,0)');ctx.fillStyle=eg;ctx.beginPath();ctx.arc(tail[0]-3,5.7,9,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}}
   // ruedas con llanta de 6 rayos y freno
   for(const w of B.wheels){
     ctx.save();ctx.translate(w[0],w[1]);
     {const tg=ctx.createRadialGradient(-1.5,-1.5,B.wr*0.55,0,0,B.wr);tg.addColorStop(0,'#2b3039');tg.addColorStop(0.7,'#16181d');tg.addColorStop(1,'#08090c');
       ctx.fillStyle=tg;ctx.beginPath();ctx.arc(0,0,B.wr,0,TAU);ctx.fill();}
-    ctx.save();ctx.rotate(wheelRot);ctx.fillStyle='#2f343e';for(let k=0;k<12;k++){ctx.rotate(TAU/12);ctx.fillRect(B.wr-2.4,-1.3,2.4,2.6);}ctx.restore(); // dibujo del neumático
+    ctx.save();ctx.rotate(wheelRot);ctx.fillStyle='rgba(70,76,88,0.55)';for(let k=0;k<14;k++){ctx.rotate(TAU/14);ctx.fillRect(B.wr-3.4,-0.9,2.2,1.8);}ctx.restore(); // dibujo del neumático
     ctx.strokeStyle='#353b46';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,0,B.wr-3.2,0,TAU);ctx.stroke();
-    const rg=ctx.createRadialGradient(-2,-2,1,0,0,B.wr*0.66);rg.addColorStop(0,B.gold?'#fff0a0':'#f2f5f9');rg.addColorStop(1,B.gold?'#b88a10':'#7d8794');
-    ctx.fillStyle=rg;ctx.beginPath();ctx.arc(0,0,B.wr*0.64,0,TAU);ctx.fill();
-    ctx.fillStyle=team>=0?tc:'#e33';ctx.fillRect(-B.wr*0.5,-2,3,4);
-    ctx.rotate(wheelRot);ctx.strokeStyle='#3b414c';ctx.lineWidth=2;
-    for(let k=0;k<6;k++){const a=k*TAU/6;ctx.beginPath();ctx.moveTo(Math.cos(a)*2,Math.sin(a)*2);ctx.lineTo(Math.cos(a)*B.wr*0.6,Math.sin(a)*B.wr*0.6);ctx.stroke();}
-    ctx.fillStyle='#22262e';ctx.beginPath();ctx.arc(0,0,2.4,0,TAU);ctx.fill();ctx.restore();
+    // disco de freno y pinza del color del equipo (no giran), llanta de 5 rayos metálicos (gira)
+    {const r0=B.wr*0.62,dg=ctx.createRadialGradient(0,0,1,0,0,r0);dg.addColorStop(0,'#2a2e36');dg.addColorStop(1,'#4a505b');ctx.fillStyle=dg;ctx.beginPath();ctx.arc(0,0,r0,0,TAU);ctx.fill();
+      ctx.fillStyle=team>=0?tc:'#e33';ctx.beginPath();ctx.ellipse(-r0*0.55,-r0*0.32,r0*0.24,r0*0.42,0.5,0,TAU);ctx.fill();
+      ctx.rotate(wheelRot);
+      const rg=ctx.createLinearGradient(-r0,-r0,r0,r0);rg.addColorStop(0,B.gold?'#fff4b0':'#ffffff');rg.addColorStop(0.5,B.gold?'#d8a820':'#aab3bf');rg.addColorStop(1,B.gold?'#8a6408':'#5d6673');
+      ctx.fillStyle=rg;for(let k=0;k<5;k++){const a=k*TAU/5;ctx.beginPath();ctx.moveTo(Math.cos(a-0.55)*2.8,Math.sin(a-0.55)*2.8);ctx.lineTo(Math.cos(a-0.15)*r0,Math.sin(a-0.15)*r0);
+        ctx.lineTo(Math.cos(a+0.15)*r0,Math.sin(a+0.15)*r0);ctx.lineTo(Math.cos(a+0.55)*2.8,Math.sin(a+0.55)*2.8);ctx.closePath();ctx.fill();}
+      ctx.strokeStyle=rg;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(0,0,r0,0,TAU);ctx.stroke();
+      ctx.fillStyle='#e9edf2';ctx.beginPath();ctx.arc(0,0,3,0,TAU);ctx.fill();ctx.fillStyle=team>=0?tc:'#e33';ctx.beginPath();ctx.arc(0,0,1.4,0,TAU);ctx.fill();}
+    ctx.restore();
+    // sombra de contacto bajo la rueda
+    ctx.fillStyle='rgba(0,0,0,0.35)';ctx.beginPath();ctx.ellipse(w[0],w[1]+B.wr-0.5,B.wr*0.9,2.2,0,0,TAU);ctx.fill();
   }
   drawTopper(ctx,look.topper,B.roof[0],B.roof[1],t,tc);
 }
@@ -1532,7 +1592,9 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     const g=Game,b=g.ball,cam=this.cam,asp=this.cw/Math.max(1,this.ch);
     let fx=b.x,fy=b.y,needW=1500,needH=0,offX=0,minVW=asp<1.3?950:(this.cw<900?1080:1200),maxVW=2400;
     const p=g.player;
-    if(g.cfg&&g.cfg.type==='showcase'){const c=g.cars[0];fx=c.x;fy=c.y-50;needW=UI.cur==='garage'?600:470;minVW=needW;maxVW=needW;offX=UI.cur==='garage'?needW*0.2:0;}
+    if(g.cfg&&g.cfg.type==='showcase'){const c=g.cars[0];fx=c.x;fy=c.y-50;needW=UI.cur==='garage'?600:470;offX=UI.cur==='garage'?needW*0.2:0;
+      if(UI.cur==='boot'){needW=760;fy=c.y-120;offX=Math.sin(this.t*0.28)*130;} // intro: plano abierto que se mueve lento
+      minVW=needW;maxVW=needW;}
     else if(g.state==='goal'&&g.lastBall){const gx=g.lastBall[0]<W/2?0:W;fx=gx+(gx?-420:420);fy=GY+140;needW=1750;maxVW=1750;minVW=Math.min(minVW,1750);}
     else if(g.state==='replay'){fx=b.x;fy=b.y;needW=1350;maxVW=1700;}
     else if(g.focusCar){fx=g.focusCar.x;fy=g.focusCar.y-110;needW=760;maxVW=900;}
@@ -1688,6 +1750,17 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     line(circ(W/2,0,300),6*kAt(0));line(circ(W/2,0,120),5*kAt(0));
     line(circ(0,0,460,-Math.PI/2,Math.PI/2),6*kAt(0));line(circ(W,0,460,Math.PI/2,Math.PI*1.5),6*kAt(0));
     line(circ(0,0,250,-Math.PI/2,Math.PI/2),5*kAt(0));line(circ(W,0,250,Math.PI/2,Math.PI*1.5),5*kAt(0));
+    // escudo del juego en el centro (dibujado sobre el plano del piso)
+    {const o=P(W/2,H,0),ux=P(W/2+1,H,0),uz=P(W/2,H,-1);ctx.save();ctx.transform(ux[0]-o[0],ux[1]-o[1],uz[0]-o[0],uz[1]-o[1],o[0],o[1]);
+      ctx.fillStyle='rgba(10,16,30,0.55)';ctx.beginPath();ctx.arc(0,0,108,0,TAU);ctx.fill();
+      ctx.lineWidth=7;ctx.strokeStyle='rgba(70,150,255,0.85)';ctx.beginPath();ctx.arc(0,0,100,Math.PI*0.5,Math.PI*1.5);ctx.stroke();ctx.strokeStyle='rgba(255,150,40,0.85)';ctx.beginPath();ctx.arc(0,0,100,-Math.PI*0.5,Math.PI*0.5);ctx.stroke();
+      ctx.font='italic 900 74px Arial Black, Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(255,255,255,0.9)';ctx.fillText('RC',0,-4);
+      ctx.font='italic 900 15px Arial Black, Arial';ctx.fillStyle='rgba(255,210,90,0.95)';ctx.fillText('ROCKET CROMBOOK',0,48);ctx.restore();}
+    // menú: plataforma giratoria con luz bajo el auto
+    if(Game.cfg&&Game.cfg.type==='showcase'&&Game.cars[0]){const c=Game.cars[0];ctx.fillStyle='rgba(5,8,16,0.45)';this.quad(circ(c.x,0,150,0,TAU,40).map(q=>P(q[0],H,q[1])));ctx.fill();
+      ctx.globalCompositeOperation='lighter';for(const [r,al] of [[150,0.9],[172,0.35]]){ctx.strokeStyle=`rgba(90,210,255,${al})`;line(circ(c.x,0,r+Math.sin(t*2)*3,0,TAU,48),Math.max(1,5*kAt(0)));}
+      for(let i=0;i<12;i++){const a=t*0.8+i*TAU/12,q=P(c.x+Math.cos(a)*161,H,Math.sin(a)*161);ctx.fillStyle='rgba(160,235,255,0.8)';ctx.beginPath();ctx.arc(q[0],q[1],Math.max(1.2,4*kAt(0)),0,TAU);ctx.fill();}
+      ctx.globalCompositeOperation='source-over';}
     // luz de los focos sobre el centro de la cancha y bordes más oscuros
     {const c=P(W/2,H,-150),r=1700*kAt(-150),g=ctx.createRadialGradient(c[0],c[1],r*0.05,c[0],c[1],r);
       g.addColorStop(0,`rgba(${th.glow},${th.glowA})`);g.addColorStop(0.5,`rgba(${th.glow},${th.glowA*0.36})`);g.addColorStop(1,`rgba(${th.glow},0)`);
@@ -1723,7 +1796,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
       const s=team===0?1:-1,bx=team===0?0:W,back=bx-s*GD,col=TEAM_COL[team],gl=TEAM_GLOW[team],fl=Game.goalFlash[team]||0;
       // panal del fondo de la portería
       ctx.strokeStyle=team?`rgba(255,190,110,${0.5+fl*0.5})`:`rgba(130,200,255,${0.5+fl*0.5})`;ctx.lineWidth=1.6;
-      for(let y=GT+30,r=0;y<GY;y+=52,r++)for(let z=30+(r%2)*45;z<DB;z+=90){const hx=[];for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;hx.push(P(back,y+Math.sin(a)*28,z+Math.cos(a)*42));}this.quad(hx);ctx.stroke();}
+      for(let y=GT+30,r=0;y<GY;y+=52,r++)for(let z=30+(r%2)*45;z<DB;z+=90){const hx=[];for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;hx.push(P(back,y+Math.sin(a)*28,z+Math.cos(a)*42));}ctx.globalAlpha=0.55+0.45*Math.max(0,Math.sin(t*3-r*0.8-z*0.01));this.quad(hx);ctx.stroke();}ctx.globalAlpha=1; /* la red late en ondas */
       // torre sobre la portería con marco de neón y flechas
       const yT=GT-560,yB=GT-50,z0=70,z1=DB-70,xx=bx-s*2;
       const tq=[P(xx,yT,z0),P(xx,yT,z1),P(xx,yB,z1),P(xx,yB,z0)];
@@ -1782,6 +1855,8 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     // sombras en el suelo
     const shadow=(x,y,r)=>{if(x<-20||x>W+20)return;const hgt=clamp((H-y)/900,0,1),k=1-hgt*0.7;ctx.fillStyle=`rgba(0,0,0,${0.42*k})`;ctx.beginPath();ctx.ellipse(x,H+2,r*k,r*0.24*k,0,0,TAU);ctx.fill();};
     if(!b.hidden&&!b.disabled){shadow(b.x,b.y,BALL_R*1.1);
+      if(b.y>H-520&&b.x>-20&&b.x<W+20){const k=clamp(1-(H-BALL_R-b.y)/480,0,1);ctx.globalCompositeOperation='lighter';const gr=ctx.createRadialGradient(b.x,H,2,b.x,H,BALL_R*1.7);
+        gr.addColorStop(0,`rgba(60,220,255,${0.26*k})`);gr.addColorStop(1,'rgba(60,220,255,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.ellipse(b.x,H+2,BALL_R*1.7,BALL_R*0.36,0,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';} // luz de la pelota sobre el piso
       if(b.x>0&&b.x<W&&g.cfg&&!BGM(g.cfg.type)){const hg=clamp((H-BALL_R-b.y)/700,0,1);ctx.strokeStyle=`rgba(60,255,110,${0.9-hg*0.4})`;ctx.lineWidth=4;
         ctx.beginPath();ctx.ellipse(b.x,H+2,BALL_R*(0.95-hg*0.35),BALL_R*0.2*(0.95-hg*0.35),0,0,TAU);ctx.stroke();}}
     for(const c of g.cars)shadow(c.x,c.y,52);
@@ -1854,6 +1929,7 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
     ctx.rotate(-b.rot);
     ctx.globalCompositeOperation='multiply';ctx.drawImage(this.ballShade,-BALL_R,-BALL_R,R2,R2);
     ctx.globalCompositeOperation='lighter';ctx.drawImage(this.ballLight,-BALL_R,-BALL_R,R2,R2);ctx.globalCompositeOperation='source-over';
+    {const lt=Game.lastTouchTeam;if(lt>=0){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=lt?'rgba(255,150,50,0.45)':'rgba(80,160,255,0.45)';ctx.lineWidth=3.5;ctx.beginPath();ctx.arc(0,0,BALL_R-2,0,TAU);ctx.stroke();ctx.globalCompositeOperation='source-over';}} // borde del color del último equipo que la tocó
     ctx.strokeStyle='rgba(8,12,20,0.6)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,0,BALL_R,0,TAU);ctx.stroke();ctx.restore();
   },
   drawScreenFx(s){
