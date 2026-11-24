@@ -430,8 +430,8 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
   e.style.animationDelay=(-Math.random()*7)+'s';e.style.animationDuration=(4.5+Math.random()*4)+'s';e.style.setProperty('--dx',(Math.random()*120-60)+'px');sp.appendChild(e);}})();
 // Arcos en L: la rampa curva sube hasta una pared vertical y el arco queda arriba de esa pared (GOAL_UP sobre el piso).
 // Una pelota que rueda no entra: hay que levantarla con la pared y rematar en el aire.
-let W=3200;const H=1300,GD=230,GH=330,RB=150,RT=150,RAMP=Math.PI/2,GOAL_UP=340,CEIL=438; // alto de juego: 3/4 del de antes (techo en 438)
-const BALL_R=46,G_CAR=1150,G_BALL=328,BALL_MAX=850,BALL_E=0.75,BALL_DRAG=0.15,BALL_MASS=0.55; // masa relativa al auto
+let W=3200;const H=1300,GD=230,GH=330,RB=120,RT=150,RAMP=Math.PI/2,GOAL_UP=340,CEIL=438; // alto de juego: 3/4 del de antes (techo en 438)
+const BALL_R=46,G_CAR=1150,G_BALL=280,BALL_MAX=850,BALL_E=0.75,BALL_DRAG=0.22,BALL_MASS=0.55; // masa relativa al auto
 const CAR_HL=45,CAR_HH=23,HC=24,CAR_I=900,CAR_SC=CAR_HL/46; // CAR_SC: escala del dibujo del auto
 const BOOST_USE=22,BOOST_START=50; // turbo: gasto por segundo y cuánto tienes en cada saque
 const MAX_DRIVE=500,MAX_BOOST=800,ACC=1100,BRAKE=3000,COAST=1300,BOOST_ACC=1600,AIR_BOOST=1500,AIR_MAX=800;
@@ -1966,15 +1966,15 @@ const AI_NAMES=['Cóndor','Nova','Blaze','Titán','Puma','Vórtex','Eco','Fénix
 const TOUR_TEAMS=['Cóndores FC','Llamas Turbo','Huracán','Pumas del Sur','Volcán Racing','Neón Kings','Tiburones','Relámpago'];
 const ROUND_NAMES=['CUARTOS DE FINAL','SEMIFINAL','GRAN FINAL'];
 const BGM=t=>t==='demo'||t==='showcase';
-const ARENA_W=cfg=>(cfg.type==='training'||BGM(cfg.type))?3200:((cfg.teamSize||1)>=2?2900:2400);
+const ARENA_W=cfg=>(cfg.type==='training'||BGM(cfg.type))?3200:((cfg.teamSize||1)>=2?2900:2100);
 const fmt=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 function randomLook(){return{body:pick(['rayo','furia','escarabajo','titan','vortex']),color:pick(COLORS),color2:pick(['#ffffff','#111111','#ffd400','#00e5ff']),
   decal:pick(['none','rayas','puntos','zigzag','llamas','carbono','numero']),boost:pick(Object.keys(BOOST_FX)),topper:pick(['none','none','antena','cono','cuernos','aureola','corona','cresta'])};}
 const SHOTS=[
   {bx:W-200,by:H-560,vx:-20,vy:-320,px:W-620,tip:'Pelota flotando frente al arco: ↑ + Shift para despegar y empújala hacia adentro'},
   {bx:W-BALL_R-4,by:H-500,vx:0,vy:-500,px:W-750,tip:'La pelota sube por la pared: vuela (↑ + Shift) y tócala hacia adentro del arco'},
-  {bx:W-850,by:H-BALL_R,vx:360,vy:0,px:W-1150,tip:'La pelota va contra la L: síguela sin turbo, sube por la pared con ella, salta y remátala volando'},
-  {bx:W-650,by:H-BALL_R,vx:0,vy:0,px:W-1250,tip:'Pelota quieta: empújala suave (sin turbo) hasta la pared, sube con ella y salta para rematar'},
+  {bx:W-700,by:H-BALL_R,vx:520,vy:0,px:W-1000,tip:'La pelota va contra la L: síguela sin turbo, sube por la pared con ella, salta y remátala volando'},
+  {bx:W-300,by:H-BALL_R,vx:150,vy:0,px:W-650,tip:'La pelota va rodando a la pared: síguela, sube por la pared detrás de ella, salta y remátala volando'},
   {bx:2600,by:H-500,vx:150,vy:-300,px:2150,tip:'Globo alto: despega, apunta con las flechas y vuela hacia la pelota'},
   {bx:W-1400,by:H-HC-CAR_HH-BALL_R-2,vx:0,vy:0,px:W-1400,tip:'La pelota está en tu capó: despega con ↑ + Shift, quédate debajo de ella y llévala a toquecitos con la trompa hasta el arco'}
 ];
