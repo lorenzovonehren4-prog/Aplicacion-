@@ -17,7 +17,7 @@ const fs=require('fs'),path=require('path');
   // ---- 1 vs 1 ----
   const H=await open();await H.evaluate(()=>{Store.data.settings.arena='marino';Store.data.name='Ana';});
   const G=await open();await G.evaluate(()=>{Store.data.settings.arena='neon';Store.data.name='Beto';});
-  await H.click('[data-create="1v1"]');await H.waitForTimeout(600);
+  await H.click('#onModeSeg [data-m="1v1"]');await H.click('#onNew');await H.click('#cfb [data-v="0"]');await H.click('#cfGo');await H.waitForTimeout(600);
   console.log('anfitrión espera:',(await H.textContent('#onStatus')).trim().slice(0,70));
   const fila=(await G.textContent('#onList')).trim();console.log('el invitado ve en salas abiertas:',fila.slice(0,60));
   await G.click('[data-join]');await G.waitForTimeout(2500);
@@ -39,10 +39,10 @@ const fs=require('fs'),path=require('path');
   // ---- 2 vs 2 ----
   const A=await open(),B=await open(),C=await open(),D=await open();
   await A.evaluate(()=>{Store.data.name='Ana';});await B.evaluate(()=>{Store.data.name='Beto';});await C.evaluate(()=>{Store.data.name='Caro';});await D.evaluate(()=>{Store.data.name='Dani';});
-  await A.click('[data-create="2v2"]');await A.waitForTimeout(700);
+  await A.click('#onNew');await A.click('#cfm [data-v="2v2"]');await A.click('#cfb [data-v="0"]');await A.click('#cfGo');await A.waitForTimeout(700);
   await B.click('[data-join]');await B.waitForTimeout(600);
   console.log('sala 2v2 con 2 de 4:',(await A.textContent('#onPlayers')).replace(/\s+/g,' ').trim(),'· botón empezar visible:',await A.isVisible('#onStart'));
-  await C.click('[data-quick="2v2"]');await C.waitForTimeout(600);
+  await C.click('#onModeSeg [data-m="2v2"]');await C.click('#onQuick');await C.waitForTimeout(600);
   await D.click('[data-join]');await D.waitForTimeout(3000);
   for(const [n,p] of [['A',A],['B',B],['C',C],['D',D]])console.log(n,JSON.stringify(await st(p)));
   // cada invitado acelera hacia la izquierda: su propio auto debe moverse en el anfitrión
@@ -52,6 +52,14 @@ const fs=require('fs'),path=require('path');
     await p.keyboard.down(k);await p.waitForTimeout(900);await p.keyboard.up(k);console.log(`auto de ${n} (equipo ${await A.evaluate(i=>Game.cars[i].team,idx)}) en el anfitrión: de ${Math.round(x0)} a ${Math.round(await A.evaluate(i=>Game.cars[i].x,idx))}`);}
   // se va un invitado: el partido sigue
   await D.evaluate(()=>UI.toMenu());await A.waitForTimeout(1500);console.log('se fue D → anfitrión sigue en:',await A.evaluate(()=>[Game.state,Online.active]));
+  // ---- sala configurada: 2 vs 2 con bots, rápida y turbo infinito; empieza con un amigo y bots ----
+  await A.evaluate(()=>UI.toMenu());await B.evaluate(()=>UI.toMenu());await C.evaluate(()=>UI.toMenu());
+  for(const p of [A,B])await p.click('[data-go=online]');await A.waitForTimeout(400);
+  await A.click('#onNew');await A.click('#cfm [data-v="2v2"]');await A.click('#cfb [data-v="1"]');await A.click('#cfv [data-v="1.2"]');await A.click('#cft [data-v="i"]');await A.click('#cfd [data-v="180"]');await A.click('#cfGo');await A.waitForTimeout(700);
+  console.log('B ve:',(await B.textContent('#onList')).replace(/\s+/g,' ').trim().slice(0,90));
+  await B.click('[data-join]');await B.waitForTimeout(700);await A.click('#onStart');await B.waitForTimeout(2500);
+  console.log('con bots:',JSON.stringify(await A.evaluate(()=>({autos:Game.cars.map(c=>[c.team,c.name,c.ai?'IA':c.remote?'amigo':'yo']),vel:Game.speed,turbo:Game.cars.every(c=>c.infinite),tiempo:Math.round(Game.timeLeft)}))));
+  console.log('invitado:',JSON.stringify(await B.evaluate(()=>({autos:Game.cars.length,vel:Game.speed,yo:Game.player&&Game.player.name}))));
   console.log('errores',errs.slice(0,6));
   await b.close();
 })();
