@@ -413,6 +413,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <button class="btn cy" id="pResume"><span>Continuar</span></button>
     <button class="btn" id="pRestart"><span>Reiniciar</span></button>
     <button class="btn or hidden" id="pEnd"><span>Terminar partido</span></button>
+    <div class="opt" style="justify-content:center;gap:8px;flex-wrap:wrap">Controles táctiles <div class="seg" id="pZ"><button data-z="0.85">CHICOS</button><button data-z="1">NORMALES</button><button data-z="1.25">GRANDES</button><button data-z="1.5">MUY GRANDES</button></div></div>
     <button class="btn" id="pSettings"><span>Configuración</span></button>
     <button class="btn gr" id="pQuit"><span>Salir al menú</span></button>
   </div>
@@ -433,8 +434,8 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 let W=3200;const H=1300,GD=230,GH=330,RB=120,RT=150,RAMP=Math.PI/2,GOAL_UP=340,CEIL=438; // alto de juego: 3/4 del de antes (techo en 438)
 const BALL_R=46,G_CAR=1150,G_BALL=280,BALL_MAX=850,BALL_E=0.75,BALL_DRAG=0.22,BALL_MASS=0.55; // masa relativa al auto
 const CAR_HL=45,CAR_HH=23,HC=24,CAR_I=900,CAR_SC=CAR_HL/46; // CAR_SC: escala del dibujo del auto
-const BOOST_USE=22,BOOST_START=50; // turbo: gasto por segundo y cuánto tienes en cada saque
-const MAX_DRIVE=500,MAX_BOOST=800,ACC=1100,BRAKE=3000,COAST=1300,BOOST_ACC=1600,AIR_BOOST=1500,AIR_MAX=800;
+const BOOST_USE=33,BOOST_START=34; // turbo: gasto por segundo y cuánto tienes en cada saque
+const MAX_DRIVE=500,MAX_BOOST=800,ACC=1100,BRAKE=3000,COAST=1300,BOOST_ACC=1150,AIR_BOOST=1100,AIR_MAX=800;
 const TILT_MAX=0.8,TILT_RW=41,CAR_E=0.6,CAR_E_TOP=0.45; // ↑ en el piso: el auto se para en las ruedas traseras · rebote de la pelota contra el auto
 const JUMP_V=440,JUMP_HOLD=750,DJUMP_V=420,FLIP_V=480,AIR_ROT=10,ROLL_T=0.38; // ROLL_T: duración del giro en el aire
 const STEP=1/240,TAU=Math.PI*2;
@@ -697,7 +698,7 @@ class Car{
   constructor(team,name,look,isPlayer){
     this.team=team;this.name=name;this.look=look;this.isPlayer=!!isPlayer;
     this.input={th:0,pitch:0,jump:false,boost:false};this.stats=newStats();this.ai=null;
-    this.regen=45;this.infinite=false;this.place(W/2,1);
+    this.regen=80;this.infinite=false;this.place(W/2,1);
   }
   place(x,s){this.x=x;this.y=H-HC;this.vx=this.vy=0;this.vt=0;this.a=0;this.w=0;this.s=s;this.grounded=true;this.nx=0;this.ny=-1;
     this.boost=BOOST_START;this.jumps=0;this.airT=0;this.jumpHoldT=0;this.flipT=0;this.recoverT=0;this.stuckT=0;this.hitCd=0;this.turnT=0;
@@ -915,7 +916,7 @@ function carBall(car,ball){
   if(vn>=0)return 0;
   // pelota pesada: recibe menos impulso y el auto siente el choque · rebota un poco (no se queda pegada a la trompa);
   // apoyada (choque muy lento, p. ej. en el capó) no rebota para poder llevarla
-  const e=carry?0:(nly<-0.55?CAR_E_TOP:(!car.grounded&&nlx*car.s>0.3?0.45:CAR_E))*clamp((-vn-10)/50,0,1),j=-(1+e)*vn/(1+BALL_MASS);
+  const e=carry?0:(!car.grounded?0.72*clamp((-vn-5)/30,0,1):(nly<-0.55?CAR_E_TOP:CAR_E)*clamp((-vn-10)/50,0,1)),j=-(1+e)*vn/(1+BALL_MASS);
   ball.vx+=j*nx;ball.vy+=j*ny;car.addVel(-j*nx*BALL_MASS,-j*ny*BALL_MASS);
   let power=0;
   const soft=Math.hypot(rvx,rvy)<380;
@@ -2395,6 +2396,7 @@ const UI={
       this.toast(on?'Controles: teclado o mando':'Controles táctiles activados: joystick a la izquierda, salto, turbo y giro a la derecha (como en el celular)');};
     addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!this.sawTouch){this.sawTouch=true;if(Store.data.settings.touch==='auto')this.applySettings();}},true);
     $$('#setC button').forEach(b=>b.onclick=()=>this.toggleCam(b.dataset.c));
+    $$('#pZ button').forEach(b=>b.onclick=()=>{Store.data.settings.tsz=+b.dataset.z;Store.save();this.applySettings();this.renderSettings();Sfx.click();});
     $$('#setZ button').forEach(b=>b.onclick=()=>{Store.data.settings.tsz=+b.dataset.z;Store.save();this.applySettings();this.renderSettings();Sfx.click();});$('#camBtn').onclick=()=>this.toggleCam();
     $$('#setT button').forEach(b=>b.onclick=()=>{Store.data.settings.touch=b.dataset.t;Store.save();this.applySettings();this.renderSettings();Sfx.click();});
     $('#setName').onchange=e=>{Store.data.name=(e.target.value||'Jugador').trim().slice(0,14)||'Jugador';Store.save();this.renderMenu();};
@@ -2411,7 +2413,7 @@ const UI={
   renderCtl(){const b=$('#ctlBtn');if(!b)return;const on=document.body.classList.contains('touchmode');b.classList.toggle('on',on);
     b.innerHTML=on?'✋ TÁCTIL <small style="opacity:.7">(como el celular)</small>':'⌨ TECLADO / MANDO';b.title=on?'Controles táctiles, iguales a los del celular. Toca para usar teclado o mando.':'Toca para usar los controles táctiles del celular (pantalla táctil).';},
   syncTouch(){const on=document.body.classList.contains('touchmode')&&Game.inPlay()&&this.cur===null;$('#touch').classList.toggle('hidden',!on);},
-  show(id){$$('.scr').forEach(s=>s.classList.remove('on'));if(id)$('#s-'+id).classList.add('on');this.cur=id;
+  show(id){$$('.scr').forEach(s=>s.classList.remove('on'));if(id)$('#s-'+id).classList.add('on');this.cur=id;if(id==='pause')this.renderSettings();
     $('#shade').classList.toggle('off',!id||id==='result');$('#shade').classList.toggle('light',id==='menu'||id==='garage');
     const inGame=Game.running&&Game.cfg&&!BGM(Game.cfg.type);
     $('#hud').classList.toggle('hidden',!(inGame&&(id===null||id==='pause')));
@@ -2659,7 +2661,7 @@ const UI={
   /* ---------- Ajustes / Perfil ---------- */
   renderSettings(){const S=Store.data,st=S.settings;$('#setName').value=S.name;$('#setVol').value=st.vol;
     $$('[data-set]').forEach(t=>t.classList.toggle('on',!!st[t.dataset.set]));
-    $$('#setQ button').forEach(b=>b.classList.toggle('on',b.dataset.q===st.quality));$$('#setT button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.touch));$$('#setC button').forEach(b=>b.classList.toggle('on',b.dataset.c===(st.cam||'sigue')));$$('#setZ button').forEach(b=>b.classList.toggle('on',+b.dataset.z===(+st.tsz||1)));},
+    $$('#setQ button').forEach(b=>b.classList.toggle('on',b.dataset.q===st.quality));$$('#setT button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.touch));$$('#setC button').forEach(b=>b.classList.toggle('on',b.dataset.c===(st.cam||'sigue')));$$('#setZ button,#pZ button').forEach(b=>b.classList.toggle('on',+b.dataset.z===(+st.tsz||1)));},
   // cámara: sigue la jugada o muestra toda la cancha (tecla C, botón 🎥 o en ajustes)
   toggleCam(set){const S=Store.data.settings;S.cam=set||(S.cam==='cancha'?'sigue':'cancha');Store.save();this.renderSettings();Sfx.click();
     this.toast(S.cam==='cancha'?'Cámara: toda la cancha':'Cámara: sigue la jugada');},
