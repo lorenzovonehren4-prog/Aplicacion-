@@ -186,6 +186,7 @@ input[type=text]{background:#0e1a33;border:2px solid #34507f;border-radius:8px;c
 #clock{font-family:'Orbitron',sans-serif;font-weight:800;font-size:clamp(20px,4.6vh,34px);letter-spacing:.04em;font-variant-numeric:tabular-nums}
 #sbmode{font-size:clamp(8px,1.5vh,11px);font-weight:900;letter-spacing:.18em;color:#9fd8ff}
 #pauseBtn{position:absolute;top:max(8px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));pointer-events:auto}
+#camBtn{position:absolute;top:max(8px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));pointer-events:auto;font-size:18px}
 #boostG{position:absolute;right:calc(max(12px,env(safe-area-inset-right)) + clamp(50px,10vh,62px));top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;gap:8px}
 .bat{position:relative;width:clamp(56px,11vh,80px);height:clamp(24px,5vh,34px);border:3px solid #fff;border-radius:5px;padding:3px;background:rgba(0,0,0,.45)}
 .bat::after{content:'';position:absolute;right:-8px;top:28%;width:5px;height:44%;background:#fff;border-radius:0 3px 3px 0}
@@ -280,6 +281,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
 <div id="hud" class="hidden">
   <div id="sb"><div class="sbt b"><span id="sb0">0</span></div><div id="sbt"><span id="clock">2:00</span><small id="sbmode">PARTIDO</small></div><div class="sbt o"><span id="sb1">0</span></div></div>
   <button id="pauseBtn" class="icbtn" aria-label="Pausa">⚙</button>
+  <button id="camBtn" class="icbtn" aria-label="Cámara" title="Cámara (C)">🎥</button>
   <div id="boostG"><div class="bat"><i id="boostFill"></i></div><b id="boostN">33</b></div>
   <div id="count"></div>
   <div id="banner"><div class="bt"></div><div class="bs"></div></div>
@@ -383,6 +385,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <div class="opt">Volumen <input type="range" id="setVol" min="0" max="1" step="0.05"></div>
     <div class="opt">Vibración (móvil) <div class="tog" data-set="vib"></div></div>
     <div class="opt">Calidad gráfica <div class="seg" id="setQ"><button data-q="alta">ALTA</button><button data-q="baja">BAJA</button></div></div>
+    <div class="opt">Cámara <div class="seg" id="setC"><button data-c="sigue">SIGUE LA JUGADA</button><button data-c="cancha">TODA LA CANCHA</button></div></div>
     <div class="opt">Controles táctiles <div class="seg" id="setT"><button data-t="auto">AUTO</button><button data-t="si">SÍ</button><button data-t="no">NO</button></div></div>
     <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · <kbd>↑</kbd> en el piso = el auto se para en las ruedas traseras (trompa arriba) · <kbd>Shift</kbd> + apuntar al aire (desde el piso, la rampa o la pared) = despegar · en el aire el auto apunta al instante hacia donde apuntas (360°) y el turbo te lleva para allá, sin giros automáticos<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín (no vence)<br>Doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire: el auto rueda y queda con las ruedas del otro lado<br>Tocar la pelota con las ruedas en el aire te devuelve el volantín y algo de turbo (anillo amarillo); tocar el techo te devuelve los saltos y recarga el turbo<br>En la rampa o la pared: ↑ sube, ↓ baja · al caer, el auto siempre queda sobre las ruedas · la cancha es más corta en 1 contra 1<br>En línea: crea una sala y pásale el código a tu amigo (los dos con su cuenta de Claude en esta página)<br>La pelota rebota contra el auto según cómo le pegas: de frente sale baja y rápida · con la trompa levantada (↑) sale hacia arriba · luego salta debajo de ella para subirla más · si cae en el capó y aceleras, se queda ahí y puedes despegar con ella<br>Jugada de pared: empuja la pelota hasta la L, sube por la pared con ella, salta de la pared y remata volando<br><kbd>Shift</kbd> turbo (se recarga en el suelo): vas más rápido y le pegas más fuerte · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Golpe especial: un solo tiro fuerte, el <b style="color:#d97bff">morado</b>: volantín pegándole a la pelota con la parte de atrás del auto<br>Celular: al mover el joystick ves dos flechas en tu auto: <b style="color:#3d9bff">azul</b> = hacia dónde mira · <b style="color:#c45bff">morada</b> = hacia dónde lo quieres llevar<br>Celular: joystick, botón de salto, de turbo y de giro (flechas circulares) · Mando: stick, A salto, B/RT turbo, X giro</div></div>
     <div class="opt"><span>Progreso</span><button class="btn gr" id="resetBtn"><span>Reiniciar progreso</span></button></div>
@@ -492,7 +495,7 @@ const Store={key:'turbogol_v1',data:null,
     equip:{body:'rayo',color:'#1f6bff',color2:'#ffffff',decal:'rayas',boost:'clasico',topper:'none'},
     stats:{matches:0,wins:0,losses:0,goals:0,shots:0,saves:0,assists:0,touches:0,best:0,streak:0},
     train:{},tour:null,trophies:0,
-    settings:{music:true,sfx:true,vol:0.8,vib:true,quality:'alta',touch:'auto',arena:'clasico'}};},
+    settings:{music:true,sfx:true,vol:0.8,vib:true,quality:'alta',touch:'auto',arena:'clasico',cam:'sigue'}};},
   merge(def,src){if(!src||typeof src!=='object')return def;for(const k in def){if(src[k]===undefined)continue;
     if(def[k]&&typeof def[k]==='object'&&!Array.isArray(def[k]))def[k]=this.merge(def[k],src[k]);else def[k]=src[k];}
     for(const k in src)if(def[k]===undefined)def[k]=src[k];return def;},
@@ -509,6 +512,7 @@ const Input={rollReq:false,lastTap:{code:'',t:0},k:{},touch:{x:0,y:0,jump:false,
       if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
       if(!e.repeat&&!this.k[e.code]){
         if(e.code==='KeyQ')this.rollReq=true;
+        if(e.code==='KeyC'&&!e.repeat&&Game.inPlay&&Game.cfg&&!BGM(Game.cfg.type))UI.toggleCam();
         if(['ArrowLeft','ArrowRight','KeyA','KeyD'].includes(e.code)){const now=performance.now();
           if(this.lastTap.code===e.code&&now-this.lastTap.t<280){this.rollReq=true;this.lastTap.t=0;}else this.lastTap={code:e.code,t:now};}}
       this.k[e.code]=true;
@@ -1591,13 +1595,14 @@ const Render={cv:null,ctx:null,dpr:1,cw:0,ch:0,cam:{x:W/2,y:H*0.8,vw:1300},shake
   camUpdate(dt,snap){
     const g=Game,b=g.ball,cam=this.cam,asp=this.cw/Math.max(1,this.ch);
     let fx=b.x,fy=b.y,needW=1500,needH=0,offX=0,minVW=asp<1.3?950:(this.cw<900?1080:1200),maxVW=2400;
-    const p=g.player;
+    let p=g.player;
     if(g.cfg&&g.cfg.type==='showcase'){const c=g.cars[0];fx=c.x;fy=c.y-50;needW=UI.cur==='garage'?600:470;offX=UI.cur==='garage'?needW*0.2:0;
       if(UI.cur==='boot'){needW=760;fy=c.y-120;offX=Math.sin(this.t*0.28)*130;} // intro: plano abierto que se mueve lento
       minVW=needW;maxVW=needW;}
     else if(g.state==='goal'&&g.lastBall){const gx=g.lastBall[0]<W/2?0:W;fx=gx+(gx?-420:420);fy=GY+140;needW=1750;maxVW=1750;minVW=Math.min(minVW,1750);}
     else if(g.state==='replay'){fx=b.x;fy=b.y;needW=1350;maxVW=1700;}
     else if(g.focusCar){fx=g.focusCar.x;fy=g.focusCar.y-110;needW=760;maxVW=900;}
+    else if(Store.data.settings.cam==='cancha'&&g.cfg&&!BGM(g.cfg.type)&&g.state!=='replay'){fx=W/2;fy=(CEIL+H)/2+40;needW=W+2*GD+160;needH=H-CEIL+260;minVW=Math.max(minVW,needW);maxVW=Math.max(needW,needH*asp)+10;p=null;}
     else if(p&&!b.disabled&&g.kickoff&&g.cfg.type!=='training'&&(g.state==='countdown'||g.time<1.2)){const xs=g.cars.map(c=>c.x);fx=W/2;fy=H-260;needW=Math.max(...xs)-Math.min(...xs)+700;maxVW=3400;}
     else if(p&&!b.disabled){fx=p.x*0.42+b.x*0.58;fy=p.y*0.42+b.y*0.58;needW=Math.abs(p.x-b.x)+640;needH=Math.abs(p.y-b.y)+480;maxVW=needH>900?2900:maxVW;}
     else if(p){fx=p.x;fy=p.y;needW=1300;}
@@ -2097,6 +2102,7 @@ const Online={
         else{const kb=1-Math.exp(-(this.touchT>0?1:5)*dt);ball.x+=bex*kb;ball.y+=bey*kb;ball.vx+=(bs[5]-ball.vx)*kb;ball.vy+=(bs[6]+G_BALL*age-ball.vy)*kb;}
       }}else this.pred=false;
     // estado del partido y avisos
+    if(String(s.st)==='play'){g.time+=dt;if(g.time>1.3)g.kickoff=false;}else if(String(s.st)==='countdown'){g.time=0;g.kickoff=true;}
     const st=String(s.st);g.score=[s.sc[0]|0,s.sc[1]|0];g.timeLeft=+s.tl||0;g.ot=!!s.ot;g.otT=+s.oT||0;g.stateT=+s.T||0;
     if(g.score[0]!==this.lastScore[0]||g.score[1]!==this.lastScore[1]){const team=g.score[0]!==this.lastScore[0]?0:1;this.lastScore=g.score.slice();
       if(st!=='countdown'){UI.goal(team,null,false,null);Fx.goal(clamp(ball.x,-GD+60,W+GD-60),ball.y,team);Sfx.goal();g.goalFlash[team]=1;}}
@@ -2364,6 +2370,7 @@ const UI={
     $('#ctlBtn').onclick=()=>{const S=Store.data.settings,on=document.body.classList.contains('touchmode');S.touch=on?'no':'si';Store.save();this.applySettings();this.renderSettings();Sfx.click();
       this.toast(on?'Controles: teclado o mando':'Controles táctiles activados: joystick a la izquierda, salto, turbo y giro a la derecha (como en el celular)');};
     addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!this.sawTouch){this.sawTouch=true;if(Store.data.settings.touch==='auto')this.applySettings();}},true);
+    $$('#setC button').forEach(b=>b.onclick=()=>this.toggleCam(b.dataset.c));$('#camBtn').onclick=()=>this.toggleCam();
     $$('#setT button').forEach(b=>b.onclick=()=>{Store.data.settings.touch=b.dataset.t;Store.save();this.applySettings();this.renderSettings();Sfx.click();});
     $('#setName').onchange=e=>{Store.data.name=(e.target.value||'Jugador').trim().slice(0,14)||'Jugador';Store.save();this.renderMenu();};
     $('#setName').addEventListener('keydown',e=>e.stopPropagation());
@@ -2615,7 +2622,10 @@ const UI={
   /* ---------- Ajustes / Perfil ---------- */
   renderSettings(){const S=Store.data,st=S.settings;$('#setName').value=S.name;$('#setVol').value=st.vol;
     $$('[data-set]').forEach(t=>t.classList.toggle('on',!!st[t.dataset.set]));
-    $$('#setQ button').forEach(b=>b.classList.toggle('on',b.dataset.q===st.quality));$$('#setT button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.touch));},
+    $$('#setQ button').forEach(b=>b.classList.toggle('on',b.dataset.q===st.quality));$$('#setT button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.touch));$$('#setC button').forEach(b=>b.classList.toggle('on',b.dataset.c===(st.cam||'sigue')));},
+  // cámara: sigue la jugada o muestra toda la cancha (tecla C, botón 🎥 o en ajustes)
+  toggleCam(set){const S=Store.data.settings;S.cam=set||(S.cam==='cancha'?'sigue':'cancha');Store.save();this.renderSettings();Sfx.click();
+    this.toast(S.cam==='cancha'?'Cámara: toda la cancha':'Cámara: sigue la jugada');},
   renderProfile(){const S=Store.data,T=S.stats,wr=T.matches?Math.round(T.wins/T.matches*100):0;
     const cell=(l,v)=>`<div class="opt"><span>${l}</span><b>${v}</b></div>`;
     $('#profBody').innerHTML=`<div style="display:flex;align-items:center;gap:12px;margin:6px 0 10px"><div class="avatar">${(S.name[0]||'J').toUpperCase()}</div><div><div class="pname">${S.name}</div><div class="lvl">NIVEL ${S.level} · ${S.xp}/${xpNeed(S.level)} XP</div></div></div>
