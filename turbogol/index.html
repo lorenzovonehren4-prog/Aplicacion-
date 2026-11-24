@@ -965,11 +965,11 @@ function carCar(A,B){
 
 /* ================= Inteligencia artificial (reglas de comportamiento) ================= */
 const KEEP_X=480; // distancia del puesto de arquero a la línea de gol
-const DIFF=[
-  {name:'Fácil',  react:0.38,speed:0.74,boost:0.2,reach:180,aerial:0.2,   flip:0.15,err:220,think:0.24,dbl:0.15,smart:0.1,jumpT:0.2},
-  {name:'Normal', react:0.24,speed:0.86,boost:0.45,reach:300,aerial:0.55,flip:0.45,err:110,think:0.14,dbl:0.6,smart:0.4,jumpT:0.6},
-  {name:'Difícil',react:0.13,speed:0.91,boost:0.7,reach:420,aerial:0.8,flip:0.6, err:55, think:0.09,dbl:0.8,smart:0.7,jumpT:0.9},
-  {name:'Experto',react:0.06,speed:0.95,boost:0.8, reach:500,aerial:0.95, flip:0.7, err:18, think:0.05,dbl:0.8,smart:0.9,jumpT:1}
+const DIFF=[ // cada nivel un escalón más fuerte que antes (los bots se habían quedado flojos con la física nueva)
+  {name:'Fácil',  react:0.22,speed:0.88,boost:0.5, reach:320,aerial:0.55,flip:0.4, err:90, think:0.13,dbl:0.6, smart:0.45,jumpT:0.65},
+  {name:'Normal', react:0.12,speed:0.93,boost:0.75,reach:440,aerial:0.82,flip:0.6, err:45, think:0.08,dbl:0.8, smart:0.75,jumpT:0.9},
+  {name:'Difícil',react:0.06,speed:0.97,boost:0.88,reach:540,aerial:0.95,flip:0.75,err:16, think:0.05,dbl:0.85,smart:0.92,jumpT:1},
+  {name:'Experto',react:0.025,speed:1.0,boost:0.95,reach:620,aerial:1,  flip:0.85,err:5,  think:0.03,dbl:0.9, smart:1,   jumpT:1}
 ];
 class AI{
   constructor(car,lvl){this.car=car;this.lvl=lvl;this.d=DIFF[lvl];this.tk=Math.random()*0.1;this.react=0;this.seq=null;
@@ -1004,7 +1004,7 @@ class AI{
       if(attacker){this.mode='kickoff';this.tx=b.x;this.ty=b.y;this.arr=0;this.wantBoost=d.boost>0.1;}
       else{this.mode='shadow';this.tx=ownX+dir*500;this.ty=H;this.arr=0;this.wantBoost=false;}
       return;}
-    const spd=MAX_DRIVE*d.speed*(c.boost>15&&d.boost>0.3?1.3:1);
+    const spd=MAX_DRIVE*d.speed*(c.boost>15&&d.boost>0.3?MAX_BOOST/MAX_DRIVE*0.85:1);
     let ip=null;
     for(const p of pred){
       const h=(H-HC)-p.y;if(h>d.reach)continue;
@@ -1100,7 +1100,7 @@ class AI{
         if(!gs&&near&&Math.sign(b.x-c.x)===th&&this.jcd>0&&!this.seq)th=0;} // no empujar la pelota hacia la propia portería
       this.stallT=(th&&Math.abs(c.vt)<50)?(this.stallT||0)+dt:0;
       if(this.stallT>0.7&&!this.seq&&this.jcd<=0){this.stallT=0;this.startSeq('jump');this.runSeq(dt,g);return;} // trabado empujando: saltar
-      inp.th=th*d.speed/1.2;
+      inp.th=th*Math.min(1,d.speed*1.05);
       inp.boost=this.wantBoost&&th!==0&&th===c.s&&Math.abs(proj)>(this.mode==='keep'?900:350)&&c.boost>8&&c.ny<-0.6;
       if(this.mode==='kickoff'){inp.boost=this.wantBoost&&c.boost>0;inp.th=Math.sign(b.x-c.x);
         if(d.flip>0.1&&Math.abs(b.x-c.x)<250+Math.abs(c.vt)*0.12&&this.jcd<=0)this.startSeq('flip',Math.sign(b.x-c.x));return;}
