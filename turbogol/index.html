@@ -222,15 +222,15 @@ body.inreplay #touch{display:none}
 /* táctil */
 #touch{position:fixed;inset:0;pointer-events:none}
 #tzone{position:absolute;left:0;top:18%;bottom:0;width:48%;pointer-events:auto}
-#joy{position:absolute;width:clamp(110px,26vh,160px);height:clamp(110px,26vh,160px);border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.07);transform:translate(-50%,-50%);left:15%;top:78%;pointer-events:none}
+#joy{position:absolute;width:calc(clamp(110px,26vh,160px)*var(--tsz,1));height:calc(clamp(110px,26vh,160px)*var(--tsz,1));border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.07);transform:translate(-50%,-50%);left:15%;top:78%;pointer-events:none}
 #knob{position:absolute;left:50%;top:50%;width:42%;height:42%;border-radius:50%;background:rgba(255,255,255,.45);border:2px solid rgba(255,255,255,.7);transform:translate(-50%,-50%)}
-.tbtn{position:absolute;width:clamp(78px,20vh,120px);height:clamp(78px,20vh,120px);border-radius:50%;border:3px solid rgba(255,255,255,.4);background:rgba(255,255,255,.1);pointer-events:auto;display:flex;align-items:center;justify-content:center}
+.tbtn{position:absolute;width:calc(clamp(78px,20vh,120px)*var(--tsz,1));height:calc(clamp(78px,20vh,120px)*var(--tsz,1));border-radius:50%;border:3px solid rgba(255,255,255,.4);background:rgba(255,255,255,.1);pointer-events:auto;display:flex;align-items:center;justify-content:center}
 .tbtn.dn{background:rgba(255,255,255,.3);transform:scale(.93)}
 .tbtn svg{width:58%;height:58%;fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
-#tJump{right:calc(max(14px,env(safe-area-inset-right)) + clamp(86px,22vh,134px));bottom:max(16px,env(safe-area-inset-bottom))}
-#tRoll{right:calc(max(14px,env(safe-area-inset-right)) + clamp(96px,24vh,150px));bottom:calc(max(16px,env(safe-area-inset-bottom)) + clamp(96px,25vh,150px))}
-.tbtn.small{width:clamp(52px,13vh,78px);height:clamp(52px,13vh,78px)}
-#tBoost{right:max(14px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + clamp(30px,7vh,50px))}
+#tJump{right:calc(max(14px,env(safe-area-inset-right)) + clamp(86px,22vh,134px)*var(--tsz,1));bottom:max(16px,env(safe-area-inset-bottom))}
+#tRoll{right:calc(max(14px,env(safe-area-inset-right)) + clamp(96px,24vh,150px)*var(--tsz,1));bottom:calc(max(16px,env(safe-area-inset-bottom)) + clamp(96px,25vh,150px)*var(--tsz,1))}
+.tbtn.small{width:calc(clamp(52px,13vh,78px)*var(--tsz,1));height:calc(clamp(52px,13vh,78px)*var(--tsz,1))}
+#tBoost{right:max(14px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + clamp(30px,7vh,50px)*var(--tsz,1))}
 #tBoost.dn{background:rgba(255,150,40,.45)}
 /* resultado */
 #s-result{align-items:center;justify-content:center}
@@ -396,6 +396,7 @@ table.tb tr.t0 td:first-child{border-left:4px solid #2f8bff}table.tb tr.t1 td:fi
     <div class="opt">Vibración (móvil) <div class="tog" data-set="vib"></div></div>
     <div class="opt">Calidad gráfica <div class="seg" id="setQ"><button data-q="alta">ALTA</button><button data-q="baja">BAJA</button></div></div>
     <div class="opt">Cámara <div class="seg" id="setC"><button data-c="sigue">SIGUE LA JUGADA</button><button data-c="cancha">TODA LA CANCHA</button></div></div>
+    <div class="opt">Tamaño de los controles táctiles <div class="seg" id="setZ"><button data-z="0.85">CHICOS</button><button data-z="1">NORMALES</button><button data-z="1.25">GRANDES</button><button data-z="1.5">MUY GRANDES</button></div></div>
     <div class="opt">Controles táctiles <div class="seg" id="setT"><button data-t="auto">AUTO</button><button data-t="si">SÍ</button><button data-t="no">NO</button></div></div>
     <div class="opt" style="flex-direction:column;align-items:flex-start;gap:6px"><span>Controles</span><div class="ctrlhelp" style="text-align:left"><kbd>←</kbd><kbd>→</kbd> conducir/retroceder · <kbd>↓</kbd> frenar · <kbd>↑</kbd> en el piso = el auto se para en las ruedas traseras (trompa arriba) · <kbd>Shift</kbd> + apuntar al aire (desde el piso, la rampa o la pared) = despegar · en el aire el auto apunta al instante hacia donde apuntas (360°) y el turbo te lleva para allá, sin giros automáticos<br><kbd>Espacio</kbd> saltar (mantén para subir más) · 2º salto sin flechas = recto arriba · 2º salto + flecha = volantín (no vence)<br>Doble toque <kbd>←</kbd>/<kbd>→</kbd> o <kbd>Q</kbd> = giro en el aire: el auto rueda y queda con las ruedas del otro lado<br>Tocar la pelota con las ruedas en el aire te devuelve el volantín y algo de turbo (anillo amarillo); tocar el techo te devuelve los saltos y recarga el turbo<br>En la rampa o la pared: ↑ sube, ↓ baja · al caer, el auto siempre queda sobre las ruedas · la cancha es más corta en 1 contra 1<br>En línea: crea una sala y pásale el código a tu amigo (los dos con su cuenta de Claude en esta página)<br>La pelota rebota contra el auto según cómo le pegas: de frente sale baja y rápida · con la trompa levantada (↑) sale hacia arriba · luego salta debajo de ella para subirla más · si cae en el capó y aceleras, se queda ahí y puedes despegar con ella<br>Jugada de pared: empuja la pelota hasta la L, sube por la pared con ella, salta de la pared y remata volando<br><kbd>Shift</kbd> turbo (se recarga en el suelo): vas más rápido y le pegas más fuerte · <kbd>Esc</kbd> pausa · <kbd>R</kbd> reiniciar (entrenamiento)<br>Golpe especial: un solo tiro fuerte, el <b style="color:#d97bff">morado</b>: volantín pegándole a la pelota con la parte de atrás del auto<br>Celular: al mover el joystick ves dos flechas en tu auto: <b style="color:#3d9bff">azul</b> = hacia dónde mira · <b style="color:#c45bff">morada</b> = hacia dónde lo quieres llevar<br>Celular: joystick, botón de salto, de turbo y de giro (flechas circulares) · Mando: stick, A salto, B/RT turbo, X giro</div></div>
     <div class="opt"><span>Progreso</span><button class="btn gr" id="resetBtn"><span>Reiniciar progreso</span></button></div>
@@ -434,7 +435,7 @@ const BALL_R=46,G_CAR=1150,G_BALL=328,BALL_MAX=850,BALL_E=0.75,BALL_DRAG=0.15,BA
 const CAR_HL=45,CAR_HH=23,HC=24,CAR_I=900,CAR_SC=CAR_HL/46; // CAR_SC: escala del dibujo del auto
 const BOOST_USE=22,BOOST_START=50; // turbo: gasto por segundo y cuánto tienes en cada saque
 const MAX_DRIVE=500,MAX_BOOST=800,ACC=1100,BRAKE=3000,COAST=1300,BOOST_ACC=1600,AIR_BOOST=1500,AIR_MAX=800;
-const TILT_MAX=0.8,TILT_RW=41,CAR_E=0.6,CAR_E_TOP=0.3; // ↑ en el piso: el auto se para en las ruedas traseras · rebote de la pelota contra el auto
+const TILT_MAX=0.8,TILT_RW=41,CAR_E=0.6,CAR_E_TOP=0.45; // ↑ en el piso: el auto se para en las ruedas traseras · rebote de la pelota contra el auto
 const JUMP_V=440,JUMP_HOLD=750,DJUMP_V=420,FLIP_V=480,AIR_ROT=10,ROLL_T=0.38; // ROLL_T: duración del giro en el aire
 const STEP=1/240,TAU=Math.PI*2;
 const GY=H-GOAL_UP,GT=GY-GH,LX=0;
@@ -505,7 +506,7 @@ const Store={key:'turbogol_v1',data:null,
     equip:{body:'rayo',color:'#1f6bff',color2:'#ffffff',decal:'rayas',boost:'clasico',topper:'none'},
     stats:{matches:0,wins:0,losses:0,goals:0,shots:0,saves:0,assists:0,touches:0,best:0,streak:0},
     train:{},tour:null,trophies:0,
-    settings:{music:true,sfx:true,vol:0.8,vib:true,quality:'alta',touch:'auto',arena:'clasico',cam:'sigue'}};},
+    settings:{music:true,sfx:true,vol:0.8,vib:true,quality:'alta',touch:'auto',arena:'clasico',cam:'sigue',tsz:1}};},
   merge(def,src){if(!src||typeof src!=='object')return def;for(const k in def){if(src[k]===undefined)continue;
     if(def[k]&&typeof def[k]==='object'&&!Array.isArray(def[k]))def[k]=this.merge(def[k],src[k]);else def[k]=src[k];}
     for(const k in src)if(def[k]===undefined)def[k]=src[k];return def;},
@@ -822,8 +823,6 @@ class Car{
       let ax=bx*AIR_BOOST,ay=by*AIR_BOOST;const s0=Math.hypot(this.vx,this.vy);
       if(s0>AIR_MAX*0.98&&!nearB){const ux=this.vx/s0,uy=this.vy/s0,al=ax*ux+ay*uy;if(al>0){ax-=ux*al;ay-=uy*al;}}
       this.vx+=ax*dt;this.vy+=ay*dt;
-      // drible aéreo fácil: con la pelota pegada al auto, la pelota acompaña el movimiento del auto (suben y avanzan juntos)
-      if(nearB){const B=Game.ball;if(Math.hypot(B.x-this.x,B.y-this.y)<CAR_HL+BALL_R+22){const k=Math.min(1,4*dt);B.vx+=(this.vx-B.vx)*k;B.vy+=(this.vy-B.vy)*k;}}
       if(!this.ai&&Math.hypot(inp.th,inp.pitch||0)>0.3){const qx=-by,qy=bx,vq=this.vx*qx+this.vy*qy,kq=1-Math.exp(-4*dt);this.vx-=qx*vq*kq;this.vy-=qy*vq*kq;
         const vb=this.vx*bx+this.vy*by;if(vb<0){const kb=1-Math.exp(-4*dt);this.vx-=bx*vb*kb;this.vy-=by*vb*kb;}}} /* agarre: el auto va hacia donde mira, sin seguir de largo para el otro lado */
     this.vy+=G_CAR*(this.boosting?0.66:1)*dt; // con turbo se puede volar casi horizontal
@@ -916,7 +915,7 @@ function carBall(car,ball){
   if(vn>=0)return 0;
   // pelota pesada: recibe menos impulso y el auto siente el choque · rebota un poco (no se queda pegada a la trompa);
   // apoyada (choque muy lento, p. ej. en el capó) no rebota para poder llevarla
-  const e=carry?0:(nly<-0.55?CAR_E_TOP:(!car.grounded&&car.boosting&&nlx*car.s>0.3?0.2:CAR_E))*clamp((-vn-10)/50,0,1),j=-(1+e)*vn/(1+BALL_MASS);
+  const e=carry?0:(nly<-0.55?CAR_E_TOP:(!car.grounded&&nlx*car.s>0.3?0.45:CAR_E))*clamp((-vn-10)/50,0,1),j=-(1+e)*vn/(1+BALL_MASS);
   ball.vx+=j*nx;ball.vy+=j*ny;car.addVel(-j*nx*BALL_MASS,-j*ny*BALL_MASS);
   let power=0;
   const soft=Math.hypot(rvx,rvy)<380;
@@ -940,7 +939,7 @@ function carBall(car,ball){
     const side=Math.abs(car.x-ball.x)>2?Math.sign(car.x-ball.x):car.s;car.vx+=side*900*STEP*4;}
   if(soft){
     // pelota apoyada encima (capó/techo) o llevada en el aire con turbo: roce para que viaje con el auto
-    if(nly<-0.55||(!car.grounded&&car.boosting)){const tx=-ny,ty=nx,vt=(ball.vx-cvx)*tx+(ball.vy-cvy)*ty,k=Math.min(1,10*STEP*4);ball.vx-=tx*vt*k;ball.vy-=ty*vt*k;}
+    if(nly<-0.55&&car.grounded){const tx=-ny,ty=nx,vt=(ball.vx-cvx)*tx+(ball.vy-cvy)*ty,k=Math.min(1,10*STEP*4);ball.vx-=tx*vt*k;ball.vy-=ty*vt*k;}
     car.carryT=0.25;
   }
   const tx=-ny,ty=nx;ball.spin+=(rvx*tx+rvy*ty)/BALL_R*0.3;
@@ -1977,7 +1976,7 @@ const SHOTS=[
   {bx:W-850,by:H-BALL_R,vx:360,vy:0,px:W-1150,tip:'La pelota va contra la L: síguela sin turbo, sube por la pared con ella, salta y remátala volando'},
   {bx:W-650,by:H-BALL_R,vx:0,vy:0,px:W-1250,tip:'Pelota quieta: empújala suave (sin turbo) hasta la pared, sube con ella y salta para rematar'},
   {bx:2600,by:H-500,vx:150,vy:-300,px:2150,tip:'Globo alto: despega, apunta con las flechas y vuela hacia la pelota'},
-  {bx:W-1400,by:H-HC-CAR_HH-BALL_R-2,vx:0,vy:0,px:W-1400,tip:'La pelota está en tu capó: acelera, ↑ + Shift para despegar con ella y llévala volando al arco'}
+  {bx:W-1400,by:H-HC-CAR_HH-BALL_R-2,vx:0,vy:0,px:W-1400,tip:'La pelota está en tu capó: despega con ↑ + Shift, quédate debajo de ella y llévala a toquecitos con la trompa hasta el arco'}
 ];
 const TRAIN_INFO={
   saltos:{name:'SALTOS',desc:'Atraviesa 6 aros usando salto, salto largo (mantén Espacio) y doble salto.'},
@@ -2395,7 +2394,8 @@ const UI={
     $('#ctlBtn').onclick=()=>{const S=Store.data.settings,on=document.body.classList.contains('touchmode');S.touch=on?'no':'si';Store.save();this.applySettings();this.renderSettings();Sfx.click();
       this.toast(on?'Controles: teclado o mando':'Controles táctiles activados: joystick a la izquierda, salto, turbo y giro a la derecha (como en el celular)');};
     addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!this.sawTouch){this.sawTouch=true;if(Store.data.settings.touch==='auto')this.applySettings();}},true);
-    $$('#setC button').forEach(b=>b.onclick=()=>this.toggleCam(b.dataset.c));$('#camBtn').onclick=()=>this.toggleCam();
+    $$('#setC button').forEach(b=>b.onclick=()=>this.toggleCam(b.dataset.c));
+    $$('#setZ button').forEach(b=>b.onclick=()=>{Store.data.settings.tsz=+b.dataset.z;Store.save();this.applySettings();this.renderSettings();Sfx.click();});$('#camBtn').onclick=()=>this.toggleCam();
     $$('#setT button').forEach(b=>b.onclick=()=>{Store.data.settings.touch=b.dataset.t;Store.save();this.applySettings();this.renderSettings();Sfx.click();});
     $('#setName').onchange=e=>{Store.data.name=(e.target.value||'Jugador').trim().slice(0,14)||'Jugador';Store.save();this.renderMenu();};
     $('#setName').addEventListener('keydown',e=>e.stopPropagation());
@@ -2405,6 +2405,7 @@ const UI={
   },
   boot(){if(this.cur!=='boot')return;Sfx.init();this.applySettings();Sfx.startMusic();this.show('menu');this.renderMenu();},
   applySettings(){const S=Store.data.settings;Sfx.on.music=S.music;Sfx.on.sfx=S.sfx;Sfx.vol=S.vol;Sfx.apply();
+    document.documentElement.style.setProperty('--tsz',String(+S.tsz||1)); // tamaño de los controles táctiles
     document.body.classList.toggle('touchmode',S.touch==='si'||(S.touch==='auto'&&(IS_TOUCH||this.sawTouch)));this.syncTouch();this.renderCtl();},
   // botón del menú: controles táctiles (iguales a los del celular: joystick, salto, turbo y giro) o teclado/mando
   renderCtl(){const b=$('#ctlBtn');if(!b)return;const on=document.body.classList.contains('touchmode');b.classList.toggle('on',on);
@@ -2658,7 +2659,7 @@ const UI={
   /* ---------- Ajustes / Perfil ---------- */
   renderSettings(){const S=Store.data,st=S.settings;$('#setName').value=S.name;$('#setVol').value=st.vol;
     $$('[data-set]').forEach(t=>t.classList.toggle('on',!!st[t.dataset.set]));
-    $$('#setQ button').forEach(b=>b.classList.toggle('on',b.dataset.q===st.quality));$$('#setT button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.touch));$$('#setC button').forEach(b=>b.classList.toggle('on',b.dataset.c===(st.cam||'sigue')));},
+    $$('#setQ button').forEach(b=>b.classList.toggle('on',b.dataset.q===st.quality));$$('#setT button').forEach(b=>b.classList.toggle('on',b.dataset.t===st.touch));$$('#setC button').forEach(b=>b.classList.toggle('on',b.dataset.c===(st.cam||'sigue')));$$('#setZ button').forEach(b=>b.classList.toggle('on',+b.dataset.z===(+st.tsz||1)));},
   // cámara: sigue la jugada o muestra toda la cancha (tecla C, botón 🎥 o en ajustes)
   toggleCam(set){const S=Store.data.settings;S.cam=set||(S.cam==='cancha'?'sigue':'cancha');Store.save();this.renderSettings();Sfx.click();
     this.toast(S.cam==='cancha'?'Cámara: toda la cancha':'Cámara: sigue la jugada');},
