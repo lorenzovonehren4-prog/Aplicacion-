@@ -2084,13 +2084,14 @@ const Online={
     const s={m:this.match,tm:Math.round(performance.now()),st:g.state,T:r1(g.stateT||0),sc:g.score.slice(),tl:r1(g.timeLeft),ot:g.ot?1:0,oT:r1(g.otT||0),rp:g.rp?g.rp.team:-1,
       b:[r1(b.x),r1(b.y),r3(b.rot),b.hidden?1:0,b.fxType?['morado','amarillo','rojo'].indexOf(b.fxType):-1,r1(b.vx),r1(b.vy)],
       c:g.cars.map(c=>[r1(c.px),r1(c.py),r3(c.pa),c.s,(c.boosting?1:0)|(c.grounded?2:0),r3(c.turnT),r3(c.rollT||0),Math.round(c.boost),Math.round(c.grounded?Math.abs(c.vt):Math.hypot(c.vx,c.vy)),r1(c.vx),r1(c.vy)]),
-      k:g.cars.map(c=>[c.stats.goals,c.stats.shots,c.stats.assists,c.stats.saves,c.stats.score])};
+      k:(this.kN=(this.kN||0)+1)%10===1?g.cars.map(c=>[c.stats.goals,c.stats.shots,c.stats.assists,c.stats.saves,c.stats.score]):undefined}; // estadísticas sólo cada medio segundo
     this.nr.presence(this.plain({s})).catch(()=>{});},
   // invitado: mandar controles y dibujar las fotos
   guestFrame(dt){
     const p=Game.player,inp=Input.player();if(inp.roll)this.rollSeq++;
-    const msg={th:Math.round(inp.th*100)/100,p:Math.round(inp.pitch*100)/100,j:inp.jump?1:0,b:inp.boost?1:0,r:this.rollSeq},key=JSON.stringify(msg);
-    this.sendT+=dt;if(this.nr&&(key!==this.inSent||this.sendT>0.15)){this.inSent=key;this.sendT=0;this.nr.presence(this.plain({i:msg})).catch(()=>{});}
+    // controles: como mucho ~25 por segundo (la sala admite ~40 en total; pasarse hace que lleguen atrasados y a tirones)
+    const q=v=>Math.round(v*20)/20,msg={th:q(inp.th),p:q(inp.pitch),j:inp.jump?1:0,b:inp.boost?1:0,r:this.rollSeq},key=JSON.stringify(msg),btn=msg.j+'|'+msg.b+'|'+msg.r;
+    this.sendT+=dt;if(this.nr&&((key!==this.inSent&&(this.sendT>=0.04||(btn!==this.btnSent&&this.sendT>=0.02)))||this.sendT>0.15)){this.inSent=key;this.btnSent=btn;this.sendT=0;this.nr.presence(this.plain({i:msg})).catch(()=>{});}
     if(!this.snaps.length)return;
     // dibujar ~100 ms atrás, interpolando entre dos fotos
     const D=clamp((this.late||0)+45,70,400),now=performance.now()-(this.off||0)-D;let A=this.snaps[0],B=this.snaps[this.snaps.length-1];
