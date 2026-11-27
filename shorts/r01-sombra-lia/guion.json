@@ -1,0 +1,112 @@
+[
+ {
+  "id": "s0",
+  "t": "En este mundo, tu sombra muestra lo que sientes de verdad.",
+  "gap": 0.3,
+  "dur": 2.732
+ },
+ {
+  "id": "s1",
+  "t": "Si estás feliz, tu sombra baila.",
+  "gap": 0.3,
+  "dur": 1.897
+ },
+ {
+  "id": "s2",
+  "t": "Y si mientes, tu sombra se ríe de ti.",
+  "gap": 0.3,
+  "dur": 2.043
+ },
+ {
+  "id": "s3",
+  "t": "Por eso, aquí nadie puede fingir.",
+  "gap": 0.3,
+  "dur": 1.794
+ },
+ {
+  "id": "s4",
+  "t": "Leo llevaba un año enamorado de Lía.",
+  "gap": 0.3,
+  "dur": 1.836
+ },
+ {
+  "id": "s5",
+  "t": "Pero Lía siempre estaba bajo el árbol.",
+  "gap": 0.3,
+  "dur": 1.843
+ },
+ {
+  "id": "s6",
+  "t": "Nadie veía su sombra. Todos decían que era fría.",
+  "gap": 0.3,
+  "dur": 3.578
+ },
+ {
+  "id": "s7",
+  "t": "Leo juntó valor y se acercó.",
+  "gap": 0.3,
+  "dur": 1.564
+ },
+ {
+  "id": "s8",
+  "t": "¿Lía, te caigo mal?",
+  "gap": 0.3,
+  "voz": "es-MX-JorgeNeural",
+  "dur": 1.425
+ },
+ {
+  "id": "s9",
+  "t": "No me hables.",
+  "gap": 0.3,
+  "voz": "es-MX-DaliaNeural",
+  "dur": 0.914
+ },
+ {
+  "id": "s10",
+  "t": "Leo se rindió y se fue.",
+  "gap": 0.3,
+  "dur": 1.293
+ },
+ {
+  "id": "s11",
+  "t": "Su sombra caminaba muy triste.",
+  "gap": 0.3,
+  "dur": 1.578
+ },
+ {
+  "id": "s12",
+  "t": "Entonces el viento movió las ramas.",
+  "gap": 0.3,
+  "dur": 1.86
+ },
+ {
+  "id": "s13",
+  "t": "El sol cayó justo sobre Lía.",
+  "gap": 0.3,
+  "dur": 1.584
+ },
+ {
+  "id": "s14",
+  "t": "Su sombra abrazaba la sombra de Leo.",
+  "gap": 0.3,
+  "dur": 1.804
+ },
+ {
+  "id": "s15",
+  "t": "Todo el patio lo vio.",
+  "gap": 0.3,
+  "dur": 1.02
+ },
+ {
+  "id": "s16",
+  "t": "Lía salió corriendo, roja como un tomate.",
+  "gap": 0.3,
+  "dur": 2.434
+ },
+ {
+  "id": "s17",
+  "t": "Leo sonrió. Y tú, ¿qué diría tu sombra ahora mismo?",
+  "gap": 0.3,
+  "dur": 3.65
+ }
+]
